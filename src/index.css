@@ -522,71 +522,43 @@ body {
    MODERN GLASS SPATIAL DESIGN TOKENS ([data-ui-style="modern"])
    ============================================================ */
 
-[data-ui-style="modern"] {
-  --paper-base: transparent;
-  --bg-base: transparent;
-  --paper-sheet: rgba(255, 255, 255, 0.84);
-  --paper-sunken: rgba(246, 247, 251, 0.90);
-  --border-hairline: rgba(15, 23, 42, 0.08);
-  --rule-hairline: rgba(15, 23, 42, 0.08);
-  --border-default: rgba(15, 23, 42, 0.12);
-  --rule-strong: rgba(15, 23, 42, 0.12);
-  --shadow-sm: 0 4px 12px -2px rgba(20, 28, 56, 0.05);
-  --shadow-md: 0 8px 24px -6px rgba(20, 28, 56, 0.06);
-  --radius-xs: 6px;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 22px;
-  --ink-primary: #0f172a;
-  --ink-secondary: #475569;
-  --ink-tertiary: #94a3b8;
-  --ink-solid: #020617;
-  --btn-primary-bg: #1677ff;
-  --btn-primary-fg: #ffffff;
-  --btn-radius: 9999px;
-  --input-radius: 9999px;
-  --badge-radius: 9999px;
-  --toggle-bg: var(--paper-sunken);
-  --toggle-radius: 9999px;
-  --toggle-active-bg: #1677ff;
-  --toggle-active-fg: #ffffff;
-  --toggle-item-radius: 9999px;
-  --keypad-radius: 16px;
-  --keypad-digit-bg: var(--paper-sheet);
-  --keypad-digit-border: var(--rule-hairline);
-  --keypad-op-bg: var(--paper-sunken);
-  --keypad-op-border: var(--rule-hairline);
-  --keypad-action-bg: #1677ff;
-  --keypad-action-fg: #ffffff;
+:root[data-ui-style="modern"], [data-ui-style="modern"], html[data-ui-style="modern"] body {
+  --bg-base: #F3F4F6; --paper-base: #F3F4F6; --bg-surface: #FFFFFF; --paper-sheet: rgba(255, 255, 255, 0.92);
+  --bg-sunken: #EBEDF0; --paper-sunken: #EBEDF0; --bg-hover: #F8F9FA; --paper-hover: #F8F9FA;
+  --border-hairline: rgba(17, 19, 24, 0.06); --rule-hairline: rgba(17, 19, 24, 0.06);
+  --border-default: rgba(17, 19, 24, 0.10); --rule-strong: rgba(17, 19, 24, 0.12); --border-strong: rgba(17, 19, 24, 0.18);
+  --rule-margin: transparent; --grid-line: transparent;
+  --shadow-sm: 0 4px 12px -2px rgba(20, 28, 56, 0.05); --shadow-md: 0 8px 24px -6px rgba(20, 28, 56, 0.06); --shadow-lg: 0 16px 36px -8px rgba(20, 28, 56, 0.10);
+  --radius-xs: 6px; --radius-sm: 12px; --radius-md: 18px; --radius-lg: 22px;
+  --ink-primary: #111318; --ink-secondary: #5A606E; --ink-tertiary: #8C93A3; --ink-faint: #B0B5C1; --ink-solid: #111318;
+  --color-accent: #1677FF; --color-accent-bg: rgba(22, 119, 255, 0.10); --theme-indicator: #1677FF;
+  --color-income: #169C5B; --color-income-bg: rgba(22, 156, 91, 0.12); --ink-income: #169C5B;
+  --color-expense: #BD5840; --color-expense-bg: rgba(189, 88, 64, 0.12); --ink-expense: #BD5840;
+  --btn-primary-bg: #1677FF; --btn-primary-fg: #FFFFFF; --btn-radius: 9999px; --input-radius: 9999px; --badge-radius: 9999px;
+  --toggle-bg: var(--paper-sunken); --toggle-radius: 9999px; --toggle-active-bg: #1677FF; --toggle-active-fg: #FFFFFF; --toggle-item-radius: 9999px;
+  --keypad-radius: 16px; --keypad-digit-bg: var(--paper-sheet); --keypad-digit-border: var(--rule-hairline);
+  --keypad-op-bg: var(--paper-sunken); --keypad-op-border: var(--rule-hairline);
+  --keypad-action-bg: #1677FF; --keypad-action-fg: #FFFFFF;
 }
 
-[data-ui-style="modern"].dark,
-.dark[data-ui-style="modern"],
-[data-ui-style="modern"] .dark,
-html[data-ui-style="modern"].dark body {
-  --paper-sheet: rgba(28, 31, 46, 0.82);
-  --paper-sunken: rgba(38, 42, 62, 0.78);
-  --border-hairline: rgba(255, 255, 255, 0.09);
-  --rule-hairline: rgba(255, 255, 255, 0.09);
-  --border-default: rgba(255, 255, 255, 0.14);
-  --rule-strong: rgba(255, 255, 255, 0.14);
-  --shadow-sm: 0 6px 16px -3px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
-  --ink-primary: #f8fafc;
-  --ink-secondary: #cbd5e1;
-  --ink-tertiary: #64748b;
-  --ink-solid: #f8fafc;
-  --btn-primary-bg: #4d94ff;
-  --btn-primary-fg: #0d0f17;
-  --toggle-active-bg: #4d94ff;
-  --toggle-active-fg: #0d0f17;
-  --keypad-action-bg: #4d94ff;
-  --keypad-action-fg: #0d0f17;
+:root[data-ui-style="modern"].dark, [data-ui-style="modern"].dark, .dark[data-ui-style="modern"], html[data-ui-style="modern"].dark body {
+  --bg-base: #090A0D; --paper-base: #090A0D; --bg-surface: #18191E; --paper-sheet: #18191E;
+  --bg-sunken: #24262E; --paper-sunken: #24262E; --bg-hover: #20222A; --paper-hover: #20222A;
+  --border-hairline: rgba(255, 255, 255, 0.08); --rule-hairline: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12); --rule-strong: rgba(255, 255, 255, 0.14); --border-strong: rgba(255, 255, 255, 0.20);
+  --shadow-sm: 0 6px 16px -3px rgba(0, 0, 0, 0.35); --shadow-md: 0 12px 28px -6px rgba(0, 0, 0, 0.45); --shadow-lg: 0 20px 48px -10px rgba(0, 0, 0, 0.60);
+  --ink-primary: #F5F6F8; --ink-secondary: #9BA1B0; --ink-tertiary: #666C7A; --ink-faint: #444955; --ink-solid: #F5F6F8;
+  --color-accent: #4D94FF; --color-accent-bg: rgba(77, 148, 255, 0.14); --theme-indicator: #4D94FF;
+  --color-income: #34C77B; --color-income-bg: rgba(52, 199, 123, 0.14); --ink-income: #34C77B;
+  --color-expense: #E06C53; --color-expense-bg: rgba(224, 108, 83, 0.14); --ink-expense: #E06C53;
+  --btn-primary-bg: #4D94FF; --btn-primary-fg: #0D0F17;
+  --toggle-active-bg: #4D94FF; --toggle-active-fg: #0D0F17;
+  --keypad-action-bg: #4D94FF; --keypad-action-fg: #0D0F17;
 }
 
 [data-ui-style="modern"] body,
 body[data-ui-style="modern"] {
-  background: radial-gradient(circle at 20% 0%, #e4ecff 0%, #f4f3f8 55%);
+  background: radial-gradient(circle at 20% 0%, #E4ECFF 0%, #F4F3F8 55%);
   background-attachment: fixed;
 }
 
@@ -594,8 +566,13 @@ body[data-ui-style="modern"] {
 body[data-ui-style="modern"].dark,
 .dark[data-ui-style="modern"] body,
 .dark body[data-ui-style="modern"] {
-  background: radial-gradient(circle at 20% 0%, #161b30 0%, #0d0f17 55%);
+  background: radial-gradient(circle at 20% 0%, #161B30 0%, #090A0D 55%);
   background-attachment: fixed;
+}
+
+[data-ui-style="modern"] .border-dashed,
+[data-ui-style="modern"] .border-dotted {
+  border-style: solid !important;
 }
 
 [data-ui-style="modern"] .dot-grid,
