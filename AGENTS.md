@@ -70,11 +70,26 @@ To ensure professional engineering collaboration and seamless user localization:
    - Mastheads & journal receipts: Literary `Instrument Serif`.
 
 ### 4.2 Dual-Skin Architecture: Paper vs. Modern Glass
-1. **Polymorphic UI Primitives & Design Tokens**:
-   - Controlled via `useThemeStore.uiStyle` (`'paper' | 'modern'`), persisted and synchronized to `document.documentElement.dataset.uiStyle` and `document.body.dataset.uiStyle`.
-   - **Paper Mode**: Tactile physical stationery aesthetics, micro-dot grid background, washi tape, receipt sawtooth cuts (`.paper-sawtooth-top`), stamped badges, and `Instrument Serif` + `Geist Mono` typography.
-   - **Modern Mode (`[data-ui-style="modern"]`)**: Translucent spatial glass aesthetics, soft cool-blue ambient radial gradients (`#e4ecff` to `#f4f3f8` in light mode, `#161b30` to `#0d0f17` in dark mode). Paper ornaments (`.washi-tape`, `.paper-deckle-bottom`, `.paper-sawtooth-top`) are suppressed via CSS tokens. Typography switches cleanly to `Geist Sans` and system sans-serif with `tabular-nums`.
-   - **Zero Duplication**: Core domain pages, modals, keypads, and `plugin-sdk` extensions use semantic tokens (`--paper-sheet`, `--paper-sunken`, `--rule-hairline`) and polymorphic primitives (`PaperCard`, `PaperButton`, `SegToggle`, `CategoryBadge`, `PaperModal`) rather than duplicating template markup.
+
+The application supports two distinct aesthetic skins (`paper` and `modern`), governed by a strict 3-layer architectural hierarchy:
+
+1. **Layer 1 — Shared Core & Plugins (Zero Skin Awareness)**:
+   - Core domain services (`src/domain/**`), state management (`src/stores/**` except `useThemeStore`), database (`src/core/**`), and plugins (`src/plugins/**`, `src/plugin-sdk/**`) must remain completely skin-agnostic.
+   - Core and plugins render exclusively through semantic UI primitives (`PaperCard`, `CategoryBadge`, `SegToggle`, `PaperButton`, `PaperInput`) with zero conditional JS branches checking `uiStyle`.
+
+2. **Layer 2 — Pure CSS-Driven Leaf Primitives (Zero Inline Skin Ternaries)**:
+   - Leaf UI primitives (`PaperCard`, `PaperButton`, `PaperInput`, `CategoryBadge`, `SegToggle`, `PaperKeypad`, `PaperModal`, `Toast`) encapsulate their presentation using CSS design tokens (`--paper-sheet`, `--paper-sunken`, `--rule-hairline`, `--btn-radius`, `--input-radius`, `--keypad-radius`, etc.).
+   - Visual enhancements (such as `backdrop-filter: blur(20px)`, pill radii, and glow shadows under `[data-ui-style="modern"]`) are applied purely via CSS rules in `src/index.css`. No inline JS `isModern ? ... : ...` ternaries are allowed inside leaf primitives.
+
+3. **Layer 3 — Dedicated Implementations for Structurally Divergent Shells**:
+   - Where physical mechanics, layout topology, or DOM hierarchy fundamentally differ, components are split into dedicated skin shells rather than mixing conditional JSX:
+     - **Navigation Routing**: `BottomNav.tsx` acts purely as a thin router dispatching to `<PaperBottomNav />` (stationery tabs + square FAB) or `<ModernBottomNav />` (`<LiquidGlassDock />` + circular FAB).
+     - **Ledger Grouping**: `TransactionGroup.tsx` delegates date-block rendering to `<PaperTransactionGroup />` (per-day receipt cards with dashed dividers) or `<ModernTransactionGroup />` (floating date headers above rounded glass cards with nested rows).
+     - **Modals & Keypads**: Physical paper ornaments (washi tape, deckle cuts, sawtooth receipt edges) are separated from sleek spatial sheets via CSS tokens and structured slots.
+
+4. **Modern Theme Simplification (Light & Dark Only)**:
+   - Modern mode exposes only two dedicated palettes: **Light** and **Dark**, configured directly under `[data-ui-style="modern"]` and `[data-ui-style="modern"].dark`.
+   - The 10 bespoke paper stationery themes are strictly reserved for Paper Mode. In Modern Mode, Settings hides paper theme swatches and provides a streamlined Light/Dark selector.
 
 ### 4.3 Pure WebGL Liquid Glass Dock (`src/components/ui/liquid-glass/`)
 1. **WebGL Rendering Pipeline**:

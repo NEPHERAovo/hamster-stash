@@ -40,3 +40,9 @@
 - **Why**: Bypassing the SDK creates tight architectural coupling, prevents clean runtime plugin unloading, and breaks the sub-repository boundary.
 - **Evidence**: Kernel isolation verified in `tests/plugin/kernel.test.ts` and `tests/plugin/owned-items-plugin.test.ts`.
 - **Seen**: 3 (Promoted to `AGENTS.md`)
+
+### 5. Skin Separation & CSS-Driven Primitives
+- **Rule**: Never scatter `isModern ? ... : ...` ternaries inside leaf UI components or core/domain modules. Drive visual differences using CSS tokens under `[data-ui-style="modern"]` and split structurally divergent layouts into dedicated skin components.
+- **Why**: Scattered inline conditionals degrade maintainability, clutter JSX templates, and cause UI drift between skins.
+- **Evidence**: Refactored in commit `fafc784`.
+- **Seen**: 1
