@@ -99,31 +99,21 @@ export const FRAGMENT_SHADER_SOURCE = `
     float rimNorm = clamp(distInward / rimWidth, 0.0, 1.0);
     float meniscus = pow(1.0 - rimNorm, 1.6);
 
-    // Physical refraction & multi-channel chromatic dispersion
-    vec2 refractOffset = -outNormal * (meniscus * 0.026 * uTrigger) - (rel / uDropletRect.zw) * (0.008 * uTrigger);
-    vec2 dispDir = -outNormal * (meniscus * 0.016 * uTrigger);
+    // Smooth physical refraction along meniscus curve (pure optics, zero color splitting)
+    vec2 refractOffset = -outNormal * (meniscus * 0.024 * uTrigger) - (rel / uDropletRect.zw) * (0.008 * uTrigger);
 
-    vec4 sR = sampleGlyphs(baseUV + refractOffset - dispDir);
-    vec4 sG = sampleGlyphs(baseUV + refractOffset);
-    vec4 sB = sampleGlyphs(baseUV + refractOffset + dispDir);
+    vec4 glyphSample = sampleGlyphs(baseUV + refractOffset);
+    vec3 glyphRgb = glyphSample.rgb;
+    float glyphAlpha = glyphSample.a;
 
-    vec3 dispersedGlyphRgb = vec3(sR.r, sG.g, sB.b);
-    vec3 glyphAlphaChannels = vec3(sR.a, sG.a, sB.a);
-
-    // 6. Fresnel Specular Catch-light & Caustic Sheen
+    // 6. Crisp Fresnel Specular Catch-light (Pure Monochrome White, No Rainbow Ring)
     float topKey = max(-outNormal.y, 0.0);
     float botBounce = max(outNormal.y, 0.0);
-    float topHighlight = smoothstep(3.5, 0.6, distInward) * smoothstep(0.0, 0.6, distInward) * (topKey * 0.40 + botBounce * 0.16) * uTrigger;
+    float rimGlint = smoothstep(3.5, 0.6, distInward) * smoothstep(0.0, 0.6, distInward) * (topKey * 0.45 + botBounce * 0.18) * uTrigger;
+    vec3 glintCol = uDark > 0.5 ? vec3(0.95, 0.97, 1.0) : vec3(1.0, 1.0, 1.0);
 
-    float angle = atan(outNormal.y, outNormal.x);
-    float spectralPhase = rimNorm * 6.283 + angle * 0.5;
-    vec3 spectralCol = vec3(
-      0.5 + 0.5 * cos(spectralPhase),
-      0.5 + 0.5 * cos(spectralPhase + 2.094),
-      0.5 + 0.5 * cos(spectralPhase + 4.188)
-    );
-    float rimEnvelope = smoothstep(12.0, 2.5, distInward) * smoothstep(0.5, 2.5, distInward);
-    float spectralSheen = rimEnvelope * 0.22 * uTrigger;
+    // Subtle monochrome glass body sheen along meniscus
+    float meniscusSheen = smoothstep(12.0, 2.5, distInward) * smoothstep(0.5, 2.5, distInward) * (0.08 * uTrigger);
 
     float dropEdgeHairline = smoothstep(1.0, 0.0, abs(dDrop)) * (uDark > 0.5 ? 0.18 : 0.08) * uTrigger;
 
@@ -134,12 +124,12 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec3 underLensSurface = mix(glassBody, dockSurface, dockMask);
 
     vec3 dropletBase = mix(underLensSurface, restingPill, pillAlpha);
-    dropletBase = mix(dropletBase, spectralCol, spectralSheen);
-    dropletBase = clamp(dropletBase + vec3(topHighlight), 0.0, 1.0);
+    dropletBase = clamp(dropletBase + vec3(meniscusSheen), 0.0, 1.0);
+    dropletBase = clamp(dropletBase + glintCol * rimGlint, 0.0, 1.0);
     dropletBase = mix(dropletBase, uDark > 0.5 ? vec3(1.0) : vec3(0.0), dropEdgeHairline);
 
-    // Composite dispersed active glyphs onto droplet
-    vec3 dropletFinal = mix(dropletBase, dispersedGlyphRgb, glyphAlphaChannels);
+    // Composite active glyph onto droplet (pure accent blue, crystal clear)
+    vec3 dropletFinal = mix(dropletBase, glyphRgb, glyphAlpha);
 
     // 8. Final Scene Composition
     vec3 baseRgb = mix(dockShadowCol, dockFinal, dockMask);
