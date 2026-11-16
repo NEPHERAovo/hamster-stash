@@ -60,18 +60,17 @@ export function useLiquidSpring() {
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * sizeRate);
 
     // Smooth, graceful color trigger: slightly slower to create delicate bloom
-    const colorRate = rawTrigger > s.colorTrigger ? 7.0 : 5.0;
+    const colorRate = rawTrigger > s.colorTrigger ? 6.0 : 4.5;
     s.colorTrigger += (rawTrigger - s.colorTrigger) * Math.min(1, dt * colorRate);
 
-    // Exact iOS native 1.58:1 aspect ratio:
-    // Elongated rounded rectangle with straight top and bottom:
-    // Resting: height 53px, width 83.7px (leaves 4.5px vertical padding inside 62px dock)
-    // Lifted: expands smoothly to height ~65px, width ~103px
+    // Exact iOS native Stadium Capsule dimensions:
+    // Resting: height 52px, width 83.2px (leaves 5.0px vertical padding inside 62px dock)
+    // Triggered: expands smoothly to height 75px, width 118.4px (overhangs dock by ~5.3px top & bottom)
     const stretchX = Math.min(5.0, Math.abs(s.dropletVelX) * 0.010);
-    const baseHalfH = dockH * 0.427; // ~26.5px for 62px dock
-    const baseHalfW = baseHalfH * 1.58; // ~41.87px (width 83.74px)
-    const dropHalfH = baseHalfH + s.smoothTrigger * 6.0;
-    const dropHalfW = baseHalfW + s.smoothTrigger * 9.5 + stretchX;
+    const baseHalfH = dockH * 0.420; // ~26.0px for 62px dock
+    const baseHalfW = baseHalfH * 1.60; // ~41.6px (width 83.2px)
+    const dropHalfH = baseHalfH + s.smoothTrigger * 11.5;
+    const dropHalfW = baseHalfW + s.smoothTrigger * 17.6 + stretchX;
 
     return {
       dropletX: s.dropletX,

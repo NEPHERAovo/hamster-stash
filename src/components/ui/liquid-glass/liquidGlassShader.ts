@@ -46,8 +46,8 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec2 baseUV = p / uCanvasSize;
 
     // 1. Whole Dock Expansion during interaction:
-    // Whole dock swells slightly (+5px width, +2px height) coming closer to edges
-    vec2 dockHalfSize = uDockRect.zw + vec2(5.0, 2.0) * uTrigger;
+    // Whole dock swells slightly (+4px width, +1.2px height) coming closer to edges
+    vec2 dockHalfSize = uDockRect.zw + vec2(4.0, 1.2) * uTrigger;
     float dDock = sdRoundBox(p - uDockRect.xy, dockHalfSize, dockHalfSize.y);
     float dockMask = 1.0 - smoothstep(-0.5, 0.5, dDock);
     float dockInward = max(0.0, -dDock);
@@ -89,9 +89,9 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec4 inactiveSample = texture2D(uInactiveTex, baseUV);
     vec3 dockFinal = mix(dockColor, inactiveSample.rgb, inactiveSample.a);
 
-    // 3. Selected Tab Geometry: Elongated Rounded Rectangle (straight top & bottom, curved corners)
-    // Locked to iOS native 1.58:1 aspect ratio
-    float dropR = mix(19.0, 21.0, uTrigger);
+    // 3. Selected Tab Geometry: True Stadium Capsule (Miniature replica of the Dock)
+    // Semicircular ends (r = dropHalfH) and straight top & bottom edges
+    float dropR = uDropletRect.w;
     float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, dropR);
     float dropMask = 1.0 - smoothstep(-0.5, 0.5, dDrop);
     float dropInward = max(0.0, -dDrop);
@@ -111,11 +111,11 @@ export const FRAGMENT_SHADER_SOURCE = `
     // 4. Tab Glass Edge Optics:
     // "上下为非常细的黑色边附带向内的白色高光，左右为更加明显的黑边带有更加轻微的向内的白色高光"
     float dropStroke = 1.0 - smoothstep(0.0, 1.0, abs(dDrop));
-    float dropStrokeDark = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.16, uDark > 0.5 ? 0.60 : 0.38, dropSideWeight);
+    float dropStrokeDark = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.16, uDark > 0.5 ? 0.60 : 0.42, dropSideWeight);
 
-    float dropInwardBand = smoothstep(2.8, 0.3, dropInward);
-    float dropTopHighlight = dropTopWeight * (0.35 + 0.45 * uTrigger) * dropInwardBand;
-    float dropBotHighlight = dropBotWeight * (0.15 + 0.20 * uTrigger) * dropInwardBand;
+    float dropInwardBand = smoothstep(3.2, 0.4, dropInward);
+    float dropTopHighlight = dropTopWeight * (0.40 + 0.55 * uTrigger) * dropInwardBand;
+    float dropBotHighlight = dropBotWeight * (0.18 + 0.32 * uTrigger) * dropInwardBand;
     float dropSideHighlight = dropSideWeight * 0.10 * dropInwardBand;
     float dropHighlight = (dropTopHighlight + dropBotHighlight) * (1.0 - dropSideWeight * 0.65) + dropSideHighlight;
 
@@ -126,14 +126,14 @@ export const FRAGMENT_SHADER_SOURCE = `
 
     vec2 dropCenterUV = uDropletRect.xy / uCanvasSize;
     vec2 deltaUV = baseUV - dropCenterUV;
-    vec2 magOffset = -deltaUV * (0.08 * uTrigger);
-    vec2 refractOffset = -dropNorm * (meniscus * 0.016 * uTrigger);
+    vec2 magOffset = -deltaUV * (0.06 * uTrigger);
+    vec2 refractOffset = -dropNorm * (meniscus * 0.014 * uTrigger);
 
     vec4 glyphSample = sampleGlyphs(baseUV + magOffset + refractOffset, uDropletRect.xy, uDropletRect.zw, dropR);
     vec3 glyphRgb = glyphSample.rgb;
     float glyphAlpha = glyphSample.a;
 
-    // 6. Selected Tab Body Color:
+    // 6. Selected Tab Body Color & Protrusion Overhang Optics:
     // Resting: translucent gray pill tint (#E5E5EA)
     // Excited state: "覆盖上一层白色的高光" (illuminated white highlight layer)
     vec3 restingPillTint = uDark > 0.5 ? vec3(0.20, 0.21, 0.24) : vec3(0.890, 0.895, 0.915);
@@ -145,13 +145,24 @@ export const FRAGMENT_SHADER_SOURCE = `
 
     vec3 tabFinal = mix(tabBaseColor, glyphRgb, glyphAlpha);
 
-    // 7. Composite Scene
-    float dropFillAlpha = dropMask * (uDark > 0.5 ? 0.92 : 0.95);
-    float dropStrokeAlpha = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.16, uDark > 0.5 ? 0.60 : 0.38, dropSideWeight);
-    float totalDropAlpha = max(dropFillAlpha, dropStrokeAlpha);
+    // Overhang region (where droplet physically extends beyond dock boundary)
+    float overhang = smoothstep(0.0, 1.5, dDock);
+    vec3 overhangColor = (uDark > 0.5 ? vec3(0.25) : vec3(1.0)) + vec3(dropHighlight);
+    overhangColor = mix(overhangColor, vec3(0.0), dropStrokeDark);
+    vec3 tabCompositeColor = mix(tabFinal, overhangColor, overhang);
 
-    float finalAlpha = max(totalDockAlpha, totalDropAlpha);
-    vec3 finalRgb = mix(dockFinal, tabFinal, dropMask);
+    // Translucent glass body in overhang region so app background shows through
+    float insideDockDropAlpha = mix(uDark > 0.5 ? 0.88 : 0.92, uDark > 0.5 ? 0.94 : 0.96, uTrigger);
+    float overhangDropAlpha = mix(0.18, 0.38, uTrigger) + dropHighlight * 0.85;
+    float tabAlpha = mix(insideDockDropAlpha, overhangDropAlpha, overhang);
+    tabAlpha = max(tabAlpha, dropStroke * mix(uDark > 0.5 ? 0.28 : 0.16, uDark > 0.5 ? 0.60 : 0.42, dropSideWeight));
+
+    // 7. Composite Scene
+    float finalAlpha = max(totalDockAlpha, dropMask * tabAlpha);
+    vec3 finalRgb = mix(dockFinal, tabCompositeColor, dropMask);
+
+    if (finalAlpha <= 0.001) discard;
+    gl_FragColor = vec4(finalRgb * finalAlpha, finalAlpha);
 
     if (finalAlpha <= 0.001) discard;
     gl_FragColor = vec4(finalRgb * finalAlpha, finalAlpha);
