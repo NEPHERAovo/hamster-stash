@@ -42,7 +42,7 @@ export function useLiquidSpring() {
       }
     }
 
-    const pressRate = pressTarget > s.pressAmount ? 26 : 12;
+    const pressRate = pressTarget > s.pressAmount ? 40 : 18;
     s.pressAmount += (pressTarget - s.pressAmount) * Math.min(1, dt * pressRate);
 
     // Couple uTrigger to active drag pressure, distance to target, and spring velocity:
@@ -52,14 +52,14 @@ export function useLiquidSpring() {
     const travelEnergy = Math.max(velFactor, distFactor * 0.65);
 
     const rawTrigger = Math.min(1.0, Math.max(s.pressAmount, travelEnergy));
-    const triggerRate = rawTrigger > s.smoothTrigger ? 24 : 10;
+    const triggerRate = rawTrigger > s.smoothTrigger ? 40 : 18;
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * triggerRate);
 
     // Resting: inset neatly inside dock (dropHalfH = dockH * 0.425 = 25.5px)
-    // Lifted (uTrigger -> 1): expands lifted droplet (+6px halfW, +7px halfH)
+    // Lifted (uTrigger -> 1): swells lifted droplet (+7px halfW, +8px halfH)
     const stretchX = Math.min(8.0, Math.abs(s.dropletVelX) * 0.015);
-    const dropHalfW = colW * 0.44 + s.smoothTrigger * 6.0 + stretchX;
-    const dropHalfH = dockH * 0.425 + s.smoothTrigger * 7.0;
+    const dropHalfW = colW * 0.44 + s.smoothTrigger * 7.0 + stretchX;
+    const dropHalfH = dockH * 0.425 + s.smoothTrigger * 8.0;
 
     return {
       dropletX: s.dropletX,

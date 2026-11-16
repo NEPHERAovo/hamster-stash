@@ -145,8 +145,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     let lastCanvasW = 0;
     let lastCanvasH = 0;
 
-    const padX = 16;
-    const padY = 20;
+    const padX = 18;
+    const padY = 18;
 
     const render = (now: number) => {
       if (!gl || !canvas || !dockShell) return;
@@ -184,7 +184,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         (texturesDirtyRef.current || canvasW !== lastCanvasW || canvasH !== lastCanvasH)
       ) {
         const inactiveColor = currentIsDark ? '#EBEBF5' : '#1C1C1E';
-        const activeColor = currentIsDark ? '#4D94FF' : '#007AFF';
+        const activeColor = currentIsDark ? '#4D94FF' : '#1677FF';
 
         gl.activeTexture(gl.TEXTURE0);
         uploadLayerTexture(
@@ -297,11 +297,27 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     if (!dockShell) return;
 
     const rect = dockShell.getBoundingClientRect();
+    if (rect.width <= 0) return;
+
     const localX = e.clientX - rect.left;
     pointerDownXRef.current = localX;
     isPointerDownRef.current = true;
     isDraggingRef.current = false;
-    pressTargetRef.current = 0.45;
+    pressTargetRef.current = 1.0;
+
+    const currentTabs = tabsRef.current;
+    if (currentTabs.length > 0) {
+      const colW = rect.width / currentTabs.length;
+      const pressedIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(localX / colW)));
+      const selectedTab = currentTabs[pressedIdx];
+      if (selectedTab) {
+        const chosenId = selectedTab.id || selectedTab.path || '';
+        if (!isTabActive(selectedTab, activeTabRef.current)) {
+          activeTabRef.current = chosenId;
+          onTabChangeRef.current(chosenId);
+        }
+      }
+    }
 
     try {
       dockShell.setPointerCapture(e.pointerId);
@@ -322,11 +338,11 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     if (!isDraggingRef.current) {
       if (dx > 8) {
         isDraggingRef.current = true;
-        pressTargetRef.current = 1.0;
       }
     }
 
     if (isDraggingRef.current) {
+      pressTargetRef.current = 1.0;
       const clampedX = Math.max(26, Math.min(rect.width - 26, localX));
       setDragPosition(clampedX);
     }
@@ -335,7 +351,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const handlePointerRelease = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isPointerDownRef.current) return;
     const wasDragging = isDraggingRef.current;
-    const downX = pointerDownXRef.current;
     isPointerDownRef.current = false;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
@@ -357,17 +372,17 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const currentTabs = tabsRef.current;
     if (currentTabs.length === 0) return;
 
-    const colW = rect.width / currentTabs.length;
-    const targetCoord = wasDragging
-      ? Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left))
-      : downX;
-    const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(targetCoord / colW)));
-    const selectedTab = currentTabs[tabIdx];
-    if (selectedTab) {
-      const chosenId = selectedTab.id || selectedTab.path || '';
-      if (!isTabActive(selectedTab, activeTabRef.current)) {
-        activeTabRef.current = chosenId;
-        onTabChangeRef.current(chosenId);
+    if (wasDragging) {
+      const colW = rect.width / currentTabs.length;
+      const releaseX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+      const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(releaseX / colW)));
+      const selectedTab = currentTabs[tabIdx];
+      if (selectedTab) {
+        const chosenId = selectedTab.id || selectedTab.path || '';
+        if (!isTabActive(selectedTab, activeTabRef.current)) {
+          activeTabRef.current = chosenId;
+          onTabChangeRef.current(chosenId);
+        }
       }
     }
   };
@@ -407,7 +422,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="absolute -left-[16px] -right-[16px] -top-[20px] -bottom-[20px] w-[calc(100%+32px)] h-[calc(100%+40px)] pointer-events-none z-10"
+        className="absolute -left-[18px] -right-[18px] -top-[18px] -bottom-[18px] w-[calc(100%+36px)] h-[calc(100%+36px)] pointer-events-none z-10"
       />
 
       <div className="absolute inset-0 flex items-stretch z-20 pointer-events-auto">
