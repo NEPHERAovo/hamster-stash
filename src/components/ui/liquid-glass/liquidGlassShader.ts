@@ -16,6 +16,7 @@ export const FRAGMENT_SHADER_SOURCE = `
   uniform vec4 uDockRect;
   uniform vec4 uDropletRect;
   uniform float uTrigger;
+  uniform float uColorTrigger;
 
   uniform float uRefraction;
   uniform float uDispersion;
@@ -44,56 +45,25 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec2 p = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y) / uDpr;
     vec2 baseUV = p / uCanvasSize;
 
-    // 1. Whole-Dock Expansion (+3.5px swell when pressed/lifted)
-    vec2 dockHalfSize = uDockRect.zw + vec2(3.5, 3.5) * uTrigger;
-    float dDock = sdRoundBox(p - uDockRect.xy, dockHalfSize, dockHalfSize.y);
+    // 1. Dock Capsule Geometry & Clean Surface
+    float dDock = sdRoundBox(p - uDockRect.xy, uDockRect.zw, uDockRect.w);
     float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
 
     float dockMask = 1.0 - smoothstep(-0.75, 0.75, dDock);
     float dropMask = 1.0 - smoothstep(-0.75, 0.75, dDrop);
 
-    // 2. Ultra-Light Ambient Elevation Diffusion (No dark halo or black ring)
-    vec3 shadowCol = vec3(0.059, 0.090, 0.165);
-    float dockShadowRadius = 14.0;
-    float dockShadowAlpha = smoothstep(dockShadowRadius, 0.0, dDock) * mix(uDark > 0.5 ? 0.16 : 0.05, uDark > 0.5 ? 0.30 : 0.09, uTrigger);
+    // Subtle 1px structural hairline around outer dock (zero dark box-shadow)
+    float dockBorder = smoothstep(1.0, 0.0, abs(dDock)) * (uDark > 0.5 ? 0.12 : 0.06);
+    vec3 dockSurface = uDark > 0.5 ? vec3(0.110, 0.114, 0.133) : vec3(1.0, 1.0, 1.0);
+    dockSurface = mix(dockSurface, vec3(0.0), dockBorder);
 
-    float dropShadowRadius = mix(4.0, 16.0, uTrigger);
-    float dropShadowAlpha = smoothstep(dropShadowRadius, 0.0, dDrop) * mix(0.0, uDark > 0.5 ? 0.32 : 0.10, uTrigger);
+    // 2. Soft Drop Shadow cast only by the lifted droplet lens (uTrigger > 0)
+    vec2 shadowOffset = vec2(0.0, 3.0 * uTrigger);
+    float dDropShadow = sdRoundBox(p - uDropletRect.xy - shadowOffset, uDropletRect.zw, uDropletRect.w);
+    float dropShadowAlpha = smoothstep(16.0, 0.0, dDropShadow) * (uDark > 0.5 ? 0.32 : 0.12) * uTrigger;
+    vec3 shadowCol = uDark > 0.5 ? vec3(0.0, 0.0, 0.0) : vec3(0.08, 0.10, 0.16);
 
-    // 3. Outer Dock Capsule: 4-Sided Directional Glass Lighting
-    float dockInward = max(0.0, -dDock);
-    vec2 dockRel = p - uDockRect.xy;
-    vec2 dockB = dockHalfSize - dockHalfSize.y;
-    vec2 dockQ = abs(dockRel) - dockB;
-    vec2 dockOutNormal = normalize(sign(dockRel) * max(dockQ, 0.0) + vec2(1e-5));
-    if (max(dockQ.x, dockQ.y) < 0.0) {
-      dockOutNormal = abs(dockQ.x) > abs(dockQ.y) ? vec2(sign(dockRel.x), 0.0) : vec2(0.0, sign(dockRel.y));
-    }
-
-    float dockTopWeight = pow(max(-dockOutNormal.y, 0.0), 1.5);
-    float dockBotWeight = pow(max(dockOutNormal.y, 0.0), 1.5);
-    float dockSideWeight = pow(max(abs(dockOutNormal.x), 0.0), 1.6);
-
-    // Top & bottom long edges: crisp luminous white specular edge highlights along outer 4px rim (+0.85 top, +0.48 bottom)
-    float dockSpecBand = smoothstep(4.0, 0.0, dockInward) * smoothstep(0.0, 0.3, dockInward);
-    float dockSpecIntensity = dockSpecBand * (1.0 - dockSideWeight) * (dockTopWeight * 0.85 + dockBotWeight * 0.48) * (0.50 + 0.50 * uTrigger);
-    vec3 dockSpecCol = uDark > 0.5 ? vec3(0.92, 0.95, 1.0) : vec3(1.0, 1.0, 1.0);
-
-    // Left & right semicircular caps: sculpted cool dark-gray bevel shading
-    float dockRimBand = smoothstep(5.0, 0.0, dockInward) * smoothstep(0.0, 0.4, dockInward);
-    vec3 dockFlankCol = uDark > 0.5 ? vec3(0.05, 0.06, 0.09) : vec3(0.56, 0.59, 0.66);
-    float dockFlankShade = dockSideWeight * dockRimBand * 0.28;
-
-    // Whole-Dock Surface: Resting cool-gray (#ECEEF3 / #18191F) -> Swelled Pure White Luminous Sheen
-    vec3 dockBgRest = uDark > 0.5 ? vec3(0.094, 0.098, 0.122) : vec3(0.925, 0.933, 0.953);
-    vec3 dockBgTriggered = uDark > 0.5 ? vec3(0.145, 0.153, 0.184) : vec3(1.0, 1.0, 1.0);
-    vec3 dockBase = mix(dockBgRest, dockBgTriggered, uTrigger * 0.90);
-
-    vec3 dockSurface = dockBase;
-    dockSurface = mix(dockSurface, dockFlankCol, dockFlankShade);
-    dockSurface = clamp(dockSurface + dockSpecCol * dockSpecIntensity, 0.0, 1.0);
-
-    // 4. Inner Active Tab Pill: Flat un-beveled at rest -> crystal white glass lens on trigger
+    // 3. Droplet Capsule Outward Normal
     float distInward = max(0.0, -dDrop);
     vec2 rel = p - uDropletRect.xy;
     vec2 b = uDropletRect.zw - uDropletRect.w;
@@ -103,52 +73,72 @@ export const FRAGMENT_SHADER_SOURCE = `
       outNormal = abs(q.x) > abs(q.y) ? vec2(sign(rel.x), 0.0) : vec2(0.0, sign(rel.y));
     }
 
-    vec3 restingPillCol = uDark > 0.5 ? vec3(0.173, 0.176, 0.208) : vec3(0.902, 0.906, 0.925);
-    vec3 liftedLensCol = uDark > 0.5 ? vec3(0.149, 0.157, 0.204) : vec3(1.0, 1.0, 1.0);
-    vec3 dropletSurface = mix(restingPillCol, liftedLensCol, uTrigger);
+    // 4. Optical Refraction & Meniscus Curve
+    float rimWidth = 14.0;
+    float meniscus = pow(clamp(1.0 - distInward / rimWidth, 0.0, 1.0), 1.6);
 
-    // Clean, subtle rim highlight only when lifted (uTrigger > 0)
-    float dropRimBand = smoothstep(3.5, 0.0, distInward) * smoothstep(0.0, 0.3, distInward);
-    float dropTopKey = max(-outNormal.y, 0.0);
-    float dropRimHighlight = dropRimBand * (dropTopKey * 0.45 + 0.25) * uTrigger;
-    vec3 dropRimCol = uDark > 0.5 ? vec3(0.90, 0.93, 1.0) : vec3(1.0, 1.0, 1.0);
-    dropletSurface = clamp(dropletSurface + dropRimCol * dropRimHighlight, 0.0, 1.0);
+    // Lens bending + chromatic dispersion displacement
+    vec2 refractOffset = -outNormal * (meniscus * 0.032 * uTrigger) - (rel / uDropletRect.zw) * (0.010 * uTrigger);
+    vec2 dispR = outNormal * (meniscus * 0.024 * uTrigger);
+    vec2 dispB = -outNormal * (meniscus * 0.024 * uTrigger);
 
-    // 5. Smooth, Continuous Convex Lens Refraction (Eliminate Thin Sliver Tearing)
-    float rimWidth = 16.0;
-    float meniscusCurve = pow(clamp(1.0 - distInward / rimWidth, 0.0, 1.0), 1.5);
+    // 5. Independent Multi-Channel Chromatic Separation of Glyphs
+    vec4 sR = sampleGlyphs(baseUV + refractOffset + dispR);
+    vec4 sG = sampleGlyphs(baseUV + refractOffset);
+    vec4 sB = sampleGlyphs(baseUV + refractOffset + dispB);
 
-    vec2 refractOffset = outNormal * (meniscusCurve * 0.022 * uTrigger) - (rel / uDropletRect.zw) * (0.016 * uTrigger);
-    vec2 dispShift = outNormal * (meniscusCurve * 0.013 * uTrigger);
+    vec3 dispersedGlyphRgb = vec3(sR.r, sG.g, sB.b);
+    vec3 glyphAlphaChannels = vec3(sR.a, sG.a, sB.a);
 
-    // 6. Glyph Sampling (Inactive / Active) with smooth dispersion
-    float glyphR = sampleGlyphs(baseUV + refractOffset + dispShift).r;
-    vec4 glyphCenter = sampleGlyphs(baseUV + refractOffset);
-    float glyphG = glyphCenter.g;
-    float glyphB = sampleGlyphs(baseUV + refractOffset - dispShift).b;
-    float glyphAlpha = glyphCenter.a;
-    vec3 glyphRgb = vec3(glyphR, glyphG, glyphB);
+    // 6. Prismatic Spectral Caustic Rim along the Meniscus
+    float rimNorm = clamp(distInward / rimWidth, 0.0, 1.0);
+    float angle = atan(outNormal.y, outNormal.x);
+    float spectralPhase = rimNorm * 6.283 + angle * 0.5;
+    vec3 spectralCol = vec3(
+      0.5 + 0.5 * cos(spectralPhase),
+      0.5 + 0.5 * cos(spectralPhase + 2.094),
+      0.5 + 0.5 * cos(spectralPhase + 4.188)
+    );
+    float rimEnvelope = smoothstep(12.0, 3.0, distInward) * smoothstep(0.5, 3.0, distInward);
+    float spectralSheen = rimEnvelope * 0.48 * uTrigger;
 
-    // 7. Blend active tab glyph on droplet surface (100% pure saturation inside)
-    vec3 dropletWithGlyph = mix(dropletSurface, glyphRgb, glyphAlpha);
+    // Delicate top-edge Fresnel catch-light (no thick white border)
+    float topKey = max(-outNormal.y, 0.0);
+    float topHighlight = smoothstep(3.0, 0.8, distInward) * smoothstep(0.0, 0.8, distInward) * topKey * 0.40 * uTrigger;
+
+    // 7. Resting Gray Pill vs. Lifted Crystal Glass Droplet
+    // Resting pill fades out slower via uColorTrigger
+    float pillAlpha = 1.0 - uColorTrigger;
+    vec3 canvasBg = uDark > 0.5 ? vec3(0.035, 0.039, 0.051) : vec3(0.953, 0.957, 0.965);
+    vec3 underLensBg = mix(canvasBg, dockSurface, dockMask);
+
+    vec3 restingPill = uDark > 0.5 ? vec3(0.173, 0.176, 0.208) : vec3(0.898, 0.898, 0.918);
+    vec3 dropletBase = mix(underLensBg, restingPill, pillAlpha);
+
+    // Apply spectral prismatic sheen and delicate Fresnel highlight
+    dropletBase = mix(dropletBase, spectralCol, spectralSheen);
+    dropletBase = clamp(dropletBase + vec3(topHighlight), 0.0, 1.0);
+
+    // Blend dispersed glyph channels
+    vec3 dropletFinal = mix(dropletBase, dispersedGlyphRgb, glyphAlphaChannels);
 
     // 8. Dock Layer with Inactive Glyphs
     vec4 inactiveSample = texture2D(uInactiveTex, baseUV);
     vec3 dockWithInactive = mix(dockSurface, inactiveSample.rgb, inactiveSample.a);
 
-    // 9. Composite Dock over Ambient Shadow
-    vec3 bgRgb = mix(shadowCol, dockWithInactive, dockMask);
-    float bgAlpha = max(dockMask * 0.98, dockShadowAlpha);
+    // 9. Composite Scene
+    vec3 sceneRgb = dockWithInactive;
+    float sceneAlpha = dockMask;
 
-    // 10. Composite Lifted Droplet Elevation Shadow
+    // Composite lifted droplet shadow
     if (dropShadowAlpha > 0.001) {
-      bgRgb = mix(bgRgb, shadowCol, dropShadowAlpha * (1.0 - dropMask));
-      bgAlpha = max(bgAlpha, dropShadowAlpha);
+      sceneRgb = mix(sceneRgb, shadowCol, dropShadowAlpha * (1.0 - dropMask));
+      sceneAlpha = max(sceneAlpha, dropShadowAlpha);
     }
 
-    // 11. Composite Droplet over Dock with Premultiplied Alpha
-    vec3 outRgb = mix(bgRgb, dropletWithGlyph, dropMask);
-    float outAlpha = max(bgAlpha, dropMask);
+    // Composite droplet lens
+    vec3 outRgb = mix(sceneRgb, dropletFinal, dropMask);
+    float outAlpha = max(sceneAlpha, dropMask);
 
     if (outAlpha <= 0.001) discard;
     gl_FragColor = vec4(outRgb * outAlpha, outAlpha);

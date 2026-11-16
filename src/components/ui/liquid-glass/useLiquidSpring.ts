@@ -5,6 +5,7 @@ export interface LiquidSpringState {
   dropletVelX: number;
   pressAmount: number;
   smoothTrigger: number;
+  colorTrigger: number;
   dropHalfW: number;
   dropHalfH: number;
 }
@@ -15,6 +16,7 @@ export function useLiquidSpring() {
     dropletVelX: 0,
     pressAmount: 0,
     smoothTrigger: 0,
+    colorTrigger: 0,
   });
 
   const step = (
@@ -42,30 +44,37 @@ export function useLiquidSpring() {
       }
     }
 
-    const pressRate = pressTarget > s.pressAmount ? 40 : 18;
+    const pressRate = pressTarget > s.pressAmount ? 48 : 22;
     s.pressAmount += (pressTarget - s.pressAmount) * Math.min(1, dt * pressRate);
 
-    // Couple uTrigger to active drag pressure, distance to target, and spring velocity:
+    // Couple triggers to active drag pressure, distance to target, and spring velocity:
     const distanceToTarget = Math.abs(targetX - s.dropletX);
     const distFactor = Math.min(1.0, distanceToTarget / Math.max(1, colW * 0.75));
     const velFactor = Math.min(1.0, Math.abs(s.dropletVelX) / 280.0);
     const travelEnergy = Math.max(velFactor, distFactor * 0.65);
 
     const rawTrigger = Math.min(1.0, Math.max(s.pressAmount, travelEnergy));
-    const triggerRate = rawTrigger > s.smoothTrigger ? 40 : 18;
-    s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * triggerRate);
 
-    // Resting: inset neatly inside dock (dropHalfH = dockH * 0.425 = 25.5px)
-    // Lifted (uTrigger -> 1): swells lifted droplet (+7px halfW, +8px halfH)
+    // Snappy size trigger: jumps quickly on press/glide
+    const sizeRate = rawTrigger > s.smoothTrigger ? 48 : 22;
+    s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * sizeRate);
+
+    // Slower color trigger: morphs gracefully between resting gray pill and crystal lens
+    const colorRate = rawTrigger > s.colorTrigger ? 12 : 10;
+    s.colorTrigger += (rawTrigger - s.colorTrigger) * Math.min(1, dt * colorRate);
+
+    // Resting: inset neatly inside dock (height ~50px on 60px dock, 4.8px padding)
+    // Lifted: expands vertically beyond dock bar (+7.2px top/bottom overhang, total height ~74px)
     const stretchX = Math.min(8.0, Math.abs(s.dropletVelX) * 0.015);
-    const dropHalfW = colW * 0.44 + s.smoothTrigger * 7.0 + stretchX;
-    const dropHalfH = dockH * 0.425 + s.smoothTrigger * 8.0;
+    const dropHalfW = colW * 0.44 + s.smoothTrigger * 7.5 + stretchX;
+    const dropHalfH = dockH * 0.42 + s.smoothTrigger * 12.0;
 
     return {
       dropletX: s.dropletX,
       dropletVelX: s.dropletVelX,
       pressAmount: s.pressAmount,
       smoothTrigger: s.smoothTrigger,
+      colorTrigger: s.colorTrigger,
       dropHalfW,
       dropHalfH,
     };

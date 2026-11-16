@@ -125,6 +125,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       'uDockRect',
       'uDropletRect',
       'uTrigger',
+      'uColorTrigger',
       'uRefraction',
       'uDispersion',
       'uRimStrength',
@@ -145,8 +146,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     let lastCanvasW = 0;
     let lastCanvasH = 0;
 
-    const padX = 18;
-    const padY = 18;
+    const padX = 20;
+    const padY = 20;
 
     const render = (now: number) => {
       if (!gl || !canvas || !dockShell) return;
@@ -259,6 +260,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         spring.dropHalfH
       );
       gl.uniform1f(uniforms.uTrigger, spring.smoothTrigger);
+      gl.uniform1f(uniforms.uColorTrigger, spring.colorTrigger);
 
       gl.uniform1f(uniforms.uRefraction, 1.55);
       gl.uniform1f(uniforms.uDispersion, 1.15);
@@ -422,7 +424,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="absolute -left-[18px] -right-[18px] -top-[18px] -bottom-[18px] w-[calc(100%+36px)] h-[calc(100%+36px)] pointer-events-none z-10"
+        className="absolute -left-[20px] -right-[20px] -top-[20px] -bottom-[20px] w-[calc(100%+40px)] h-[calc(100%+40px)] pointer-events-none z-10"
       />
 
       <div className="absolute inset-0 flex items-stretch z-20 pointer-events-auto">
