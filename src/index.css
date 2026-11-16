@@ -80,268 +80,97 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ============================================================
-   10 THEMES PALETTE SPECIFICATIONS (5 LIGHT + 5 DARK)
-   ============================================================ */
-
-/* [Light 1] 🌿 竹青素笺 (Sage Green - 浅绿专属，默认) */
+/* Themes Palette Specifications (5 Light + 5 Dark) */
 body.theme-sage, :root[data-theme="theme-sage"], .theme-sage {
-  --bg-base: #EEF4ED; --paper-base: #EEF4ED;
-  --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
-  --bg-sunken: #E1EBE0; --paper-sunken: #E1EBE0;
-  --bg-hover: #F2F7F1; --paper-hover: #F2F7F1;
-  --border-hairline: #CFDCD0; --rule-hairline: #CFDCD0;
-  --border-default: #B6C9B8; --rule-strong: #B6C9B8;
-  --border-strong: #96AD99;
-  --rule-margin: rgba(63, 130, 86, 0.24);
-  --grid-line: rgba(63, 130, 86, 0.13);
-  --ink-solid: #162419;
-  --ink-primary: #27382B;
-  --ink-secondary: #4E6352;
-  --ink-tertiary: #768C7B;
-  --ink-faint: #A4B7A8;
-  --color-accent: #3F8256;
-  --color-accent-bg: rgba(63, 130, 86, 0.10);
-  --theme-indicator: #3F8256;
+  --bg-base: #EEF4ED; --paper-base: #EEF4ED; --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
+  --bg-sunken: #E1EBE0; --paper-sunken: #E1EBE0; --bg-hover: #F2F7F1; --paper-hover: #F2F7F1;
+  --border-hairline: #CFDCD0; --rule-hairline: #CFDCD0; --border-default: #B6C9B8; --rule-strong: #B6C9B8;
+  --border-strong: #96AD99; --rule-margin: rgba(63, 130, 86, 0.24); --grid-line: rgba(63, 130, 86, 0.13);
+  --ink-solid: #162419; --ink-primary: #27382B; --ink-secondary: #4E6352; --ink-tertiary: #768C7B; --ink-faint: #A4B7A8;
+  --color-accent: #3F8256; --color-accent-bg: rgba(63, 130, 86, 0.10); --theme-indicator: #3F8256;
 }
 
-/* [Light 2] 📄 特种米白 (Cotton White - 经典暖白) */
 body.theme-cotton, :root[data-theme="theme-cotton"], .theme-cotton {
-  --bg-base: #F5F2EA; --paper-base: #F5F2EA;
-  --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
-  --bg-sunken: #ECE6D8; --paper-sunken: #ECE6D8;
-  --bg-hover: #FAF7F0; --paper-hover: #FAF7F0;
-  --border-hairline: #E1DBD0; --rule-hairline: #E1DBD0;
-  --border-default: #CDC6B8; --rule-strong: #CDC6B8;
-  --border-strong: #B3ABA0;
-  --rule-margin: rgba(206, 110, 92, 0.24);
-  --grid-line: rgba(165, 158, 145, 0.15);
-  --ink-solid: #1C1A17;
-  --ink-primary: #2B2824;
-  --ink-secondary: #5A554C;
-  --ink-tertiary: #878073;
-  --ink-faint: #B5AFA2;
-  --color-accent: #78634B;
-  --color-accent-bg: rgba(120, 99, 75, 0.09);
-  --theme-indicator: #78634B;
+  --bg-base: #F5F2EA; --paper-base: #F5F2EA; --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
+  --bg-sunken: #ECE6D8; --paper-sunken: #ECE6D8; --bg-hover: #FAF7F0; --paper-hover: #FAF7F0;
+  --border-hairline: #E1DBD0; --rule-hairline: #E1DBD0; --border-default: #CDC6B8; --rule-strong: #CDC6B8;
+  --border-strong: #B3ABA0; --rule-margin: rgba(206, 110, 92, 0.24); --grid-line: rgba(165, 158, 145, 0.15);
+  --ink-solid: #1C1A17; --ink-primary: #2B2824; --ink-secondary: #5A554C; --ink-tertiary: #878073; --ink-faint: #B5AFA2;
+  --color-accent: #78634B; --color-accent-bg: rgba(120, 99, 75, 0.09); --theme-indicator: #78634B;
 }
 
-/* [Light 3] 📜 复古牛皮 (Kraft Vellum - 暖黄牛皮纸) */
 body.theme-kraft, :root[data-theme="theme-kraft"], .theme-kraft {
-  --bg-base: #EFE5D4; --paper-base: #EFE5D4;
-  --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
-  --bg-sunken: #E4D7C2; --paper-sunken: #E4D7C2;
-  --bg-hover: #F7F0E3; --paper-hover: #F7F0E3;
-  --border-hairline: #DCD0BD; --rule-hairline: #DCD0BD;
-  --border-default: #C4B59E; --rule-strong: #C4B59E;
-  --border-strong: #A89880;
-  --rule-margin: rgba(186, 110, 56, 0.26);
-  --grid-line: rgba(186, 110, 56, 0.12);
-  --ink-solid: #241C14;
-  --ink-primary: #382D22;
-  --ink-secondary: #635444;
-  --ink-tertiary: #8E7D6A;
-  --ink-faint: #B8A896;
-  --color-accent: #BA6E38;
-  --color-accent-bg: rgba(186, 110, 56, 0.10);
-  --theme-indicator: #BA6E38;
+  --bg-base: #EFE5D4; --paper-base: #EFE5D4; --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
+  --bg-sunken: #E4D7C2; --paper-sunken: #E4D7C2; --bg-hover: #F7F0E3; --paper-hover: #F7F0E3;
+  --border-hairline: #DCD0BD; --rule-hairline: #DCD0BD; --border-default: #C4B59E; --rule-strong: #C4B59E;
+  --border-strong: #A89880; --rule-margin: rgba(186, 110, 56, 0.26); --grid-line: rgba(186, 110, 56, 0.12);
+  --ink-solid: #241C14; --ink-primary: #382D22; --ink-secondary: #635444; --ink-tertiary: #8E7D6A; --ink-faint: #B8A896;
+  --color-accent: #BA6E38; --color-accent-bg: rgba(186, 110, 56, 0.10); --theme-indicator: #BA6E38;
 }
 
-/* [Light 4] 🌊 雾霭蓝卡 (Mist Blue - 灰蓝水彩纸) */
 body.theme-mist, :root[data-theme="theme-mist"], .theme-mist {
-  --bg-base: #E7EFF5; --paper-base: #E7EFF5;
-  --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
-  --bg-sunken: #D6E3EE; --paper-sunken: #D6E3EE;
-  --bg-hover: #EFF5F9; --paper-hover: #EFF5F9;
-  --border-hairline: #CFDCE8; --rule-hairline: #CFDCE8;
-  --border-default: #B4C6D6; --rule-strong: #B4C6D6;
-  --border-strong: #96ACBE;
-  --rule-margin: rgba(61, 114, 153, 0.25);
-  --grid-line: rgba(61, 114, 153, 0.12);
-  --ink-solid: #14202B;
-  --ink-primary: #253443;
-  --ink-secondary: #4D5E70;
-  --ink-tertiary: #77899C;
-  --ink-faint: #A5B6C7;
-  --color-accent: #3D7299;
-  --color-accent-bg: rgba(61, 114, 153, 0.10);
-  --theme-indicator: #3D7299;
+  --bg-base: #E7EFF5; --paper-base: #E7EFF5; --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
+  --bg-sunken: #D6E3EE; --paper-sunken: #D6E3EE; --bg-hover: #EFF5F9; --paper-hover: #EFF5F9;
+  --border-hairline: #CFDCE8; --rule-hairline: #CFDCE8; --border-default: #B4C6D6; --rule-strong: #B4C6D6;
+  --border-strong: #96ACBE; --rule-margin: rgba(61, 114, 153, 0.25); --grid-line: rgba(61, 114, 153, 0.12);
+  --ink-solid: #14202B; --ink-primary: #253443; --ink-secondary: #4D5E70; --ink-tertiary: #77899C; --ink-faint: #A5B6C7;
+  --color-accent: #3D7299; --color-accent-bg: rgba(61, 114, 153, 0.10); --theme-indicator: #3D7299;
 }
 
-/* [Light 5] 🌸 樱落绯灰 (Cherry Ash - 柔粉灰纸) */
 body.theme-cherry, :root[data-theme="theme-cherry"], .theme-cherry {
-  --bg-base: #F6ECEE; --paper-base: #F6ECEE;
-  --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
-  --bg-sunken: #EAD8DC; --paper-sunken: #EAD8DC;
-  --bg-hover: #FAF1F3; --paper-hover: #FAF1F3;
-  --border-hairline: #E2D3D6; --rule-hairline: #E2D3D6;
-  --border-default: #CBB9BD; --rule-strong: #CBB9BD;
-  --border-strong: #B09B9F;
-  --rule-margin: rgba(172, 73, 94, 0.25);
-  --grid-line: rgba(172, 73, 94, 0.12);
-  --ink-solid: #2B181C;
-  --ink-primary: #40282D;
-  --ink-secondary: #6B4E54;
-  --ink-tertiary: #96777E;
-  --ink-faint: #C0A4AA;
-  --color-accent: #AC495E;
-  --color-accent-bg: rgba(172, 73, 94, 0.10);
-  --theme-indicator: #AC495E;
+  --bg-base: #F6ECEE; --paper-base: #F6ECEE; --bg-surface: #FFFFFF; --paper-sheet: #FFFFFF;
+  --bg-sunken: #EAD8DC; --paper-sunken: #EAD8DC; --bg-hover: #FAF1F3; --paper-hover: #FAF1F3;
+  --border-hairline: #E2D3D6; --rule-hairline: #E2D3D6; --border-default: #CBB9BD; --rule-strong: #CBB9BD;
+  --border-strong: #B09B9F; --rule-margin: rgba(172, 73, 94, 0.25); --grid-line: rgba(172, 73, 94, 0.12);
+  --ink-solid: #2B181C; --ink-primary: #40282D; --ink-secondary: #6B4E54; --ink-tertiary: #96777E; --ink-faint: #C0A4AA;
+  --color-accent: #AC495E; --color-accent-bg: rgba(172, 73, 94, 0.10); --theme-indicator: #AC495E;
 }
 
-/* ============================================================
-   DARK THEMES (5 STYLES)
-   ============================================================ */
-
-/* [Dark 1] 🌑 复写碳纸 (Carbon Paper - 默认深色) */
-.dark,
-body.theme-carbon,
-:root[data-theme="theme-carbon"],
-.theme-carbon {
-  --bg-base: #141311;
-  --bg-surface: #22211D;
-  --bg-sunken: #1A1916;
-  --bg-hover: #2B2924;
-  --paper-base: #141311;
-  --paper-sheet: #22211D;
-  --paper-sunken: #1A1916;
-  --paper-hover: #2B2924;
-
-  --grid-line: rgba(145, 140, 128, 0.16);
-  --grid-size: 26px;
-
-  --border-hairline: #38352E;
-  --border-default: #4F4B41;
-  --border-strong: #6B6559;
-  --rule-hairline: #38352E;
-  --rule-strong: #4F4B41;
-  --rule-margin: rgba(220, 115, 95, 0.22);
-
-  --ink-solid: #EDE9E1;
-  --ink-primary: #DAD5CB;
-  --ink-secondary: #9E978B;
-  --ink-tertiary: #6E685D;
-  --ink-faint: #47433B;
-
-  --color-accent: #B5935A;
-  --color-accent-bg: rgba(181, 147, 90, 0.14);
-  --theme-indicator: #B5935A;
+/* Dark Themes */
+.dark, body.theme-carbon, :root[data-theme="theme-carbon"], .theme-carbon {
+  --bg-base: #141311; --bg-surface: #22211D; --bg-sunken: #1A1916; --bg-hover: #2B2924;
+  --paper-base: #141311; --paper-sheet: #22211D; --paper-sunken: #1A1916; --paper-hover: #2B2924;
+  --grid-line: rgba(145, 140, 128, 0.16); --grid-size: 26px;
+  --border-hairline: #38352E; --border-default: #4F4B41; --border-strong: #6B6559;
+  --rule-hairline: #38352E; --rule-strong: #4F4B41; --rule-margin: rgba(220, 115, 95, 0.22);
+  --ink-solid: #EDE9E1; --ink-primary: #DAD5CB; --ink-secondary: #9E978B; --ink-tertiary: #6E685D; --ink-faint: #47433B;
+  --color-accent: #B5935A; --color-accent-bg: rgba(181, 147, 90, 0.14); --theme-indicator: #B5935A;
 }
 
-/* [Dark 2] 🌌 古法靛蓝 (Indigo Night - 黛蓝染纸) */
-body.theme-indigo,
-:root[data-theme="theme-indigo"],
-.theme-indigo {
-  --bg-base: #0E131C;
-  --bg-surface: #1A2434;
-  --bg-sunken: #121822;
-  --bg-hover: #222E42;
-  --paper-base: #0E131C;
-  --paper-sheet: #1A2434;
-  --paper-sunken: #121822;
-  --paper-hover: #222E42;
-  --border-hairline: #2B3C53;
-  --border-default: #3E5474;
-  --border-strong: #547098;
-  --rule-hairline: #2B3C53;
-  --rule-strong: #3E5474;
-  --rule-margin: rgba(92, 143, 179, 0.25);
-  --grid-line: rgba(92, 143, 179, 0.15);
-  --ink-solid: #E5EDF7;
-  --ink-primary: #CAD6E6;
-  --ink-secondary: #8799B0;
-  --ink-tertiary: #5D6E82;
-  --ink-faint: #3F4D5E;
-  --color-accent: #5289B3;
-  --color-accent-bg: rgba(82, 137, 179, 0.12);
-  --theme-indicator: #5289B3;
+body.theme-indigo, :root[data-theme="theme-indigo"], .theme-indigo {
+  --bg-base: #0E131C; --bg-surface: #1A2434; --bg-sunken: #121822; --bg-hover: #222E42;
+  --paper-base: #0E131C; --paper-sheet: #1A2434; --paper-sunken: #121822; --paper-hover: #222E42;
+  --border-hairline: #2B3C53; --border-default: #3E5474; --border-strong: #547098;
+  --rule-hairline: #2B3C53; --rule-strong: #3E5474; --rule-margin: rgba(92, 143, 179, 0.25); --grid-line: rgba(92, 143, 179, 0.15);
+  --ink-solid: #E5EDF7; --ink-primary: #CAD6E6; --ink-secondary: #8799B0; --ink-tertiary: #5D6E82; --ink-faint: #3F4D5E;
+  --color-accent: #5289B3; --color-accent-bg: rgba(82, 137, 179, 0.12); --theme-indicator: #5289B3;
 }
 
-/* [Dark 3] ☕ 深焙浓缩 (Espresso Dark - 深烘焙暖褐) */
-body.theme-espresso,
-:root[data-theme="theme-espresso"],
-.theme-espresso {
-  --bg-base: #14100D;
-  --bg-surface: #251E19;
-  --bg-sunken: #1A1411;
-  --bg-hover: #302721;
-  --paper-base: #14100D;
-  --paper-sheet: #251E19;
-  --paper-sunken: #1A1411;
-  --paper-hover: #302721;
-  --border-hairline: #40332B;
-  --border-default: #57463B;
-  --border-strong: #725C4F;
-  --rule-hairline: #40332B;
-  --rule-strong: #57463B;
-  --rule-margin: rgba(186, 110, 56, 0.24);
-  --grid-line: rgba(204, 129, 75, 0.15);
-  --ink-solid: #EFE9E4;
-  --ink-primary: #DDD4CD;
-  --ink-secondary: #A0938A;
-  --ink-tertiary: #71645B;
-  --ink-faint: #4A4038;
-  --color-accent: #CC814B;
-  --color-accent-bg: rgba(204, 129, 75, 0.12);
-  --theme-indicator: #CC814B;
+body.theme-espresso, :root[data-theme="theme-espresso"], .theme-espresso {
+  --bg-base: #14100D; --bg-surface: #251E19; --bg-sunken: #1A1411; --bg-hover: #302721;
+  --paper-base: #14100D; --paper-sheet: #251E19; --paper-sunken: #1A1411; --paper-hover: #302721;
+  --border-hairline: #40332B; --border-default: #57463B; --border-strong: #725C4F;
+  --rule-hairline: #40332B; --rule-strong: #57463B; --rule-margin: rgba(186, 110, 56, 0.24); --grid-line: rgba(204, 129, 75, 0.15);
+  --ink-solid: #EFE9E4; --ink-primary: #DDD4CD; --ink-secondary: #A0938A; --ink-tertiary: #71645B; --ink-faint: #4A4038;
+  --color-accent: #CC814B; --color-accent-bg: rgba(204, 129, 75, 0.12); --theme-indicator: #CC814B;
 }
 
-/* [Dark 4] 🏛️ 黑曜石金 (Obsidian Brass - 极简黑金纸) */
-body.theme-obsidian,
-:root[data-theme="theme-obsidian"],
-.theme-obsidian {
-  --bg-base: #0B0B0B;
-  --bg-surface: #1C1C1C;
-  --bg-sunken: #121212;
-  --bg-hover: #272727;
-  --paper-base: #0B0B0B;
-  --paper-sheet: #1C1C1C;
-  --paper-sunken: #121212;
-  --paper-hover: #272727;
-  --border-hairline: #333333;
-  --border-default: #4A4A4A;
-  --border-strong: #666666;
-  --rule-hairline: #333333;
-  --rule-strong: #4A4A4A;
-  --rule-margin: rgba(199, 167, 110, 0.28);
-  --grid-line: rgba(199, 167, 110, 0.15);
-  --ink-solid: #F5F3EF;
-  --ink-primary: #E0DDD7;
-  --ink-secondary: #A4A19B;
-  --ink-tertiary: #706D67;
-  --ink-faint: #474540;
-  --color-accent: #C7A76E;
-  --color-accent-bg: rgba(199, 167, 110, 0.14);
-  --theme-indicator: #C7A76E;
+body.theme-obsidian, :root[data-theme="theme-obsidian"], .theme-obsidian {
+  --bg-base: #0B0B0B; --bg-surface: #1C1C1C; --bg-sunken: #121212; --bg-hover: #272727;
+  --paper-base: #0B0B0B; --paper-sheet: #1C1C1C; --paper-sunken: #121212; --paper-hover: #272727;
+  --border-hairline: #333333; --border-default: #4A4A4A; --border-strong: #666666;
+  --rule-hairline: #333333; --rule-strong: #4A4A4A; --rule-margin: rgba(199, 167, 110, 0.28); --grid-line: rgba(199, 167, 110, 0.15);
+  --ink-solid: #F5F3EF; --ink-primary: #E0DDD7; --ink-secondary: #A4A19B; --ink-tertiary: #706D67; --ink-faint: #474540;
+  --color-accent: #C7A76E; --color-accent-bg: rgba(199, 167, 110, 0.14); --theme-indicator: #C7A76E;
 }
 
-/* [Dark 5] 🌲 幽林松柏 (Forest Pine - 暗绿苔原) */
-body.theme-pine,
-:root[data-theme="theme-pine"],
-.theme-pine {
-  --bg-base: #0C140E;
-  --bg-surface: #19271E;
-  --bg-sunken: #111C15;
-  --bg-hover: #223529;
-  --paper-base: #0C140E;
-  --paper-sheet: #19271E;
-  --paper-sunken: #111C15;
-  --paper-hover: #223529;
-  --border-hairline: #2A4233;
-  --border-default: #3C5B47;
-  --border-strong: #50775F;
-  --rule-hairline: #2A4233;
-  --rule-strong: #3C5B47;
-  --rule-margin: rgba(82, 158, 108, 0.25);
-  --grid-line: rgba(82, 158, 108, 0.15);
-  --ink-solid: #E4EDE7;
-  --ink-primary: #CCD9CF;
-  --ink-secondary: #899E90;
-  --ink-tertiary: #5E7264;
-  --ink-faint: #3F4F45;
-  --color-accent: #529E6C;
-  --color-accent-bg: rgba(82, 158, 108, 0.12);
-  --theme-indicator: #529E6C;
+body.theme-pine, :root[data-theme="theme-pine"], .theme-pine {
+  --bg-base: #0C140E; --bg-surface: #19271E; --bg-sunken: #111C15; --bg-hover: #223529;
+  --paper-base: #0C140E; --paper-sheet: #19271E; --paper-sunken: #111C15; --paper-hover: #223529;
+  --border-hairline: #2A4233; --border-default: #3C5B47; --border-strong: #50775F;
+  --rule-hairline: #2A4233; --rule-strong: #3C5B47; --rule-margin: rgba(82, 158, 108, 0.25); --grid-line: rgba(82, 158, 108, 0.15);
+  --ink-solid: #E4EDE7; --ink-primary: #CCD9CF; --ink-secondary: #899E90; --ink-tertiary: #5E7264; --ink-faint: #3F4F45;
+  --color-accent: #529E6C; --color-accent-bg: rgba(82, 158, 108, 0.12); --theme-indicator: #529E6C;
 }
 
 * {
@@ -382,9 +211,7 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
-/* ============================================================
-   PAPER PHYSICAL SHADERS & STATIONERY MATERIALS
-   ============================================================ */
+/* Paper Physical Shaders & Stationery Materials */
 
 /* 全局轻量 SVG 纸浆微噪点漫反射滤镜 */
 .paper-grain,
@@ -597,9 +424,7 @@ body {
   border-radius: 0 0 5px 5px;
 }
 
-/* ============================================================
-   ANIMATIONS & SCROLLBAR
-   ============================================================ */
+/* Animations & Scrollbar */
 
 /* 新入账水墨微渗透动效 */
 @keyframes freshInk {
@@ -673,4 +498,93 @@ body {
 
 .main-scroll-content::-webkit-scrollbar-thumb:hover {
   background-color: var(--border-strong);
+}
+
+/* ============================================================
+   MODERN GLASS SPATIAL DESIGN TOKENS ([data-ui-style="modern"])
+   ============================================================ */
+
+[data-ui-style="modern"] {
+  --paper-base: transparent;
+  --bg-base: transparent;
+  --paper-sheet: rgba(255, 255, 255, 0.84);
+  --paper-sunken: rgba(246, 247, 251, 0.90);
+  --border-hairline: rgba(15, 23, 42, 0.08);
+  --rule-hairline: rgba(15, 23, 42, 0.08);
+  --border-default: rgba(15, 23, 42, 0.12);
+  --rule-strong: rgba(15, 23, 42, 0.12);
+  --shadow-sm: 0 4px 12px -2px rgba(20, 28, 56, 0.05);
+  --shadow-md: 0 8px 24px -6px rgba(20, 28, 56, 0.06);
+  --radius-xs: 6px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 22px;
+}
+
+[data-ui-style="modern"].dark,
+.dark[data-ui-style="modern"],
+[data-ui-style="modern"] .dark,
+html[data-ui-style="modern"].dark body {
+  --paper-sheet: rgba(28, 31, 46, 0.82);
+  --paper-sunken: rgba(38, 42, 62, 0.78);
+  --border-hairline: rgba(255, 255, 255, 0.09);
+  --rule-hairline: rgba(255, 255, 255, 0.09);
+  --border-default: rgba(255, 255, 255, 0.14);
+  --rule-strong: rgba(255, 255, 255, 0.14);
+  --shadow-sm: 0 6px 16px -3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
+}
+
+[data-ui-style="modern"] body,
+body[data-ui-style="modern"] {
+  background: radial-gradient(circle at 20% 0%, #e4ecff 0%, #f4f3f8 55%);
+  background-attachment: fixed;
+}
+
+[data-ui-style="modern"].dark body,
+body[data-ui-style="modern"].dark,
+.dark[data-ui-style="modern"] body,
+.dark body[data-ui-style="modern"] {
+  background: radial-gradient(circle at 20% 0%, #161b30 0%, #0d0f17 55%);
+  background-attachment: fixed;
+}
+
+[data-ui-style="modern"] .dot-grid,
+[data-ui-style="modern"] .grid-layer,
+[data-ui-style="modern"] .paper-grain,
+[data-ui-style="modern"] .paper-pulp-grain,
+[data-ui-style="modern"] .washi-tape,
+[data-ui-style="modern"] .paper-deckle-bottom::after,
+[data-ui-style="modern"] .paper-deckle::after,
+[data-ui-style="modern"] .paper-sawtooth-top::before,
+[data-ui-style="modern"] .brass-clip,
+[data-ui-style="modern"] .brass-paperclip,
+[data-ui-style="modern"] .corner-lift-shadow::before {
+  display: none !important;
+}
+
+[data-ui-style="modern"] .real-stamp,
+[data-ui-style="modern"] .paper-stamp {
+  transform: none !important;
+  border-radius: 9999px !important;
+  font-family: inherit !important;
+  border-width: 1px !important;
+  letter-spacing: normal !important;
+  padding: 1px 8px !important;
+}
+
+[data-ui-style="modern"] .real-stamp::after,
+[data-ui-style="modern"] .paper-stamp::after {
+  display: none !important;
+}
+
+[data-ui-style="modern"] .font-serif,
+[data-ui-style="modern"] .font-serif-display {
+  font-family: 'Plus Jakarta Sans', 'Geist', -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif !important;
+  letter-spacing: -0.02em;
+}
+
+[data-ui-style="modern"] .font-mono {
+  font-family: 'Plus Jakarta Sans', 'Geist', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-variant-numeric: tabular-nums;
 }

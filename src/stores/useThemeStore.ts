@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type UiStyle = 'paper' | 'modern';
+
 export interface ThemeOption {
   id: string;
   name: string;
@@ -23,6 +25,14 @@ export const THEME_OPTIONS: ThemeOption[] = [
 ];
 
 const THEME_STORAGE_KEY = 'hamsterstash_theme_v4';
+const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
+
+const applyUiStyleToDOM = (uiStyle: UiStyle) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.uiStyle = uiStyle;
+    document.body.dataset.uiStyle = uiStyle;
+  }
+};
 
 const applyThemeToDOM = (themeId: string) => {
   const theme = THEME_OPTIONS.find((t) => t.id === themeId) || THEME_OPTIONS[0];
@@ -52,28 +62,45 @@ const getInitialTheme = (): string => {
       return saved;
     }
   } catch {
-      void 0;
-    }
+    void 0;
+  }
   return 'theme-sage';
+};
+
+const getInitialUiStyle = (): UiStyle => {
+  try {
+    const saved = localStorage.getItem(UI_STYLE_STORAGE_KEY);
+    if (saved === 'modern' || saved === 'paper') {
+      return saved;
+    }
+  } catch {
+    void 0;
+  }
+  return 'paper';
 };
 
 interface ThemeState {
   currentThemeId: string;
+  uiStyle: UiStyle;
   isDark: boolean;
   setTheme: (themeId: string) => void;
+  setUiStyle: (style: UiStyle) => void;
   toggleDark: () => void;
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => {
   const initialThemeId = getInitialTheme();
   const initialTheme = THEME_OPTIONS.find((t) => t.id === initialThemeId) || THEME_OPTIONS[0];
+  const initialUiStyle = getInitialUiStyle();
 
   if (typeof document !== 'undefined') {
     applyThemeToDOM(initialThemeId);
+    applyUiStyleToDOM(initialUiStyle);
   }
 
   return {
     currentThemeId: initialThemeId,
+    uiStyle: initialUiStyle,
     isDark: initialTheme.isDark,
 
     setTheme: (themeId: string) => {
@@ -84,13 +111,23 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       try {
         localStorage.setItem(THEME_STORAGE_KEY, theme.id);
       } catch {
-      void 0;
-    }
+        void 0;
+      }
 
       set({
         currentThemeId: theme.id,
         isDark: theme.isDark,
       });
+    },
+
+    setUiStyle: (style: UiStyle) => {
+      applyUiStyleToDOM(style);
+      try {
+        localStorage.setItem(UI_STYLE_STORAGE_KEY, style);
+      } catch {
+        void 0;
+      }
+      set({ uiStyle: style });
     },
 
     toggleDark: () => {

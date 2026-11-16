@@ -15,7 +15,9 @@ import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 import { toast } from '../../stores/useToastStore';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { ThemeSelector } from '../ui/ThemeSelector';
+import { SegToggle } from '../ui/SegToggle';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
@@ -37,6 +39,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const { loadAccounts } = useAccountStore();
   const { loadMonth } = useLedgerStore();
   const { loadCategories } = useCategoryStore();
+  const { uiStyle, setUiStyle } = useThemeStore();
 
   const enabledPlugins = usePluginUIStore((s) => s.enabledPlugins);
   const plugins = pluginManager.getPlugins();
@@ -126,7 +129,23 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   return (
     <div className="space-y-3.5 mb-8 select-none">
       <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider">
-        <span>主题</span>
+        <span>外观风格</span>
+      </div>
+
+      <div className="p-1.5 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+        <SegToggle
+          options={[
+            { value: 'paper', label: '手帐拟物' },
+            { value: 'modern', label: '空间玻璃' },
+          ]}
+          value={uiStyle}
+          onChange={setUiStyle}
+          size="sm"
+        />
+      </div>
+
+      <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1">
+        <span>配色主题</span>
       </div>
 
       <div className="p-3 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
