@@ -55,11 +55,11 @@ export function useLiquidSpring() {
     const triggerRate = rawTrigger > s.smoothTrigger ? 24 : 10;
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * triggerRate);
 
-    // Resting: inset neatly inside dock (4.5px vertical padding: dropHalfH = dockH * 0.425 = 25.5px)
-    // Lifted (uTrigger -> 1): expands vertically beyond dock (+5.5px overhang: dropHalfH = 35.5px)
+    // Resting: inset neatly inside dock (dropHalfH = dockH * 0.425 = 25.5px)
+    // Lifted (uTrigger -> 1): expands lifted droplet (+6px halfW, +7px halfH)
     const stretchX = Math.min(8.0, Math.abs(s.dropletVelX) * 0.015);
-    const dropHalfW = colW * 0.44 + s.smoothTrigger * 7.0 + stretchX;
-    const dropHalfH = dockH * 0.425 + s.smoothTrigger * 10.0;
+    const dropHalfW = colW * 0.44 + s.smoothTrigger * 6.0 + stretchX;
+    const dropHalfH = dockH * 0.425 + s.smoothTrigger * 7.0;
 
     return {
       dropletX: s.dropletX,

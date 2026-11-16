@@ -33,7 +33,7 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec2 clampedUV = clamp(uv, 0.002, 0.998);
     vec2 pSample = clampedUV * uCanvasSize;
     float dSample = sdRoundBox(pSample - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
-    float insideDrop = 1.0 - smoothstep(-0.75, 0.75, dSample);
+    float insideDrop = 1.0 - smoothstep(-1.6, 1.6, dSample);
 
     vec4 inactiveGlyph = texture2D(uInactiveTex, clampedUV);
     vec4 activeGlyph = texture2D(uActiveTex, clampedUV);
@@ -44,42 +44,37 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec2 p = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y) / uDpr;
     vec2 baseUV = p / uCanvasSize;
 
-    float dDock = sdRoundBox(p - uDockRect.xy, uDockRect.zw, uDockRect.w);
+    // 1. Whole-Dock Expansion (+1.5px swell when pressed/lifted)
+    vec2 dockHalfSize = uDockRect.zw + vec2(1.5, 1.5) * uTrigger;
+    float dDock = sdRoundBox(p - uDockRect.xy, dockHalfSize, dockHalfSize.y);
     float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
 
     float dockMask = 1.0 - smoothstep(-0.75, 0.75, dDock);
     float dropMask = 1.0 - smoothstep(-0.75, 0.75, dDrop);
 
-    // 1. Ambient Drop Shadow around Outer Dock Capsule
+    // 2. Ultra-Light Ambient Elevation Diffusion (No dark halo or black ring)
+    vec3 shadowCol = vec3(0.059, 0.090, 0.165);
     float dockShadowRadius = 14.0;
-    float dockShadowAlpha = smoothstep(dockShadowRadius, 0.0, dDock) * (uDark > 0.5 ? 0.35 : 0.08);
-    vec3 dockShadowCol = uDark > 0.5 ? vec3(0.01, 0.01, 0.02) : vec3(0.12, 0.15, 0.22);
+    float dockShadowAlpha = smoothstep(dockShadowRadius, 0.0, dDock) * mix(uDark > 0.5 ? 0.16 : 0.05, uDark > 0.5 ? 0.30 : 0.09, uTrigger);
 
-    // 2. Diffused Elevation Shadow cast by Lifted Droplet Lens (uTrigger > 0)
-    float dropShadowRadius = mix(6.0, 18.0, uTrigger);
-    float dropShadowStrength = mix(0.0, uDark > 0.5 ? 0.45 : 0.12, uTrigger);
-    float dropShadowAlpha = smoothstep(dropShadowRadius, 0.0, dDrop) * dropShadowStrength;
-    vec3 dropShadowCol = uDark > 0.5 ? vec3(0.01, 0.01, 0.02) : vec3(0.0, 0.0, 0.0);
+    float dropShadowRadius = mix(4.0, 16.0, uTrigger);
+    float dropShadowAlpha = smoothstep(dropShadowRadius, 0.0, dDrop) * mix(0.0, uDark > 0.5 ? 0.32 : 0.10, uTrigger);
 
-    // 3. Outer Dock Capsule: pure luminous white (#FAFAFC / #1C1D22) + subtle glass rim sheen
-    vec3 dockBase = uDark > 0.5 ? vec3(0.110, 0.114, 0.133) : vec3(0.992, 0.994, 0.998);
+    // 3. Whole-Dock Surface: Resting cool-gray (#ECEEF3 / #18191F) -> Swelled Pure White Luminous Sheen
+    vec3 dockBgRest = uDark > 0.5 ? vec3(0.094, 0.098, 0.122) : vec3(0.925, 0.933, 0.953);
+    vec3 dockBgTriggered = uDark > 0.5 ? vec3(0.137, 0.145, 0.173) : vec3(1.0, 1.0, 1.0);
+    vec3 dockBase = mix(dockBgRest, dockBgTriggered, uTrigger * 0.85);
 
     float dockInward = max(0.0, -dDock);
     vec2 dockRel = p - uDockRect.xy;
-    vec2 dockB = uDockRect.zw - uDockRect.w;
+    vec2 dockB = dockHalfSize - dockHalfSize.y;
     vec2 dockQ = abs(dockRel) - dockB;
     vec2 dockOutNormal = normalize(sign(dockRel) * max(dockQ, 0.0) + vec2(1e-5));
-    float dockTopSheen = max(-dockOutNormal.y, 0.0) * smoothstep(3.5, 0.5, dockInward) * (uDark > 0.5 ? 0.09 : 0.05);
-    float dockBotSheen = max(dockOutNormal.y, 0.0) * smoothstep(2.5, 0.5, dockInward) * (uDark > 0.5 ? 0.05 : 0.025);
+    float dockTopSheen = max(-dockOutNormal.y, 0.0) * smoothstep(3.5, 0.5, dockInward) * (uDark > 0.5 ? 0.09 : 0.06);
+    float dockBotSheen = max(dockOutNormal.y, 0.0) * smoothstep(2.5, 0.5, dockInward) * (uDark > 0.5 ? 0.05 : 0.03);
     vec3 dockSurface = dockBase + vec3(dockTopSheen + dockBotSheen);
 
-    // Crisp 1px structural hairline border around dock
-    float dockBorderMask = 1.0 - smoothstep(0.0, 1.0, abs(dDock));
-    vec3 dockBorderCol = uDark > 0.5 ? vec3(1.0, 1.0, 1.0) : vec3(0.0, 0.0, 0.0);
-    float dockBorderAlpha = dockBorderMask * (uDark > 0.5 ? 0.12 : 0.08);
-    dockSurface = mix(dockSurface, dockBorderCol, dockBorderAlpha);
-
-    // 4. Droplet Capsule Outward Normal and Geometry
+    // 4. Droplet Capsule Outward Normal
     float distInward = max(0.0, -dDrop);
     vec2 rel = p - uDropletRect.xy;
     vec2 b = uDropletRect.zw - uDropletRect.w;
@@ -89,22 +84,18 @@ export const FRAGMENT_SHADER_SOURCE = `
       outNormal = abs(q.x) > abs(q.y) ? vec2(sign(rel.x), 0.0) : vec2(0.0, sign(rel.y));
     }
 
-    // 5. Gentle Optical Magnification (~1.05x UV pull) & Smooth Low-Frequency Edge Dispersion
+    // 5. Smooth 15px Edge Meniscus Refraction & Gentle 1.06x Center Magnification
     vec2 dropCenterUV = uDropletRect.xy / uCanvasSize;
     vec2 deltaUV = baseUV - dropCenterUV;
-    vec2 magOffset = -deltaUV * (0.048 * uTrigger);
+    vec2 magOffset = -deltaUV * (0.057 * uTrigger);
 
-    float bevelWidth = 7.0;
-    float bevelNorm = clamp(1.0 - distInward / bevelWidth, 0.0, 1.0);
-    float bevelCurve = pow(bevelNorm, 1.6);
+    float rimWidth = 15.0;
+    float meniscusCurve = pow(clamp(1.0 - distInward / rimWidth, 0.0, 1.0), 1.85);
 
-    float activeRefract = uRefraction * uTrigger;
-    float activeDisp = uDispersion * uTrigger;
+    vec2 refractOffset = outNormal * (meniscusCurve * 0.052 * uTrigger) - (rel / uDropletRect.zw) * (0.022 * uTrigger) + magOffset;
+    vec2 dispShift = outNormal * (meniscusCurve * 0.020 * uTrigger);
 
-    vec2 refractOffset = outNormal * (bevelCurve * 0.024 * activeRefract) + magOffset;
-    vec2 dispShift = outNormal * (bevelCurve * 0.008 * activeDisp);
-
-    // 6. Glyph Sampling (Inactive / Active) with gentle dispersion
+    // 6. Glyph Sampling (Inactive / Active) with dispersion
     float glyphR = sampleGlyphs(baseUV + refractOffset + dispShift).r;
     vec4 glyphCenter = sampleGlyphs(baseUV + refractOffset);
     float glyphG = glyphCenter.g;
@@ -112,78 +103,55 @@ export const FRAGMENT_SHADER_SOURCE = `
     float glyphAlpha = glyphCenter.a;
     vec3 glyphRgb = vec3(glyphR, glyphG, glyphB);
 
-    // 7. Droplet Surface Color Morph: Flat Cool-Gray (#E6E7EC / #2C2D35) -> Crystal White Lens (#FFFFFF / #262834)
-    vec3 restingPillCol = uDark > 0.5 ? vec3(0.173, 0.176, 0.208) : vec3(0.902, 0.906, 0.925);
-    vec3 liftedLensCol = uDark > 0.5 ? vec3(0.149, 0.157, 0.204) : vec3(1.0, 1.0, 1.0);
+    // 7. Droplet Surface: Flat Cool-Gray (#DFE2EA / #262832) -> Pure White Lens
+    vec3 restingPillCol = uDark > 0.5 ? vec3(0.149, 0.157, 0.196) : vec3(0.875, 0.886, 0.918);
+    vec3 liftedLensCol = uDark > 0.5 ? vec3(0.157, 0.165, 0.208) : vec3(1.0, 1.0, 1.0);
     vec3 dropletSurface = mix(restingPillCol, liftedLensCol, uTrigger);
 
-    // 8. 3D Curved Bevel Meniscus Optics along Top & Bottom Arcs (pow(abs(outNormal.y), 1.35))
-    float yFactor = pow(max(abs(outNormal.y), 0.0), 1.35);
-    float xFactor = pow(max(abs(outNormal.x), 0.0), 1.6);
+    // 8. Directional Anisotropic Rim Lighting (Four Sided)
+    float topWeight = pow(max(-outNormal.y, 0.0), 1.6);
+    float botWeight = pow(max(outNormal.y, 0.0), 1.8);
+    float sideWeight = pow(max(abs(outNormal.x), 0.0), 1.7);
 
-    // A. Outer Specular Edge (0 - 1.5px)
-    float topKey = max(-outNormal.y, 0.0);
-    float botBounce = max(outNormal.y, 0.0);
-    float arcWeight = topKey * 0.85 + botBounce * 0.35;
-    float outerSpecBand = smoothstep(1.8, 0.2, distInward) * smoothstep(0.0, 0.4, distInward);
-    float outerSpec = outerSpecBand * yFactor * arcWeight * (0.35 + 0.65 * uTrigger);
-    vec3 outerSpecCol = uDark > 0.5 ? vec3(0.92, 0.95, 1.0) : vec3(1.0, 1.0, 1.0);
+    // A. Top & Bottom Specular Highlights (outer 4.5px rim)
+    float specBand = smoothstep(4.5, 0.0, distInward) * smoothstep(0.0, 0.3, distInward);
+    float specIntensity = specBand * (1.0 - sideWeight) * (topWeight * 0.85 + botWeight * 0.48) * (0.30 + 0.70 * uTrigger);
+    vec3 specCol = uDark > 0.5 ? vec3(0.92, 0.95, 1.0) : vec3(1.0, 1.0, 1.0);
+    dropletSurface = clamp(dropletSurface + specCol * specIntensity, 0.0, 1.0);
 
-    // B. Cool-slate internal refraction trough (2 - 5.5px, soft #D4D9E2 in light mode)
-    float troughBand = smoothstep(5.5, 3.2, distInward) * smoothstep(1.5, 3.2, distInward);
-    vec3 troughCol = uDark > 0.5 ? vec3(0.08, 0.09, 0.12) : vec3(0.831, 0.851, 0.886);
-    float troughShade = troughBand * yFactor * (uDark > 0.5 ? 0.35 : 0.16) * uTrigger;
-    dropletSurface = mix(dropletSurface, troughCol, troughShade);
+    // B. Left & Right Curved End-Caps: Internal Reflection Gradient (outer 5px flanks)
+    float flankRimBand = smoothstep(5.0, 0.0, distInward) * smoothstep(0.0, 0.5, distInward);
+    vec3 flankCol = uDark > 0.5 ? vec3(0.05, 0.06, 0.09) : vec3(0.52, 0.55, 0.62);
+    float flankShade = sideWeight * flankRimBand * 0.28 * (0.4 + 0.6 * uTrigger);
+    dropletSurface = mix(dropletSurface, flankCol, flankShade);
 
-    // C. Delicate inner caustic rim (5.5 - 7px)
-    float causticBand = smoothstep(7.0, 6.2, distInward) * smoothstep(4.8, 6.2, distInward);
-    float causticIntensity = causticBand * yFactor * (uDark > 0.5 ? 0.18 : 0.10) * uTrigger;
-    vec3 causticCol = uDark > 0.5 ? vec3(0.85, 0.90, 1.0) : vec3(1.0, 1.0, 1.0);
-    dropletSurface = clamp(dropletSurface + causticCol * causticIntensity, 0.0, 1.0);
-
-    // D. Silky Pastel Iridescence (Soft Cyan -> Lavender -> Peach, ~14% opacity)
+    // C. Silky Pastel Iridescence along Top & Bottom Meniscus Arcs
     float tArc = 0.5 + 0.5 * clamp(rel.x / max(1.0, uDropletRect.z), -1.0, 1.0);
     vec3 pastelCyan = vec3(0.68, 0.88, 0.96);
     vec3 pastelLavender = vec3(0.82, 0.78, 0.95);
     vec3 pastelPeach = vec3(0.98, 0.82, 0.76);
     vec3 pastelIrid = mix(mix(pastelCyan, pastelLavender, smoothstep(0.0, 0.5, tArc)), pastelPeach, smoothstep(0.5, 1.0, tArc));
-    float iridBand = smoothstep(6.0, 3.0, distInward) * smoothstep(0.8, 3.0, distInward) * yFactor;
-    float iridOpacity = iridBand * 0.14 * uTrigger;
-    dropletSurface = mix(dropletSurface, pastelIrid, iridOpacity);
+    float iridBand = smoothstep(7.0, 2.5, distInward) * smoothstep(0.5, 2.5, distInward) * (1.0 - sideWeight);
+    dropletSurface = mix(dropletSurface, pastelIrid, iridBand * 0.12 * uTrigger);
 
-    // Apply outer specular highlight
-    dropletSurface = clamp(dropletSurface + outerSpecCol * outerSpec, 0.0, 1.0);
-
-    // E. Left & Right Curved End-Caps internal refraction shadow
-    float flankBand = smoothstep(4.5, 1.0, distInward) * smoothstep(0.0, 1.0, distInward);
-    float flankShade = flankBand * xFactor * (uDark > 0.5 ? 0.24 : 0.10) * (0.35 + 0.65 * uTrigger);
-    vec3 flankCol = uDark > 0.5 ? vec3(0.06, 0.08, 0.12) : vec3(0.48, 0.52, 0.60);
-    dropletSurface = mix(dropletSurface, flankCol, flankShade);
-
-    // 9. Blend active tab glyph on droplet surface
+    // 9. Blend active tab glyph on droplet surface (100% pure saturation inside)
     vec3 dropletWithGlyph = mix(dropletSurface, glyphRgb, glyphAlpha);
 
-    // 10. Crisp 1px Outer Glass Contour Hairline (dDrop = 0)
-    float dropBorderMask = 1.0 - smoothstep(0.0, 1.0, abs(dDrop));
-    vec3 dropBorderCol = uDark > 0.5 ? vec3(1.0, 1.0, 1.0) : vec3(0.0, 0.0, 0.0);
-    float dropBorderAlpha = dropBorderMask * mix(0.06, uDark > 0.5 ? 0.24 : 0.13, uTrigger);
-    dropletWithGlyph = mix(dropletWithGlyph, dropBorderCol, dropBorderAlpha);
-
-    // 11. Dock Layer with Inactive Glyphs
+    // 10. Dock Layer with Inactive Glyphs
     vec4 inactiveSample = texture2D(uInactiveTex, baseUV);
     vec3 dockWithInactive = mix(dockSurface, inactiveSample.rgb, inactiveSample.a);
 
-    // Composite Dock over Dock Shadow
-    vec3 bgRgb = mix(dockShadowCol, dockWithInactive, dockMask);
+    // 11. Composite Dock over Ambient Shadow
+    vec3 bgRgb = mix(shadowCol, dockWithInactive, dockMask);
     float bgAlpha = max(dockMask * 0.98, dockShadowAlpha);
 
-    // Composite Lifted Elevation Shadow
+    // 12. Composite Lifted Droplet Elevation Shadow
     if (dropShadowAlpha > 0.001) {
-      bgRgb = mix(bgRgb, dropShadowCol, dropShadowAlpha * (1.0 - dropMask));
+      bgRgb = mix(bgRgb, shadowCol, dropShadowAlpha * (1.0 - dropMask));
       bgAlpha = max(bgAlpha, dropShadowAlpha);
     }
 
-    // Composite Droplet over Dock
+    // 13. Composite Droplet over Dock with Premultiplied Alpha
     vec3 outRgb = mix(bgRgb, dropletWithGlyph, dropMask);
     float outAlpha = max(bgAlpha, dropMask);
 
