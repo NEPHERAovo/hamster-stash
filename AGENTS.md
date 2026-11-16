@@ -88,8 +88,20 @@ The application supports two distinct aesthetic skins (`paper` and `modern`), go
      - **Modals & Keypads**: Physical paper ornaments (washi tape, deckle cuts, sawtooth receipt edges) are separated from sleek spatial sheets via CSS tokens and structured slots.
 
 4. **Modern Theme Simplification (Light & Dark Only)**:
-   - Modern mode exposes only two dedicated palettes: **Light** and **Dark**, configured directly under `[data-ui-style="modern"]` and `[data-ui-style="modern"].dark`.
+   - Modern mode exposes only two dedicated palettes: **Light** and **Dark**, configured directly under `:root[data-ui-style="modern"]` and `:root[data-ui-style="modern"].dark`.
    - The 10 bespoke paper stationery themes are strictly reserved for Paper Mode. In Modern Mode, Settings hides paper theme swatches and provides a streamlined Light/Dark selector.
+
+5. **Monochrome Palette & Clean Structural Layout Rules**:
+   - **Monochrome Foundation with Accent Blue**: Modern mode enforces a pure black, white, and cool-gray palette with a single primary accent blue (`#1677FF` light / `#4D94FF` dark). High specificity overrides all paper theme variables, preventing any beige or green tint leakage.
+     - *Light*: Canvas `#F3F4F6`, Sheet/Card `#FFFFFF` (`rgba(255, 255, 255, 0.92)`), Sunken `#EBEDF0`, Inks `#111318` / `#5A606E` / `#8C93A3`, Hairline `rgba(17, 19, 24, 0.06)`.
+     - *Dark*: Canvas `#090A0D`, Sheet/Card `#18191E`, Sunken `#24262E`, Inks `#F5F6F8` / `#9BA1B0` / `#666C7A`, Hairline `rgba(255, 255, 255, 0.08)`.
+   - **Borderless Cards & Zero Double-Nested Borders**:
+     - Surface cards (`.paper-card`, `.paper-summary-card`) use borderless geometry (`border: none !important; border-radius: 20px-24px; box-shadow: var(--shadow-sm);`).
+     - Outer rectangular card frames around segmented toggles (`SegToggle`) are eliminated (native iOS style).
+     - Ledger groups render as single borderless `rounded-[22px]` cards; rows inside remain transparent and are demarcated by subtle solid hairlines (`border-b border-(--rule-hairline)` with `last:border-b-0`), preventing nested grey bubbles.
+   - **Receipt Dashed-Line Ban**: In Modern Mode, a global CSS reset transforms all `.border-dashed` and `.border-dotted` into clean solid hairlines (`border-style: solid !important;`).
+   - **Keypad & Modal Geometry**: Keypads sit on a sunken tray (`gap: 8px`) with rounded keys (`--keypad-radius: 16px`); category selectors use a borderless 4x2 grid; metadata controls render as cool-gray pill tags (`--btn-radius: 9999px`).
+   - **Subpage Navigation Visibility**: Bottom navigation (`BottomNav` / `LiquidGlassDock`) is strictly hidden and unmounted when subpages (`SettingsSubPage`, `ImportSubPage`, `AccountDetailSubPage`) are open.
 
 ### 4.3 Pure WebGL Liquid Glass Dock (`src/components/ui/liquid-glass/`)
 1. **WebGL Rendering Pipeline**:
