@@ -145,8 +145,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     let lastCanvasW = 0;
     let lastCanvasH = 0;
 
-    const padX = 14;
-    const padY = 16;
+    const padX = 16;
+    const padY = 20;
 
     const render = (now: number) => {
       if (!gl || !canvas || !dockShell) return;
@@ -183,8 +183,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         offCtx &&
         (texturesDirtyRef.current || canvasW !== lastCanvasW || canvasH !== lastCanvasH)
       ) {
-        const inactiveColor = currentIsDark ? '#9ba3bd' : '#11131a';
-        const activeColor = currentIsDark ? '#4d94ff' : '#1677ff';
+        const inactiveColor = currentIsDark ? '#EBEBF5' : '#1C1C1E';
+        const activeColor = currentIsDark ? '#4D94FF' : '#007AFF';
 
         gl.activeTexture(gl.TEXTURE0);
         uploadLayerTexture(
@@ -199,8 +199,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           padY,
           dockW,
           dpr,
-          inactiveColor,
-          currentIsDark
+          inactiveColor
         );
 
         gl.activeTexture(gl.TEXTURE1);
@@ -216,8 +215,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           padY,
           dockW,
           dpr,
-          activeColor,
-          currentIsDark
+          activeColor
         );
 
         lastCanvasW = canvasW;
@@ -401,7 +399,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerCancel}
       className={cn(
-        'relative h-[60px] rounded-full border border-(--rule-hairline) transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl shadow-md',
+        'relative h-[60px] rounded-full transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl',
         className
       )}
       style={{ touchAction: 'none' }}
@@ -409,7 +407,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="absolute -left-[14px] -right-[14px] -top-[16px] -bottom-[16px] w-[calc(100%+28px)] h-[calc(100%+32px)] pointer-events-none z-10"
+        className="absolute -left-[16px] -right-[16px] -top-[20px] -bottom-[20px] w-[calc(100%+32px)] h-[calc(100%+40px)] pointer-events-none z-10"
       />
 
       <div className="absolute inset-0 flex items-stretch z-20 pointer-events-auto">

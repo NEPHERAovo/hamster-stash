@@ -174,8 +174,7 @@ export function uploadLayerTexture(
   padY: number,
   dockW: number,
   dpr: number,
-  inkColor: string,
-  isDark: boolean
+  inkColor: string
 ): void {
   const texW = Math.max(1, Math.round(canvasW * dpr));
   const texH = Math.max(1, Math.round(canvasH * dpr));
@@ -185,9 +184,7 @@ export function uploadLayerTexture(
 
   offCtx.save();
   offCtx.scale(dpr, dpr);
-
-  offCtx.fillStyle = isDark ? 'rgba(24, 25, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-  offCtx.fillRect(0, 0, canvasW, canvasH);
+  offCtx.clearRect(0, 0, canvasW, canvasH);
 
   const tabCount = Math.max(1, tabs.length);
   const colW = dockW / tabCount;
