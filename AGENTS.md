@@ -69,6 +69,27 @@ To ensure professional engineering collaboration and seamless user localization:
    - Financial figures & tabular metrics: Strict `Geist Mono` (`tabular-nums`).
    - Mastheads & journal receipts: Literary `Instrument Serif`.
 
+### 4.2 Dual-Skin Architecture: Paper vs. Modern Glass
+1. **Polymorphic UI Primitives & Design Tokens**:
+   - Controlled via `useThemeStore.uiStyle` (`'paper' | 'modern'`), persisted and synchronized to `document.documentElement.dataset.uiStyle` and `document.body.dataset.uiStyle`.
+   - **Paper Mode**: Tactile physical stationery aesthetics, micro-dot grid background, washi tape, receipt sawtooth cuts (`.paper-sawtooth-top`), stamped badges, and `Instrument Serif` + `Geist Mono` typography.
+   - **Modern Mode (`[data-ui-style="modern"]`)**: Translucent spatial glass aesthetics, soft cool-blue ambient radial gradients (`#e4ecff` to `#f4f3f8` in light mode, `#161b30` to `#0d0f17` in dark mode). Paper ornaments (`.washi-tape`, `.paper-deckle-bottom`, `.paper-sawtooth-top`) are suppressed via CSS tokens. Typography switches cleanly to `Geist Sans` and system sans-serif with `tabular-nums`.
+   - **Zero Duplication**: Core domain pages, modals, keypads, and `plugin-sdk` extensions use semantic tokens (`--paper-sheet`, `--paper-sunken`, `--rule-hairline`) and polymorphic primitives (`PaperCard`, `PaperButton`, `SegToggle`, `CategoryBadge`, `PaperModal`) rather than duplicating template markup.
+
+### 4.3 Pure WebGL Liquid Glass Dock (`src/components/ui/liquid-glass/`)
+1. **WebGL Rendering Pipeline**:
+   - When `uiStyle === 'modern'`, `BottomNav` mounts `LiquidGlassDock`, a self-contained WebGL canvas rendering a physical liquid lens over the navigation tabs without external UI dependencies.
+2. **Signed Distance Field (SDF) Lens Shader**:
+   - Fragment shader calculates an exact 2D rounded-capsule SDF lens. Normal vectors derived from spatial SDF gradients refract incoming light with authentic physical chromatic dispersion (separate R/G/B index of refraction offsets).
+   - Specular highlights compute Fresnel edge glints and an inner reflection rim. In resting state, dispersion and chromatic aberration gracefully subside for pristine visual legibility.
+3. **Dual-Texture Sampling**:
+   - An offscreen 2D canvas draws two high-DPI layers: an inactive icon/label layer and an active highlighted layer (accent blue `#1677ff`).
+   - The shader smoothly blends between inactive and active textures based on the lens cursor focus position, delivering fluid transmissive illumination.
+4. **Damped Harmonic Spring Physics**:
+   - Pointer interactions (drag, glide, click) drive a 2nd-order critically damped harmonic spring (`useLiquidSpring`). Velocity transfers seamlessly upon touch release to simulate authentic fluid mass and surface tension.
+5. **Lifecycle & Resource Cleanup**:
+   - WebGL context loss is explicitly triggered on unmount via the `WEBGL_lose_context` extension, safely releasing GPU textures, shaders, buffers, and animation frames.
+
 ---
 
 ## 5. Micro-Kernel Plugin System (`src/plugin-sdk/`)
