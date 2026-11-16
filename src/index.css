@@ -556,16 +556,13 @@ body {
   --keypad-action-bg: #4D94FF; --keypad-action-fg: #0D0F17;
 }
 
-[data-ui-style="modern"] body,
-body[data-ui-style="modern"] {
+[data-ui-style="modern"] body, body[data-ui-style="modern"] {
   background: radial-gradient(circle at 20% 0%, #E4ECFF 0%, #F4F3F8 55%);
   background-attachment: fixed;
 }
 
-[data-ui-style="modern"].dark body,
-body[data-ui-style="modern"].dark,
-.dark[data-ui-style="modern"] body,
-.dark body[data-ui-style="modern"] {
+[data-ui-style="modern"].dark body, body[data-ui-style="modern"].dark,
+.dark[data-ui-style="modern"] body, .dark body[data-ui-style="modern"] {
   background: radial-gradient(circle at 20% 0%, #161B30 0%, #090A0D 55%);
   background-attachment: fixed;
 }
@@ -585,7 +582,8 @@ body[data-ui-style="modern"].dark,
 [data-ui-style="modern"] .paper-sawtooth-top::before,
 [data-ui-style="modern"] .brass-clip,
 [data-ui-style="modern"] .brass-paperclip,
-[data-ui-style="modern"] .corner-lift-shadow::before {
+[data-ui-style="modern"] .corner-lift-shadow::before,
+[data-ui-style="modern"] .metadata-sep {
   display: none !important;
 }
 
@@ -597,6 +595,14 @@ body[data-ui-style="modern"].dark,
   border-width: 1px !important;
   letter-spacing: normal !important;
   padding: 1px 8px !important;
+}
+
+[data-ui-style="modern"] .paper-summary-card .real-stamp {
+  background: var(--paper-sunken) !important;
+  color: var(--ink-secondary) !important;
+  border-color: transparent !important;
+  font-weight: 600 !important;
+  padding: 2px 10px !important;
 }
 
 [data-ui-style="modern"] .real-stamp::after,
@@ -681,4 +687,9 @@ body[data-ui-style="modern"].dark,
   overflow: hidden !important;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+}
+
+[data-ui-style="modern"] .metadata-bar {
+  gap: 8px !important;
+  justify-content: flex-start !important;
 }

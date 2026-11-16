@@ -30,7 +30,7 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
         <span
           className={cn(
             'real-stamp',
-            isSurplus ? 'stamp-income text-(--color-income)' : 'text-(--color-expense)'
+            isSurplus ? 'stamp-income text-(--color-income)' : 'stamp-expense text-(--color-expense)'
           )}
         >
           {isSurplus ? '盈余' : '超支'}

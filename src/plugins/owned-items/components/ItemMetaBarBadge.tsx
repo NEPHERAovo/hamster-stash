@@ -40,13 +40,13 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
 
   return (
     <>
-      <span className="text-(--ink-faint) shrink-0 select-none">·</span>
+      <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
 
       <button
         type="button"
         onClick={toggleTray}
         className={cn(
-          'flex items-center gap-1 px-2 py-0.5 rounded-[3px] transition-colors cursor-pointer select-none text-xs font-mono shrink-0',
+          'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer select-none text-xs font-mono shrink-0',
           isActive || isTrayOpen
             ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs'
             : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'

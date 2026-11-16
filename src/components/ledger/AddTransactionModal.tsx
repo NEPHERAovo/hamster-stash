@@ -530,7 +530,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </div>
 
         <div className="px-4 py-1.5 border-t border-b border-dashed border-(--rule-hairline) space-y-1.5">
-          <div className="flex items-center justify-between gap-1 text-xs font-mono select-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap min-w-0">
+          <div className="metadata-bar flex items-center justify-between gap-1 text-xs font-mono select-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap min-w-0">
             <button
               type="button"
               onClick={() => {
@@ -548,7 +548,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <span className="text-[9px] opacity-60">▾</span>
             </button>
 
-            <span className="text-(--ink-faint) shrink-0 select-none">·</span>
+            <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
 
             <button
               type="button"
@@ -569,7 +569,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             {txType === 'expense' && (
               <>
-                <span className="text-(--ink-faint) shrink-0 select-none">·</span>
+                <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -593,7 +593,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
                 {isReimbursable && (
                   <>
-                    <span className="text-(--ink-faint) shrink-0 select-none">·</span>
+                    <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -613,7 +613,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             {txType === 'income' && (
               <>
-                <span className="text-(--ink-faint) shrink-0 select-none">·</span>
+                <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
                 <button
                   type="button"
                   onClick={() => {
