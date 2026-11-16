@@ -188,19 +188,20 @@ export function uploadLayerTexture(
 
   const tabCount = Math.max(1, tabs.length);
   const colW = dockW / tabCount;
+  const dockH = canvasH - padY * 2;
 
   tabs.forEach((tab, i) => {
     const cx = padX + colW * (i + 0.5);
     const tabType = resolveTabType(tab);
     const label = resolveTabLabel(tab);
 
-    drawTabIcon(offCtx, tabType, cx, padY + 21, inkColor);
+    drawTabIcon(offCtx, tabType, cx, padY + dockH * 0.36, inkColor);
 
     offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif';
     offCtx.textAlign = 'center';
     offCtx.textBaseline = 'middle';
     offCtx.fillStyle = inkColor;
-    offCtx.fillText(label, cx, padY + 44);
+    offCtx.fillText(label, cx, padY + dockH * 0.73);
   });
 
   offCtx.restore();
