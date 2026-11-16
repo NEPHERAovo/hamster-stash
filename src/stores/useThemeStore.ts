@@ -85,6 +85,7 @@ interface ThemeState {
   isDark: boolean;
   setTheme: (themeId: string) => void;
   setUiStyle: (style: UiStyle) => void;
+  setDark: (dark: boolean) => void;
   toggleDark: () => void;
 }
 
@@ -128,6 +129,16 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         void 0;
       }
       set({ uiStyle: style });
+    },
+
+    setDark: (dark: boolean) => {
+      const { isDark } = get();
+      if (dark === isDark) return;
+      if (dark) {
+        get().setTheme('theme-carbon');
+      } else {
+        get().setTheme('theme-sage');
+      }
     },
 
     toggleDark: () => {

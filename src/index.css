@@ -519,6 +519,10 @@ body {
   --radius-sm: 12px;
   --radius-md: 18px;
   --radius-lg: 22px;
+  --ink-primary: #0f172a;
+  --ink-secondary: #475569;
+  --ink-tertiary: #94a3b8;
+  --ink-solid: #020617;
 }
 
 [data-ui-style="modern"].dark,
@@ -533,6 +537,10 @@ html[data-ui-style="modern"].dark body {
   --rule-strong: rgba(255, 255, 255, 0.14);
   --shadow-sm: 0 6px 16px -3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
+  --ink-primary: #f8fafc;
+  --ink-secondary: #cbd5e1;
+  --ink-tertiary: #64748b;
+  --ink-solid: #f8fafc;
 }
 
 [data-ui-style="modern"] body,
