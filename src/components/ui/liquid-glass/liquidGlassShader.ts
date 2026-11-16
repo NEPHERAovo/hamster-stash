@@ -30,41 +30,79 @@ export const FRAGMENT_SHADER_SOURCE = `
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
   }
 
-  vec4 sampleGlyphs(vec2 uv) {
-    vec2 clampedUV = clamp(uv, 0.002, 0.998);
-    vec2 pSample = clampedUV * uCanvasSize;
-    float dSample = sdRoundBox(pSample - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
-    float insideDrop = 1.0 - smoothstep(-1.5, 1.5, dSample);
+  vec4 sampleFullScene(vec2 uv, float colorTrigger) {
+    vec2 clampedUV = clamp(uv, 0.001, 0.999);
+    vec2 pAt = clampedUV * uCanvasSize;
 
-    vec4 inactiveGlyph = texture2D(uInactiveTex, clampedUV);
-    vec4 activeGlyph = texture2D(uActiveTex, clampedUV);
-    return mix(inactiveGlyph, activeGlyph, insideDrop);
+    float dD = sdRoundBox(pAt - uDockRect.xy, uDockRect.zw, uDockRect.w);
+    float insideDock = 1.0 - smoothstep(-0.75, 0.75, dD);
+
+    float dDr = sdRoundBox(pAt - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
+    float insideDroplet = 1.0 - smoothstep(-1.5, 1.5, dDr);
+
+    // Outer Dock Glass Material & Edge Optics
+    float dockInw = max(0.0, -dD);
+    vec2 dRel = pAt - uDockRect.xy;
+    vec2 dB = uDockRect.zw - uDockRect.w;
+    vec2 dQ = abs(dRel) - dB;
+    vec2 dNorm = normalize(sign(dRel) * max(dQ, 0.0) + vec2(1e-5));
+    if (max(dQ.x, dQ.y) < 0.0) {
+      dNorm = abs(dQ.x) > abs(dQ.y) ? vec2(sign(dRel.x), 0.0) : vec2(0.0, sign(dRel.y));
+    }
+
+    // Top edge glass highlight & bottom bounce
+    float topR = smoothstep(2.5, 0.5, dockInw) * max(-dNorm.y, 0.0) * (uDark > 0.5 ? 0.30 : 0.22);
+    float botR = smoothstep(2.0, 0.5, dockInw) * max(dNorm.y, 0.0) * (uDark > 0.5 ? 0.15 : 0.09);
+    float sideB = smoothstep(5.5, 0.5, dockInw) * pow(max(abs(dNorm.x), 0.0), 1.5) * (uDark > 0.5 ? 0.18 : 0.07);
+    float bord = smoothstep(1.0, 0.0, abs(dD)) * (uDark > 0.5 ? 0.15 : 0.07);
+
+    vec3 dCol = uDark > 0.5 ? vec3(0.10, 0.105, 0.12) : vec3(0.99, 0.995, 1.0);
+    dCol += vec3(topR + botR);
+    dCol -= vec3(sideB);
+    dCol = mix(dCol, uDark > 0.5 ? vec3(1.0) : vec3(0.0), bord);
+
+    vec3 cBg = uDark > 0.5 ? vec3(0.035, 0.039, 0.051) : vec3(0.953, 0.957, 0.965);
+    vec3 surf = mix(cBg, dCol, insideDock);
+
+    // Resting gray pill inside active tab boundary (fades out as colorTrigger increases)
+    vec3 restPillCol = uDark > 0.5 ? vec3(0.173, 0.176, 0.208) : vec3(0.898, 0.898, 0.918);
+    float pillWeight = (1.0 - colorTrigger) * insideDroplet * insideDock;
+    surf = mix(surf, restPillCol, pillWeight);
+
+    vec4 inactG = texture2D(uInactiveTex, clampedUV);
+    vec4 actG = texture2D(uActiveTex, clampedUV);
+    vec4 g = mix(inactG, actG, insideDroplet);
+
+    vec3 compositeRgb = mix(surf, g.rgb, g.a);
+    float compositeAlpha = max(insideDock, insideDroplet);
+
+    return vec4(compositeRgb, compositeAlpha);
   }
 
   void main() {
     vec2 p = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y) / uDpr;
     vec2 baseUV = p / uCanvasSize;
 
-    // 1. Dock Capsule Geometry & Clean Surface
+    // 1. Base Scene: Dock capsule, glass edges, inactive glyphs, and resting pill
+    vec4 baseScene = sampleFullScene(baseUV, 0.0);
+
+    // Distance fields
     float dDock = sdRoundBox(p - uDockRect.xy, uDockRect.zw, uDockRect.w);
     float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
-
-    float dockMask = 1.0 - smoothstep(-0.75, 0.75, dDock);
     float dropMask = 1.0 - smoothstep(-0.75, 0.75, dDrop);
-
-    // Subtle 1px structural hairline around outer dock (zero dark box-shadow)
-    float dockBorder = smoothstep(1.0, 0.0, abs(dDock)) * (uDark > 0.5 ? 0.12 : 0.06);
-    vec3 dockSurface = uDark > 0.5 ? vec3(0.110, 0.114, 0.133) : vec3(1.0, 1.0, 1.0);
-    dockSurface = mix(dockSurface, vec3(0.0), dockBorder);
-
-    // 2. Soft Drop Shadow cast only by the lifted droplet lens (uTrigger > 0)
-    vec2 shadowOffset = vec2(0.0, 3.0 * uTrigger);
-    float dDropShadow = sdRoundBox(p - uDropletRect.xy - shadowOffset, uDropletRect.zw, uDropletRect.w);
-    float dropShadowAlpha = smoothstep(16.0, 0.0, dDropShadow) * (uDark > 0.5 ? 0.32 : 0.12) * uTrigger;
-    vec3 shadowCol = uDark > 0.5 ? vec3(0.0, 0.0, 0.0) : vec3(0.08, 0.10, 0.16);
-
-    // 3. Droplet Capsule Outward Normal
     float distInward = max(0.0, -dDrop);
+
+    // 2. Faint ambient diffusion beneath the outer dock (soft 0.045, no dirty dark box-shadow)
+    float dockShadowAlpha = smoothstep(10.0, 0.0, dDock) * (uDark > 0.5 ? 0.20 : 0.045);
+    vec3 dockShadowCol = uDark > 0.5 ? vec3(0.0) : vec3(0.10, 0.12, 0.18);
+
+    // 3. Lifted droplet drop shadow (offset downwards 3.5px, only when lifted)
+    vec2 shadowOffset = vec2(0.0, 3.5 * uTrigger);
+    float dDropShadow = sdRoundBox(p - uDropletRect.xy - shadowOffset, uDropletRect.zw, uDropletRect.w);
+    float dropShadowAlpha = smoothstep(14.0, 0.0, dDropShadow) * (uDark > 0.5 ? 0.35 : 0.14) * uTrigger;
+    vec3 dropShadowCol = uDark > 0.5 ? vec3(0.0) : vec3(0.08, 0.10, 0.16);
+
+    // 4. Droplet Capsule Outward Normal
     vec2 rel = p - uDropletRect.xy;
     vec2 b = uDropletRect.zw - uDropletRect.w;
     vec2 q = abs(rel) - b;
@@ -73,75 +111,56 @@ export const FRAGMENT_SHADER_SOURCE = `
       outNormal = abs(q.x) > abs(q.y) ? vec2(sign(rel.x), 0.0) : vec2(0.0, sign(rel.y));
     }
 
-    // 4. Optical Refraction & Meniscus Curve
-    float rimWidth = 14.0;
-    float meniscus = pow(clamp(1.0 - distInward / rimWidth, 0.0, 1.0), 1.6);
+    // 5. 16px Curved Meniscus Zone & Physical Refraction
+    float rimWidth = 16.0;
+    float rimFraction = clamp(distInward / rimWidth, 0.0, 1.0);
+    float meniscusCurve = pow(1.0 - rimFraction, 1.6);
 
-    // Lens bending + chromatic dispersion displacement
-    vec2 refractOffset = -outNormal * (meniscus * 0.032 * uTrigger) - (rel / uDropletRect.zw) * (0.010 * uTrigger);
-    vec2 dispR = outNormal * (meniscus * 0.024 * uTrigger);
-    vec2 dispB = -outNormal * (meniscus * 0.024 * uTrigger);
+    // Radial lens displacement in UV space
+    vec2 refractOffset = -outNormal * (meniscusCurve * 0.038 * uTrigger) - (rel / uDropletRect.zw) * (0.012 * uTrigger);
 
-    // 5. Independent Multi-Channel Chromatic Separation of Glyphs
-    vec4 sR = sampleGlyphs(baseUV + refractOffset + dispR);
-    vec4 sG = sampleGlyphs(baseUV + refractOffset);
-    vec4 sB = sampleGlyphs(baseUV + refractOffset + dispB);
+    // Physical chromatic dispersion offset: Red vs Blue separated along normal
+    vec2 dispDir = -outNormal * (meniscusCurve * 0.022 * uTrigger);
+    vec2 uvR = baseUV + refractOffset - dispDir;
+    vec2 uvG = baseUV + refractOffset;
+    vec2 uvB = baseUV + refractOffset + dispDir;
 
-    vec3 dispersedGlyphRgb = vec3(sR.r, sG.g, sB.b);
-    vec3 glyphAlphaChannels = vec3(sR.a, sG.a, sB.a);
+    // Sample the entire underlying scene with physical dispersion
+    vec4 sceneR = sampleFullScene(uvR, uColorTrigger);
+    vec4 sceneG = sampleFullScene(uvG, uColorTrigger);
+    vec4 sceneB = sampleFullScene(uvB, uColorTrigger);
 
-    // 6. Prismatic Spectral Caustic Rim along the Meniscus
-    float rimNorm = clamp(distInward / rimWidth, 0.0, 1.0);
-    float angle = atan(outNormal.y, outNormal.x);
-    float spectralPhase = rimNorm * 6.283 + angle * 0.5;
-    vec3 spectralCol = vec3(
-      0.5 + 0.5 * cos(spectralPhase),
-      0.5 + 0.5 * cos(spectralPhase + 2.094),
-      0.5 + 0.5 * cos(spectralPhase + 4.188)
-    );
-    float rimEnvelope = smoothstep(12.0, 3.0, distInward) * smoothstep(0.5, 3.0, distInward);
-    float spectralSheen = rimEnvelope * 0.48 * uTrigger;
+    vec3 lensRgb = vec3(sceneR.r, sceneG.g, sceneB.b);
 
-    // Delicate top-edge Fresnel catch-light (no thick white border)
+    // 6. Fresnel Specular Rim Sheen on Droplet Lens
+    float fresnel = pow(1.0 - rimFraction, 2.5);
     float topKey = max(-outNormal.y, 0.0);
-    float topHighlight = smoothstep(3.0, 0.8, distInward) * smoothstep(0.0, 0.8, distInward) * topKey * 0.40 * uTrigger;
+    float botBounce = max(outNormal.y, 0.0);
+    float rimHighlight = fresnel * (topKey * 0.55 + botBounce * 0.25) * uTrigger;
+    lensRgb = clamp(lensRgb + vec3(rimHighlight), 0.0, 1.0);
 
-    // 7. Resting Gray Pill vs. Lifted Crystal Glass Droplet
-    // Resting pill fades out slower via uColorTrigger
-    float pillAlpha = 1.0 - uColorTrigger;
-    vec3 canvasBg = uDark > 0.5 ? vec3(0.035, 0.039, 0.051) : vec3(0.953, 0.957, 0.965);
-    vec3 underLensBg = mix(canvasBg, dockSurface, dockMask);
+    // 7. Composite Scene Layers
+    vec3 finalRgb = baseScene.rgb;
+    float finalAlpha = baseScene.a;
 
-    vec3 restingPill = uDark > 0.5 ? vec3(0.173, 0.176, 0.208) : vec3(0.898, 0.898, 0.918);
-    vec3 dropletBase = mix(underLensBg, restingPill, pillAlpha);
-
-    // Apply spectral prismatic sheen and delicate Fresnel highlight
-    dropletBase = mix(dropletBase, spectralCol, spectralSheen);
-    dropletBase = clamp(dropletBase + vec3(topHighlight), 0.0, 1.0);
-
-    // Blend dispersed glyph channels
-    vec3 dropletFinal = mix(dropletBase, dispersedGlyphRgb, glyphAlphaChannels);
-
-    // 8. Dock Layer with Inactive Glyphs
-    vec4 inactiveSample = texture2D(uInactiveTex, baseUV);
-    vec3 dockWithInactive = mix(dockSurface, inactiveSample.rgb, inactiveSample.a);
-
-    // 9. Composite Scene
-    vec3 sceneRgb = dockWithInactive;
-    float sceneAlpha = dockMask;
+    // Composite ambient dock shadow
+    if (dockShadowAlpha > 0.001) {
+      finalRgb = mix(dockShadowCol, finalRgb, baseScene.a);
+      finalAlpha = max(finalAlpha, dockShadowAlpha);
+    }
 
     // Composite lifted droplet shadow
     if (dropShadowAlpha > 0.001) {
-      sceneRgb = mix(sceneRgb, shadowCol, dropShadowAlpha * (1.0 - dropMask));
-      sceneAlpha = max(sceneAlpha, dropShadowAlpha);
+      finalRgb = mix(dropShadowCol, finalRgb, dropShadowAlpha * (1.0 - dropMask));
+      finalAlpha = max(finalAlpha, dropShadowAlpha);
     }
 
-    // Composite droplet lens
-    vec3 outRgb = mix(sceneRgb, dropletFinal, dropMask);
-    float outAlpha = max(sceneAlpha, dropMask);
+    // Composite droplet lens over scene
+    finalRgb = mix(finalRgb, lensRgb, dropMask);
+    finalAlpha = max(finalAlpha, dropMask);
 
-    if (outAlpha <= 0.001) discard;
-    gl_FragColor = vec4(outRgb * outAlpha, outAlpha);
+    if (finalAlpha <= 0.001) discard;
+    gl_FragColor = vec4(finalRgb * finalAlpha, finalAlpha);
   }
 `;
 
