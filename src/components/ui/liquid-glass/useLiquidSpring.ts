@@ -59,18 +59,19 @@ export function useLiquidSpring() {
     const sizeRate = rawTrigger > s.smoothTrigger ? 48 : 22;
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * sizeRate);
 
-    // Slower color trigger: morphs gracefully between resting gray pill and crystal lens
-    const colorRate = rawTrigger > s.colorTrigger ? 12 : 10;
+    // Smooth, graceful color trigger: slightly slower to create delicate bloom
+    const colorRate = rawTrigger > s.colorTrigger ? 7.0 : 5.0;
     s.colorTrigger += (rawTrigger - s.colorTrigger) * Math.min(1, dt * colorRate);
 
     // Exact iOS native 1.58:1 aspect ratio:
-    // Resting: height 53px, width ~84px (4.5px vertical padding inside 62px dock)
-    // Lifted: expands proportionally by ~36% into generous oval dome (height 72px, width ~114px)
-    const stretchX = Math.min(6.0, Math.abs(s.dropletVelX) * 0.012);
+    // Elongated rounded rectangle with straight top and bottom:
+    // Resting: height 53px, width 83.7px (leaves 4.5px vertical padding inside 62px dock)
+    // Lifted: expands smoothly to height ~65px, width ~103px
+    const stretchX = Math.min(5.0, Math.abs(s.dropletVelX) * 0.010);
     const baseHalfH = dockH * 0.427; // ~26.5px for 62px dock
-    const baseHalfW = baseHalfH * 1.58; // ~41.9px (width ~83.7px)
-    const dropHalfH = baseHalfH + s.smoothTrigger * 9.5;
-    const dropHalfW = baseHalfW + s.smoothTrigger * 15.0 + stretchX;
+    const baseHalfW = baseHalfH * 1.58; // ~41.87px (width 83.74px)
+    const dropHalfH = baseHalfH + s.smoothTrigger * 6.0;
+    const dropHalfW = baseHalfW + s.smoothTrigger * 9.5 + stretchX;
 
     return {
       dropletX: s.dropletX,
