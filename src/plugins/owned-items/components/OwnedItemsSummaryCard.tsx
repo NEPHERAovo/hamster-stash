@@ -40,7 +40,7 @@ export const OwnedItemsSummaryCard: React.FC = () => {
         }
       }}
       className={cn(
-        'w-full bg-(--paper-sheet) text-(--ink-solid) rounded-[2px] border border-(--rule-hairline)',
+        'w-full bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline)',
         'shadow-[0_2px_8px_rgba(0,0,0,0.03)] cursor-pointer select-none transition-all',
         'hover:border-(--rule-strong) active:scale-[0.995]'
       )}

@@ -132,17 +132,15 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         <span>外观风格</span>
       </div>
 
-      <div className="p-1.5 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
-        <SegToggle
-          options={[
-            { value: 'paper', label: '手帐拟物' },
-            { value: 'modern', label: '空间玻璃' },
-          ]}
-          value={uiStyle}
-          onChange={setUiStyle}
-          size="sm"
-        />
-      </div>
+      <SegToggle
+        options={[
+          { value: 'paper', label: '手帐拟物' },
+          { value: 'modern', label: '空间玻璃' },
+        ]}
+        value={uiStyle}
+        onChange={setUiStyle}
+        size="sm"
+      />
 
       {uiStyle === 'paper' ? (
         <>
@@ -150,7 +148,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <span>配色主题</span>
           </div>
 
-          <div className="p-3 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+          <div className="p-3 bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-md) shadow-xs">
             <ThemeSelector />
           </div>
         </>
@@ -160,17 +158,15 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <span>色彩模式</span>
           </div>
 
-          <div className="p-1.5 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
-            <SegToggle
-              options={[
-                { value: 'light', label: '浅色' },
-                { value: 'dark', label: '深色' },
-              ]}
-              value={isDark ? 'dark' : 'light'}
-              onChange={(val) => setDark(val === 'dark')}
-              size="sm"
-            />
-          </div>
+          <SegToggle
+            options={[
+              { value: 'light', label: '浅色' },
+              { value: 'dark', label: '深色' },
+            ]}
+            value={isDark ? 'dark' : 'light'}
+            onChange={(val) => setDark(val === 'dark')}
+            size="sm"
+          />
         </>
       )}
 
@@ -178,14 +174,14 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         <span>设置</span>
       </div>
 
-      <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] px-3.5">
+      <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5">
         {uiStyle === 'paper' && (
           <div
             className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
             onClick={onToggleDark}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-xs bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
                 <Moon className="w-3.5 h-3.5 stroke-[1.75]" />
               </div>
               <span className="text-[13px] font-medium text-(--ink-primary)">深色模式</span>
@@ -215,7 +211,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           onClick={() => toast.info('当前货币为 CNY')}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-xs bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
               <Coins className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">默认货币</span>
@@ -231,7 +227,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           onClick={onOpenImport}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-xs bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
               <FileUp className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">导入账本</span>
@@ -246,7 +242,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           onClick={handleExportCsv}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-xs bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
               <FileSpreadsheet className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">导出账本</span>
@@ -261,7 +257,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           onClick={handleExportJson}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-xs bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
               <HardDriveUpload className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">全量备份</span>
@@ -293,7 +289,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           onClick={() => toast.info('hamsterStash 极简记账 PWA v0.2.2')}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-xs bg-(--bg-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+            <div className="w-7 h-7 rounded-(--badge-radius) bg-(--bg-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
               <Info className="w-4 h-4 stroke-[1.75]" />
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">关于</span>
@@ -312,7 +308,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <span className="text-[10px] text-(--ink-faint) font-normal">MODULAR EXTENSIONS</span>
           </div>
 
-          <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] px-3.5 divide-y divide-dashed divide-(--rule-hairline)/60">
+          <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5 divide-y divide-dashed divide-(--rule-hairline)/60">
             {plugins.map((p) => {
               const isEnabled = enabledPlugins[p.manifest.id] ?? p.manifest.defaultEnabled ?? true;
               return (
@@ -321,7 +317,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
                   className="flex items-center justify-between py-2.5 select-none"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                    <div className="w-6 h-6 rounded-xs bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+                    <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
                       <Blocks className="w-3.5 h-3.5 stroke-[1.75]" />
                     </div>
                     <div className="min-w-0">

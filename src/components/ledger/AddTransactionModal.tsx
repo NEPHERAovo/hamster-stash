@@ -486,7 +486,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         <div className="px-3.5 py-1.5">
           <div
             className={cn(
-              'py-0.5 select-none',
+              'category-grid py-0.5 select-none',
               currentCategories.length <= 8
                 ? 'grid grid-cols-4 gap-0'
                 : 'grid grid-rows-2 grid-flow-col auto-cols-[calc(25%-6px)] gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
@@ -538,7 +538,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsDtTrayOpen(false);
               }}
               className={cn(
-                'flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
+                'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
                 isAcctTrayOpen
                   ? 'text-(--ink-solid) font-semibold shadow-2xs'
                   : 'text-(--ink-secondary) hover:text-(--ink-primary)'
@@ -557,7 +557,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsAcctTrayOpen(false);
               }}
               className={cn(
-                'flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
+                'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
                 isDtTrayOpen
                   ? 'text-(--ink-solid) font-semibold shadow-2xs'
                   : 'text-(--ink-secondary) hover:text-(--ink-primary)'
@@ -582,7 +582,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     });
                   }}
                   className={cn(
-                    'px-2 py-0.5 rounded-[3px] transition-colors cursor-pointer shrink-0',
+                    'px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
                     isReimbursable
                       ? 'bg-(--color-expense-bg) text-(--color-expense) font-semibold'
                       : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
@@ -598,7 +598,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className={cn(
-                        'flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
+                        'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
                         voucher ? 'text-(--brass-metal) font-semibold' : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
                       )}
                       title={voucher ? voucher.name : '添加凭证附件'}
@@ -622,7 +622,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     setIsDtTrayOpen(false);
                   }}
                   className={cn(
-                    'flex items-center gap-1 px-2 py-0.5 rounded-[3px] transition-colors cursor-pointer shrink-0',
+                    'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
                     offsetTransactionId
                       ? 'bg-(--color-income-bg) text-(--color-income) font-semibold shadow-2xs'
                       : isOffsetTrayOpen
@@ -830,7 +830,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px] select-none">
+        <div className="keypad-tray grid grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px] select-none">
           <button
             type="button"
             onClick={() => handleDigit('7')}
@@ -971,7 +971,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={isSubmitting}
-              className="h-11 bg-(--ink-solid) hover:opacity-95 active:scale-[0.98] text-(--paper-sheet) font-mono text-xs font-bold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer shadow-xs"
+              className="h-11 bg-(--btn-primary-bg) hover:opacity-95 active:scale-[0.98] text-(--btn-primary-fg) font-mono text-xs font-bold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer shadow-xs"
             >
               {editingTransaction ? '保存' : '完成'}
             </button>

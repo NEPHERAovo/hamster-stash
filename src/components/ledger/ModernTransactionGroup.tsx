@@ -66,7 +66,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
               </span>
             </div>
 
-            <div className="bg-(--paper-sheet) rounded-[22px] backdrop-blur-xl border border-(--rule-hairline) shadow-sm p-1.5 space-y-1">
+            <div className="bg-(--paper-sheet) rounded-[22px] backdrop-blur-xl shadow-sm overflow-hidden border-none">
               {txList.map((tx, idx) => (
                 <TransactionItem
                   key={tx.id}

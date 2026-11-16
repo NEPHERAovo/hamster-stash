@@ -45,7 +45,7 @@ export function SegToggle<T extends string | number>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex-1 inline-flex items-center justify-center gap-1.5 font-medium transition-all duration-150 cursor-pointer rounded-(--toggle-item-radius)',
+              'flex-1 inline-flex items-center justify-center gap-1.5 font-medium transition-all duration-150 cursor-pointer rounded-(--toggle-item-radius) whitespace-nowrap',
               sizeStyles[size],
               isSelected
                 ? 'bg-(--toggle-active-bg) text-(--toggle-active-fg) shadow-xs font-semibold'
