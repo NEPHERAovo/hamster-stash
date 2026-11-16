@@ -150,8 +150,8 @@ export function createLiquidProgram(
   gl.attachShader(prog, fs);
   gl.linkProgram(prog);
 
-  if (!gl.getShaderParameter(prog, gl.LINK_STATUS)) {
-    const info = gl.getShaderInfoLog(prog) || 'Unknown link error';
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    const info = gl.getProgramInfoLog(prog) || 'Unknown link error';
     gl.deleteProgram(prog);
     throw new Error(`Program link error: ${info}`);
   }

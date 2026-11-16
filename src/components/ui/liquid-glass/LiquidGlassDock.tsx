@@ -10,6 +10,7 @@ import {
   uploadLayerTexture,
   type DockTabItem,
   isTabActive,
+  resolveTabLabel,
 } from './drawDockTexture';
 import { useLiquidSpring } from './useLiquidSpring';
 import { cn } from '../../../utils/cn';
@@ -94,7 +95,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     let prog: WebGLProgram;
     try {
       prog = createLiquidProgram(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
-    } catch {
+    } catch (e) {
+      console.error('Failed to create LiquidGlassDock program:', e);
       return;
     }
 
@@ -286,10 +288,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         gl.deleteTexture(activeTex);
         gl.deleteBuffer(buf);
         gl.deleteProgram(prog);
-        const loseExt = gl.getExtension('WEBGL_lose_context');
-        if (loseExt) {
-          loseExt.loseContext();
-        }
       }
     };
   }, []);
@@ -359,6 +357,33 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         id="droplet-canvas"
         className="absolute -left-[14px] -right-[14px] -top-[16px] -bottom-[16px] w-[calc(100%+28px)] h-[calc(100%+32px)] pointer-events-none z-10"
       />
+
+      <div className="absolute inset-0 flex items-stretch z-20 pointer-events-auto">
+        {tabs.map((tab, idx) => {
+          const tabId = tab.id || tab.path || '';
+          const active = isTabActive(tab, activeTab);
+          const label = resolveTabLabel(tab);
+          return (
+            <button
+              key={tabId || idx}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              title={label}
+              aria-label={label}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!active) {
+                  onTabChange(tabId);
+                }
+              }}
+              className="flex-1 opacity-0 cursor-pointer"
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };
