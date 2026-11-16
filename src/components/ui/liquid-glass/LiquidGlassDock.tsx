@@ -48,6 +48,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const stepRef = useRef(step);
   stepRef.current = step;
 
+  const isPointerDownRef = useRef(false);
+  const pointerDownXRef = useRef(0);
   const isDraggingRef = useRef(false);
   const pressTargetRef = useRef(0);
   const texturesDirtyRef = useRef(true);
@@ -84,7 +86,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl = canvas.getContext('webgl', {
         alpha: true,
         antialias: true,
-        premultipliedAlpha: false,
+        premultipliedAlpha: true,
       });
     } catch {
       gl = null;
@@ -296,42 +298,94 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const dockShell = dockShellRef.current;
     if (!dockShell) return;
 
-    isDraggingRef.current = true;
-    pressTargetRef.current = 1.0;
-    dockShell.setPointerCapture(e.pointerId);
-
     const rect = dockShell.getBoundingClientRect();
-    const localX = Math.max(30, Math.min(rect.width - 30, e.clientX - rect.left));
-    setDragPosition(localX);
+    const localX = e.clientX - rect.left;
+    pointerDownXRef.current = localX;
+    isPointerDownRef.current = true;
+    isDraggingRef.current = false;
+    pressTargetRef.current = 0.45;
+
+    try {
+      dockShell.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isPointerDownRef.current) return;
     const dockShell = dockShellRef.current;
     if (!dockShell) return;
 
     const rect = dockShell.getBoundingClientRect();
-    const localX = Math.max(30, Math.min(rect.width - 30, e.clientX - rect.left));
-    setDragPosition(localX);
+    const localX = e.clientX - rect.left;
+    const dx = Math.abs(localX - pointerDownXRef.current);
+
+    if (!isDraggingRef.current) {
+      if (dx > 8) {
+        isDraggingRef.current = true;
+        pressTargetRef.current = 1.0;
+      }
+    }
+
+    if (isDraggingRef.current) {
+      const clampedX = Math.max(26, Math.min(rect.width - 26, localX));
+      setDragPosition(clampedX);
+    }
   };
 
   const handlePointerRelease = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isPointerDownRef.current) return;
+    const wasDragging = isDraggingRef.current;
+    const downX = pointerDownXRef.current;
+    isPointerDownRef.current = false;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
 
     const dockShell = dockShellRef.current;
-    if (!dockShell) return;
+    if (dockShell) {
+      try {
+        if (dockShell.hasPointerCapture(e.pointerId)) {
+          dockShell.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // ignore
+      }
+    }
 
-    const rect = dockShell.getBoundingClientRect();
-    const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+    const rect = dockShell?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
+
     const currentTabs = tabsRef.current;
-    const tabIdx = Math.floor((localX / rect.width) * currentTabs.length);
+    if (currentTabs.length === 0) return;
+
+    const colW = rect.width / currentTabs.length;
+    const targetCoord = wasDragging
+      ? Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left))
+      : downX;
+    const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(targetCoord / colW)));
     const selectedTab = currentTabs[tabIdx];
     if (selectedTab) {
       const chosenId = selectedTab.id || selectedTab.path || '';
       if (!isTabActive(selectedTab, activeTabRef.current)) {
+        activeTabRef.current = chosenId;
         onTabChangeRef.current(chosenId);
+      }
+    }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    isPointerDownRef.current = false;
+    isDraggingRef.current = false;
+    pressTargetRef.current = 0.0;
+    const dockShell = dockShellRef.current;
+    if (dockShell) {
+      try {
+        if (dockShell.hasPointerCapture(e.pointerId)) {
+          dockShell.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // ignore
       }
     }
   };
@@ -345,7 +399,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerRelease}
-      onPointerCancel={handlePointerRelease}
+      onPointerCancel={handlePointerCancel}
       className={cn(
         'relative h-[60px] rounded-full border border-(--rule-hairline) transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl shadow-md',
         className
@@ -373,7 +427,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
               aria-label={label}
               onClick={(e) => {
                 e.stopPropagation();
-                if (!active) {
+                if (!isTabActive(tab, activeTabRef.current)) {
+                  activeTabRef.current = tabId;
                   onTabChange(tabId);
                 }
               }}

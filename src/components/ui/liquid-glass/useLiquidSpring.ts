@@ -32,22 +32,33 @@ export function useLiquidSpring() {
     }
 
     if (!isDragging) {
-      const force = (targetX - s.dropletX) * 280;
-      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-17 * dt);
+      const force = (targetX - s.dropletX) * 320;
+      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-20 * dt);
       s.dropletX += s.dropletVelX * dt;
+
+      if (Math.abs(targetX - s.dropletX) < 0.1 && Math.abs(s.dropletVelX) < 0.5) {
+        s.dropletX = targetX;
+        s.dropletVelX = 0;
+      }
     }
 
     const pressRate = pressTarget > s.pressAmount ? 26 : 12;
     s.pressAmount += (pressTarget - s.pressAmount) * Math.min(1, dt * pressRate);
 
-    const glideEnergy = Math.min(1.0, Math.abs(s.dropletVelX) / 360.0);
-    const rawTrigger = Math.min(1.0, Math.max(s.pressAmount, glideEnergy));
-    const triggerRate = rawTrigger > s.smoothTrigger ? 24 : 9;
+    // Couple uTrigger to active drag pressure, distance to target, and spring velocity:
+    const distanceToTarget = Math.abs(targetX - s.dropletX);
+    const distFactor = Math.min(1.0, distanceToTarget / Math.max(1, colW * 0.75));
+    const velFactor = Math.min(1.0, Math.abs(s.dropletVelX) / 280.0);
+    const travelEnergy = Math.max(velFactor, distFactor * 0.65);
+
+    const rawTrigger = Math.min(1.0, Math.max(s.pressAmount, travelEnergy));
+    const triggerRate = rawTrigger > s.smoothTrigger ? 24 : 10;
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * triggerRate);
 
-    const stretchX = Math.min(10, Math.abs(s.dropletVelX) * 0.016);
-    const dropHalfW = colW * 0.48 + s.smoothTrigger * 6.5 + stretchX;
-    const dropHalfH = dockH * 0.41 + s.smoothTrigger * 8.0;
+    // Swell & stretch horizontally while moving, then soft-settle scale/height on landing:
+    const stretchX = Math.min(8.0, Math.abs(s.dropletVelX) * 0.015);
+    const dropHalfW = colW * 0.46 + s.smoothTrigger * 5.0 + stretchX;
+    const dropHalfH = dockH * 0.40 + s.smoothTrigger * 4.5;
 
     return {
       dropletX: s.dropletX,

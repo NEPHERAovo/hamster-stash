@@ -61,15 +61,16 @@ export const FRAGMENT_SHADER_SOURCE = `
       vec3 outRgb = mix(shadowCol, inactiveRgb, dockAlpha);
       float outAlpha = max(dockAlpha, shadowAlpha);
       if (outAlpha <= 0.001) discard;
-      gl_FragColor = vec4(outRgb, outAlpha);
+      gl_FragColor = vec4(outRgb * outAlpha, outAlpha);
       return;
     }
 
     float distInward = max(0.0, -dDrop);
 
-    float rimWidth = 12.0;
+    // Rim meniscus strictly confined to outer 3.5px perimeter
+    float rimWidth = 3.5;
     float rimNorm = clamp(1.0 - distInward / rimWidth, 0.0, 1.0);
-    float meniscusCurve = pow(rimNorm, 1.85);
+    float meniscusCurve = pow(rimNorm, 1.8);
 
     vec2 rel = p - uDropletRect.xy;
     vec2 b = uDropletRect.zw - uDropletRect.w;
@@ -82,33 +83,38 @@ export const FRAGMENT_SHADER_SOURCE = `
     float activeRefract = uRefraction * uTrigger;
     float activeDisp = uDispersion * uTrigger;
 
-    vec2 refractOffset = outNormal * (meniscusCurve * 0.048 * activeRefract)
-                       - (rel / uDropletRect.zw) * (0.010 * activeRefract);
-
+    vec2 refractOffset = outNormal * (meniscusCurve * 0.048 * activeRefract);
     vec2 dispShift = outNormal * (meniscusCurve * 0.036 * activeDisp);
+
     float r = sampleScene(baseUV + refractOffset + dispShift).r;
     float g = sampleScene(baseUV + refractOffset).g;
     float bCol = sampleScene(baseUV + refractOffset - dispShift).b;
     vec3 crystalColor = vec3(r, g, bCol);
 
-    vec3 restTint = uDark > 0.5 ? vec3(0.26, 0.30, 0.44) : vec3(0.92, 0.94, 0.98);
-    crystalColor = mix(crystalColor, restTint, (1.0 - uTrigger) * (uDark > 0.5 ? 0.32 : 0.42));
+    // Directional physical rim optics using outNormal:
+    // 1. Left & Right Curved End-Caps: delicate smoky/cool-slate internal refraction shadow
+    float xFactor = pow(max(abs(outNormal.x), 0.0), 1.8);
+    float flankBand = smoothstep(3.5, 0.5, distInward) * smoothstep(0.0, 0.6, distInward);
+    float flankShade = flankBand * xFactor * (uDark > 0.5 ? 0.22 : 0.09) * uRimStrength * (0.35 + 0.65 * uTrigger);
+    vec3 flankShadowCol = uDark > 0.5 ? vec3(0.05, 0.07, 0.12) : vec3(0.38, 0.42, 0.52);
+    crystalColor = mix(crystalColor, flankShadowCol, flankShade);
 
-    float bevelShade = smoothstep(5.5, 0.6, distInward) * smoothstep(0.0, 0.8, distInward);
-    float shadeStrength = bevelShade * (uDark > 0.5 ? 0.16 : 0.055) * uRimStrength * (0.2 + 0.8 * uTrigger);
-    crystalColor *= (1.0 - shadeStrength);
+    // 2. Top & Bottom Horizontal Arcs: crisp white specular highlights
+    float yFactor = pow(max(abs(outNormal.y), 0.0), 1.6);
+    float topKey = max(-outNormal.y, 0.0);
+    float botBounce = max(outNormal.y, 0.0);
+    float arcWeight = topKey * 0.85 + botBounce * 0.38;
 
-    float topArc = pow(max(dot(outNormal, normalize(vec2(-0.15, -0.99))), 0.0), 2.6);
-    float botArc = pow(max(dot(outNormal, normalize(vec2(0.15, 0.99))), 0.0), 3.0);
-    float innerHighlightBand = smoothstep(2.4, 0.3, distInward);
-    float hairBorder = smoothstep(1.1, 0.0, distInward);
-
-    float spec = innerHighlightBand * (topArc * 0.75 + botArc * 0.45) * (0.25 + 0.75 * uTrigger);
-    vec3 specColor = uDark > 0.5 ? vec3(0.85, 0.90, 1.0) : vec3(1.0, 1.0, 1.0);
+    float highlightBand = smoothstep(2.8, 0.4, distInward) * smoothstep(0.0, 0.5, distInward);
+    float spec = highlightBand * yFactor * arcWeight * (0.38 + 0.62 * uTrigger);
+    vec3 specColor = uDark > 0.5 ? vec3(0.92, 0.95, 1.0) : vec3(1.0, 1.0, 1.0);
     crystalColor = clamp(crystalColor + specColor * spec, 0.0, 1.0);
 
-    vec3 edgeLineCol = uDark > 0.5 ? vec3(0.45, 0.52, 0.70) : vec3(0.76, 0.79, 0.86);
-    crystalColor = mix(crystalColor, edgeLineCol, hairBorder * 0.38 * uRimStrength * (0.3 + 0.7 * uTrigger));
+    // 3. Crisp hairline outer boundary definition (outermost 1.2px)
+    float hairBorder = smoothstep(1.2, 0.2, distInward);
+    vec3 edgeLineCol = uDark > 0.5 ? vec3(0.50, 0.58, 0.72) : vec3(0.80, 0.84, 0.90);
+    float edgeWeight = hairBorder * (yFactor * 0.40 + xFactor * 0.25) * uRimStrength * 0.35;
+    crystalColor = mix(crystalColor, edgeLineCol, edgeWeight);
 
     vec3 bgRgb = mix(shadowCol, texture2D(uInactiveTex, baseUV).rgb, dockMask * 0.92);
     float bgAlpha = max(dockMask * 0.92, shadowAlpha);
@@ -116,7 +122,8 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec3 outRgb = mix(bgRgb, crystalColor, dropMask);
     float outAlpha = max(bgAlpha, dropMask);
 
-    gl_FragColor = vec4(outRgb, outAlpha);
+    if (outAlpha <= 0.001) discard;
+    gl_FragColor = vec4(outRgb * outAlpha, outAlpha);
   }
 `;
 
