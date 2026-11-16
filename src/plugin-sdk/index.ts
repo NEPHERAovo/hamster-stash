@@ -16,6 +16,7 @@ export type {
   ReimburseStatus,
   VoucherAttachment,
 } from './types/common';
+export type { CreateTransactionInput } from '../domain/transaction/transactionService';
 export type { Account, AccountType } from './types/common';
 export type { Category, CategoryType } from './types/common';
 
@@ -23,6 +24,7 @@ export {
   useHostTransactions,
   useHostAccounts,
   useHostCategories,
+  getHostCategories,
   useHostCurrentMonth,
 } from './hooks/useHostData';
 export { useHostTransactionActions } from './hooks/useHostTransactionActions';

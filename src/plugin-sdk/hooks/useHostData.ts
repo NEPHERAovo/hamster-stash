@@ -28,6 +28,10 @@ export function useHostCategories(): Category[] {
   return useCategoryStore((s) => s.categories);
 }
 
+export function getHostCategories(): Category[] {
+  return useCategoryStore.getState().categories;
+}
+
 /**
  * 宿主当前选定月份 (YYYY-MM)
  */

@@ -4,11 +4,11 @@ import {
   type PluginManifest,
   type PluginContext,
   type Transaction,
+  type CreateTransactionInput,
+  getHostCategories,
 } from '../../plugin-sdk';
-import type { CreateTransactionInput } from '../../domain/transaction/transactionService';
 import type { Item } from './types';
 import { usePluginItemStore } from './store/usePluginItemStore';
-import { useCategoryStore } from '../../stores/useCategoryStore';
 import { ItemListSubPage } from './components/ItemListSubPage';
 import { ItemDetailSubPage } from './components/ItemDetailSubPage';
 import { ItemFormModal } from './components/ItemFormModal';
@@ -53,7 +53,7 @@ export class OwnedItemsPlugin extends BasePlugin {
       const itemExt = mCtx.payload.input?.ext?.['owned-items'] as Record<string, unknown> | undefined;
 
       if (itemExt?.createNewItem) {
-        const cat = useCategoryStore.getState().categories.find((c) => c.id === mCtx.payload.input?.categoryId);
+        const cat = getHostCategories().find((c) => c.id === mCtx.payload.input?.categoryId);
         const itemName = mCtx.payload.input?.note?.trim() || cat?.name || '新物品';
         const itemIcon = cat?.icon || 'box';
         const buyDate = mCtx.payload.input?.date || new Date().toISOString().split('T')[0];
