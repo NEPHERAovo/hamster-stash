@@ -1,5 +1,6 @@
 import React from 'react';
 import { getCategoryIcon } from '../../utils/categoryIcons';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 import type { Category } from '../../types/category';
 import type { TransactionType } from '../../types/transaction';
@@ -62,6 +63,9 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   size = 'md',
   className,
 }) => {
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
+
   const isIncome = type === 'income' || category?.type === 'income';
   const isTransfer = type === 'transfer';
   const isLoan = type === 'loan';
@@ -83,8 +87,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
     colorClasses = `${matchedStyle.bg} ${matchedStyle.text} ${matchedStyle.border}`;
   }
 
-  const sizeClasses =
-    size === 'sm'
+  const sizeClasses = isModern
+    ? size === 'sm'
+      ? 'w-6 h-6 rounded-full'
+      : 'w-8 h-8 rounded-full'
+    : size === 'sm'
       ? 'w-5 h-5 rounded-xs'
       : 'w-[26px] h-[26px] rounded-xs';
 
@@ -94,11 +101,12 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
         'flex items-center justify-center shrink-0 border transition-all duration-150',
         sizeClasses,
         colorClasses,
+        isModern && 'border-transparent shadow-xs',
         className
       )}
     >
       <IconComponent
-        size={size === 'sm' ? 11 : 13}
+        size={isModern ? (size === 'sm' ? 13 : 16) : (size === 'sm' ? 11 : 13)}
         strokeWidth={1.85}
         className="shrink-0"
       />

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Delete, Trash2 } from 'lucide-react';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface PaperKeypadProps {
@@ -27,6 +28,8 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
 }) => {
   const [useMinus, setUseMinus] = useState(false);
   const [useDivide, setUseDivide] = useState(false);
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
 
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -67,31 +70,48 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
     onFinish();
   };
 
+  const digitBtnClass = cn(
+    'h-11 font-mono text-base font-semibold flex items-center justify-center transition-all cursor-pointer',
+    isModern
+      ? 'rounded-2xl border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-primary) shadow-2xs hover:bg-(--paper-sunken)/80 active:scale-[0.95]'
+      : 'rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken)'
+  );
+
+  const opBtnClass = cn(
+    'h-11 font-mono text-sm font-semibold flex items-center justify-center transition-all cursor-pointer',
+    isModern
+      ? 'rounded-2xl border border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) active:scale-[0.95]'
+      : 'rounded-xs border border-(--border-hairline) bg-(--bg-hover) text-(--ink-secondary) active:bg-(--bg-sunken) active:scale-[0.97]'
+  );
+
   return (
     <div
       className={cn(
-        'grid grid-cols-4 gap-1 p-2 pb-[calc(10px+var(--safe-bottom))] bg-(--bg-sunken) select-none border-t border-(--border-hairline)',
+        'grid grid-cols-4 gap-1.5 p-2 pb-[calc(10px+var(--safe-bottom))] select-none transition-colors duration-200',
+        isModern
+          ? 'bg-(--paper-sheet)/60 backdrop-blur-xl border-t border-(--rule-hairline)'
+          : 'bg-(--bg-sunken) border-t border-(--border-hairline)',
         className
       )}
     >
       <button
         type="button"
         onClick={() => handleDigitPress('7')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         7
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('8')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         8
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('9')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         9
       </button>
@@ -99,7 +119,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
         type="button"
         onClick={handlePlusMinus}
         title="加/减运算符"
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-hover) text-(--ink-secondary) font-mono text-sm font-semibold flex items-center justify-center active:bg-(--bg-sunken) active:scale-[0.97] transition-transform cursor-pointer"
+        className={opBtnClass}
       >
         {useMinus ? '−' : '+'}
       </button>
@@ -107,21 +127,21 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
       <button
         type="button"
         onClick={() => handleDigitPress('4')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         4
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('5')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         5
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('6')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         6
       </button>
@@ -129,7 +149,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
         type="button"
         onClick={handleMultiplyDivide}
         title="乘/除运算符"
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-hover) text-(--ink-secondary) font-mono text-sm font-semibold flex items-center justify-center active:bg-(--bg-sunken) active:scale-[0.97] transition-transform cursor-pointer"
+        className={opBtnClass}
       >
         {useDivide ? '÷' : '×'}
       </button>
@@ -137,21 +157,21 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
       <button
         type="button"
         onClick={() => handleDigitPress('1')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         1
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('2')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         2
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('3')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         3
       </button>
@@ -162,7 +182,12 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
             triggerHaptic();
             onSaveAnother?.();
           }}
-          className="h-11 rounded-xs border border-(--border-default) bg-(--bg-surface) text-(--ink-primary) text-xs font-semibold flex items-center justify-center active:bg-(--bg-hover) active:scale-[0.97] transition-transform cursor-pointer"
+          className={cn(
+            'h-11 text-xs font-semibold flex items-center justify-center transition-all cursor-pointer',
+            isModern
+              ? 'rounded-2xl border border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-primary) active:scale-[0.95]'
+              : 'rounded-xs border border-(--border-default) bg-(--bg-surface) text-(--ink-primary) active:bg-(--bg-hover) active:scale-[0.97]'
+          )}
         >
           再记一笔
         </button>
@@ -173,7 +198,12 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
             triggerHaptic();
             onDelete?.();
           }}
-          className="h-11 rounded-xs border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) text-xs font-semibold flex items-center justify-center gap-1 active:scale-[0.97] transition-transform cursor-pointer"
+          className={cn(
+            'h-11 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer',
+            isModern
+              ? 'rounded-2xl border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.95]'
+              : 'rounded-xs border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.97]'
+          )}
         >
           <Trash2 className="w-3.5 h-3.5 stroke-2" />
           <span>删除</span>
@@ -183,14 +213,14 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
       <button
         type="button"
         onClick={() => handleDigitPress('.')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-lg font-bold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={cn(digitBtnClass, 'text-lg font-bold')}
       >
         .
       </button>
       <button
         type="button"
         onClick={() => handleDigitPress('0')}
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={digitBtnClass}
       >
         0
       </button>
@@ -198,7 +228,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
         type="button"
         onClick={handleBackspacePress}
         title="退格"
-        className="h-11 rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken) transition-transform cursor-pointer"
+        className={cn(digitBtnClass, 'text-base')}
       >
         <Delete className="w-4.5 h-4.5 stroke-[1.8]" />
       </button>
@@ -206,7 +236,12 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
         type="button"
         onClick={handleFinishPress}
         disabled={!canFinish}
-        className="h-11 rounded-xs border-none bg-(--ink-primary) text-(--bg-surface) text-xs font-mono font-semibold tracking-wider uppercase flex items-center justify-center shadow-(--shadow-xs) active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-transform cursor-pointer"
+        className={cn(
+          'h-11 text-xs font-mono font-semibold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+          isModern
+            ? 'rounded-2xl border-none bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] shadow-[0_4px_14px_rgba(22,119,255,0.4)] active:scale-[0.95]'
+            : 'rounded-xs border-none bg-(--ink-primary) text-(--bg-surface) shadow-(--shadow-xs) active:scale-[0.97]'
+        )}
       >
         {mode === 'create' ? 'OK' : 'SAVE'}
       </button>

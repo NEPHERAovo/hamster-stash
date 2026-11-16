@@ -6,6 +6,7 @@ import type { Account } from '../../types/account';
 import { TransactionItem } from './TransactionItem';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface TransactionGroupProps {
@@ -31,6 +32,8 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 }) => {
   const isInitialLoaded = useLedgerStore((s) => s.isInitialLoaded);
   const effectiveLoading = isLoading !== undefined ? isLoading : !isInitialLoaded;
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -151,14 +154,23 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
             )}
           </div>
 
-          <div className="flex gap-1 shrink-0 font-mono text-[11px]">
+          <div
+            className={cn(
+              isModern
+                ? 'flex items-center gap-1 p-0.5 bg-(--paper-sunken) rounded-full border border-(--rule-hairline) shrink-0'
+                : 'flex gap-1 shrink-0 font-mono text-[11px]'
+            )}
+          >
             <button
               type="button"
               className={cn(
-                'px-2 py-1 rounded-xs text-[10px] transition-all cursor-pointer select-none',
+                'px-2 py-1 text-[10px] transition-all cursor-pointer select-none',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 filter === 'all'
-                  ? 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
-                  : 'text-(--ink-tertiary) bg-(--paper-sunken)/50 hover:text-(--ink-primary)'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-semibold shadow-xs'
+                    : 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
+                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
               )}
               onClick={() => setFilter('all')}
             >
@@ -167,10 +179,13 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
             <button
               type="button"
               className={cn(
-                'px-2 py-1 rounded-xs text-[10px] transition-all cursor-pointer select-none',
+                'px-2 py-1 text-[10px] transition-all cursor-pointer select-none',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 filter === 'reimbursable'
-                  ? 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
-                  : 'text-(--ink-tertiary) bg-(--paper-sunken)/50 hover:text-(--ink-primary)'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-semibold shadow-xs'
+                    : 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
+                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
               )}
               onClick={() => setFilter('reimbursable')}
             >
@@ -179,10 +194,13 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
             <button
               type="button"
               className={cn(
-                'px-2 py-1 rounded-xs text-[10px] transition-all cursor-pointer select-none',
+                'px-2 py-1 text-[10px] transition-all cursor-pointer select-none',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 filter === 'major'
-                  ? 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
-                  : 'text-(--ink-tertiary) bg-(--paper-sunken)/50 hover:text-(--ink-primary)'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-semibold shadow-xs'
+                    : 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
+                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
               )}
               onClick={() => setFilter('major')}
             >
@@ -269,6 +287,51 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 
             const dayNum = dayCode.slice(0, 2);
             const dayWeek = dayCode.slice(3);
+
+            if (isModern) {
+              return (
+                <div key={date} className={cn(contained ? 'mx-0' : 'mx-4', 'mb-4 select-none')}>
+                  <div className="flex items-center justify-between px-1 pb-1.5 text-xs text-(--ink-secondary)">
+                    <div className="flex items-center gap-1.5 font-sans font-semibold">
+                      <span className="text-[13px] font-bold text-(--ink-primary)">
+                        {dayNum}日
+                      </span>
+                      <span className="text-xs text-(--ink-tertiary)">
+                        {dayWeek}
+                      </span>
+                      <span className="text-[11px] text-(--ink-tertiary)">
+                        · {txList.length}笔
+                      </span>
+                    </div>
+                    <span
+                      className={cn(
+                        'font-mono text-xs tabular-nums font-semibold shrink-0',
+                        dayNet >= 0 ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
+                      )}
+                    >
+                      {daySumFormatted}
+                    </span>
+                  </div>
+
+                  <div className="bg-(--paper-sheet) rounded-[22px] backdrop-blur-xl border border-(--rule-hairline) shadow-sm p-1.5 space-y-1">
+                    {txList.map((tx, idx) => (
+                      <TransactionItem
+                        key={tx.id}
+                        transaction={tx}
+                        category={catMap.get(tx.categoryId)}
+                        account={acctMap.get(tx.accountId)}
+                        toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
+                        isFresh={activeFreshId === tx.id}
+                        isLastInGroup={idx === txList.length - 1}
+                        offsetAmount={offsetMap.get(tx.id)}
+                        offsetTargetNote={tx.offsetTransactionId ? expenseNoteMap.get(tx.offsetTransactionId) : undefined}
+                        onClick={() => onSelectTransaction?.(tx)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div

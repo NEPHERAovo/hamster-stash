@@ -7,6 +7,7 @@ import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { CategoryBadge } from '../ui/CategoryBadge';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { PluginOverride } from '../../plugin-sdk/components/PluginOverride';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface TransactionItemProps {
@@ -38,6 +39,9 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
   onClick,
   onToggleExpand,
 }) => {
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
+
   const isIncome = transaction.type === 'income';
   const isExpense = transaction.type === 'expense';
   const isTransfer = transaction.type === 'transfer';
@@ -76,7 +80,10 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
     <div
       onClick={handleClick}
       className={cn(
-        'entry-row flex items-center justify-between px-3.5 py-2 border-b border-dashed border-(--rule-hairline)/60 hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40 relative cursor-pointer select-none transition-colors duration-150',
+        'entry-row flex items-center justify-between px-3.5 py-2 relative cursor-pointer select-none transition-all duration-150',
+        isModern
+          ? 'rounded-2xl bg-(--paper-sunken)/70 hover:bg-(--paper-sunken) active:scale-[0.99] border-none mb-1'
+          : 'border-b border-dashed border-(--rule-hairline)/60 hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40',
         isFresh && 'fresh-entry',
         isLastInGroup && '!border-b-0'
       )}

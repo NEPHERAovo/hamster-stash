@@ -15,6 +15,7 @@ import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { DrumWheelPicker } from './DrumWheelPicker';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface AddTransactionModalProps {
@@ -36,6 +37,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const allTransactions = useLedgerStore((s) => s.allTransactions);
   const { categories } = useCategoryStore();
   const { accounts } = useAccountStore();
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
 
   const [txType, setTxType] = useState<'expense' | 'income' | 'loan'>('expense');
   const [expr, setExpr] = useState('0');
@@ -414,20 +417,33 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[430px] bg-(--paper-sheet) rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09),0_-1px_3px_rgba(0,0,0,0.04)] border-t border-(--rule-hairline) flex flex-col overflow-visible sheet-slide-up relative paper-sawtooth-top"
+        className={cn(
+          'w-full max-w-[430px] flex flex-col sheet-slide-up relative transition-all duration-300',
+          isModern
+            ? 'bg-(--paper-sheet) backdrop-blur-2xl rounded-t-[28px] border-t border-(--rule-hairline) shadow-2xl overflow-hidden'
+            : 'bg-(--paper-sheet) rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09),0_-1px_3px_rgba(0,0,0,0.04)] border-t border-(--rule-hairline) overflow-visible paper-sawtooth-top'
+        )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
+        {!isModern && <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />}
 
         <div className="flex items-center justify-between px-3.5 pt-3 pb-1 border-b border-(--rule-hairline)/60">
-          <div className="flex items-center gap-1 font-mono text-xs select-none">
+          <div
+            className={cn(
+              'flex items-center gap-1 select-none',
+              isModern ? 'p-0.5 bg-(--paper-sunken) rounded-full border border-(--rule-hairline)' : 'font-mono text-xs'
+            )}
+          >
             <button
               type="button"
               onClick={() => setTxType('expense')}
               className={cn(
-                'px-2.5 py-0.5 rounded-xs transition-colors cursor-pointer',
+                'px-2.5 py-0.5 transition-colors cursor-pointer text-xs',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 txType === 'expense'
-                  ? 'bg-(--color-expense-bg) text-(--color-expense) font-bold'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-bold shadow-xs'
+                    : 'bg-(--color-expense-bg) text-(--color-expense) font-bold'
                   : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
               )}
             >
@@ -437,9 +453,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               type="button"
               onClick={() => setTxType('income')}
               className={cn(
-                'px-2.5 py-0.5 rounded-xs transition-colors cursor-pointer',
+                'px-2.5 py-0.5 transition-colors cursor-pointer text-xs',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 txType === 'income'
-                  ? 'bg-(--color-income-bg) text-(--color-income) font-bold'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-bold shadow-xs'
+                    : 'bg-(--color-income-bg) text-(--color-income) font-bold'
                   : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
               )}
             >
@@ -449,9 +468,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               type="button"
               onClick={() => setTxType('loan')}
               className={cn(
-                'px-2.5 py-0.5 rounded-xs transition-colors cursor-pointer',
+                'px-2.5 py-0.5 transition-colors cursor-pointer text-xs',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 txType === 'loan'
-                  ? 'bg-(--color-accent-bg) text-(--color-accent) font-bold'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-bold shadow-xs'
+                    : 'bg-(--color-accent-bg) text-(--color-accent) font-bold'
                   : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
               )}
             >

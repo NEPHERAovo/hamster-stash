@@ -1,6 +1,7 @@
 import React from 'react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { TrendItem } from '../../domain/finance/periodStats';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface MonthlyTrendBarProps {
@@ -14,10 +15,16 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   trends,
   className,
 }) => {
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
+
   return (
     <div
       className={cn(
-        'w-full p-3.5 sm:p-4 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] select-none',
+        'w-full p-3.5 sm:p-4 bg-(--paper-sheet) border border-(--rule-hairline) select-none transition-all duration-200',
+        isModern
+          ? 'rounded-[22px] backdrop-blur-xl shadow-md'
+          : 'rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]',
         className
       )}
     >
@@ -33,9 +40,17 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
             <span className="w-8 sm:w-11 text-[11px] sm:text-xs font-medium text-(--ink-tertiary) text-right shrink-0 font-mono">
               {t.label}
             </span>
-            <div className="flex-1 h-3.5 sm:h-4 bg-(--paper-sunken) rounded-[1px] overflow-hidden">
+            <div
+              className={cn(
+                'flex-1 h-3.5 sm:h-4 bg-(--paper-sunken) overflow-hidden',
+                isModern ? 'rounded-full' : 'rounded-[1px]'
+              )}
+            >
               <div
-                className="h-full rounded-[1px] bg-(--color-expense) opacity-85 transition-all duration-300"
+                className={cn(
+                  'h-full opacity-85 transition-all duration-300',
+                  isModern ? 'rounded-full bg-(--color-expense)' : 'rounded-[1px] bg-(--color-expense)'
+                )}
                 style={{ width: `${t.percentage}%` }}
               />
             </div>

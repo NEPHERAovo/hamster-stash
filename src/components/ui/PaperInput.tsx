@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface PaperInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -25,11 +26,16 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
     },
     ref
   ) => {
+    const uiStyle = useThemeStore((s) => s.uiStyle);
+    const isModern = uiStyle === 'modern';
+
     const variantStyles = {
-      sunken:
-        'bg-(--bg-sunken) border-(--border-hairline) focus-within:border-(--border-strong) focus-within:bg-(--bg-surface)',
-      surface:
-        'bg-(--bg-surface) border-(--border-hairline) focus-within:border-(--border-strong) shadow-(--shadow-xs)',
+      sunken: isModern
+        ? 'bg-(--paper-sunken) border-(--rule-hairline) focus-within:border-(--border-strong)'
+        : 'bg-(--bg-sunken) border-(--border-hairline) focus-within:border-(--border-strong) focus-within:bg-(--bg-surface)',
+      surface: isModern
+        ? 'bg-(--paper-sheet) backdrop-blur-md border-(--rule-hairline) focus-within:border-(--border-strong) shadow-(--shadow-sm)'
+        : 'bg-(--bg-surface) border-(--border-hairline) focus-within:border-(--border-strong) shadow-(--shadow-xs)',
       ghost:
         'bg-transparent border-transparent focus-within:border-(--border-default) focus-within:bg-(--bg-surface)',
     };
@@ -39,7 +45,8 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
     return (
       <div
         className={cn(
-          'relative flex items-center h-10 px-3 rounded-(--radius-sm) border transition-all duration-200',
+          'relative flex items-center h-10 px-3 border transition-all duration-200',
+          isModern ? 'rounded-full' : 'rounded-(--radius-sm)',
           variantStyles[variant],
           disabled && 'opacity-50 cursor-not-allowed',
           className

@@ -17,6 +17,7 @@ import { DonutChart } from './DonutChart';
 import { CategoryLegend } from './CategoryLegend';
 import { MonthlyTrendBar } from './MonthlyTrendBar';
 import { SpendingRankList } from './SpendingRankList';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface StatsViewProps {
@@ -44,6 +45,8 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const [internalMode, setInternalMode] = useState<PeriodMode>('month');
   const mode = controlledMode || internalMode;
   const setMode = onModeChange || setInternalMode;
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
 
@@ -123,16 +126,26 @@ export const StatsView: React.FC<StatsViewProps> = ({
   return (
     <div className="py-2 space-y-3.5 pb-6">
       {!controlledMode && (
-        <div className="flex bg-(--paper-sunken) p-0.5 rounded-[3px] border border-(--rule-hairline) mx-auto max-w-[200px] select-none">
+        <div
+          className={cn(
+            'flex p-0.5 mx-auto max-w-[200px] select-none transition-all duration-200',
+            isModern
+              ? 'bg-(--paper-sunken) rounded-full border border-(--rule-hairline)'
+              : 'bg-(--paper-sunken) rounded-[3px] border border-(--rule-hairline)'
+          )}
+        >
           {(['week', 'month', 'year'] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
               className={cn(
-                'flex-1 py-1 text-xs font-semibold rounded-xs transition-all cursor-pointer text-center font-mono',
+                'flex-1 py-1 text-xs font-semibold transition-all cursor-pointer text-center font-mono',
+                isModern ? 'rounded-full' : 'rounded-xs',
                 mode === m
-                  ? 'bg-(--paper-sheet) text-(--ink-primary) shadow-2xs font-bold'
+                  ? isModern
+                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] shadow-xs font-bold'
+                    : 'bg-(--paper-sheet) text-(--ink-primary) shadow-2xs font-bold'
                   : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
               )}
             >
@@ -143,14 +156,22 @@ export const StatsView: React.FC<StatsViewProps> = ({
       )}
 
       <div className="flex items-center justify-between px-1 select-none">
-        <span className="font-serif not-italic text-lg sm:text-xl text-(--ink-solid) tracking-tight">
+        <span
+          className={cn(
+            'text-lg sm:text-xl text-(--ink-solid) tracking-tight',
+            isModern ? 'font-sans font-bold text-(--ink-primary)' : 'font-serif not-italic'
+          )}
+        >
           {formattedPeriodTitle}
         </span>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={handlePrevPeriod}
-            className="w-7 h-7 flex items-center justify-center rounded-xs bg-(--paper-base) border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono"
+            className={cn(
+              'w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono',
+              isModern ? 'rounded-full bg-(--paper-sheet) backdrop-blur-md shadow-xs' : 'rounded-xs bg-(--paper-base)'
+            )}
             title="上个周期"
             aria-label="上个周期"
           >
@@ -159,7 +180,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
           <button
             type="button"
             onClick={handleNextPeriod}
-            className="w-7 h-7 flex items-center justify-center rounded-xs bg-(--paper-base) border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono"
+            className={cn(
+              'w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono',
+              isModern ? 'rounded-full bg-(--paper-sheet) backdrop-blur-md shadow-xs' : 'rounded-xs bg-(--paper-base)'
+            )}
             title="下个周期"
             aria-label="下个周期"
           >
@@ -169,7 +193,14 @@ export const StatsView: React.FC<StatsViewProps> = ({
       </div>
 
       {totalExpense === 0 ? (
-        <div className="w-full p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] text-center text-xs text-(--ink-tertiary) flex flex-col items-center gap-1.5 select-none">
+        <div
+          className={cn(
+            'w-full p-6 bg-(--paper-sheet) border border-(--rule-hairline) text-center text-xs text-(--ink-tertiary) flex flex-col items-center gap-1.5 select-none transition-all duration-200',
+            isModern
+              ? 'rounded-[22px] backdrop-blur-xl shadow-md'
+              : 'rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]'
+          )}
+        >
           <PieChart className="w-6 h-6 stroke-[1.5] text-(--ink-faint)" />
           <span>本周期暂无支出记录</span>
         </div>
@@ -178,7 +209,14 @@ export const StatsView: React.FC<StatsViewProps> = ({
       )}
 
       {totalExpense > 0 && (
-        <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] select-none">
+        <div
+          className={cn(
+            'w-full p-3.5 sm:p-5 bg-(--paper-sheet) border border-(--rule-hairline) select-none transition-all duration-200',
+            isModern
+              ? 'rounded-[22px] backdrop-blur-xl shadow-md'
+              : 'rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]'
+          )}
+        >
           <div className="flex items-center gap-5 sm:gap-8 justify-around">
             <DonutChart
               items={donutItems}
