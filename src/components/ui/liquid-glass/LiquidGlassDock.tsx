@@ -30,7 +30,21 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const dockShellRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
+
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  const onTabChangeRef = useRef(onTabChange);
+  onTabChangeRef.current = onTabChange;
+
+  const isDarkRef = useRef(isDark);
+  isDarkRef.current = isDark;
+
   const { step, setDragPosition } = useLiquidSpring();
+  const stepRef = useRef(step);
+  stepRef.current = step;
 
   const isDraggingRef = useRef(false);
   const pressTargetRef = useRef(0);
@@ -39,6 +53,24 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   useEffect(() => {
     texturesDirtyRef.current = true;
   }, [tabs, isDark]);
+
+  useEffect(() => {
+    const dockShell = dockShellRef.current;
+    if (!dockShell || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          texturesDirtyRef.current = true;
+        }
+      }
+    });
+
+    observer.observe(dockShell);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -118,8 +150,13 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       lastTime = now;
 
       const rect = dockShell.getBoundingClientRect();
-      const dockW = Math.max(10, rect.width);
-      const dockH = Math.max(10, rect.height);
+      if (rect.width <= 0 || rect.height <= 0) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
+      const dockW = rect.width;
+      const dockH = rect.height;
       const canvasW = dockW + padX * 2;
       const canvasH = dockH + padY * 2;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -134,19 +171,22 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         texturesDirtyRef.current = true;
       }
 
+      const currentTabs = tabsRef.current;
+      const currentIsDark = isDarkRef.current;
+
       if (
         offCtx &&
         (texturesDirtyRef.current || canvasW !== lastCanvasW || canvasH !== lastCanvasH)
       ) {
-        const inactiveColor = isDark ? '#e6eaf8' : '#181b24';
-        const activeColor = isDark ? '#4d94ff' : '#1677ff';
+        const inactiveColor = currentIsDark ? '#9ba3bd' : '#11131a';
+        const activeColor = currentIsDark ? '#4d94ff' : '#1677ff';
 
         uploadLayerTexture(
           gl,
           inactiveTex,
           offCanvas,
           offCtx,
-          tabs,
+          currentTabs,
           canvasW,
           canvasH,
           padX,
@@ -154,14 +194,14 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           dockW,
           dpr,
           inactiveColor,
-          isDark
+          currentIsDark
         );
         uploadLayerTexture(
           gl,
           activeTex,
           offCanvas,
           offCtx,
-          tabs,
+          currentTabs,
           canvasW,
           canvasH,
           padX,
@@ -169,7 +209,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           dockW,
           dpr,
           activeColor,
-          isDark
+          currentIsDark
         );
 
         lastCanvasW = canvasW;
@@ -177,11 +217,11 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         texturesDirtyRef.current = false;
       }
 
-      const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeTab));
-      const colW = dockW / Math.max(1, tabs.length);
+      const activeIdx = Math.max(0, currentTabs.findIndex((t) => t.id === activeTabRef.current));
+      const colW = dockW / Math.max(1, currentTabs.length);
       const targetX = colW * (activeIdx + 0.5);
 
-      const spring = step(
+      const spring = stepRef.current(
         dt,
         targetX,
         isDraggingRef.current,
@@ -196,7 +236,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
       gl.uniform2f(uniforms.uCanvasSize, canvasW, canvasH);
       gl.uniform1f(uniforms.uDpr, dpr);
-      gl.uniform1f(uniforms.uDark, isDark ? 1.0 : 0.0);
+      gl.uniform1f(uniforms.uDark, currentIsDark ? 1.0 : 0.0);
 
       gl.uniform4f(
         uniforms.uDockRect,
@@ -248,7 +288,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         }
       }
     };
-  }, [tabs, activeTab, isDark, step]);
+  }, []);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const dockShell = dockShellRef.current;
@@ -283,16 +323,18 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
 
     const rect = dockShell.getBoundingClientRect();
     const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-    const tabIdx = Math.floor((localX / rect.width) * tabs.length);
-    const selectedTab = tabs[tabIdx];
-    if (selectedTab && selectedTab.id !== activeTab) {
-      onTabChange(selectedTab.id);
+    const currentTabs = tabsRef.current;
+    const tabIdx = Math.floor((localX / rect.width) * currentTabs.length);
+    const selectedTab = currentTabs[tabIdx];
+    if (selectedTab && selectedTab.id !== activeTabRef.current) {
+      onTabChangeRef.current(selectedTab.id);
     }
   };
 
   return (
     <div
       ref={dockShellRef}
+      id="dock-shell"
       role="tablist"
       aria-label="Navigation Dock"
       onPointerDown={handlePointerDown}
@@ -300,14 +342,14 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
       className={cn(
-        'relative h-[58px] rounded-full border transition-colors duration-200 select-none cursor-pointer',
-        'bg-(--paper-sheet) backdrop-blur-2xl border-(--rule-hairline) shadow-md',
+        'relative h-[58px] rounded-full border border-(--rule-hairline) transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl shadow-md',
         className
       )}
       style={{ touchAction: 'none' }}
     >
       <canvas
         ref={canvasRef}
+        id="droplet-canvas"
         className="absolute -left-[14px] -right-[14px] -top-[16px] -bottom-[16px] w-[calc(100%+28px)] h-[calc(100%+32px)] pointer-events-none z-10"
       />
     </div>

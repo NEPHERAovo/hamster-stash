@@ -355,35 +355,25 @@ export function App() {
         )}
       </main>
 
-      <BottomNav
-        currentTab={currentTab}
-        showAddButton={currentTab === 'ledger'}
-        isAddOpen={isAddOpen || Boolean(editingTx)}
-        onTabChange={(tab) => {
-          if (tab === currentTab) {
-            if (activeDetailAccount) {
-              setActiveDetailAccount(null);
+      {!isSettingsOpen && !isImportOpen && !activeDetailAccount && (
+        <BottomNav
+          currentTab={currentTab}
+          showAddButton={currentTab === 'ledger'}
+          isAddOpen={isAddOpen || Boolean(editingTx)}
+          onTabChange={(tab) => {
+            if (tab === currentTab) {
+              mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              setCurrentTab(tab);
+              mainScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
             }
-            if (isImportOpen) {
-              setIsImportOpen(false);
-            }
-            if (isSettingsOpen) {
-              setIsSettingsOpen(false);
-            }
-            mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-          } else {
-            setActiveDetailAccount(null);
-            setIsImportOpen(false);
-            setIsSettingsOpen(false);
-            setCurrentTab(tab);
-            mainScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
-          }
-        }}
-        onAddClick={() => {
-          setEditingTx(null);
-          setIsAddOpen((prev) => !prev);
-        }}
-      />
+          }}
+          onAddClick={() => {
+            setEditingTx(null);
+            setIsAddOpen((prev) => !prev);
+          }}
+        />
+      )}
 
       <AddTransactionModal
         isOpen={isAddOpen || Boolean(editingTx)}

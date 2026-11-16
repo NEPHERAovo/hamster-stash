@@ -108,7 +108,7 @@ export function uploadLayerTexture(
   offCtx.clearRect(0, 0, texW, texH);
   offCtx.scale(dpr, dpr);
 
-  offCtx.fillStyle = isDark ? '#1e2130' : 'rgba(255, 255, 255, 1)';
+  offCtx.fillStyle = isDark ? 'rgba(24, 25, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
   offCtx.fillRect(0, 0, canvasW, canvasH);
 
   const tabCount = Math.max(1, tabs.length);
@@ -118,7 +118,7 @@ export function uploadLayerTexture(
     const cx = padX + colW * (i + 0.5);
     drawTabIcon(offCtx, tab.id, cx, padY + 19, inkColor);
 
-    offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif';
+    offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif';
     offCtx.textAlign = 'center';
     offCtx.textBaseline = 'middle';
     offCtx.fillStyle = inkColor;
@@ -128,6 +128,7 @@ export function uploadLayerTexture(
   offCtx.restore();
 
   gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
 }
 
