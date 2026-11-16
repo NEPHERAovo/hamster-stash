@@ -2,6 +2,7 @@ import React from 'react';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { PaperBottomNav } from './PaperBottomNav';
 import { ModernBottomNav } from './ModernBottomNav';
+import type { DockTabItem } from '../ui/liquid-glass/drawDockTexture';
 
 export type NavTab = 'ledger' | 'stats' | 'assets' | string;
 
@@ -12,6 +13,7 @@ export interface BottomNavProps {
   showAddButton?: boolean;
   isAddOpen?: boolean;
   className?: string;
+  tabs?: DockTabItem[];
 }
 
 export const BottomNav: React.FC<BottomNavProps> = (props) => {

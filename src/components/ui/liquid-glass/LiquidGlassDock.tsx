@@ -9,6 +9,7 @@ import {
   createConfiguredTexture,
   uploadLayerTexture,
   type DockTabItem,
+  isTabActive,
 } from './drawDockTexture';
 import { useLiquidSpring } from './useLiquidSpring';
 import { cn } from '../../../utils/cn';
@@ -181,6 +182,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         const inactiveColor = currentIsDark ? '#9ba3bd' : '#11131a';
         const activeColor = currentIsDark ? '#4d94ff' : '#1677ff';
 
+        gl.activeTexture(gl.TEXTURE0);
         uploadLayerTexture(
           gl,
           inactiveTex,
@@ -196,6 +198,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           inactiveColor,
           currentIsDark
         );
+
+        gl.activeTexture(gl.TEXTURE1);
         uploadLayerTexture(
           gl,
           activeTex,
@@ -217,7 +221,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         texturesDirtyRef.current = false;
       }
 
-      const activeIdx = Math.max(0, currentTabs.findIndex((t) => t.id === activeTabRef.current));
+      const activeIdx = Math.max(0, currentTabs.findIndex((t) => isTabActive(t, activeTabRef.current)));
       const colW = dockW / Math.max(1, currentTabs.length);
       const targetX = colW * (activeIdx + 0.5);
 
@@ -326,8 +330,11 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const currentTabs = tabsRef.current;
     const tabIdx = Math.floor((localX / rect.width) * currentTabs.length);
     const selectedTab = currentTabs[tabIdx];
-    if (selectedTab && selectedTab.id !== activeTabRef.current) {
-      onTabChangeRef.current(selectedTab.id);
+    if (selectedTab) {
+      const chosenId = selectedTab.id || selectedTab.path || '';
+      if (!isTabActive(selectedTab, activeTabRef.current)) {
+        onTabChangeRef.current(chosenId);
+      }
     }
   };
 

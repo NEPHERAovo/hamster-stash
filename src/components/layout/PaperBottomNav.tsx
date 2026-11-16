@@ -11,6 +11,7 @@ export interface PaperBottomNavProps {
   showAddButton?: boolean;
   isAddOpen?: boolean;
   className?: string;
+  tabs?: Array<{ id?: string; label?: string; order?: number }>;
 }
 
 export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
