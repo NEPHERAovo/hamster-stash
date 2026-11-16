@@ -1,78 +1,73 @@
 # hamsterStash
 
-面向个人与小商户的极简纸感记账渐进式 Web 应用（PWA）。
+> **English** | [简体中文](README.zh-CN.md)
+
+A minimal, local-first paper stationery expense-tracking progressive web app (PWA) designed for personal and micro-business finances.
 
 ---
 
-## 核心设计理念
+## Highlights
 
-- **纸感极简设计**：微暖纸张底色配合纯代码轻量纸浆微噪点与精致方格网纹，还原真实书写手帐质感。
-- **按天成张小票**：流水以“小票”形态独立呈现，虚线分隔，告别冗余的表格线与轧账余额噪音。
-- **一体化手帐便签抽屉**：无缝滑动便签抽屉，内置复古计算器键盘、三列机械滚轮拨盘与邮票方连分类网格。
-- **双轴排版体系**：财务与对账数据严格采用 `Geist Mono` 等宽数字，存根与刊头大标题引入文学西文衬线体 `Instrument Serif`。
-- **10 套纸张主题**：内置竹青素笺、特种米白、复古牛皮、复写碳纸、古法靛蓝等 10 套深浅特种纸质感主题。
-- **微内核插件系统**：基于标准插件契约扩展，默认提供“持有物品”标准插件，支持大件物品生命周期与日均持有成本核算。
-- **真实会计与 AA 分摊**：支持记账收入关联抵扣支出，剔除虚增收入，还原真实消费。
-- **纯本地离线可用**：数据完全持久化于浏览器 IndexedDB，UI 与持久化存储完全解耦，支持完整的 JSON 与 CSV 导入导出。
-
----
-
-## 技术栈
-
-- **前端框架**：React 19 + TypeScript
-- **构建工具**：Vite
-- **样式方案**：Tailwind CSS v4 + 全局主题语义变量
-- **图标体系**：Lucide React
-- **状态管理**：Zustand
-- **本地存储**：idb（轻量 IndexedDB 包装）
-- **离线支持**：vite-plugin-pwa + Workbox
-- **自动化测试**：Vitest + Testing Library
+- **Crafted Stationery Design**: Delicate warm paper surfaces, authentic pulp micro-noise (`<feTurbulence>`), tactile torn-receipt deckle edges (`.paper-deckle`), washi tape tabs, and physical ink bleed stamps.
+- **Per-Day Receipt Grouping**: Daily transactions grouped cleanly into cohesive paper receipt sheets with dashed hairlines, eliminating distracting ledger grid lines and clutter.
+- **Notepad Bottom Sheet**: Seamless sliding drawer equipped with an integrated 4x4 desktop calculator keypad, a 3-column mechanical drum-wheel date/time picker, and stamp-block category grids.
+- **AA Bill-Splitting & Expense Offsetting**: True double-entry style offset accounting. Shared expense reimbursements link directly to original expenses, preventing artificial income inflation while adjusting net consumption.
+- **Local-First & Offline Privacy**: Data persists directly within browser IndexedDB via a pluggable `DataAdapter`. Fully functional without network connectivity; full JSON and CSV backup/restore supported.
+- **10 Paper Stationery Themes**: 5 Light themes (Sage, Cotton, Kraft, Mist, Cherry) and 5 Dark themes (Carbon, Indigo, Espresso, Obsidian, Pine) mapped entirely through semantic CSS tokens.
+- **Micro-Kernel Plugin SDK**: Extensible micro-kernel architecture (`src/plugin-sdk/`) supporting UI slot insertion, component overrides, onion middleware, and zero-migration plugin storage. Ships with a reference `Owned Items` plugin for tracking asset lifecycles and daily holding costs.
 
 ---
 
-## 快速开始
+## Tech Stack
 
-### 1. 安装依赖
+- **Framework**: React 19 + TypeScript
+- **Bundler & Tooling**: Vite + `@vite-pwa/plugin`
+- **Styling**: Tailwind CSS v4 + Semantic CSS Variables
+- **Icons**: Lucide React (vector line iconography only; zero emojis in UI)
+- **State Management**: Zustand
+- **Persistence**: `idb` (IndexedDB Promise wrapper)
+- **Testing**: Vitest + React Testing Library
+
+---
+
+## Quick Start
+
+### 1. Install Dependencies
+
+Always use `pnpm`:
 
 ```bash
 pnpm install
 ```
 
-### 2. 启动开发服务器
+### 2. Start Development Server
 
 ```bash
 pnpm dev
 ```
 
-启动后在浏览器中访问控制台输出的本地地址（默认 `http://localhost:5173`）。
+Open the displayed localhost URL (default `http://localhost:5173`) in your browser.
 
-### 3. 代码检查与格式规范
+### 3. Verification Suite
 
-```bash
-pnpm lint
-```
-
-项目要求 ESLint 零错误、零警告。
-
-### 4. 运行测试套件
+Run our strict three-tier verification suite (ESLint + Vitest + TypeScript/Vite build):
 
 ```bash
-pnpm test
-```
-
-包含领域层算法测试、组件交互测试以及设计契约测试。
-
-### 5. 生产环境构建
-
-```bash
-pnpm build
+pnpm check
 ```
 
 ---
 
-## 工程标准与开发守则
+## Architecture & Engineering Standards
 
-1. **代码即文档，严禁解释性注释**：代码本身必须意图自明，严禁在业务逻辑中堆砌叙事性注释与分块横幅注释；
-2. **ESLint 零警告标准**：将警告视同错误处理，严格遵循 TypeScript 类型安全（严禁 `any`）与 Tailwind 标准类名推荐；
-3. **文档语言纯粹性**：所有开发文档与用户文档必须使用地道自然、简洁人类可读的纯中文，禁止机械生硬的中英文夹杂；
-4. **整数分财务精度**：所有金额在业务层、存储层统一使用整数“分”存储与计算，仅在展示层转换为“元”。
+1. **Dual-Language Boundary**:
+   - **Engineering Layer (100% English)**: Documentation (`AGENTS.md`, `LESSONS.md`, `README.md`), commit messages, test descriptions, CI configurations, and technical comments are strictly written in English.
+   - **Product Layer (Chinese-Dominant)**: User-facing UI labels, forms, categories, and notifications are rendered in clean, natural Chinese. Top-level serif journal headers remain in English (`Instrument Serif`).
+2. **Self-Documenting Code**: Narrative section comments and redundant code explanations are strictly banned. Code must communicate intent through clear naming and tests.
+3. **Strict Quality Gates**: Zero ESLint warnings, zero `any` types, and 100% test pass rate enforced via GitHub Actions CI on every commit.
+
+---
+
+## License
+
+MIT
