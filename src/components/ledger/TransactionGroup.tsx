@@ -3,7 +3,9 @@ import { Search, X } from 'lucide-react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
-import { TransactionItem } from './TransactionItem';
+import { PaperTransactionGroup } from './PaperTransactionGroup';
+import { ModernTransactionGroup } from './ModernTransactionGroup';
+import { SegToggle } from '../ui/SegToggle';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useThemeStore } from '../../stores/useThemeStore';
@@ -33,7 +35,6 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   const isInitialLoaded = useLedgerStore((s) => s.isInitialLoaded);
   const effectiveLoading = isLoading !== undefined ? isLoading : !isInitialLoaded;
   const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -107,16 +108,20 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     return Object.keys(groups).sort((a, b) => b.localeCompare(a));
   }, [groups]);
 
+  const visibleDates = useMemo(() => {
+    return sortedDates.slice(0, visibleGroupCount);
+  }, [sortedDates, visibleGroupCount]);
+
   const hasMore = visibleGroupCount < sortedDates.length;
-  const visibleDates = sortedDates.slice(0, visibleGroupCount);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore) return;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore) {
           setVisibleGroupCount((prev) => Math.min(sortedDates.length, prev + pageSize));
         }
       },
@@ -126,8 +131,6 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasMore, sortedDates.length, pageSize]);
-
-  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   return (
     <div className="w-full">
@@ -140,7 +143,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索备注、分类、账户..."
-              className="w-full h-7.5 pl-7 pr-7 text-xs font-mono rounded-xs bg-(--paper-sunken)/70 text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:bg-(--paper-sunken) transition-colors border-none"
+              className="w-full h-7.5 pl-7 pr-7 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken)/70 text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:bg-(--paper-sunken) transition-colors border-none"
             />
             {searchQuery && (
               <button
@@ -154,58 +157,18 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
             )}
           </div>
 
-          <div
-            className={cn(
-              isModern
-                ? 'flex items-center gap-1 p-0.5 bg-(--paper-sunken) rounded-full border border-(--rule-hairline) shrink-0'
-                : 'flex gap-1 shrink-0 font-mono text-[11px]'
-            )}
-          >
-            <button
-              type="button"
-              className={cn(
-                'px-2 py-1 text-[10px] transition-all cursor-pointer select-none',
-                isModern ? 'rounded-full' : 'rounded-xs',
-                filter === 'all'
-                  ? isModern
-                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-semibold shadow-xs'
-                    : 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
-                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-              )}
-              onClick={() => setFilter('all')}
-            >
-              全部
-            </button>
-            <button
-              type="button"
-              className={cn(
-                'px-2 py-1 text-[10px] transition-all cursor-pointer select-none',
-                isModern ? 'rounded-full' : 'rounded-xs',
-                filter === 'reimbursable'
-                  ? isModern
-                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-semibold shadow-xs'
-                    : 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
-                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-              )}
-              onClick={() => setFilter('reimbursable')}
-            >
-              待报销
-            </button>
-            <button
-              type="button"
-              className={cn(
-                'px-2 py-1 text-[10px] transition-all cursor-pointer select-none',
-                isModern ? 'rounded-full' : 'rounded-xs',
-                filter === 'major'
-                  ? isModern
-                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-semibold shadow-xs'
-                    : 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-xs'
-                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-              )}
-              onClick={() => setFilter('major')}
-            >
-              大额 (&gt;¥200)
-            </button>
+          <div className="shrink-0">
+            <SegToggle
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'reimbursable', label: '待报销' },
+                { value: 'major', label: '大额 (>¥200)' },
+              ]}
+              value={filter}
+              onChange={setFilter}
+              size="sm"
+              fullWidth={false}
+            />
           </div>
         </div>
       </div>
@@ -215,7 +178,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
           <div
             className={cn(
               contained ? 'mx-0' : 'mx-4',
-              'my-2 bg-(--paper-sheet) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
+              'my-2 bg-(--paper-sheet) rounded-(--radius-sm) shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
             )}
           >
             <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/30">
@@ -246,7 +209,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
           <div
             className={cn(
               contained ? 'mx-0' : 'mx-4',
-              'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-center select-none'
+              'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-center select-none'
             )}
           >
             <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
@@ -261,138 +224,44 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
         )
       ) : (
         <section className={cn('relative mt-2', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
-          {visibleDates.map((date) => {
-            const txList = groups[date];
-
-            let dayNet = 0;
-            for (const t of txList) {
-              if (t.type === 'expense') {
-                const offset = offsetMap.get(t.id) || 0;
-                dayNet -= Math.max(0, t.amount - offset);
-              }
-              if (t.type === 'income' && !t.offsetTransactionId) {
-                dayNet += t.amount;
-              }
-            }
-
-            const d = new Date(date + 'T00:00:00');
-            const dayCode = isNaN(d.getTime())
-              ? date
-              : `${String(d.getDate()).padStart(2, '0')} ${dayNames[d.getDay()]}`;
-
-            const daySumFormatted =
-              dayNet >= 0
-                ? `+¥${centsToYuan(dayNet)}`
-                : `-¥${centsToYuan(Math.abs(dayNet))}`;
-
-            const dayNum = dayCode.slice(0, 2);
-            const dayWeek = dayCode.slice(3);
-
-            if (isModern) {
-              return (
-                <div key={date} className={cn(contained ? 'mx-0' : 'mx-4', 'mb-4 select-none')}>
-                  <div className="flex items-center justify-between px-1 pb-1.5 text-xs text-(--ink-secondary)">
-                    <div className="flex items-center gap-1.5 font-sans font-semibold">
-                      <span className="text-[13px] font-bold text-(--ink-primary)">
-                        {dayNum}日
-                      </span>
-                      <span className="text-xs text-(--ink-tertiary)">
-                        {dayWeek}
-                      </span>
-                      <span className="text-[11px] text-(--ink-tertiary)">
-                        · {txList.length}笔
-                      </span>
-                    </div>
-                    <span
-                      className={cn(
-                        'font-mono text-xs tabular-nums font-semibold shrink-0',
-                        dayNet >= 0 ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
-                      )}
-                    >
-                      {daySumFormatted}
-                    </span>
-                  </div>
-
-                  <div className="bg-(--paper-sheet) rounded-[22px] backdrop-blur-xl border border-(--rule-hairline) shadow-sm p-1.5 space-y-1">
-                    {txList.map((tx, idx) => (
-                      <TransactionItem
-                        key={tx.id}
-                        transaction={tx}
-                        category={catMap.get(tx.categoryId)}
-                        account={acctMap.get(tx.accountId)}
-                        toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
-                        isFresh={activeFreshId === tx.id}
-                        isLastInGroup={idx === txList.length - 1}
-                        offsetAmount={offsetMap.get(tx.id)}
-                        offsetTargetNote={tx.offsetTransactionId ? expenseNoteMap.get(tx.offsetTransactionId) : undefined}
-                        onClick={() => onSelectTransaction?.(tx)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={date}
-                className={cn(
-                  contained ? 'mx-0' : 'mx-4',
-                  'mb-3.5 bg-(--paper-sheet) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] border border-(--rule-hairline) overflow-hidden select-none'
-                )}
-              >
-                <div className="day-divider flex items-baseline justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) select-none bg-(--paper-sunken)/30">
-                  <div className="flex items-baseline gap-1.5 font-mono">
-                    <span className="text-sm font-bold text-(--ink-solid) leading-none">
-                      {dayNum}
-                    </span>
-                    <span className="text-[10px] font-semibold text-(--ink-tertiary) tracking-wider uppercase leading-none">
-                      {dayWeek}
-                    </span>
-                    <span className="text-[10px] text-(--ink-faint)">
-                      · {txList.length}笔
-                    </span>
-                  </div>
-                  <span
-                    className={cn(
-                      'font-mono text-[11px] tabular-nums font-semibold shrink-0',
-                      dayNet >= 0 ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
-                    )}
-                  >
-                    {daySumFormatted}
-                  </span>
-                </div>
-
-                <div>
-                  {txList.map((tx, idx) => (
-                    <TransactionItem
-                      key={tx.id}
-                      transaction={tx}
-                      category={catMap.get(tx.categoryId)}
-                      account={acctMap.get(tx.accountId)}
-                      toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
-                      isFresh={activeFreshId === tx.id}
-                      isLastInGroup={idx === txList.length - 1}
-                      offsetAmount={offsetMap.get(tx.id)}
-                      offsetTargetNote={tx.offsetTransactionId ? expenseNoteMap.get(tx.offsetTransactionId) : undefined}
-                      onClick={() => onSelectTransaction?.(tx)}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+          {uiStyle === 'modern' ? (
+            <ModernTransactionGroup
+              visibleDates={visibleDates}
+              groups={groups}
+              offsetMap={offsetMap}
+              expenseNoteMap={expenseNoteMap}
+              catMap={catMap}
+              acctMap={acctMap}
+              activeFreshId={activeFreshId}
+              contained={contained}
+              onSelectTransaction={onSelectTransaction}
+            />
+          ) : (
+            <PaperTransactionGroup
+              visibleDates={visibleDates}
+              groups={groups}
+              offsetMap={offsetMap}
+              expenseNoteMap={expenseNoteMap}
+              catMap={catMap}
+              acctMap={acctMap}
+              activeFreshId={activeFreshId}
+              contained={contained}
+              onSelectTransaction={onSelectTransaction}
+            />
+          )}
 
           <div ref={sentinelRef} className="h-6 flex items-center justify-center mt-2">
             {hasMore ? (
               <span className="text-[11px] text-(--ink-faint) opacity-60">
                 正在加载更多流水...
               </span>
-            ) : sortedDates.length > pageSize ? (
-              <span className="text-[10px] text-(--ink-faint) tracking-wider uppercase opacity-50">
-                已显示全部 {filteredTransactions.length} 笔流水
-              </span>
-            ) : null}
+            ) : (
+              sortedDates.length > 0 && (
+                <span className="text-[10px] text-(--ink-tertiary)/40 font-mono tracking-widest uppercase">
+                  END OF JOURNAL
+                </span>
+              )
+            )}
           </div>
         </section>
       )}

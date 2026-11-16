@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Delete, Trash2 } from 'lucide-react';
-import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface PaperKeypadProps {
@@ -28,8 +27,6 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
 }) => {
   const [useMinus, setUseMinus] = useState(false);
   const [useDivide, setUseDivide] = useState(false);
-  const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
 
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -72,25 +69,19 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
 
   const digitBtnClass = cn(
     'h-11 font-mono text-base font-semibold flex items-center justify-center transition-all cursor-pointer',
-    isModern
-      ? 'rounded-2xl border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-primary) shadow-2xs hover:bg-(--paper-sunken)/80 active:scale-[0.95]'
-      : 'rounded-xs border border-(--border-hairline) bg-(--bg-surface) text-(--ink-primary) shadow-(--shadow-xs) active:scale-[0.97] active:bg-(--bg-sunken)'
+    'rounded-(--keypad-radius) border border-(--keypad-digit-border) bg-(--keypad-digit-bg) text-(--ink-primary) shadow-2xs hover:opacity-90 active:scale-[0.96]'
   );
 
   const opBtnClass = cn(
     'h-11 font-mono text-sm font-semibold flex items-center justify-center transition-all cursor-pointer',
-    isModern
-      ? 'rounded-2xl border border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) active:scale-[0.95]'
-      : 'rounded-xs border border-(--border-hairline) bg-(--bg-hover) text-(--ink-secondary) active:bg-(--bg-sunken) active:scale-[0.97]'
+    'rounded-(--keypad-radius) border border-(--keypad-op-border) bg-(--keypad-op-bg) text-(--ink-secondary) hover:text-(--ink-primary) active:scale-[0.96]'
   );
 
   return (
     <div
       className={cn(
         'grid grid-cols-4 gap-1.5 p-2 pb-[calc(10px+var(--safe-bottom))] select-none transition-colors duration-200',
-        isModern
-          ? 'bg-(--paper-sheet)/60 backdrop-blur-xl border-t border-(--rule-hairline)'
-          : 'bg-(--bg-sunken) border-t border-(--border-hairline)',
+        'bg-(--paper-sheet) paper-glass-blur border-t border-(--rule-hairline)',
         className
       )}
     >
@@ -118,10 +109,10 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
       <button
         type="button"
         onClick={handlePlusMinus}
-        title="加/减运算符"
         className={opBtnClass}
+        title="加减运算符"
       >
-        {useMinus ? '−' : '+'}
+        {useMinus ? '-' : '+'}
       </button>
 
       <button
@@ -148,8 +139,8 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
       <button
         type="button"
         onClick={handleMultiplyDivide}
-        title="乘/除运算符"
         className={opBtnClass}
+        title="乘除运算符"
       >
         {useDivide ? '÷' : '×'}
       </button>
@@ -184,9 +175,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
           }}
           className={cn(
             'h-11 text-xs font-semibold flex items-center justify-center transition-all cursor-pointer',
-            isModern
-              ? 'rounded-2xl border border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-primary) active:scale-[0.95]'
-              : 'rounded-xs border border-(--border-default) bg-(--bg-surface) text-(--ink-primary) active:bg-(--bg-hover) active:scale-[0.97]'
+            'rounded-(--keypad-radius) border border-(--keypad-digit-border) bg-(--keypad-digit-bg) text-(--ink-primary) active:scale-[0.96]'
           )}
         >
           再记一笔
@@ -200,9 +189,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
           }}
           className={cn(
             'h-11 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer',
-            isModern
-              ? 'rounded-2xl border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.95]'
-              : 'rounded-xs border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.97]'
+            'rounded-(--keypad-radius) border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.96]'
           )}
         >
           <Trash2 className="w-3.5 h-3.5 stroke-2" />
@@ -238,9 +225,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
         disabled={!canFinish}
         className={cn(
           'h-11 text-xs font-mono font-semibold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
-          isModern
-            ? 'rounded-2xl border-none bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] shadow-[0_4px_14px_rgba(22,119,255,0.4)] active:scale-[0.95]'
-            : 'rounded-xs border-none bg-(--ink-primary) text-(--bg-surface) shadow-(--shadow-xs) active:scale-[0.97]'
+          'rounded-(--keypad-radius) bg-(--keypad-action-bg) text-(--keypad-action-fg) active:scale-[0.96]'
         )}
       >
         {mode === 'create' ? 'OK' : 'SAVE'}

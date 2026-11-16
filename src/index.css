@@ -75,6 +75,24 @@
   --radius-lg: 6px;
   --radius-full: 9999px;
 
+  --btn-primary-bg: var(--ink-primary);
+  --btn-primary-fg: var(--bg-surface);
+  --btn-radius: var(--radius-sm);
+  --input-radius: var(--radius-sm);
+  --badge-radius: var(--radius-xs);
+  --toggle-bg: var(--paper-sunken);
+  --toggle-radius: var(--radius-sm);
+  --toggle-active-bg: var(--paper-sheet);
+  --toggle-active-fg: var(--ink-primary);
+  --toggle-item-radius: calc(var(--radius-sm) - 1px);
+  --keypad-radius: var(--radius-xs);
+  --keypad-digit-bg: var(--paper-sheet);
+  --keypad-digit-border: var(--rule-hairline);
+  --keypad-op-bg: var(--paper-sunken);
+  --keypad-op-border: var(--rule-hairline);
+  --keypad-action-bg: var(--ink-primary);
+  --keypad-action-fg: var(--paper-sheet);
+
   --transition: 150ms ease;
   --nav-height: 52px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -523,6 +541,23 @@ body {
   --ink-secondary: #475569;
   --ink-tertiary: #94a3b8;
   --ink-solid: #020617;
+  --btn-primary-bg: #1677ff;
+  --btn-primary-fg: #ffffff;
+  --btn-radius: 9999px;
+  --input-radius: 9999px;
+  --badge-radius: 9999px;
+  --toggle-bg: var(--paper-sunken);
+  --toggle-radius: 9999px;
+  --toggle-active-bg: #1677ff;
+  --toggle-active-fg: #ffffff;
+  --toggle-item-radius: 9999px;
+  --keypad-radius: 16px;
+  --keypad-digit-bg: var(--paper-sheet);
+  --keypad-digit-border: var(--rule-hairline);
+  --keypad-op-bg: var(--paper-sunken);
+  --keypad-op-border: var(--rule-hairline);
+  --keypad-action-bg: #1677ff;
+  --keypad-action-fg: #ffffff;
 }
 
 [data-ui-style="modern"].dark,
@@ -541,6 +576,12 @@ html[data-ui-style="modern"].dark body {
   --ink-secondary: #cbd5e1;
   --ink-tertiary: #64748b;
   --ink-solid: #f8fafc;
+  --btn-primary-bg: #4d94ff;
+  --btn-primary-fg: #0d0f17;
+  --toggle-active-bg: #4d94ff;
+  --toggle-active-fg: #0d0f17;
+  --keypad-action-bg: #4d94ff;
+  --keypad-action-fg: #0d0f17;
 }
 
 [data-ui-style="modern"] body,
@@ -595,4 +636,41 @@ body[data-ui-style="modern"].dark,
 [data-ui-style="modern"] .font-mono {
   font-family: 'Plus Jakarta Sans', 'Geist', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   font-variant-numeric: tabular-nums;
+}
+
+[data-ui-style="modern"] .paper-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+[data-ui-style="modern"] .paper-glass-blur {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-ui-style="modern"] .category-badge {
+  border-radius: 9999px !important;
+  border-color: transparent !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-ui-style="modern"] .entry-row {
+  border-radius: 16px !important;
+  background-color: var(--paper-sunken) !important;
+  border: none !important;
+  margin-bottom: 4px;
+}
+
+.transaction-sheet {
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  overflow: visible;
+}
+
+[data-ui-style="modern"] .transaction-sheet {
+  border-top-left-radius: 28px !important;
+  border-top-right-radius: 28px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }

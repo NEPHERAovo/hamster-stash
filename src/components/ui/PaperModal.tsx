@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface PaperModalProps {
@@ -27,8 +26,6 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
-  const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
 
   useEffect(() => {
     setMounted(true);
@@ -77,61 +74,33 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       <div
         className={cn(
           'relative w-full max-w-full sm:max-w-lg md:max-w-xl max-h-[92vh] flex flex-col overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
-          isModern
-            ? 'bg-(--paper-sheet) backdrop-blur-2xl rounded-t-[28px] sm:rounded-b-[28px] border-t sm:border border-(--rule-hairline) shadow-2xl'
-            : 'bg-(--bg-base) rounded-t-sm sm:rounded-b-sm sm:mb-6 shadow-(--shadow-lg) sm:shadow-2xl',
+          'bg-(--paper-sheet) paper-card border-t sm:border border-(--rule-hairline) shadow-2xl rounded-t-(--radius-lg) sm:rounded-b-(--radius-lg)',
           visible ? 'translate-y-0' : 'translate-y-full',
           className
         )}
       >
         {showHandle && (
-          isModern ? (
-            <div
-              className="py-2.5 flex items-center justify-center cursor-pointer select-none"
-              onClick={onClose}
-              title="关闭"
-            >
-              <div className="w-9 h-1 rounded-full bg-(--ink-tertiary)/30" />
-            </div>
-          ) : (
-            <div
-              className="bg-[#2D2A26] dark:bg-[#181716] text-[#F7F6F3] py-1.5 px-4 flex items-center justify-between cursor-pointer select-none border-b border-[#383531]"
-              onClick={onClose}
-              title="关闭便笺"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-none bg-(--color-accent) opacity-80" />
-                <span className="font-mono text-[10px] tracking-widest text-[#EAE7E1] uppercase">
-                  便签
-                </span>
-              </div>
-              <div className="w-8 h-1 rounded-xs bg-[#6E6A63] opacity-50" />
-            </div>
-          )
+          <div
+            className="py-2.5 flex items-center justify-center cursor-pointer select-none"
+            onClick={onClose}
+            title="关闭"
+          >
+            <div className="w-9 h-1 rounded-full bg-(--ink-tertiary)/30" />
+          </div>
         )}
 
-        {(title || headerExtra) && (
-          <div
-            className={cn(
-              'flex items-center justify-between px-4 py-2 select-none',
-              isModern
-                ? 'border-b border-(--rule-hairline) bg-transparent'
-                : 'border-b border-(--border-hairline) bg-(--bg-surface)'
-            )}
-          >
-            <div className="flex flex-col">
+        {(title || subtitle || headerExtra) && (
+          <div className="px-4 pt-3.5 pb-2.5 flex items-start justify-between shrink-0 border-b border-(--rule-hairline)/60">
+            <div>
               {title && (
-                <h3
-                  className={cn(
-                    'text-sm font-semibold',
-                    isModern ? 'text-(--ink-primary) font-bold' : 'text-(--ink-primary)'
-                  )}
-                >
+                <h3 className="text-base text-(--ink-primary) font-semibold">
                   {title}
                 </h3>
               )}
               {subtitle && (
-                <span className="text-[11px] font-mono text-(--ink-tertiary)">{subtitle}</span>
+                <p className="text-xs text-(--ink-tertiary) mt-0.5 font-mono">
+                  {subtitle}
+                </p>
               )}
             </div>
 
@@ -140,21 +109,16 @@ export const PaperModal: React.FC<PaperModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className={cn(
-                  'w-6 h-6 flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) cursor-pointer transition-colors',
-                  isModern
-                    ? 'rounded-full bg-(--paper-sunken)/70 hover:bg-(--paper-sunken)'
-                    : 'rounded-xs hover:bg-(--bg-hover) border border-transparent hover:border-(--border-hairline)'
-                )}
-                aria-label="关闭"
+                className="p-1 rounded-full text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-pointer"
+                title="关闭"
               >
-                <X className="w-4 h-4 stroke-2" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {children}
         </div>
       </div>

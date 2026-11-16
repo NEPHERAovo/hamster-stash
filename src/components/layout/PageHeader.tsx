@@ -1,43 +1,37 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {
   title: string;
-  metaPill?: string;
   subtitle?: string;
+  metaPill?: string;
   leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
+  showMonthStep?: boolean;
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
-  showMonthStep?: boolean;
   centerTitle?: boolean;
   className?: string;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
-  metaPill,
   subtitle,
+  metaPill,
   leftAction,
   rightAction,
+  showMonthStep = false,
   onPrevMonth,
   onNextMonth,
-  showMonthStep = false,
   centerTitle = false,
   className,
 }) => {
-  const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
-
   return (
     <header
       className={cn(
         'sticky top-0 z-40 px-4.5 pt-2.5 pb-2 flex items-center justify-between h-14 select-none transition-colors duration-200',
-        isModern
-          ? 'bg-transparent border-b-0'
-          : 'bg-(--paper-base)/85 backdrop-blur-md border-b border-(--rule-hairline)',
+        'bg-(--paper-base)/85 backdrop-blur-md border-b border-(--rule-hairline) page-header-bar',
         className
       )}
     >
@@ -52,14 +46,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 <span>{metaPill}</span>
               </div>
             )}
-            <h1
-              className={cn(
-                'text-lg sm:text-xl truncate text-(--ink-solid)',
-                isModern
-                  ? 'font-sans font-bold tracking-tight text-(--ink-primary)'
-                  : 'font-semibold'
-              )}
-            >
+            <h1 className="text-lg sm:text-xl truncate text-(--ink-solid) font-semibold">
               {title}
             </h1>
             {subtitle && (
@@ -80,14 +67,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                   <span>{metaPill}</span>
                 </div>
               )}
-              <h1
-                className={cn(
-                  'leading-none',
-                  isModern
-                    ? 'font-sans font-bold text-xl sm:text-2xl text-(--ink-primary) tracking-tight'
-                    : 'font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) tracking-normal'
-                )}
-              >
+              <h1 className="leading-none font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) tracking-tight">
                 {title}
               </h1>
               {subtitle && (
@@ -102,12 +82,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 <button
                   type="button"
                   onClick={onPrevMonth}
-                  className={cn(
-                    'w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer',
-                    isModern
-                      ? 'rounded-full bg-(--paper-sheet) backdrop-blur-md shadow-xs hover:text-(--ink-primary)'
-                      : 'rounded-xs bg-(--paper-base)'
-                  )}
+                  className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95 transition-all cursor-pointer rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
                   title="上个月"
                   aria-label="上个月"
                 >
@@ -116,12 +91,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 <button
                   type="button"
                   onClick={onNextMonth}
-                  className={cn(
-                    'w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer',
-                    isModern
-                      ? 'rounded-full bg-(--paper-sheet) backdrop-blur-md shadow-xs hover:text-(--ink-primary)'
-                      : 'rounded-xs bg-(--paper-base)'
-                  )}
+                  className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95 transition-all cursor-pointer rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
                   title="下个月"
                   aria-label="下个月"
                 >

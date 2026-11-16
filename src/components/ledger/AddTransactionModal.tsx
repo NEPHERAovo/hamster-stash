@@ -15,7 +15,7 @@ import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { DrumWheelPicker } from './DrumWheelPicker';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
-import { useThemeStore } from '../../stores/useThemeStore';
+import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
 
 export interface AddTransactionModalProps {
@@ -37,8 +37,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const allTransactions = useLedgerStore((s) => s.allTransactions);
   const { categories } = useCategoryStore();
   const { accounts } = useAccountStore();
-  const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
 
   const [txType, setTxType] = useState<'expense' | 'income' | 'loan'>('expense');
   const [expr, setExpr] = useState('0');
@@ -418,67 +416,26 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     >
       <div
         className={cn(
-          'w-full max-w-[430px] flex flex-col sheet-slide-up relative transition-all duration-300',
-          isModern
-            ? 'bg-(--paper-sheet) backdrop-blur-2xl rounded-t-[28px] border-t border-(--rule-hairline) shadow-2xl overflow-hidden'
-            : 'bg-(--paper-sheet) rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09),0_-1px_3px_rgba(0,0,0,0.04)] border-t border-(--rule-hairline) overflow-visible paper-sawtooth-top'
+          'transaction-sheet w-full max-w-[430px] flex flex-col sheet-slide-up relative transition-all duration-300',
+          'bg-(--paper-sheet) paper-sawtooth-top border-t border-(--rule-hairline) shadow-2xl'
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {!isModern && <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />}
+        <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
 
         <div className="flex items-center justify-between px-3.5 pt-3 pb-1 border-b border-(--rule-hairline)/60">
-          <div
-            className={cn(
-              'flex items-center gap-1 select-none',
-              isModern ? 'p-0.5 bg-(--paper-sunken) rounded-full border border-(--rule-hairline)' : 'font-mono text-xs'
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => setTxType('expense')}
-              className={cn(
-                'px-2.5 py-0.5 transition-colors cursor-pointer text-xs',
-                isModern ? 'rounded-full' : 'rounded-xs',
-                txType === 'expense'
-                  ? isModern
-                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-bold shadow-xs'
-                    : 'bg-(--color-expense-bg) text-(--color-expense) font-bold'
-                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-              )}
-            >
-              支出
-            </button>
-            <button
-              type="button"
-              onClick={() => setTxType('income')}
-              className={cn(
-                'px-2.5 py-0.5 transition-colors cursor-pointer text-xs',
-                isModern ? 'rounded-full' : 'rounded-xs',
-                txType === 'income'
-                  ? isModern
-                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-bold shadow-xs'
-                    : 'bg-(--color-income-bg) text-(--color-income) font-bold'
-                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-              )}
-            >
-              收入
-            </button>
-            <button
-              type="button"
-              onClick={() => setTxType('loan')}
-              className={cn(
-                'px-2.5 py-0.5 transition-colors cursor-pointer text-xs',
-                isModern ? 'rounded-full' : 'rounded-xs',
-                txType === 'loan'
-                  ? isModern
-                    ? 'bg-[#1677ff] text-white dark:bg-[#4d94ff] dark:text-[#0d0f17] font-bold shadow-xs'
-                    : 'bg-(--color-accent-bg) text-(--color-accent) font-bold'
-                  : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-              )}
-            >
-              借贷
-            </button>
+          <div className="shrink-0">
+            <SegToggle
+              options={[
+                { value: 'expense', label: '支出' },
+                { value: 'income', label: '收入' },
+                { value: 'loan', label: '借贷' },
+              ]}
+              value={txType}
+              onChange={setTxType}
+              size="sm"
+              fullWidth={false}
+            />
           </div>
 
           <div className="flex items-center gap-2">

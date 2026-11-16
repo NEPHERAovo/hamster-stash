@@ -2,7 +2,6 @@ import React from 'react';
 import type { Account } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
-import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface AccountListProps {
@@ -15,9 +14,6 @@ export const AccountList: React.FC<AccountListProps> = ({
   accounts,
   onSelectAccount,
 }) => {
-  const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
-
   const getAccountTypeLabel = (type: string) => {
     switch (type) {
       case 'ewallet':
@@ -46,14 +42,7 @@ export const AccountList: React.FC<AccountListProps> = ({
         </span>
       </div>
 
-      <div
-        className={cn(
-          'bg-(--paper-sheet) border border-(--rule-hairline) select-none transition-all duration-200',
-          isModern
-            ? 'rounded-[22px] backdrop-blur-xl shadow-md p-1.5 space-y-1'
-            : 'rounded-[2px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)]'
-        )}
-      >
+      <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) overflow-hidden shadow-xs">
         {accounts.map((acct) => {
           const Icon = getCategoryIcon(acct.icon || 'wallet');
           const isNegative = acct.balance < 0;
@@ -62,20 +51,10 @@ export const AccountList: React.FC<AccountListProps> = ({
             <div
               key={acct.id}
               onClick={() => onSelectAccount(acct)}
-              className={cn(
-                'flex items-center justify-between px-3.5 py-2.5 cursor-pointer transition-all duration-150',
-                isModern
-                  ? 'rounded-2xl bg-(--paper-sunken)/70 hover:bg-(--paper-sunken) active:scale-[0.99]'
-                  : 'border-b border-dashed border-(--rule-hairline)/60 last:border-b-0 hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40'
-              )}
+              className="entry-row flex items-center justify-between px-3.5 py-2.5 cursor-pointer transition-all duration-150 border-b border-dashed border-(--rule-hairline)/60 last:border-b-0 hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40"
             >
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                <div
-                  className={cn(
-                    'w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0',
-                    isModern ? 'rounded-full bg-(--paper-sunken)' : 'rounded-xs bg-(--paper-sunken)'
-                  )}
-                >
+                <div className="w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0 rounded-(--badge-radius) bg-(--paper-sunken)">
                   <Icon className="w-3.5 h-3.5 stroke-[1.8]" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -95,8 +74,11 @@ export const AccountList: React.FC<AccountListProps> = ({
                     isNegative ? 'text-(--color-expense)' : 'text-(--ink-solid)'
                   )}
                 >
-                  {isNegative ? '-' : ''}¥{centsToYuan(Math.abs(acct.balance))}
+                  ¥ {centsToYuan(acct.balance)}
                 </span>
+                <div className="text-[10px] font-mono text-(--ink-tertiary)">
+                  {acct.currency}
+                </div>
               </div>
             </div>
           );
