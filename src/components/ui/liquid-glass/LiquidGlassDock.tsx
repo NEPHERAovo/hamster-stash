@@ -347,7 +347,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
       className={cn(
-        'relative h-[58px] rounded-full border border-(--rule-hairline) transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl shadow-md',
+        'relative h-[60px] rounded-full border border-(--rule-hairline) transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl shadow-md',
         className
       )}
       style={{ touchAction: 'none' }}

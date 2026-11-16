@@ -676,9 +676,7 @@ body {
 }
 
 .transaction-sheet {
-  border-top-left-radius: 2px;
-  border-top-right-radius: 2px;
-  overflow: visible;
+  border-top-left-radius: 2px; border-top-right-radius: 2px; overflow: visible;
 }
 
 [data-ui-style="modern"] .transaction-sheet {
@@ -692,4 +690,8 @@ body {
 [data-ui-style="modern"] .metadata-bar {
   gap: 8px !important;
   justify-content: flex-start !important;
+}
+
+[data-ui-style="modern"] .main-scroll-content {
+  padding-bottom: 9rem !important;
 }
