@@ -50,7 +50,7 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
   return (
     <>
       {showAddButton && onAddClick && (
-        <div className="fixed bottom-[calc(74px+var(--safe-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-50">
+        <div className="fixed bottom-[calc(66px+var(--safe-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-50">
           <button
             type="button"
             onClick={onAddClick}
@@ -70,7 +70,7 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
 
       <div
         className={cn(
-          'fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-[calc(8px+var(--safe-bottom))] px-4 pointer-events-none select-none',
+          'fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-[calc(2px+var(--safe-bottom))] px-4 pointer-events-none select-none',
           className
         )}
       >
