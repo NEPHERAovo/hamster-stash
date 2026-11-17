@@ -48,8 +48,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const stepRef = useRef(step);
   stepRef.current = step;
 
-  const isPointerDownRef = useRef(false);
-  const pointerDownXRef = useRef(0);
   const isDraggingRef = useRef(false);
   const pressTargetRef = useRef(0);
   const texturesDirtyRef = useRef(true);
@@ -86,7 +84,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl = canvas.getContext('webgl', {
         alpha: true,
         antialias: true,
-        premultipliedAlpha: true,
+        premultipliedAlpha: false,
       });
     } catch {
       gl = null;
@@ -125,7 +123,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       'uDockRect',
       'uDropletRect',
       'uTrigger',
-      'uColorTrigger',
       'uRefraction',
       'uDispersion',
       'uRimStrength',
@@ -146,8 +143,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     let lastCanvasW = 0;
     let lastCanvasH = 0;
 
-    const padX = 20;
-    const padY = 20;
+    const padX = 14;
+    const padY = 16;
 
     const render = (now: number) => {
       if (!gl || !canvas || !dockShell) return;
@@ -184,7 +181,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         offCtx &&
         (texturesDirtyRef.current || canvasW !== lastCanvasW || canvasH !== lastCanvasH)
       ) {
-        const inactiveColor = currentIsDark ? '#EBEBF5' : '#1C1C1E';
+        const inactiveColor = currentIsDark ? '#E6EAF8' : '#181B24';
         const activeColor = currentIsDark ? '#4D94FF' : '#1677FF';
 
         gl.activeTexture(gl.TEXTURE0);
@@ -200,6 +197,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           padY,
           dockW,
           dpr,
+          currentIsDark,
           inactiveColor
         );
 
@@ -216,6 +214,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           padY,
           dockW,
           dpr,
+          currentIsDark,
           activeColor
         );
 
@@ -260,7 +259,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         spring.dropHalfH
       );
       gl.uniform1f(uniforms.uTrigger, spring.smoothTrigger);
-      gl.uniform1f(uniforms.uColorTrigger, spring.colorTrigger);
 
       gl.uniform1f(uniforms.uRefraction, 1.55);
       gl.uniform1f(uniforms.uDispersion, 1.15);
@@ -301,59 +299,33 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const rect = dockShell.getBoundingClientRect();
     if (rect.width <= 0) return;
 
-    const localX = e.clientX - rect.left;
-    pointerDownXRef.current = localX;
-    isPointerDownRef.current = true;
-    isDraggingRef.current = false;
+    isDraggingRef.current = true;
     pressTargetRef.current = 1.0;
-
-    const currentTabs = tabsRef.current;
-    if (currentTabs.length > 0) {
-      const colW = rect.width / currentTabs.length;
-      const pressedIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(localX / colW)));
-      const selectedTab = currentTabs[pressedIdx];
-      if (selectedTab) {
-        const chosenId = selectedTab.id || selectedTab.path || '';
-        if (!isTabActive(selectedTab, activeTabRef.current)) {
-          activeTabRef.current = chosenId;
-          onTabChangeRef.current(chosenId);
-        }
-      }
-    }
 
     try {
       dockShell.setPointerCapture(e.pointerId);
     } catch {
       // ignore
     }
+
+    const localX = Math.max(32, Math.min(rect.width - 32, e.clientX - rect.left));
+    setDragPosition(localX);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPointerDownRef.current) return;
+    if (!isDraggingRef.current) return;
     const dockShell = dockShellRef.current;
     if (!dockShell) return;
 
     const rect = dockShell.getBoundingClientRect();
-    const localX = e.clientX - rect.left;
-    const dx = Math.abs(localX - pointerDownXRef.current);
+    if (rect.width <= 0) return;
 
-    if (!isDraggingRef.current) {
-      if (dx > 8) {
-        isDraggingRef.current = true;
-      }
-    }
-
-    if (isDraggingRef.current) {
-      pressTargetRef.current = 1.0;
-      const clampedX = Math.max(26, Math.min(rect.width - 26, localX));
-      setDragPosition(clampedX);
-    }
+    const localX = Math.max(32, Math.min(rect.width - 32, e.clientX - rect.left));
+    setDragPosition(localX);
   };
 
   const handlePointerRelease = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPointerDownRef.current) return;
-    const wasDragging = isDraggingRef.current;
-    isPointerDownRef.current = false;
+    if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
 
@@ -374,23 +346,20 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const currentTabs = tabsRef.current;
     if (currentTabs.length === 0) return;
 
-    if (wasDragging) {
-      const colW = rect.width / currentTabs.length;
-      const releaseX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-      const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(releaseX / colW)));
-      const selectedTab = currentTabs[tabIdx];
-      if (selectedTab) {
-        const chosenId = selectedTab.id || selectedTab.path || '';
-        if (!isTabActive(selectedTab, activeTabRef.current)) {
-          activeTabRef.current = chosenId;
-          onTabChangeRef.current(chosenId);
-        }
+    const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+    const colW = rect.width / currentTabs.length;
+    const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(localX / colW)));
+    const selectedTab = currentTabs[tabIdx];
+    if (selectedTab) {
+      const chosenId = selectedTab.id || selectedTab.path || '';
+      if (!isTabActive(selectedTab, activeTabRef.current)) {
+        activeTabRef.current = chosenId;
+        onTabChangeRef.current(chosenId);
       }
     }
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    isPointerDownRef.current = false;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
     const dockShell = dockShellRef.current;
@@ -416,7 +385,9 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerCancel}
       className={cn(
-        'relative h-[62px] rounded-full transition-colors duration-200 select-none cursor-pointer overflow-visible bg-transparent backdrop-blur-2xl',
+        'relative h-[60px] rounded-full transition-colors duration-200 select-none cursor-pointer overflow-visible',
+        'bg-[rgba(255,255,255,0.90)] border border-[rgba(15,23,42,0.06)] shadow-[0_10px_28px_-6px_rgba(20,28,56,0.08),0_2px_6px_rgba(20,28,56,0.03)] backdrop-blur-xl',
+        'dark:bg-[rgba(30,33,48,0.86)] dark:border-[rgba(255,255,255,0.09)] dark:shadow-[0_14px_34px_-6px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)]',
         className
       )}
       style={{ touchAction: 'none' }}
@@ -424,10 +395,10 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="absolute -left-[20px] -right-[20px] -top-[20px] -bottom-[20px] w-[calc(100%+40px)] h-[calc(100%+40px)] pointer-events-none z-10"
+        className="absolute -left-[14px] -right-[14px] -top-[16px] -bottom-[16px] w-[calc(100%+28px)] h-[calc(100%+32px)] pointer-events-none z-10"
       />
 
-      <div className="absolute inset-0 flex items-stretch z-20 pointer-events-auto">
+      <div className="absolute inset-0 flex items-stretch z-20 pointer-events-none">
         {tabs.map((tab, idx) => {
           const tabId = tab.id || tab.path || '';
           const active = isTabActive(tab, activeTab);
@@ -440,14 +411,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
               aria-selected={active}
               title={label}
               aria-label={label}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isTabActive(tab, activeTabRef.current)) {
-                  activeTabRef.current = tabId;
-                  onTabChange(tabId);
-                }
-              }}
-              className="flex-1 opacity-0 cursor-pointer"
+              className="flex-1 opacity-0 pointer-events-none"
             >
               {label}
             </button>

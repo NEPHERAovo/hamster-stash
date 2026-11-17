@@ -8,7 +8,7 @@ export interface DockTabItem {
   order?: number;
 }
 
-export type DockTabType = 'ledger' | 'stats' | 'items' | 'assets' | 'generic';
+export type DockTabType = 'ledger' | 'stats' | 'items' | 'assets' | 'saving' | 'generic';
 
 export function normalizeTabKey(rawKey: string): DockTabType {
   const s = (rawKey || '').toLowerCase().trim();
@@ -33,6 +33,9 @@ export function normalizeTabKey(rawKey: string): DockTabType {
   }
   if (s === 'assets' || s === 'wallet' || s === 'accounts' || s === '/assets' || s === 'vault') {
     return 'assets';
+  }
+  if (s === 'saving' || s === 'savings' || s === 'drop' || s === 'droplet') {
+    return 'saving';
   }
   return 'generic';
 }
@@ -64,6 +67,7 @@ export function resolveTabLabel(tab: DockTabItem): string {
   if (lower === 'stats' || lower === 'statistics' || lower === 'analysis') return '统计';
   if (lower === 'owned items' || lower === 'items' || lower === 'inventory') return '物品';
   if (lower === 'assets' || lower === 'accounts' || lower === 'wallet') return '资产';
+  if (lower === 'saving' || lower === 'savings') return '储蓄';
 
   if (rawLabel) return rawLabel;
 
@@ -72,11 +76,12 @@ export function resolveTabLabel(tab: DockTabItem): string {
   if (type === 'stats') return '统计';
   if (type === 'items') return '物品';
   if (type === 'assets') return '资产';
+  if (type === 'saving') return '储蓄';
 
   return tab.id || tab.path || '';
 }
 
-function drawTabIcon(
+export function drawTabIcon(
   ctx: CanvasRenderingContext2D,
   type: DockTabType,
   cx: number,
@@ -154,6 +159,13 @@ function drawTabIcon(
       ctx.fillRect(-1.7, -7, 3.4, 15);
       ctx.fillRect(4.1, -3, 3.4, 11);
     }
+  } else if (type === 'saving') {
+    ctx.beginPath();
+    ctx.moveTo(0, -8.5);
+    ctx.bezierCurveTo(4.5, -2, 6.5, 2, 6.5, 4.5);
+    ctx.arc(0, 4.5, 6.5, 0, Math.PI);
+    ctx.bezierCurveTo(-6.5, 2, -4.5, -2, 0, -8.5);
+    ctx.fill();
   } else {
     ctx.beginPath();
     ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
@@ -174,17 +186,23 @@ export function uploadLayerTexture(
   padY: number,
   dockW: number,
   dpr: number,
+  isDark: boolean,
   inkColor: string
 ): void {
   const texW = Math.max(1, Math.round(canvasW * dpr));
   const texH = Math.max(1, Math.round(canvasH * dpr));
 
-  offCanvas.width = texW;
-  offCanvas.height = texH;
+  if (offCanvas.width !== texW || offCanvas.height !== texH) {
+    offCanvas.width = texW;
+    offCanvas.height = texH;
+  }
 
   offCtx.save();
+  offCtx.clearRect(0, 0, texW, texH);
   offCtx.scale(dpr, dpr);
-  offCtx.clearRect(0, 0, canvasW, canvasH);
+
+  offCtx.fillStyle = isDark ? '#1E2130' : '#FFFFFF';
+  offCtx.fillRect(0, 0, canvasW, canvasH);
 
   const tabCount = Math.max(1, tabs.length);
   const colW = dockW / tabCount;
@@ -195,19 +213,18 @@ export function uploadLayerTexture(
     const tabType = resolveTabType(tab);
     const label = resolveTabLabel(tab);
 
-    drawTabIcon(offCtx, tabType, cx, padY + dockH * 0.36, inkColor);
+    drawTabIcon(offCtx, tabType, cx, padY + dockH * 0.35, inkColor);
 
     offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif';
     offCtx.textAlign = 'center';
     offCtx.textBaseline = 'middle';
     offCtx.fillStyle = inkColor;
-    offCtx.fillText(label, cx, padY + dockH * 0.73);
+    offCtx.fillText(label, cx, padY + dockH * 0.733);
   });
 
   offCtx.restore();
 
   gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
 }
 

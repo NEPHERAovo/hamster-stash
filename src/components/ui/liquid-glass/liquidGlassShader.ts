@@ -16,7 +16,6 @@ export const FRAGMENT_SHADER_SOURCE = `
   uniform vec4 uDockRect;
   uniform vec4 uDropletRect;
   uniform float uTrigger;
-  uniform float uColorTrigger;
 
   uniform float uRefraction;
   uniform float uDispersion;
@@ -30,142 +29,95 @@ export const FRAGMENT_SHADER_SOURCE = `
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
   }
 
-  vec4 sampleGlyphs(vec2 uv, vec2 dropPos, vec2 dropHalfSize, float dropR) {
+  vec3 sampleScene(vec2 uv) {
     vec2 clampedUV = clamp(uv, 0.002, 0.998);
     vec2 pSample = clampedUV * uCanvasSize;
-    float dSample = sdRoundBox(pSample - dropPos, dropHalfSize, dropR);
-    float insideDrop = 1.0 - smoothstep(-1.0, 1.0, dSample);
+    float dSample = sdRoundBox(pSample - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
+    float insideDrop = 1.0 - smoothstep(-0.75, 0.75, dSample);
 
-    vec4 inactiveGlyph = texture2D(uInactiveTex, clampedUV);
-    vec4 activeGlyph = texture2D(uActiveTex, clampedUV);
-    return mix(inactiveGlyph, activeGlyph, insideDrop);
+    vec3 inactiveCol = texture2D(uInactiveTex, clampedUV).rgb;
+    vec3 activeCol = texture2D(uActiveTex, clampedUV).rgb;
+    return mix(inactiveCol, activeCol, insideDrop);
   }
 
   void main() {
     vec2 p = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y) / uDpr;
     vec2 baseUV = p / uCanvasSize;
 
-    // 1. Whole Dock Expansion during interaction:
-    // Whole dock swells slightly (+4px width, +1.2px height) coming closer to edges
-    vec2 dockHalfSize = uDockRect.zw + vec2(4.0, 1.2) * uTrigger;
-    float dDock = sdRoundBox(p - uDockRect.xy, dockHalfSize, dockHalfSize.y);
-    float dockMask = 1.0 - smoothstep(-0.5, 0.5, dDock);
-    float dockInward = max(0.0, -dDock);
+    float dDock = sdRoundBox(p - uDockRect.xy, uDockRect.zw, uDockRect.w);
+    float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
 
-    // Dock Normal
-    vec2 dockRel = p - uDockRect.xy;
-    vec2 dockB = dockHalfSize - dockHalfSize.y;
-    vec2 dockQ = abs(dockRel) - dockB;
-    vec2 dockNorm = normalize(sign(dockRel) * max(dockQ, 0.0) + vec2(1e-5));
-    if (max(dockQ.x, dockQ.y) < 0.0) {
-      dockNorm = abs(dockQ.x) > abs(dockQ.y) ? vec2(sign(dockRel.x), 0.0) : vec2(0.0, sign(dockRel.y));
+    float dockMask = 1.0 - smoothstep(-0.75, 0.75, dDock);
+    float dropMask = 1.0 - smoothstep(-0.75, 0.75, dDrop);
+
+    float shadowRadius = mix(6.0, 16.0, uTrigger);
+    float shadowStrength = mix(uDark > 0.5 ? 0.14 : 0.02, uDark > 0.5 ? 0.40 : 0.08, uTrigger);
+    float shadowAlpha = smoothstep(shadowRadius, 0.0, dDrop - 1.0) * shadowStrength;
+    vec3 shadowCol = uDark > 0.5 ? vec3(0.01, 0.02, 0.04) : vec3(0.25, 0.30, 0.42);
+
+    float dockAlpha = dockMask * (uDark > 0.5 ? 0.88 : 0.92);
+
+    if (dropMask <= 0.001) {
+      vec3 inactiveRgb = texture2D(uInactiveTex, baseUV).rgb;
+      vec3 outRgb = mix(shadowCol, inactiveRgb, dockAlpha);
+      float outAlpha = max(dockAlpha, shadowAlpha);
+      if (outAlpha <= 0.001) discard;
+      gl_FragColor = vec4(outRgb, outAlpha);
+      return;
     }
 
-    float dockSideWeight = pow(max(abs(dockNorm.x), 0.0), 1.6);
-    float dockTopWeight = max(-dockNorm.y, 0.0);
-    float dockBotWeight = max(dockNorm.y, 0.0);
+    float distInward = max(0.0, -dDrop);
 
-    // 2. Dock Glass Edge Optics:
-    // "上下为非常细的黑色边附带向内的白色高光，左右为更加明显的黑边带有更加轻微的向内的白色高光"
-    float dockStroke = 1.0 - smoothstep(0.0, 1.0, abs(dDock));
-    float dockStrokeDark = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.20, uDark > 0.5 ? 0.70 : 0.48, dockSideWeight);
+    float rimWidth = 12.0;
+    float rimNorm = clamp(1.0 - distInward / rimWidth, 0.0, 1.0);
+    float meniscusCurve = pow(rimNorm, 1.85);
 
-    float dockInwardBand = smoothstep(2.8, 0.3, dockInward);
-    float dockTopHighlight = dockTopWeight * 0.55 * dockInwardBand;
-    float dockBotHighlight = dockBotWeight * 0.22 * dockInwardBand;
-    float dockSideHighlight = dockSideWeight * 0.08 * dockInwardBand;
-    float dockHighlight = (dockTopHighlight + dockBotHighlight) * (1.0 - dockSideWeight * 0.65) + dockSideHighlight;
-
-    // Translucent Frosted Glass Dock (transparent, directly revealing the app background beneath)
-    vec3 dockColor = uDark > 0.5 ? vec3(0.12, 0.125, 0.14) : vec3(1.0, 1.0, 1.0);
-    dockColor += vec3(dockHighlight);
-    dockColor = mix(dockColor, vec3(0.0), dockStrokeDark);
-
-    float dockFillAlpha = dockMask * (uDark > 0.5 ? 0.85 : 0.72);
-    float dockStrokeAlpha = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.20, uDark > 0.5 ? 0.70 : 0.48, dockSideWeight);
-    float totalDockAlpha = max(dockFillAlpha, dockStrokeAlpha);
-
-    // Inactive glyphs
-    vec4 inactiveSample = texture2D(uInactiveTex, baseUV);
-    vec3 dockFinal = mix(dockColor, inactiveSample.rgb, inactiveSample.a);
-
-    // 3. Selected Tab Geometry: True Stadium Capsule (Miniature replica of the Dock)
-    // Semicircular ends (r = dropHalfH) and straight top & bottom edges
-    float dropR = uDropletRect.w;
-    float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, dropR);
-    float dropMask = 1.0 - smoothstep(-0.5, 0.5, dDrop);
-    float dropInward = max(0.0, -dDrop);
-
-    vec2 dropRel = p - uDropletRect.xy;
-    vec2 dropB = uDropletRect.zw - dropR;
-    vec2 dropQ = abs(dropRel) - dropB;
-    vec2 dropNorm = normalize(sign(dropRel) * max(dropQ, 0.0) + vec2(1e-5));
-    if (max(dropQ.x, dropQ.y) < 0.0) {
-      dropNorm = abs(dropQ.x) > abs(dropQ.y) ? vec2(sign(dropRel.x), 0.0) : vec2(0.0, sign(dropRel.y));
+    vec2 rel = p - uDropletRect.xy;
+    vec2 b = uDropletRect.zw - uDropletRect.w;
+    vec2 q = abs(rel) - b;
+    vec2 outNormal = normalize(sign(rel) * max(q, 0.0) + vec2(1e-5));
+    if (max(q.x, q.y) < 0.0) {
+      outNormal = abs(q.x) > abs(q.y) ? vec2(sign(rel.x), 0.0) : vec2(0.0, sign(rel.y));
     }
 
-    float dropSideWeight = pow(max(abs(dropNorm.x), 0.0), 1.6);
-    float dropTopWeight = max(-dropNorm.y, 0.0);
-    float dropBotWeight = max(dropNorm.y, 0.0);
+    float activeRefract = uRefraction * uTrigger;
+    float activeDisp = uDispersion * uTrigger;
 
-    // 4. Tab Glass Edge Optics:
-    // "上下为非常细的黑色边附带向内的白色高光，左右为更加明显的黑边带有更加轻微的向内的白色高光"
-    float dropStroke = 1.0 - smoothstep(0.0, 1.0, abs(dDrop));
-    float dropStrokeDark = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.16, uDark > 0.5 ? 0.60 : 0.42, dropSideWeight);
+    vec2 refractOffset = outNormal * (meniscusCurve * 0.048 * activeRefract)
+                       - (rel / uDropletRect.zw) * (0.010 * activeRefract);
 
-    float dropInwardBand = smoothstep(3.2, 0.4, dropInward);
-    float dropTopHighlight = dropTopWeight * (0.40 + 0.55 * uTrigger) * dropInwardBand;
-    float dropBotHighlight = dropBotWeight * (0.18 + 0.32 * uTrigger) * dropInwardBand;
-    float dropSideHighlight = dropSideWeight * 0.10 * dropInwardBand;
-    float dropHighlight = (dropTopHighlight + dropBotHighlight) * (1.0 - dropSideWeight * 0.65) + dropSideHighlight;
+    vec2 dispShift = outNormal * (meniscusCurve * 0.036 * activeDisp);
+    float r = sampleScene(baseUV + refractOffset + dispShift).r;
+    float g = sampleScene(baseUV + refractOffset).g;
+    float bCol = sampleScene(baseUV + refractOffset - dispShift).b;
+    vec3 crystalColor = vec3(r, g, bCol);
 
-    // 5. Sampling Glyphs with gentle optical magnification
-    float rimWidth = 14.0;
-    float rimNorm = clamp(dropInward / rimWidth, 0.0, 1.0);
-    float meniscus = pow(1.0 - rimNorm, 1.6);
+    vec3 restTint = uDark > 0.5 ? vec3(0.26, 0.30, 0.44) : vec3(0.92, 0.94, 0.98);
+    crystalColor = mix(crystalColor, restTint, (1.0 - uTrigger) * (uDark > 0.5 ? 0.32 : 0.42));
 
-    vec2 dropCenterUV = uDropletRect.xy / uCanvasSize;
-    vec2 deltaUV = baseUV - dropCenterUV;
-    vec2 magOffset = -deltaUV * (0.06 * uTrigger);
-    vec2 refractOffset = -dropNorm * (meniscus * 0.014 * uTrigger);
+    float bevelShade = smoothstep(5.5, 0.6, distInward) * smoothstep(0.0, 0.8, distInward);
+    float shadeStrength = bevelShade * (uDark > 0.5 ? 0.16 : 0.055) * uRimStrength * (0.2 + 0.8 * uTrigger);
+    crystalColor *= (1.0 - shadeStrength);
 
-    vec4 glyphSample = sampleGlyphs(baseUV + magOffset + refractOffset, uDropletRect.xy, uDropletRect.zw, dropR);
-    vec3 glyphRgb = glyphSample.rgb;
-    float glyphAlpha = glyphSample.a;
+    float topArc = pow(max(dot(outNormal, normalize(vec2(-0.15, -0.99))), 0.0), 2.6);
+    float botArc = pow(max(dot(outNormal, normalize(vec2(0.15, 0.99))), 0.0), 3.0);
+    float innerHighlightBand = smoothstep(2.4, 0.3, distInward);
+    float hairBorder = smoothstep(1.1, 0.0, distInward);
 
-    // 6. Selected Tab Body Color & Protrusion Overhang Optics:
-    // Resting: translucent gray pill tint (#E5E5EA)
-    // Excited state: "覆盖上一层白色的高光" (illuminated white highlight layer)
-    vec3 restingPillTint = uDark > 0.5 ? vec3(0.20, 0.21, 0.24) : vec3(0.890, 0.895, 0.915);
-    vec3 triggeredWhiteHighlight = uDark > 0.5 ? vec3(0.28, 0.29, 0.33) : vec3(1.0, 1.0, 1.0);
-    vec3 tabBaseColor = mix(restingPillTint, triggeredWhiteHighlight, uColorTrigger);
+    float spec = innerHighlightBand * (topArc * 0.75 + botArc * 0.45) * (0.25 + 0.75 * uTrigger);
+    vec3 specColor = uDark > 0.5 ? vec3(0.85, 0.90, 1.0) : vec3(1.0, 1.0, 1.0);
+    crystalColor = clamp(crystalColor + specColor * spec, 0.0, 1.0);
 
-    tabBaseColor += vec3(dropHighlight);
-    tabBaseColor = mix(tabBaseColor, vec3(0.0), dropStrokeDark);
+    vec3 edgeLineCol = uDark > 0.5 ? vec3(0.45, 0.52, 0.70) : vec3(0.76, 0.79, 0.86);
+    crystalColor = mix(crystalColor, edgeLineCol, hairBorder * 0.38 * uRimStrength * (0.3 + 0.7 * uTrigger));
 
-    vec3 tabFinal = mix(tabBaseColor, glyphRgb, glyphAlpha);
+    vec3 bgRgb = mix(shadowCol, texture2D(uInactiveTex, baseUV).rgb, dockAlpha);
+    float bgAlpha = max(dockAlpha, shadowAlpha);
 
-    // Overhang region (where droplet physically extends beyond dock boundary)
-    float overhang = smoothstep(0.0, 1.5, dDock);
-    vec3 overhangColor = (uDark > 0.5 ? vec3(0.25) : vec3(1.0)) + vec3(dropHighlight);
-    overhangColor = mix(overhangColor, vec3(0.0), dropStrokeDark);
-    vec3 tabCompositeColor = mix(tabFinal, overhangColor, overhang);
+    vec3 outRgb = mix(bgRgb, crystalColor, dropMask);
+    float outAlpha = max(bgAlpha, dropMask);
 
-    // Translucent glass body in overhang region so app background shows through
-    float insideDockDropAlpha = mix(uDark > 0.5 ? 0.88 : 0.92, uDark > 0.5 ? 0.94 : 0.96, uTrigger);
-    float overhangDropAlpha = mix(0.18, 0.38, uTrigger) + dropHighlight * 0.85;
-    float tabAlpha = mix(insideDockDropAlpha, overhangDropAlpha, overhang);
-    tabAlpha = max(tabAlpha, dropStroke * mix(uDark > 0.5 ? 0.28 : 0.16, uDark > 0.5 ? 0.60 : 0.42, dropSideWeight));
-
-    // 7. Composite Scene
-    float finalAlpha = max(totalDockAlpha, dropMask * tabAlpha);
-    vec3 finalRgb = mix(dockFinal, tabCompositeColor, dropMask);
-
-    if (finalAlpha <= 0.001) discard;
-    gl_FragColor = vec4(finalRgb * finalAlpha, finalAlpha);
-
-    if (finalAlpha <= 0.001) discard;
-    gl_FragColor = vec4(finalRgb * finalAlpha, finalAlpha);
+    gl_FragColor = vec4(outRgb, outAlpha);
   }
 `;
 
