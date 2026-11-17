@@ -186,7 +186,6 @@ export function uploadLayerTexture(
   padY: number,
   dockW: number,
   dpr: number,
-  isDark: boolean,
   inkColor: string
 ): void {
   const texW = Math.max(1, Math.round(canvasW * dpr));
@@ -200,9 +199,6 @@ export function uploadLayerTexture(
   offCtx.save();
   offCtx.clearRect(0, 0, texW, texH);
   offCtx.scale(dpr, dpr);
-
-  offCtx.fillStyle = isDark ? '#1E2130' : '#FFFFFF';
-  offCtx.fillRect(0, 0, canvasW, canvasH);
 
   const tabCount = Math.max(1, tabs.length);
   const colW = dockW / tabCount;
@@ -225,6 +221,7 @@ export function uploadLayerTexture(
   offCtx.restore();
 
   gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
 }
 

@@ -74,9 +74,9 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
           className
         )}
       >
-        <div className="w-full pointer-events-auto">
+        <div className="w-full max-w-[344px] mx-auto pointer-events-auto">
           <LiquidGlassDock
-            className="h-[60px]"
+            className="h-[58px]"
             tabs={allTabs}
             activeTab={currentTab}
             onTabChange={onTabChange}

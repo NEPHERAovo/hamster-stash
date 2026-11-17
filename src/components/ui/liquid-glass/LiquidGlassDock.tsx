@@ -48,6 +48,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const stepRef = useRef(step);
   stepRef.current = step;
 
+  const isPointerDownRef = useRef(false);
+  const pointerDownXRef = useRef(0);
   const isDraggingRef = useRef(false);
   const pressTargetRef = useRef(0);
   const texturesDirtyRef = useRef(true);
@@ -143,8 +145,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     let lastCanvasW = 0;
     let lastCanvasH = 0;
 
-    const padX = 14;
-    const padY = 16;
+    const padX = 18;
+    const padY = 20;
 
     const render = (now: number) => {
       if (!gl || !canvas || !dockShell) return;
@@ -197,7 +199,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           padY,
           dockW,
           dpr,
-          currentIsDark,
           inactiveColor
         );
 
@@ -214,7 +215,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           padY,
           dockW,
           dpr,
-          currentIsDark,
           activeColor
         );
 
@@ -299,33 +299,40 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const rect = dockShell.getBoundingClientRect();
     if (rect.width <= 0) return;
 
-    isDraggingRef.current = true;
+    isPointerDownRef.current = true;
+    pointerDownXRef.current = e.clientX;
+    isDraggingRef.current = false;
     pressTargetRef.current = 1.0;
 
     try {
       dockShell.setPointerCapture(e.pointerId);
     } catch {
-      // ignore
+      void 0;
     }
-
-    const localX = Math.max(32, Math.min(rect.width - 32, e.clientX - rect.left));
-    setDragPosition(localX);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isPointerDownRef.current) return;
     const dockShell = dockShellRef.current;
     if (!dockShell) return;
 
     const rect = dockShell.getBoundingClientRect();
     if (rect.width <= 0) return;
 
-    const localX = Math.max(32, Math.min(rect.width - 32, e.clientX - rect.left));
-    setDragPosition(localX);
+    const dx = Math.abs(e.clientX - pointerDownXRef.current);
+    if (!isDraggingRef.current && dx > 6) {
+      isDraggingRef.current = true;
+    }
+
+    if (isDraggingRef.current) {
+      const localX = Math.max(26, Math.min(rect.width - 26, e.clientX - rect.left));
+      setDragPosition(localX);
+    }
   };
 
   const handlePointerRelease = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
 
@@ -360,6 +367,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    isPointerDownRef.current = false;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
     const dockShell = dockShellRef.current;
@@ -385,9 +393,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerCancel}
       className={cn(
-        'relative h-[60px] rounded-full transition-colors duration-200 select-none cursor-pointer overflow-visible',
-        'bg-[rgba(255,255,255,0.90)] border border-[rgba(15,23,42,0.06)] shadow-[0_10px_28px_-6px_rgba(20,28,56,0.08),0_2px_6px_rgba(20,28,56,0.03)] backdrop-blur-xl',
-        'dark:bg-[rgba(30,33,48,0.86)] dark:border-[rgba(255,255,255,0.09)] dark:shadow-[0_14px_34px_-6px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)]',
+        'relative h-[58px] rounded-full select-none cursor-pointer overflow-visible bg-transparent border-0 shadow-none backdrop-blur-xl',
         className
       )}
       style={{ touchAction: 'none' }}
@@ -395,7 +401,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="absolute -left-[14px] -right-[14px] -top-[16px] -bottom-[16px] w-[calc(100%+28px)] h-[calc(100%+32px)] pointer-events-none z-10"
+        className="absolute -left-[18px] -right-[18px] -top-[20px] -bottom-[20px] w-[calc(100%+36px)] h-[calc(100%+40px)] pointer-events-none z-10"
       />
 
       <div className="absolute inset-0 flex items-stretch z-20 pointer-events-none">
@@ -409,9 +415,10 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
               type="button"
               role="tab"
               aria-selected={active}
+              tabIndex={-1}
               title={label}
               aria-label={label}
-              className="flex-1 opacity-0 pointer-events-none"
+              className="flex-1 opacity-0 pointer-events-none outline-none focus:outline-none focus:ring-0"
             >
               {label}
             </button>

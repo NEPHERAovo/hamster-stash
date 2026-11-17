@@ -13,9 +13,9 @@ export const FRAGMENT_SHADER_SOURCE = `
   uniform float uDpr;
   uniform float uDark;
 
-  uniform vec4 uDockRect;
-  uniform vec4 uDropletRect;
-  uniform float uTrigger;
+  uniform vec4 uDockRect;     // cx, cy, halfW, halfH
+  uniform vec4 uDropletRect;  // cx, cy, halfW, halfH
+  uniform float uTrigger;     // 0.0 (calm resting) -> 1.0 (active optical glass)
 
   uniform float uRefraction;
   uniform float uDispersion;
@@ -29,95 +29,163 @@ export const FRAGMENT_SHADER_SOURCE = `
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
   }
 
-  vec3 sampleScene(vec2 uv) {
+  vec3 sampleUnderGlass(vec2 uv, vec2 dockHalfSize, float dropR) {
     vec2 clampedUV = clamp(uv, 0.002, 0.998);
     vec2 pSample = clampedUV * uCanvasSize;
-    float dSample = sdRoundBox(pSample - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
-    float insideDrop = 1.0 - smoothstep(-0.75, 0.75, dSample);
 
-    vec3 inactiveCol = texture2D(uInactiveTex, clampedUV).rgb;
-    vec3 activeCol = texture2D(uActiveTex, clampedUV).rgb;
-    return mix(inactiveCol, activeCol, insideDrop);
+    float dDockSample = sdRoundBox(pSample - uDockRect.xy, dockHalfSize, dockHalfSize.y);
+    float isInsideDock = 1.0 - smoothstep(-0.5, 0.5, dDockSample);
+
+    vec3 pageBg = uDark > 0.5 ? vec3(0.040, 0.043, 0.052) : vec3(0.953, 0.957, 0.965);
+    vec3 dockBg = uDark > 0.5 ? vec3(0.14, 0.15, 0.18) : vec3(1.0, 1.0, 1.0);
+    vec3 surfaceCol = mix(pageBg, dockBg, isInsideDock);
+
+    float dDropSample = sdRoundBox(pSample - uDropletRect.xy, uDropletRect.zw, dropR);
+    float isInsideDrop = 1.0 - smoothstep(-0.75, 0.75, dDropSample);
+
+    vec4 inactiveG = texture2D(uInactiveTex, clampedUV);
+    vec4 activeG = texture2D(uActiveTex, clampedUV);
+    vec4 glyph = mix(inactiveG, activeG, isInsideDrop);
+
+    return mix(surfaceCol, glyph.rgb, glyph.a);
   }
 
   void main() {
     vec2 p = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y) / uDpr;
     vec2 baseUV = p / uCanvasSize;
 
-    float dDock = sdRoundBox(p - uDockRect.xy, uDockRect.zw, uDockRect.w);
-    float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, uDropletRect.w);
+    vec2 dockHalfSize = uDockRect.zw + vec2(4.0, 1.5) * uTrigger;
+    float dockR = dockHalfSize.y;
+    float dDock = sdRoundBox(p - uDockRect.xy, dockHalfSize, dockR);
+    float dockMask = 1.0 - smoothstep(-0.5, 0.5, dDock);
+    float dockInward = max(0.0, -dDock);
 
-    float dockMask = 1.0 - smoothstep(-0.75, 0.75, dDock);
-    float dropMask = 1.0 - smoothstep(-0.75, 0.75, dDrop);
-
-    float shadowRadius = mix(6.0, 16.0, uTrigger);
-    float shadowStrength = mix(uDark > 0.5 ? 0.14 : 0.02, uDark > 0.5 ? 0.40 : 0.08, uTrigger);
-    float shadowAlpha = smoothstep(shadowRadius, 0.0, dDrop - 1.0) * shadowStrength;
-    vec3 shadowCol = uDark > 0.5 ? vec3(0.01, 0.02, 0.04) : vec3(0.25, 0.30, 0.42);
-
-    float dockAlpha = dockMask * (uDark > 0.5 ? 0.88 : 0.92);
-
-    if (dropMask <= 0.001) {
-      vec3 inactiveRgb = texture2D(uInactiveTex, baseUV).rgb;
-      vec3 outRgb = mix(shadowCol, inactiveRgb, dockAlpha);
-      float outAlpha = max(dockAlpha, shadowAlpha);
-      if (outAlpha <= 0.001) discard;
-      gl_FragColor = vec4(outRgb, outAlpha);
-      return;
+    vec2 dockRel = p - uDockRect.xy;
+    vec2 dockB = dockHalfSize - dockR;
+    vec2 dockQ = abs(dockRel) - dockB;
+    vec2 dockNorm = normalize(sign(dockRel) * max(dockQ, 0.0) + vec2(1e-5));
+    if (max(dockQ.x, dockQ.y) < 0.0) {
+      dockNorm = abs(dockQ.x) > abs(dockQ.y) ? vec2(sign(dockRel.x), 0.0) : vec2(0.0, sign(dockRel.y));
     }
 
-    float distInward = max(0.0, -dDrop);
+    float dockSideWeight = pow(max(abs(dockNorm.x), 0.0), 1.6);
+    float dockTopWeight = max(-dockNorm.y, 0.0);
+    float dockBotWeight = max(dockNorm.y, 0.0);
 
-    float rimWidth = 12.0;
-    float rimNorm = clamp(1.0 - distInward / rimWidth, 0.0, 1.0);
+    float dockStroke = 1.0 - smoothstep(0.0, 1.2, abs(dDock));
+    float dockStrokeDark = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.18, uDark > 0.5 ? 0.70 : 0.50, dockSideWeight);
+
+    float dockInwardBand = smoothstep(3.2, 0.3, dockInward);
+    float dockTopHighlight = dockTopWeight * (0.45 + 0.35 * uTrigger) * dockInwardBand;
+    float dockBotHighlight = dockBotWeight * (0.18 + 0.15 * uTrigger) * dockInwardBand;
+    float dockSideHighlight = dockSideWeight * 0.06 * dockInwardBand;
+    float dockHighlight = (dockTopHighlight + dockBotHighlight) * (1.0 - dockSideWeight * 0.65) + dockSideHighlight;
+
+    vec3 dockBaseCol = uDark > 0.5 ? vec3(0.12, 0.13, 0.16) : vec3(1.0, 1.0, 1.0);
+    dockBaseCol += vec3(dockHighlight);
+    dockBaseCol = mix(dockBaseCol, vec3(0.0), dockStrokeDark);
+
+    float dockFillAlpha = dockMask * mix(0.0, uDark > 0.5 ? 0.55 : 0.48, uTrigger);
+    float dockEdgeAlpha = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.18, uDark > 0.5 ? 0.70 : 0.50, dockSideWeight);
+    float totalDockAlpha = max(dockFillAlpha, dockEdgeAlpha);
+
+    vec4 inactiveGlyph = texture2D(uInactiveTex, baseUV);
+    vec3 dockWithInactive = mix(dockBaseCol, inactiveGlyph.rgb, inactiveGlyph.a);
+    float dockTotalAlpha = max(totalDockAlpha, inactiveGlyph.a * dockMask);
+
+    float dropR = uDropletRect.w;
+    float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, dropR);
+    float dropMask = 1.0 - smoothstep(-0.5, 0.5, dDrop);
+    float dropInward = max(0.0, -dDrop);
+
+    float dShadow = sdRoundBox((p - vec2(0.0, 4.0 * uTrigger)) - uDropletRect.xy, uDropletRect.zw, dropR);
+    float shadowAlpha = smoothstep(14.0, 1.0, dShadow) * (uDark > 0.5 ? 0.30 : 0.09) * uTrigger;
+    vec3 shadowCol = uDark > 0.5 ? vec3(0.01, 0.02, 0.04) : vec3(0.18, 0.22, 0.32);
+
+    if (dropMask <= 0.001 && dockTotalAlpha <= 0.001 && shadowAlpha <= 0.001) {
+      discard;
+    }
+
+    float pillFade = 1.0 - smoothstep(0.0, 0.15, uTrigger);
+    vec3 pillGrey = uDark > 0.5 ? vec3(0.18, 0.19, 0.22) : vec3(0.902, 0.902, 0.920);
+    float pillAlpha = dropMask * pillFade * (uDark > 0.5 ? 0.94 : 0.98);
+    vec4 activeGlyphRest = texture2D(uActiveTex, baseUV);
+    vec3 restingTabCol = mix(pillGrey, activeGlyphRest.rgb, activeGlyphRest.a);
+
+    vec2 dropRel = p - uDropletRect.xy;
+    vec2 dropB = uDropletRect.zw - dropR;
+    vec2 dropQ = abs(dropRel) - dropB;
+    vec2 dropNorm = normalize(sign(dropRel) * max(dropQ, 0.0) + vec2(1e-5));
+    if (max(dropQ.x, dropQ.y) < 0.0) {
+      dropNorm = abs(dropQ.x) > abs(dropQ.y) ? vec2(sign(dropRel.x), 0.0) : vec2(0.0, sign(dropRel.y));
+    }
+
+    float dropSideWeight = pow(max(abs(dropNorm.x), 0.0), 1.6);
+    float dropTopWeight = max(-dropNorm.y, 0.0);
+    float dropBotWeight = max(dropNorm.y, 0.0);
+
+    float dropStroke = (1.0 - smoothstep(0.0, 1.2, abs(dDrop))) * uTrigger;
+    float dropStrokeDark = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.15, uDark > 0.5 ? 0.60 : 0.42, dropSideWeight);
+
+    float dropInwardBand = smoothstep(3.2, 0.4, dropInward);
+    float dropTopHighlight = dropTopWeight * (0.65 * uTrigger) * dropInwardBand;
+    float dropBotHighlight = dropBotWeight * (0.30 * uTrigger) * dropInwardBand;
+    float dropSideHighlight = dropSideWeight * (0.10 * uTrigger) * dropInwardBand;
+    float dropHighlight = (dropTopHighlight + dropBotHighlight) * (1.0 - dropSideWeight * 0.65) + dropSideHighlight;
+
+    float rimWidth = 14.0;
+    float rimNorm = clamp(1.0 - dropInward / rimWidth, 0.0, 1.0);
     float meniscusCurve = pow(rimNorm, 1.85);
-
-    vec2 rel = p - uDropletRect.xy;
-    vec2 b = uDropletRect.zw - uDropletRect.w;
-    vec2 q = abs(rel) - b;
-    vec2 outNormal = normalize(sign(rel) * max(q, 0.0) + vec2(1e-5));
-    if (max(q.x, q.y) < 0.0) {
-      outNormal = abs(q.x) > abs(q.y) ? vec2(sign(rel.x), 0.0) : vec2(0.0, sign(rel.y));
-    }
 
     float activeRefract = uRefraction * uTrigger;
     float activeDisp = uDispersion * uTrigger;
 
-    vec2 refractOffset = outNormal * (meniscusCurve * 0.048 * activeRefract)
-                       - (rel / uDropletRect.zw) * (0.010 * activeRefract);
+    vec2 refractOffset = dropNorm * (meniscusCurve * 0.048 * activeRefract)
+                       - (dropRel / uDropletRect.zw) * (0.010 * activeRefract);
+    vec2 dispShift = dropNorm * (meniscusCurve * 0.036 * activeDisp);
 
-    vec2 dispShift = outNormal * (meniscusCurve * 0.036 * activeDisp);
-    float r = sampleScene(baseUV + refractOffset + dispShift).r;
-    float g = sampleScene(baseUV + refractOffset).g;
-    float bCol = sampleScene(baseUV + refractOffset - dispShift).b;
-    vec3 crystalColor = vec3(r, g, bCol);
+    float r = sampleUnderGlass(baseUV + refractOffset + dispShift, dockHalfSize, dropR).r;
+    float g = sampleUnderGlass(baseUV + refractOffset, dockHalfSize, dropR).g;
+    float bCol = sampleUnderGlass(baseUV + refractOffset - dispShift, dockHalfSize, dropR).b;
+    vec3 glassColor = vec3(r, g, bCol);
 
-    vec3 restTint = uDark > 0.5 ? vec3(0.26, 0.30, 0.44) : vec3(0.92, 0.94, 0.98);
-    crystalColor = mix(crystalColor, restTint, (1.0 - uTrigger) * (uDark > 0.5 ? 0.32 : 0.42));
+    float bevelShade = smoothstep(5.5, 0.6, dropInward) * smoothstep(0.0, 0.8, dropInward);
+    float shadeStrength = bevelShade * (uDark > 0.5 ? 0.16 : 0.055) * uRimStrength * uTrigger;
+    glassColor *= (1.0 - shadeStrength);
 
-    float bevelShade = smoothstep(5.5, 0.6, distInward) * smoothstep(0.0, 0.8, distInward);
-    float shadeStrength = bevelShade * (uDark > 0.5 ? 0.16 : 0.055) * uRimStrength * (0.2 + 0.8 * uTrigger);
-    crystalColor *= (1.0 - shadeStrength);
-
-    float topArc = pow(max(dot(outNormal, normalize(vec2(-0.15, -0.99))), 0.0), 2.6);
-    float botArc = pow(max(dot(outNormal, normalize(vec2(0.15, 0.99))), 0.0), 3.0);
-    float innerHighlightBand = smoothstep(2.4, 0.3, distInward);
-    float hairBorder = smoothstep(1.1, 0.0, distInward);
-
-    float spec = innerHighlightBand * (topArc * 0.75 + botArc * 0.45) * (0.25 + 0.75 * uTrigger);
+    float topArc = pow(max(dot(dropNorm, normalize(vec2(-0.15, -0.99))), 0.0), 2.6);
+    float botArc = pow(max(dot(dropNorm, normalize(vec2(0.15, 0.99))), 0.0), 3.0);
+    float spec = dropInwardBand * (topArc * 0.75 + botArc * 0.45) * uTrigger;
     vec3 specColor = uDark > 0.5 ? vec3(0.85, 0.90, 1.0) : vec3(1.0, 1.0, 1.0);
-    crystalColor = clamp(crystalColor + specColor * spec, 0.0, 1.0);
+    glassColor = clamp(glassColor + specColor * spec, 0.0, 1.0);
 
+    float hairBorder = smoothstep(1.1, 0.0, dropInward);
     vec3 edgeLineCol = uDark > 0.5 ? vec3(0.45, 0.52, 0.70) : vec3(0.76, 0.79, 0.86);
-    crystalColor = mix(crystalColor, edgeLineCol, hairBorder * 0.38 * uRimStrength * (0.3 + 0.7 * uTrigger));
+    glassColor = mix(glassColor, edgeLineCol, hairBorder * 0.38 * uRimStrength * uTrigger);
 
-    vec3 bgRgb = mix(shadowCol, texture2D(uInactiveTex, baseUV).rgb, dockAlpha);
-    float bgAlpha = max(dockAlpha, shadowAlpha);
+    glassColor = mix(glassColor, vec3(0.0), dropStrokeDark);
+    glassColor += vec3(dropHighlight);
 
-    vec3 outRgb = mix(bgRgb, crystalColor, dropMask);
-    float outAlpha = max(bgAlpha, dropMask);
+    float overhang = smoothstep(0.0, 1.5, dDock);
+    float insideDockGlassAlpha = uDark > 0.5 ? 0.94 : 0.96;
+    float overhangGlassAlpha = mix(0.35, 0.55, uTrigger) + dropHighlight * 0.75;
+    float activeGlassAlpha = mix(insideDockGlassAlpha, overhangGlassAlpha, overhang);
 
-    gl_FragColor = vec4(outRgb, outAlpha);
+    float glassFade = smoothstep(0.05, 0.25, uTrigger);
+    vec3 finalTabCol = mix(restingTabCol, glassColor, glassFade);
+    float finalTabAlpha = mix(pillAlpha, activeGlassAlpha, glassFade);
+
+    vec3 finalCol = mix(dockWithInactive, finalTabCol, dropMask);
+    float finalAlpha = max(dockTotalAlpha, dropMask * finalTabAlpha);
+
+    float outsideDrop = 1.0 - dropMask;
+    if (shadowAlpha > 0.001 && outsideDrop > 0.001) {
+      finalCol = mix(finalCol, shadowCol, shadowAlpha * outsideDrop);
+      finalAlpha = max(finalAlpha, shadowAlpha * outsideDrop);
+    }
+
+    if (finalAlpha <= 0.001) discard;
+    gl_FragColor = vec4(finalCol, finalAlpha);
   }
 `;
 

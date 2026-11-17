@@ -32,8 +32,8 @@ export function useLiquidSpring() {
     }
 
     if (!isDragging) {
-      const force = (targetX - s.dropletX) * 280;
-      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-17 * dt);
+      const force = (targetX - s.dropletX) * 300;
+      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-18 * dt);
       s.dropletX += s.dropletVelX * dt;
 
       if (Math.abs(targetX - s.dropletX) < 0.1 && Math.abs(s.dropletVelX) < 0.5) {
@@ -42,17 +42,24 @@ export function useLiquidSpring() {
       }
     }
 
-    const pressRate = pressTarget > s.pressAmount ? 26 : 12;
+    const pressRate = pressTarget > s.pressAmount ? 28 : 14;
     s.pressAmount += (pressTarget - s.pressAmount) * Math.min(1, dt * pressRate);
 
-    const glideEnergy = Math.min(1.0, Math.abs(s.dropletVelX) / 360.0);
-    const rawTrigger = Math.min(1.0, Math.max(s.pressAmount, glideEnergy));
-    const triggerRate = rawTrigger > s.smoothTrigger ? 24 : 9;
+    const distToTarget = Math.abs(targetX - s.dropletX);
+    const distEnergy = Math.min(1.0, distToTarget / Math.max(1, colW * 0.75));
+    const velEnergy = Math.min(1.0, Math.abs(s.dropletVelX) / 240.0);
+    const travelEnergy = Math.max(velEnergy, distEnergy * 0.75);
+
+    const rawTrigger = Math.min(1.0, Math.max(s.pressAmount, travelEnergy));
+    const triggerRate = rawTrigger > s.smoothTrigger ? 32 : 12;
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * triggerRate);
 
-    const stretchX = Math.min(10, Math.abs(s.dropletVelX) * 0.016);
-    const dropHalfW = colW * 0.48 + s.smoothTrigger * 6.5 + stretchX;
-    const dropHalfH = dockH * 0.41 + s.smoothTrigger * 8.0;
+    const stretchX = Math.min(8.0, Math.abs(s.dropletVelX) * 0.012);
+    const baseHalfH = dockH * 0.40;
+    const baseHalfW = Math.min(colW * 0.44, baseHalfH * 1.62);
+
+    const dropHalfH = baseHalfH + s.smoothTrigger * 13.5;
+    const dropHalfW = baseHalfW + s.smoothTrigger * 9.5 + stretchX;
 
     return {
       dropletX: s.dropletX,
