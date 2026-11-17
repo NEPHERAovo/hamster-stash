@@ -197,6 +197,7 @@ body.theme-pine, :root[data-theme="theme-pine"], .theme-pine {
 }
 
 html, body, #root { height: 100%; min-height: 100%; margin: 0; overflow: hidden; }
+@supports (-webkit-touch-callout: none) { html, body, #root { height: -webkit-fill-available; min-height: -webkit-fill-available; } }
 html { background-color: var(--paper-base, var(--bg-base)); }
 
 body {

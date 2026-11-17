@@ -25,6 +25,7 @@ export default defineConfig({
       short_name: 'hamsterStash',
       description: 'hamsterStash',
       theme_color: '#ffffff',
+      background_color: '#F3F4F6',
       display: 'standalone',
     },
 
