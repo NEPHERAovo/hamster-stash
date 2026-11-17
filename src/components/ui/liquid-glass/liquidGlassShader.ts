@@ -80,11 +80,11 @@ export const FRAGMENT_SHADER_SOURCE = `
     float dockTopWeight = max(-dockNorm.y, 0.0);
     float dockBotWeight = max(dockNorm.y, 0.0);
 
-    float dockStroke = 1.0 - smoothstep(0.0, 1.1, abs(dDock));
-    float dockStrokeDark = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.55, uDark > 0.5 ? 0.72 : 0.75, dockSideWeight);
+    float dockStroke = 1.0 - smoothstep(0.0, 0.8, abs(dDock));
+    float dockStrokeDark = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.35, uDark > 0.5 ? 0.72 : 0.35, dockSideWeight);
     vec3 edgeDarkCol = uDark > 0.5 ? vec3(0.02, 0.03, 0.06) : vec3(0.20, 0.22, 0.28);
 
-    float dockInwardBand = smoothstep(0.4, 1.4, dockInward) * smoothstep(2.6, 1.6, dockInward);
+    float dockInwardBand = smoothstep(0.4, 1.4, dockInward) * smoothstep(1.8, 1.0, dockInward);
     float dockTopHighlight = dockTopWeight * (0.60 + 0.30 * uTrigger) * dockInwardBand;
     float dockBotHighlight = dockBotWeight * (0.26 + 0.16 * uTrigger) * dockInwardBand;
     float dockSideHighlight = dockSideWeight * 0.08 * dockInwardBand;
@@ -141,9 +141,9 @@ export const FRAGMENT_SHADER_SOURCE = `
     float dropBotWeight = max(dropNorm.y, 0.0);
 
     float dropStroke = (1.0 - smoothstep(0.0, 1.2, abs(dDrop))) * uTrigger;
-    float dropStrokeDark = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.76, uDark > 0.5 ? 0.60 : 0.56, dropSideWeight);
+    float dropStrokeDark = dropStroke * mix(uDark > 0.5 ? 0.28 : 0.15, uDark > 0.5 ? 0.60 : 0.42, dropSideWeight);
 
-    float dropInwardBand = smoothstep(1.6, 0.4, dropInward);
+    float dropInwardBand = smoothstep(1.2, 0.4, dropInward);
     float dropTopHighlight = dropTopWeight * (0.65 * uTrigger) * dropInwardBand;
     float dropBotHighlight = dropBotWeight * (0.30 * uTrigger) * dropInwardBand;
     float dropSideHighlight = dropSideWeight * (0.10 * uTrigger) * dropInwardBand;
@@ -175,7 +175,7 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec3 specColor = uDark > 0.5 ? vec3(0.85, 0.90, 1.0) : vec3(1.0, 1.0, 1.0);
     glassColor = clamp(glassColor + specColor * spec, 0.0, 1.0);
 
-    float hairBorder = smoothstep(1.6, 0.0, dropInward);
+    float hairBorder = smoothstep(1.4, 0.0, dropInward);
     vec3 edgeLineCol = uDark > 0.5 ? vec3(0.45, 0.52, 0.70) : vec3(0.76, 0.79, 0.86);
     glassColor = mix(glassColor, edgeLineCol, hairBorder * 0.38 * uRimStrength * uTrigger);
 
