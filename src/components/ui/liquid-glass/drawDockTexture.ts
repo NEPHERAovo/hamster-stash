@@ -209,13 +209,13 @@ export function uploadLayerTexture(
     const tabType = resolveTabType(tab);
     const label = resolveTabLabel(tab);
 
-    drawTabIcon(offCtx, tabType, cx, padY + dockH * 0.35, inkColor);
+    drawTabIcon(offCtx, tabType, cx, padY + dockH * 0.34, inkColor);
 
     offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif';
     offCtx.textAlign = 'center';
     offCtx.textBaseline = 'middle';
     offCtx.fillStyle = inkColor;
-    offCtx.fillText(label, cx, padY + dockH * 0.733);
+    offCtx.fillText(label, cx, padY + dockH * 0.71);
   });
 
   offCtx.restore();

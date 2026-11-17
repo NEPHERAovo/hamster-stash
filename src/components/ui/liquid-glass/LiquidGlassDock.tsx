@@ -309,6 +309,21 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     } catch {
       void 0;
     }
+
+    const currentTabs = tabsRef.current;
+    if (currentTabs.length > 0) {
+      const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+      const colW = rect.width / currentTabs.length;
+      const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(localX / colW)));
+      const selectedTab = currentTabs[tabIdx];
+      if (selectedTab) {
+        const chosenId = selectedTab.id || selectedTab.path || '';
+        if (!isTabActive(selectedTab, activeTabRef.current)) {
+          activeTabRef.current = chosenId;
+          onTabChangeRef.current(chosenId);
+        }
+      }
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -320,7 +335,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     if (rect.width <= 0) return;
 
     const dx = Math.abs(e.clientX - pointerDownXRef.current);
-    if (!isDraggingRef.current && dx > 6) {
+    if (!isDraggingRef.current && dx > 8) {
       isDraggingRef.current = true;
     }
 
@@ -343,7 +358,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           dockShell.releasePointerCapture(e.pointerId);
         }
       } catch {
-        // ignore
+        void 0;
       }
     }
 
@@ -377,7 +392,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           dockShell.releasePointerCapture(e.pointerId);
         }
       } catch {
-        // ignore
+        void 0;
       }
     }
   };

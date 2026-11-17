@@ -55,11 +55,11 @@ export function useLiquidSpring() {
     s.smoothTrigger += (rawTrigger - s.smoothTrigger) * Math.min(1, dt * triggerRate);
 
     const stretchX = Math.min(8.0, Math.abs(s.dropletVelX) * 0.012);
-    const baseHalfH = dockH * 0.40;
-    const baseHalfW = Math.min(colW * 0.44, baseHalfH * 1.62);
+    const baseHalfH = Math.round(dockH * 0.35);
+    const baseHalfW = Math.min(colW * 0.48, baseHalfH * 2.05);
 
-    const dropHalfH = baseHalfH + s.smoothTrigger * 13.5;
-    const dropHalfW = baseHalfW + s.smoothTrigger * 9.5 + stretchX;
+    const dropHalfH = baseHalfH + s.smoothTrigger * 16.0;
+    const dropHalfW = baseHalfW + s.smoothTrigger * 8.5 + stretchX;
 
     return {
       dropletX: s.dropletX,
