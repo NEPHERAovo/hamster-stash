@@ -47,7 +47,8 @@ export function App() {
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
-  const { isDark, toggleDark } = useThemeStore();
+  const { isDark, toggleDark, uiStyle } = useThemeStore();
+  const isModern = uiStyle === 'modern';
 
   const {
     currentMonth,
@@ -75,9 +76,16 @@ export function App() {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
+  const SHORT_MONTH_NAMES = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
   const [currentYearNum, currentMonthNum] = currentMonth.split('-').map(Number);
   const currentMonthName = MONTH_NAMES[(currentMonthNum || 1) - 1] || `${currentMonthNum}月`;
-  const folioMonthTitle = `${currentMonthName} ${currentYearNum}`;
+  const shortMonthName = SHORT_MONTH_NAMES[(currentMonthNum || 1) - 1] || `${currentMonthNum}月`;
+  const folioMonthTitle = isModern
+    ? `${shortMonthName}, ${currentYearNum}`
+    : `${currentMonthName} ${currentYearNum}`;
 
   useEffect(() => {
     loadAccounts();
@@ -149,7 +157,7 @@ export function App() {
         />
       ) : isSettingsOpen ? (
         <PageHeader
-          title="Settings"
+          title={isModern ? '设置' : 'Settings'}
           centerTitle={true}
           leftAction={
             <button
@@ -186,7 +194,7 @@ export function App() {
         />
       ) : currentTab === 'stats' ? (
         <PageHeader
-          title="Statistics"
+          title={isModern ? '统计' : 'Statistics'}
           rightAction={
             <div className="flex items-center gap-1 font-mono text-xs select-none">
               {(['week', 'month', 'year'] as const).map((m) => (
@@ -212,13 +220,13 @@ export function App() {
         />
       ) : activeNavTab ? (
         <PageHeader
-          title={activeNavTab.id === 'items' ? 'Owned Items' : activeNavTab.label}
+          title={activeNavTab.id === 'items' ? (isModern ? '持有物品' : 'Owned Items') : activeNavTab.label}
           rightAction={
             activeNavTab.id === 'items' ? (
               <button
                 type="button"
                 onClick={() => usePluginUIStore.getState().openModal('item-form')}
-                className="h-7 px-2.5 flex items-center gap-1 rounded-xs border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
                 title="新增持有物品"
               >
                 <Plus className="w-3.5 h-3.5 stroke-2" />
@@ -229,13 +237,13 @@ export function App() {
         />
       ) : (
         <PageHeader
-          title="Assets"
+          title={isModern ? '资产' : 'Assets'}
           rightAction={
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(true)}
-                className="w-7 h-7 flex items-center justify-center rounded-xs border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
                 title="设置"
               >
                 <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
@@ -243,7 +251,7 @@ export function App() {
               <button
                 type="button"
                 onClick={handleCreateNewAccount}
-                className="h-7 px-2.5 flex items-center gap-1 rounded-xs border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
                 title="新增资金账户"
               >
                 <Plus className="w-3.5 h-3.5 stroke-2" />

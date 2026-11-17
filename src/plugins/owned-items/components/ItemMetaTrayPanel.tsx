@@ -86,7 +86,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
             type="button"
             onClick={handleToggleCreateNew}
             className={cn(
-              'w-full py-1.5 px-2.5 rounded-[3px] text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
+              'w-full py-1.5 px-2.5 rounded-(--btn-radius) text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
               isCreateNew
                 ? 'bg-(--color-income-bg) text-(--color-income) border-(--color-income) font-semibold shadow-2xs'
                 : 'bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) border-(--rule-hairline)'
@@ -120,7 +120,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                       type="button"
                       onClick={() => handleSelectExistingItem(it.id)}
                       className={cn(
-                        'px-2 py-1 text-xs font-mono rounded-[3px] flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
+                        'px-2 py-1 text-xs font-mono rounded-(--radius-sm) flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
                         isSelected
                           ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-hairline) -rotate-1'
                           : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50 border-transparent'
@@ -153,7 +153,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                   type="button"
                   onClick={() => handleSelectExistingItem(it.id)}
                   className={cn(
-                    'px-2 py-1 text-xs font-mono rounded-[3px] flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
+                    'px-2 py-1 text-xs font-mono rounded-(--radius-sm) flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
                     isSelected
                       ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-hairline) -rotate-1'
                       : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50 border-transparent'

@@ -51,25 +51,29 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       case 'using':
         return (
           <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
-            USING
+            <span className="paper-title inline">USING</span>
+            <span className="modern-title hidden">在用</span>
           </span>
         );
       case 'idle':
         return (
           <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
-            IDLE
+            <span className="paper-title inline">IDLE</span>
+            <span className="modern-title hidden">闲置</span>
           </span>
         );
       case 'sold':
         return (
-          <span className="real-stamp text-(--stamp-red) -rotate-3 select-none text-[9px]">
-            SOLD
+          <span className="real-stamp text-(--color-expense) -rotate-3 select-none text-[9px]">
+            <span className="paper-title inline">SOLD</span>
+            <span className="modern-title hidden">已售出</span>
           </span>
         );
       case 'scrapped':
         return (
-          <span className="real-stamp text-(--ink-primary) rotate-2 select-none text-[9px]">
-            SCRAP
+          <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
+            <span className="paper-title inline">SCRAP</span>
+            <span className="modern-title hidden">报废</span>
           </span>
         );
     }
@@ -83,14 +87,15 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-2xs"
+              className="w-8 h-8 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-xs"
               aria-label="返回"
             >
               <ChevronLeft className="w-4 h-4 stroke-2" />
             </button>
             <div>
               <h1 className="font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) leading-none mt-0.5">
-                Owned Items
+                <span className="paper-title inline">Owned Items</span>
+                <span className="modern-title hidden">持有物品</span>
               </h1>
             </div>
           </div>
@@ -98,7 +103,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           <button
             type="button"
             onClick={() => openModal('item-form')}
-            className="h-7 px-2.5 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) text-xs font-mono font-medium text-(--ink-solid) flex items-center gap-1 hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer shadow-2xs"
+            className="h-7 px-2.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-mono font-medium flex items-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-2" />
             <span>新建</span>
@@ -107,7 +112,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       )}
 
       <div className={cn('px-4 space-y-3.5', onClose ? 'pt-3' : 'pt-2')}>
-        <div className="relative bg-(--paper-sheet) text-(--ink-solid) rounded-t-[2px] border border-(--rule-hairline) shadow-[0_4px_16px_rgba(0,0,0,0.04)] paper-deckle-bottom pb-4">
+        <div className="relative bg-(--paper-sheet) paper-summary-card text-(--ink-solid) rounded-(--radius-lg) border border-(--rule-hairline) shadow-xs paper-deckle-bottom pb-4">
           <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
 
           <div className="p-4 pt-4.5 space-y-3">
@@ -161,7 +166,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               >
                 <span>{tab.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--ink-solid)" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--color-accent) rounded-full" />
                 )}
               </button>
             );
@@ -187,14 +192,14 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                     }
                   }}
                   className={cn(
-                    'w-full bg-(--paper-sheet) text-(--ink-solid) rounded-[2px] border border-(--rule-hairline)',
-                    'shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-3.5 cursor-pointer transition-all',
+                    'w-full bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline)',
+                    'shadow-xs p-3.5 cursor-pointer transition-all',
                     'hover:border-(--rule-strong) active:scale-[0.995] relative'
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6.5 h-6.5 rounded-[2px] bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
+                      <div className="w-6.5 h-6.5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
                         <IconComp className="w-4 h-4 stroke-[1.8]" />
                       </div>
                       <div className="min-w-0">
@@ -248,7 +253,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             <button
               type="button"
               onClick={() => openModal('item-form')}
-              className="text-(--color-income) hover:underline font-mono inline-flex items-center text-xs cursor-pointer"
+              className="text-(--color-accent) hover:underline font-mono inline-flex items-center text-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 stroke-2 mr-0.5" />
               收录一件新物品

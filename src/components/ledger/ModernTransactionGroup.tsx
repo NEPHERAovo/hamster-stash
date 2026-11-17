@@ -44,7 +44,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
 
         return (
           <div key={date} className={cn(contained ? 'mx-0' : 'mx-4', 'mb-4 select-none')}>
-            <div className="flex items-center justify-between px-1 pb-1.5 text-xs text-(--ink-secondary)">
+            <div className="day-divider flex items-center justify-between px-1 pb-1.5 text-xs text-(--ink-secondary)">
               <div className="flex items-center gap-1.5 font-sans font-semibold">
                 <span className="text-[13px] font-bold text-(--ink-primary)">
                   {dayNum}日

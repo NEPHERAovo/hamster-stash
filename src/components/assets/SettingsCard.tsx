@@ -134,8 +134,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
       <SegToggle
         options={[
+          { value: 'modern', label: '液态玻璃' },
           { value: 'paper', label: '手帐拟物' },
-          { value: 'modern', label: '空间玻璃' },
         ]}
         value={uiStyle}
         onChange={setUiStyle}

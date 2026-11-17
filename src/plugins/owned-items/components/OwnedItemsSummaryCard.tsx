@@ -47,12 +47,13 @@ export const OwnedItemsSummaryCard: React.FC = () => {
     >
       <div className="px-4 py-2.5 flex items-center justify-between border-b border-dashed border-(--rule-hairline)">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-[2px] bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary)">
+          <div className="w-5 h-5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary)">
             <Package className="w-3.5 h-3.5 stroke-[1.8]" />
           </div>
           <div>
             <div className="text-[9px] font-mono tracking-wider text-(--ink-tertiary) uppercase leading-none">
-              OWNED ITEMS
+              <span className="paper-title inline">OWNED ITEMS</span>
+              <span className="modern-title hidden">INVENTORY</span>
             </div>
             <div className="text-sm font-semibold text-(--ink-solid) leading-tight mt-0.5">
               持有物品
@@ -61,7 +62,7 @@ export const OwnedItemsSummaryCard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded-[3px] bg-(--paper-sunken) text-(--ink-secondary)">
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
             {summary.usingCount} 件在用
           </span>
           <ChevronRight className="w-3.5 h-3.5 text-(--ink-tertiary)" />
@@ -98,7 +99,7 @@ export const OwnedItemsSummaryCard: React.FC = () => {
                   className="py-1.5 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-5 h-5 rounded-[2px] bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
+                    <div className="w-5 h-5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
                       <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
                     </div>
                     <div className="truncate">

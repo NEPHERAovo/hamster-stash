@@ -76,7 +76,7 @@ const getInitialUiStyle = (): UiStyle => {
   } catch {
     void 0;
   }
-  return 'paper';
+  return 'modern';
 };
 
 interface ThemeState {

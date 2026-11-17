@@ -142,7 +142,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[430px] bg-(--paper-sheet) rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09)] border-t border-(--rule-hairline) flex flex-col sheet-slide-up relative overflow-visible paper-sawtooth-top"
+        className="w-full max-w-[430px] bg-(--paper-sheet) transaction-sheet paper-card rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09)] border-t border-(--rule-hairline) flex flex-col sheet-slide-up relative overflow-visible paper-sawtooth-top"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
@@ -150,16 +150,17 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
         <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b border-dashed border-(--rule-hairline)">
           <div className="flex items-center gap-1.5">
             <span className="font-serif text-lg font-bold text-(--ink-solid)">
-              {editingItem ? 'Edit Item' : 'New Item'}
+              <span className="paper-title inline">{editingItem ? 'Edit Item' : 'New Item'}</span>
+              <span className="modern-title hidden">{editingItem ? '编辑物品' : '新建物品'}</span>
             </span>
-            <span className="text-xs font-mono text-(--ink-tertiary)">
+            <span className="text-xs font-mono text-(--ink-tertiary) paper-title inline">
               · {editingItem ? '编辑物品' : '新建持有物品'}
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-(--ink-tertiary) hover:text-(--ink-primary) rounded-[2px] cursor-pointer"
+            className="p-1 text-(--ink-tertiary) hover:text-(--ink-primary) rounded-(--btn-radius) cursor-pointer"
           >
             <X className="w-4 h-4 stroke-2" />
           </button>
@@ -196,9 +197,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                     type="button"
                     onClick={() => setIcon(ic)}
                     className={cn(
-                      'h-8 rounded-[2px] flex items-center justify-center transition-all cursor-pointer border',
+                      'h-8 rounded-(--radius-sm) flex items-center justify-center transition-all cursor-pointer border',
                       isSelected
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-strong) -rotate-1'
+                        ? 'bg-(--color-accent) text-white font-bold shadow-xs border-(--color-accent) -rotate-1'
                         : 'text-(--ink-tertiary) hover:text-(--ink-secondary) hover:bg-(--paper-sunken)/40 border-transparent'
                     )}
                   >
@@ -307,14 +308,14 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-[2px] text-xs font-mono text-(--ink-secondary) hover:text-(--ink-primary) cursor-pointer"
+              className="px-3.5 py-1.5 rounded-(--btn-radius) text-xs font-mono text-(--ink-secondary) hover:text-(--ink-primary) cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-[2px] text-xs font-mono font-semibold bg-(--ink-solid) text-(--paper-sheet) hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+              className="px-4 py-1.5 rounded-(--btn-radius) text-xs font-mono font-semibold bg-(--btn-primary-bg) text-(--btn-primary-fg) hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
             >
               <Check className="w-3.5 h-3.5 stroke-2" />
               <span>保存物品</span>

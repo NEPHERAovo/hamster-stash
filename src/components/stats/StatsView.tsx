@@ -18,6 +18,7 @@ import { CategoryLegend } from './CategoryLegend';
 import { MonthlyTrendBar } from './MonthlyTrendBar';
 import { SpendingRankList } from './SpendingRankList';
 import { SegToggle } from '../ui/SegToggle';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 export interface StatsViewProps {
   allTransactions: Transaction[];
@@ -32,6 +33,10 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+const SHORT_MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
 
 export const StatsView: React.FC<StatsViewProps> = ({
   allTransactions,
@@ -44,6 +49,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const [internalMode, setInternalMode] = useState<PeriodMode>('month');
   const mode = controlledMode || internalMode;
   const setMode = onModeChange || setInternalMode;
+
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const isModern = uiStyle === 'modern';
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
 
@@ -106,11 +114,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
       const parts = periodInfo.key.split('-');
       const y = parts[0];
       const mIdx = parseInt(parts[1] || '1', 10) - 1;
-      const monthName = MONTH_NAMES[mIdx] || parts[1];
-      return `${monthName} ${y}`;
+      const monthName = isModern
+        ? `${SHORT_MONTH_NAMES[mIdx] || parts[1]}, ${y}`
+        : `${MONTH_NAMES[mIdx] || parts[1]} ${y}`;
+      return monthName;
     }
     if (mode === 'year') {
-      return `Year ${periodInfo.key}`;
+      return isModern ? `${periodInfo.key} 年` : `Year ${periodInfo.key}`;
     }
     if (mode === 'week') {
       const startParts = periodInfo.start.split('-');
@@ -118,7 +128,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
       return `${periodInfo.key} · ${startParts[1]}.${startParts[2]}-${endParts[1]}.${endParts[2]}`;
     }
     return periodInfo.label;
-  }, [mode, periodInfo]);
+  }, [mode, periodInfo, isModern]);
 
   return (
     <div className="py-2 space-y-3.5 pb-6">

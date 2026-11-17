@@ -93,7 +93,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl = canvas.getContext('webgl', {
         alpha: true,
         antialias: true,
-        premultipliedAlpha: false,
+        premultipliedAlpha: true,
       });
     } catch {
       gl = null;
@@ -293,6 +293,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       animationFrameId = requestAnimationFrame(render);
     };
 
+    render(performance.now());
     animationFrameId = requestAnimationFrame(render);
 
     return () => {

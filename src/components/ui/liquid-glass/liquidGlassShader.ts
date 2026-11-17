@@ -201,7 +201,7 @@ export const FRAGMENT_SHADER_SOURCE = `
     }
 
     if (finalAlpha <= 0.001) discard;
-    gl_FragColor = vec4(finalCol, finalAlpha);
+    gl_FragColor = vec4(finalCol * finalAlpha, finalAlpha);
   }
 `;
 

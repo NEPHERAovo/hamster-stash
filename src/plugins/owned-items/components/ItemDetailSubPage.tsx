@@ -193,27 +193,27 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     const role = getOwnedItemExt(tx.ext)?.itemRole;
     if (role === 'buy') {
       return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-(--color-expense-bg) text-(--color-expense) font-semibold">
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--color-expense-bg) text-(--color-expense) font-semibold">
           首次购入
         </span>
       );
     }
     if (role === 'maintenance') {
       return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-(--paper-sunken) text-(--ink-secondary)">
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
           配件保养
         </span>
       );
     }
     if (role === 'sell') {
       return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-(--color-income-bg) text-(--color-income) font-semibold">
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--color-income-bg) text-(--color-income) font-semibold">
           售出回血
         </span>
       );
     }
     return (
-      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-xs bg-(--paper-sunken) text-(--ink-tertiary)">
+      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-tertiary)">
         关联记录
       </span>
     );
@@ -226,7 +226,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
+            className="w-8 h-8 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-xs shrink-0"
             aria-label="返回清单"
           >
             <ChevronLeft className="w-4 h-4 stroke-2" />
@@ -242,7 +242,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           <button
             type="button"
             onClick={() => openModal('item-form', { item })}
-            className="w-7 h-7 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-2xs"
+            className="w-7 h-7 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-xs"
             title="编辑物品信息"
           >
             <Edit2 className="w-3.5 h-3.5 stroke-[1.8]" />
@@ -250,7 +250,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           <button
             type="button"
             onClick={handleDelete}
-            className="w-7 h-7 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-tertiary) hover:text-(--color-expense) active:scale-95 transition-all cursor-pointer shadow-2xs"
+            className="w-7 h-7 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-tertiary) hover:text-(--color-expense) active:scale-95 transition-all cursor-pointer shadow-xs"
             title="移除物品"
           >
             <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
@@ -259,13 +259,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       </div>
 
       <div className="px-4 pt-3.5 space-y-4">
-        <div className="relative bg-(--paper-sheet) text-(--ink-solid) rounded-t-[2px] border border-(--rule-hairline) shadow-[0_4px_16px_rgba(0,0,0,0.04)] paper-deckle-bottom pb-4">
+        <div className="relative bg-(--paper-sheet) paper-summary-card text-(--ink-solid) rounded-(--radius-lg) border border-(--rule-hairline) shadow-xs paper-deckle-bottom pb-4">
           <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
 
           <div className="p-4 pt-4 space-y-3.5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-[2px] bg-(--paper-sunken) flex items-center justify-center text-(--ink-solid) shadow-2xs">
+                <div className="w-8 h-8 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center text-(--ink-solid) shadow-2xs">
                   <ItemIcon className="w-4.5 h-4.5 stroke-[1.8]" />
                 </div>
                 <div>
@@ -336,7 +336,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               setIsMaintPanelOpen((prev) => !prev);
               setIsSellPanelOpen(false);
             }}
-            className="py-2 px-3 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-solid) flex items-center justify-center gap-1.5 shadow-2xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
+            className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-solid) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 stroke-2 text-(--color-expense)" />
             <span>记关联支出</span>
@@ -349,7 +349,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 setIsSellPanelOpen((prev) => !prev);
                 setIsMaintPanelOpen(false);
               }}
-              className="py-2 px-3 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) text-(--color-income) font-semibold flex items-center justify-center gap-1.5 shadow-2xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
+              className="py-2 px-3 rounded-(--btn-radius) bg-(--color-accent-bg) border border-(--color-accent)/30 text-(--color-accent) font-semibold flex items-center justify-center gap-1.5 shadow-xs hover:border-(--color-accent) active:scale-95 transition-all cursor-pointer"
             >
               <DollarSign className="w-3.5 h-3.5 stroke-2" />
               <span>二手售出回血</span>
@@ -358,7 +358,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             <button
               type="button"
               onClick={() => changeStatus(item.id, 'using')}
-              className="py-2 px-3 rounded-[2px] bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-secondary) flex items-center justify-center gap-1.5 shadow-2xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
+              className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-secondary) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
             >
               <ArrowRightLeft className="w-3.5 h-3.5 stroke-2" />
               <span>重新设为在用</span>
@@ -375,7 +375,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 type="button"
                 onClick={() => changeStatus(item.id, st)}
                 className={cn(
-                  'px-2 py-0.5 rounded-[2px] transition-colors cursor-pointer',
+                  'px-2 py-0.5 rounded-(--btn-radius) transition-colors cursor-pointer',
                   item.status === st
                     ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold'
                     : 'hover:text-(--ink-secondary)'
@@ -390,7 +390,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         {isMaintPanelOpen && (
           <form
             onSubmit={handleConfirmMaint}
-            className="p-3.5 bg-(--paper-sheet) rounded-[2px] border border-(--rule-hairline) shadow-xs space-y-3 animate-fade-in text-xs font-mono"
+            className="p-3.5 bg-(--paper-sheet) paper-card rounded-(--radius-md) border border-(--rule-hairline) shadow-xs space-y-3 animate-fade-in text-xs font-mono"
           >
             <div className="flex items-center justify-between pb-1.5 border-b border-dashed border-(--rule-hairline)">
               <span className="font-semibold text-(--ink-solid)">记关联支出 / 配件保养</span>
@@ -464,7 +464,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             <button
               type="submit"
               disabled={isSubmittingMaint}
-              className="w-full py-1.5 rounded-[2px] bg-(--ink-solid) text-(--paper-sheet) font-semibold flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer"
+              className="w-full py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer shadow-xs"
             >
               <Check className="w-3.5 h-3.5 stroke-2" />
               <span>确认记入支出</span>
@@ -475,7 +475,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         {isSellPanelOpen && (
           <form
             onSubmit={handleConfirmSell}
-            className="p-3.5 bg-(--paper-sheet) rounded-[2px] border border-(--rule-hairline) shadow-xs space-y-3 animate-fade-in text-xs font-mono"
+            className="p-3.5 bg-(--paper-sheet) paper-card rounded-(--radius-md) border border-(--rule-hairline) shadow-xs space-y-3 animate-fade-in text-xs font-mono"
           >
             <div className="flex items-center justify-between pb-1.5 border-b border-dashed border-(--rule-hairline)">
               <span className="font-semibold text-(--ink-solid)">二手售出回血入账</span>
@@ -549,7 +549,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             <button
               type="submit"
               disabled={isSubmittingSell}
-              className="w-full py-1.5 rounded-[2px] bg-(--color-income) text-white font-semibold flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer"
+              className="w-full py-1.5 rounded-(--btn-radius) bg-(--color-accent) text-white font-semibold flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer shadow-xs"
             >
               <Check className="w-3.5 h-3.5 stroke-2" />
               <span>确认回血并标记售出</span>
@@ -557,7 +557,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           </form>
         )}
 
-        <div className="bg-(--paper-sheet) text-(--ink-solid) rounded-[2px] border border-(--rule-hairline) shadow-xs overflow-hidden">
+        <div className="bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline) shadow-xs overflow-hidden">
           <div className="px-4 py-2.5 border-b border-dashed border-(--rule-hairline) flex items-center justify-between">
             <span className="text-xs font-semibold text-(--ink-solid)">关联账单</span>
             <span className="text-[10px] font-mono text-(--ink-tertiary)">
