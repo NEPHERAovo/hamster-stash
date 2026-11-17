@@ -25,6 +25,7 @@ export default defineConfig({
       short_name: 'hamsterStash',
       description: 'hamsterStash',
       theme_color: '#ffffff',
+      display: 'standalone',
     },
 
     injectManifest: {
