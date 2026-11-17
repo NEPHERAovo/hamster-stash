@@ -44,6 +44,13 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const isDarkRef = useRef(isDark);
   isDarkRef.current = isDark;
 
+  const visualActiveTabRef = useRef(activeTab);
+  useEffect(() => {
+    if (!isPointerDownRef.current) {
+      visualActiveTabRef.current = activeTab;
+    }
+  }, [activeTab]);
+
   const { step, setDragPosition } = useLiquidSpring();
   const stepRef = useRef(step);
   stepRef.current = step;
@@ -124,6 +131,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       'uDark',
       'uDockRect',
       'uDropletRect',
+      'uDockRadius',
+      'uDropletRadius',
       'uTrigger',
       'uRefraction',
       'uDispersion',
@@ -223,9 +232,11 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         texturesDirtyRef.current = false;
       }
 
-      const activeIdx = Math.max(0, currentTabs.findIndex((t) => isTabActive(t, activeTabRef.current)));
-      const colW = dockW / Math.max(1, currentTabs.length);
-      const targetX = colW * (activeIdx + 0.5);
+      const activeIdx = Math.max(0, currentTabs.findIndex((t) => isTabActive(t, visualActiveTabRef.current)));
+      const sidePad = Math.max(4, Math.round(dockW * 0.016));
+      const usableW = dockW - sidePad * 2;
+      const colW = usableW / Math.max(1, currentTabs.length);
+      const targetX = sidePad + colW * (activeIdx + 0.5);
 
       const spring = stepRef.current(
         dt,
@@ -244,6 +255,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl.uniform1f(uniforms.uDpr, dpr);
       gl.uniform1f(uniforms.uDark, currentIsDark ? 1.0 : 0.0);
 
+      const dockR = Math.min(dockH * 0.5, 25.0);
       gl.uniform4f(
         uniforms.uDockRect,
         padX + dockW * 0.5,
@@ -258,6 +270,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         spring.dropHalfW,
         spring.dropHalfH
       );
+      gl.uniform1f(uniforms.uDockRadius, dockR);
+      gl.uniform1f(uniforms.uDropletRadius, spring.dropR);
       gl.uniform1f(uniforms.uTrigger, spring.smoothTrigger);
 
       gl.uniform1f(uniforms.uRefraction, 1.55);
@@ -312,16 +326,13 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
 
     const currentTabs = tabsRef.current;
     if (currentTabs.length > 0) {
+      const sidePad = Math.max(4, Math.round(rect.width * 0.016));
+      const colW = (rect.width - sidePad * 2) / currentTabs.length;
       const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-      const colW = rect.width / currentTabs.length;
-      const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(localX / colW)));
+      const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor((localX - sidePad) / colW)));
       const selectedTab = currentTabs[tabIdx];
       if (selectedTab) {
-        const chosenId = selectedTab.id || selectedTab.path || '';
-        if (!isTabActive(selectedTab, activeTabRef.current)) {
-          activeTabRef.current = chosenId;
-          onTabChangeRef.current(chosenId);
-        }
+        visualActiveTabRef.current = selectedTab.id || selectedTab.path || '';
       }
     }
   };
@@ -342,6 +353,17 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     if (isDraggingRef.current) {
       const localX = Math.max(26, Math.min(rect.width - 26, e.clientX - rect.left));
       setDragPosition(localX);
+
+      const currentTabs = tabsRef.current;
+      if (currentTabs.length > 0) {
+        const sidePad = Math.max(4, Math.round(rect.width * 0.016));
+        const colW = (rect.width - sidePad * 2) / currentTabs.length;
+        const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor((localX - sidePad) / colW)));
+        const selectedTab = currentTabs[tabIdx];
+        if (selectedTab) {
+          visualActiveTabRef.current = selectedTab.id || selectedTab.path || '';
+        }
+      }
     }
   };
 
@@ -368,12 +390,14 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const currentTabs = tabsRef.current;
     if (currentTabs.length === 0) return;
 
+    const sidePad = Math.max(4, Math.round(rect.width * 0.016));
+    const colW = (rect.width - sidePad * 2) / currentTabs.length;
     const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-    const colW = rect.width / currentTabs.length;
-    const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor(localX / colW)));
+    const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor((localX - sidePad) / colW)));
     const selectedTab = currentTabs[tabIdx];
     if (selectedTab) {
       const chosenId = selectedTab.id || selectedTab.path || '';
+      visualActiveTabRef.current = chosenId;
       if (!isTabActive(selectedTab, activeTabRef.current)) {
         activeTabRef.current = chosenId;
         onTabChangeRef.current(chosenId);
@@ -385,6 +409,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     isPointerDownRef.current = false;
     isDraggingRef.current = false;
     pressTargetRef.current = 0.0;
+    visualActiveTabRef.current = activeTabRef.current;
     const dockShell = dockShellRef.current;
     if (dockShell) {
       try {
@@ -408,7 +433,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerCancel}
       className={cn(
-        'relative h-[58px] rounded-full select-none cursor-pointer overflow-visible bg-transparent border-0 shadow-none backdrop-blur-xl',
+        'relative h-[58px] rounded-[25px] select-none cursor-pointer overflow-visible bg-transparent border-0 shadow-none backdrop-blur-xl',
         className
       )}
       style={{ touchAction: 'none' }}

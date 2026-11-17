@@ -13,9 +13,11 @@ export const FRAGMENT_SHADER_SOURCE = `
   uniform float uDpr;
   uniform float uDark;
 
-  uniform vec4 uDockRect;     // cx, cy, halfW, halfH
-  uniform vec4 uDropletRect;  // cx, cy, halfW, halfH
-  uniform float uTrigger;     // 0.0 (calm resting) -> 1.0 (active optical glass)
+  uniform vec4 uDockRect;
+  uniform vec4 uDropletRect;
+  uniform float uDockRadius;
+  uniform float uDropletRadius;
+  uniform float uTrigger;
 
   uniform float uRefraction;
   uniform float uDispersion;
@@ -33,7 +35,7 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec2 clampedUV = clamp(uv, 0.002, 0.998);
     vec2 pSample = clampedUV * uCanvasSize;
 
-    float dDockSample = sdRoundBox(pSample - uDockRect.xy, dockHalfSize, dockHalfSize.y);
+    float dDockSample = sdRoundBox(pSample - uDockRect.xy, dockHalfSize, uDockRadius);
     float isInsideDock = 1.0 - smoothstep(-0.5, 0.5, dDockSample);
 
     vec3 pageBg = uDark > 0.5 ? vec3(0.040, 0.043, 0.052) : vec3(0.953, 0.957, 0.965);
@@ -55,7 +57,7 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec2 baseUV = p / uCanvasSize;
 
     vec2 dockHalfSize = uDockRect.zw + vec2(4.0, 1.5) * uTrigger;
-    float dockR = dockHalfSize.y;
+    float dockR = min(dockHalfSize.y, uDockRadius);
     float dDock = sdRoundBox(p - uDockRect.xy, dockHalfSize, dockR);
     float dockMask = 1.0 - smoothstep(-0.5, 0.5, dDock);
     float dockInward = max(0.0, -dDock);
@@ -72,28 +74,30 @@ export const FRAGMENT_SHADER_SOURCE = `
     float dockTopWeight = max(-dockNorm.y, 0.0);
     float dockBotWeight = max(dockNorm.y, 0.0);
 
-    float dockStroke = 1.0 - smoothstep(0.0, 1.2, abs(dDock));
-    float dockStrokeDark = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.18, uDark > 0.5 ? 0.70 : 0.50, dockSideWeight);
+    float dockStroke = 1.0 - smoothstep(0.0, 1.1, abs(dDock));
+    float dockStrokeDark = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.20, uDark > 0.5 ? 0.72 : 0.55, dockSideWeight);
+    vec3 edgeDarkCol = uDark > 0.5 ? vec3(0.02, 0.03, 0.06) : vec3(0.20, 0.22, 0.28);
 
-    float dockInwardBand = smoothstep(3.2, 0.3, dockInward);
-    float dockTopHighlight = dockTopWeight * (0.45 + 0.35 * uTrigger) * dockInwardBand;
-    float dockBotHighlight = dockBotWeight * (0.18 + 0.15 * uTrigger) * dockInwardBand;
-    float dockSideHighlight = dockSideWeight * 0.06 * dockInwardBand;
-    float dockHighlight = (dockTopHighlight + dockBotHighlight) * (1.0 - dockSideWeight * 0.65) + dockSideHighlight;
+    float dockInwardBand = smoothstep(0.4, 1.4, dockInward) * smoothstep(3.6, 1.6, dockInward);
+    float dockTopHighlight = dockTopWeight * (0.60 + 0.30 * uTrigger) * dockInwardBand;
+    float dockBotHighlight = dockBotWeight * (0.26 + 0.16 * uTrigger) * dockInwardBand;
+    float dockSideHighlight = dockSideWeight * 0.08 * dockInwardBand;
+    float dockHighlight = (dockTopHighlight + dockBotHighlight) * (1.0 - dockSideWeight * 0.55) + dockSideHighlight;
 
     vec3 dockBaseCol = uDark > 0.5 ? vec3(0.12, 0.13, 0.16) : vec3(1.0, 1.0, 1.0);
     dockBaseCol += vec3(dockHighlight);
-    dockBaseCol = mix(dockBaseCol, vec3(0.0), dockStrokeDark);
+    dockBaseCol = mix(dockBaseCol, edgeDarkCol, dockStrokeDark);
 
     float dockFillAlpha = dockMask * mix(0.0, uDark > 0.5 ? 0.55 : 0.48, uTrigger);
-    float dockEdgeAlpha = dockStroke * mix(uDark > 0.5 ? 0.35 : 0.18, uDark > 0.5 ? 0.70 : 0.50, dockSideWeight);
+    float dockEdgeAlpha = dockStroke * mix(uDark > 0.5 ? 0.40 : 0.24, uDark > 0.5 ? 0.75 : 0.55, dockSideWeight);
     float totalDockAlpha = max(dockFillAlpha, dockEdgeAlpha);
+    totalDockAlpha = max(totalDockAlpha, dockHighlight * 0.85);
 
     vec4 inactiveGlyph = texture2D(uInactiveTex, baseUV);
     vec3 dockWithInactive = mix(dockBaseCol, inactiveGlyph.rgb, inactiveGlyph.a);
     float dockTotalAlpha = max(totalDockAlpha, inactiveGlyph.a * dockMask);
 
-    float dropR = uDropletRect.w;
+    float dropR = min(uDropletRect.w, uDropletRadius);
     float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, dropR);
     float dropMask = 1.0 - smoothstep(-0.5, 0.5, dDrop);
     float dropInward = max(0.0, -dDrop);

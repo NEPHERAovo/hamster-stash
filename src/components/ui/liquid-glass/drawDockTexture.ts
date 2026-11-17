@@ -201,11 +201,13 @@ export function uploadLayerTexture(
   offCtx.scale(dpr, dpr);
 
   const tabCount = Math.max(1, tabs.length);
-  const colW = dockW / tabCount;
+  const sidePad = Math.max(4, Math.round(dockW * 0.016));
+  const usableW = dockW - sidePad * 2;
+  const colW = usableW / tabCount;
   const dockH = canvasH - padY * 2;
 
   tabs.forEach((tab, i) => {
-    const cx = padX + colW * (i + 0.5);
+    const cx = padX + sidePad + colW * (i + 0.5);
     const tabType = resolveTabType(tab);
     const label = resolveTabLabel(tab);
 
