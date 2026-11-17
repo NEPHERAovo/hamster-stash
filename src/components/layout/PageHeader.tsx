@@ -30,8 +30,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 px-4.5 pt-[calc(0.625rem+var(--safe-top))] pb-2 flex items-center justify-between min-h-[calc(3.5rem+var(--safe-top))] box-border select-none transition-colors duration-200',
-        'bg-(--paper-base)/85 backdrop-blur-md border-b border-(--rule-hairline) page-header-bar',
+        'sticky top-0 z-40 px-4.5 pt-[calc(1.25rem+var(--safe-top))] pb-2.5 flex items-center justify-between min-h-[calc(4.25rem+var(--safe-top))] box-border select-none transition-colors duration-200',
+        'bg-(--paper-base)/90 backdrop-blur-md border-b border-(--rule-hairline) page-header-bar',
         className
       )}
     >

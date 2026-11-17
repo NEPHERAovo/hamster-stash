@@ -82,7 +82,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   return (
     <div className="w-full pb-20 animate-fade-in select-none">
       {onClose && (
-        <div className="sticky top-0 z-30 px-4.5 pt-[calc(0.625rem+var(--safe-top))] pb-2 bg-(--paper-base)/90 backdrop-blur-md border-b border-(--rule-hairline) flex items-center justify-between min-h-[calc(3.5rem+var(--safe-top))] box-border">
+        <div className="sticky top-0 z-30 px-4.5 pt-[calc(1.25rem+var(--safe-top))] pb-2.5 bg-(--paper-base)/90 backdrop-blur-md border-b border-(--rule-hairline) flex items-center justify-between min-h-[calc(4.25rem+var(--safe-top))] box-border">
           <div className="flex items-center gap-2">
             <button
               type="button"
