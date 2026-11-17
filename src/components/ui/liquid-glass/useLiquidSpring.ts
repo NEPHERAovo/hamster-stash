@@ -33,8 +33,8 @@ export function useLiquidSpring() {
     }
 
     if (!isDragging) {
-      const force = (targetX - s.dropletX) * 300;
-      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-18 * dt);
+      const force = (targetX - s.dropletX) * 60;
+      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-10 * dt);
       s.dropletX += s.dropletVelX * dt;
 
       if (Math.abs(targetX - s.dropletX) < 0.1 && Math.abs(s.dropletVelX) < 0.5) {
@@ -43,7 +43,7 @@ export function useLiquidSpring() {
       }
     }
 
-    const pressRate = pressTarget > s.pressAmount ? 28 : 14;
+    const pressRate = pressTarget > s.pressAmount ? 16 : 10;
     s.pressAmount += (pressTarget - s.pressAmount) * Math.min(1, dt * pressRate);
 
     const distToTarget = Math.abs(targetX - s.dropletX);
@@ -61,7 +61,7 @@ export function useLiquidSpring() {
     const baseDropR = 20.0;
 
     const dropHalfH = baseHalfH + s.smoothTrigger * 14.5;
-    const dropHalfW = baseHalfW + s.smoothTrigger * 10.5 + stretchX;
+    const dropHalfW = baseHalfW + s.smoothTrigger * 14.5 + stretchX;
     const dropR = s.smoothTrigger > 0.02 ? baseDropR + (dropHalfH * 0.85 - baseDropR) * s.smoothTrigger : baseDropR;
 
     return {
