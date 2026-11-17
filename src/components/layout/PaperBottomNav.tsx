@@ -63,7 +63,8 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
       )}
 
       <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--safe-bottom)', className)}>
-        <div className="relative flex items-end justify-center h-[52px] px-6 gap-1 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-9 before:bg-(--paper-sunken) before:border-t before:border-(--rule-hairline)">
+        <div className="absolute inset-x-0 bottom-0 top-3.5 bg-(--paper-sunken) border-t border-(--rule-hairline)" />
+        <div className="relative z-10 flex items-end justify-center h-[52px] px-6 gap-1">
           {allTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;
