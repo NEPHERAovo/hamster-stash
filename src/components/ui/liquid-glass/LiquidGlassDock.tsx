@@ -255,7 +255,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl.uniform1f(uniforms.uDpr, dpr);
       gl.uniform1f(uniforms.uDark, currentIsDark ? 1.0 : 0.0);
 
-      const dockR = Math.min(dockH * 0.5, 25.0);
+      const dockR = Math.min(dockH * 0.5, 27.5);
       gl.uniform4f(
         uniforms.uDockRect,
         padX + dockW * 0.5,
@@ -433,7 +433,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerCancel}
       className={cn(
-        'relative h-[58px] rounded-[25px] select-none cursor-pointer overflow-visible bg-transparent border-0 shadow-none backdrop-blur-xl',
+        'relative h-[58px] rounded-[27.5px] select-none cursor-pointer overflow-visible bg-transparent border-0 shadow-none backdrop-blur-xl',
         className
       )}
       style={{ touchAction: 'none' }}

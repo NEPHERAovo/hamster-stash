@@ -42,7 +42,13 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec3 dockBg = uDark > 0.5 ? vec3(0.14, 0.15, 0.18) : vec3(1.0, 1.0, 1.0);
     vec3 surfaceCol = mix(pageBg, dockBg, isInsideDock);
 
-    float dDropSample = sdRoundBox(pSample - uDropletRect.xy, uDropletRect.zw, dropR);
+    vec2 sampleRel = pSample - uDropletRect.xy;
+    float sXNorm = clamp(abs(sampleRel.x) / max(1.0, uDropletRect.z), 0.0, 1.0);
+    float sCamber = (1.0 - sXNorm * sXNorm) * 0.85;
+    vec2 pSampleWarp = pSample;
+    pSampleWarp.y -= sign(sampleRel.y) * sCamber;
+
+    float dDropSample = sdRoundBox(pSampleWarp - uDropletRect.xy, uDropletRect.zw, dropR);
     float isInsideDrop = 1.0 - smoothstep(-0.75, 0.75, dDropSample);
 
     vec4 inactiveG = texture2D(uInactiveTex, clampedUV);
@@ -97,12 +103,18 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec3 dockWithInactive = mix(dockBaseCol, inactiveGlyph.rgb, inactiveGlyph.a);
     float dockTotalAlpha = max(totalDockAlpha, inactiveGlyph.a * dockMask);
 
+    vec2 dropRel = p - uDropletRect.xy;
+    float xNorm = clamp(abs(dropRel.x) / max(1.0, uDropletRect.z), 0.0, 1.0);
+    float camber = (1.0 - xNorm * xNorm) * 0.85;
+    vec2 pDropWarp = p;
+    pDropWarp.y -= sign(dropRel.y) * camber;
+
     float dropR = min(uDropletRect.w, uDropletRadius);
-    float dDrop = sdRoundBox(p - uDropletRect.xy, uDropletRect.zw, dropR);
+    float dDrop = sdRoundBox(pDropWarp - uDropletRect.xy, uDropletRect.zw, dropR);
     float dropMask = 1.0 - smoothstep(-0.5, 0.5, dDrop);
     float dropInward = max(0.0, -dDrop);
 
-    float dShadow = sdRoundBox((p - vec2(0.0, 4.0 * uTrigger)) - uDropletRect.xy, uDropletRect.zw, dropR);
+    float dShadow = sdRoundBox((pDropWarp - vec2(0.0, 4.0 * uTrigger)) - uDropletRect.xy, uDropletRect.zw, dropR);
     float shadowAlpha = smoothstep(14.0, 1.0, dShadow) * (uDark > 0.5 ? 0.30 : 0.09) * uTrigger;
     vec3 shadowCol = uDark > 0.5 ? vec3(0.01, 0.02, 0.04) : vec3(0.18, 0.22, 0.32);
 
@@ -116,12 +128,12 @@ export const FRAGMENT_SHADER_SOURCE = `
     vec4 activeGlyphRest = texture2D(uActiveTex, baseUV);
     vec3 restingTabCol = mix(pillGrey, activeGlyphRest.rgb, activeGlyphRest.a);
 
-    vec2 dropRel = p - uDropletRect.xy;
+    vec2 dropRelW = pDropWarp - uDropletRect.xy;
     vec2 dropB = uDropletRect.zw - dropR;
-    vec2 dropQ = abs(dropRel) - dropB;
-    vec2 dropNorm = normalize(sign(dropRel) * max(dropQ, 0.0) + vec2(1e-5));
+    vec2 dropQ = abs(dropRelW) - dropB;
+    vec2 dropNorm = normalize(sign(dropRelW) * max(dropQ, 0.0) + vec2(1e-5));
     if (max(dropQ.x, dropQ.y) < 0.0) {
-      dropNorm = abs(dropQ.x) > abs(dropQ.y) ? vec2(sign(dropRel.x), 0.0) : vec2(0.0, sign(dropRel.y));
+      dropNorm = abs(dropQ.x) > abs(dropQ.y) ? vec2(sign(dropRelW.x), 0.0) : vec2(0.0, sign(dropRelW.y));
     }
 
     float dropSideWeight = pow(max(abs(dropNorm.x), 0.0), 1.6);
