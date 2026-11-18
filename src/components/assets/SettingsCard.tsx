@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Moon,
   Coins,
+  SlidersHorizontal,
   FileSpreadsheet,
   FileUp,
   HardDriveUpload,
@@ -15,8 +16,10 @@ import { useCategoryStore } from '../../stores/useCategoryStore';
 import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 import { toast } from '../../stores/useToastStore';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
+import { PaperModal } from '../ui/PaperModal';
 import { WebDavSyncSection } from './WebDavSyncSection';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
@@ -40,6 +43,26 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const { loadMonth } = useLedgerStore();
   const { loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, setDark } = useThemeStore();
+  const { majorThresholdYuan, setMajorThresholdYuan } = usePreferenceStore();
+
+  const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
+  const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
+
+  const openMajorModal = () => {
+    setMajorInput(String(majorThresholdYuan));
+    setIsMajorModalOpen(true);
+  };
+
+  const handleSaveMajorThreshold = () => {
+    const val = Number(majorInput.trim());
+    if (!Number.isFinite(val) || val < 1) {
+      toast.error('请输入大于等于 1 的有效金额');
+      return;
+    }
+    setMajorThresholdYuan(Math.round(val));
+    setIsMajorModalOpen(false);
+    toast.success(`大额阈值已设为 ¥${Math.round(val)}`);
+  };
 
   const enabledPlugins = usePluginUIStore((s) => s.enabledPlugins);
   const plugins = pluginManager.getPlugins();
@@ -118,6 +141,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       await loadCategories();
       await loadMonth();
       await useThemeStore.getState().loadThemeFromDB();
+      await usePreferenceStore.getState().loadPreferencesFromDB();
 
       toast.success('JSON 数据恢复成功！');
     } catch (err) {
@@ -206,6 +230,22 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             </div>
           </div>
         )}
+
+        <div
+          className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+          onClick={openMajorModal}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <SlidersHorizontal className="w-3.5 h-3.5 stroke-[1.75]" />
+            </div>
+            <span className="text-[13px] font-medium text-(--ink-primary)">大额消费阈值</span>
+          </div>
+          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
+            <span>≥ ¥{majorThresholdYuan}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
 
         <div
           className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
@@ -362,6 +402,72 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       )}
 
       <PluginSlot name="settings.sections" />
+
+      <PaperModal
+        isOpen={isMajorModalOpen}
+        onClose={() => setIsMajorModalOpen(false)}
+        title="大额消费阈值"
+        subtitle="账本筛选“大额”时生效"
+      >
+        <div className="p-4 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {[100, 200, 500, 1000, 2000].map((preset) => {
+              const isSelected = Number(majorInput) === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setMajorInput(String(preset))}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-mono rounded-(--btn-radius) border transition-all cursor-pointer',
+                    isSelected
+                      ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) border-transparent font-semibold'
+                      : 'bg-(--paper-sunken) text-(--ink-secondary) border-(--rule-hairline) hover:text-(--ink-primary)'
+                  )}
+                >
+                  ¥{preset}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-mono text-(--ink-tertiary)">自定义金额（元）</label>
+            <div className="flex items-center gap-2 px-3 h-10 rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
+              <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={majorInput}
+                onChange={(e) => setMajorInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveMajorThreshold();
+                }}
+                placeholder="输入金额"
+                className="flex-1 bg-transparent text-sm font-mono font-semibold text-(--ink-primary) outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
+            <button
+              type="button"
+              onClick={() => setIsMajorModalOpen(false)}
+              className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveMajorThreshold}
+              className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </PaperModal>
     </div>
   );
 };

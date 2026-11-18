@@ -25,6 +25,7 @@ import { useLedgerStore } from './stores/useLedgerStore';
 import { useAccountStore } from './stores/useAccountStore';
 import { useCategoryStore } from './stores/useCategoryStore';
 import { useThemeStore } from './stores/useThemeStore';
+import { usePreferenceStore } from './stores/usePreferenceStore';
 import { computeMonthSummary } from './domain/finance/balanceCalculator';
 import type { PeriodMode } from './domain/finance/periodStats';
 import type { Account } from './types/account';
@@ -108,6 +109,7 @@ export function App() {
     loadSettlementSummary();
     pluginManager.init();
     void useThemeStore.getState().loadThemeFromDB();
+    void usePreferenceStore.getState().loadPreferencesFromDB();
   }, [loadAccounts, loadCategories, loadTransactions, loadSettlementSummary]);
 
   const handleCreateNewAccount = async () => {

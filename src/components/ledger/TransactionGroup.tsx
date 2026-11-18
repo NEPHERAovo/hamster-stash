@@ -9,6 +9,7 @@ import { SegToggle } from '../ui/SegToggle';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { cn } from '../../utils/cn';
 
 export interface TransactionGroupProps {
@@ -37,6 +38,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   const isInitialLoaded = useLedgerStore((s) => s.isInitialLoaded);
   const effectiveLoading = isLoading !== undefined ? isLoading : !isInitialLoaded;
   const uiStyle = useThemeStore((s) => s.uiStyle);
+  const majorThresholdYuan = usePreferenceStore((s) => s.majorThresholdYuan);
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -86,7 +88,8 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     if (filter === 'reimbursable') {
       list = list.filter((t) => t.isReimbursable);
     } else if (filter === 'major') {
-      list = list.filter((t) => t.amount >= 20000);
+      const majorThresholdCents = Math.round(majorThresholdYuan * 100);
+      list = list.filter((t) => t.amount >= majorThresholdCents);
     }
 
     if (trimmedQuery) {
@@ -104,7 +107,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     }
 
     return list;
-  }, [transactions, searchTransactions, filter, searchQuery, catMap, acctMap]);
+  }, [transactions, searchTransactions, filter, searchQuery, catMap, acctMap, majorThresholdYuan]);
 
   const groups = useMemo(() => {
     return filteredTransactions.reduce((acc, tx) => {
@@ -175,7 +178,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               options={[
                 { value: 'all', label: '全部' },
                 { value: 'reimbursable', label: '待报销' },
-                { value: 'major', label: '大额 (>¥200)' },
+                { value: 'major', label: '大额' },
               ]}
               value={filter}
               onChange={setFilter}
