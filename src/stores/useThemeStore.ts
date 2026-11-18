@@ -41,6 +41,18 @@ const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
 const COLOR_MODE_STORAGE_KEY = 'hamsterstash_color_mode_v1';
 const LIGHT_THEME_STORAGE_KEY = 'hamsterstash_light_theme_v1';
 const DARK_THEME_STORAGE_KEY = 'hamsterstash_dark_theme_v1';
+const SPLASH_BG_STORAGE_KEY = 'hamsterstash_splash_bg_v1';
+
+const syncSplashChrome = () => {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+  requestAnimationFrame(() => {
+    const bg = window.getComputedStyle(document.documentElement).getPropertyValue('--paper-base').trim();
+    if (!bg) return;
+    safeSetStorage(SPLASH_BG_STORAGE_KEY, bg);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', bg);
+  });
+};
 
 const isLightTheme = (id: string) => THEME_OPTIONS.some((t) => t.id === id && !t.isDark);
 const isDarkTheme = (id: string) => THEME_OPTIONS.some((t) => t.id === id && t.isDark);
@@ -201,6 +213,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
   if (typeof document !== 'undefined') {
     applyThemeToDOM(effective.themeId);
     applyUiStyleToDOM(initialUiStyle);
+    syncSplashChrome();
   }
 
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
@@ -210,6 +223,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       if (state.colorMode !== 'auto') return;
       const next = resolveEffective('auto', state.lightThemeId, state.darkThemeId);
       applyThemeToDOM(next.themeId);
+      syncSplashChrome();
       safeSetStorage(THEME_STORAGE_KEY, next.themeId);
       set({
         currentThemeId: next.themeId,
@@ -228,6 +242,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     const resolved = resolveEffective(next.colorMode, next.lightThemeId, next.darkThemeId);
     applyThemeToDOM(resolved.themeId);
     applyUiStyleToDOM(next.uiStyle);
+    syncSplashChrome();
 
     safeSetStorage(THEME_STORAGE_KEY, resolved.themeId);
     safeSetStorage(UI_STYLE_STORAGE_KEY, next.uiStyle);
@@ -294,6 +309,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         const resolved = resolveEffective(nextMode, nextLight, nextDark);
         applyThemeToDOM(resolved.themeId);
         applyUiStyleToDOM(nextUiStyle);
+        syncSplashChrome();
 
         safeSetStorage(THEME_STORAGE_KEY, resolved.themeId);
         safeSetStorage(UI_STYLE_STORAGE_KEY, nextUiStyle);
