@@ -175,7 +175,7 @@ export const IMPORT_PRESETS: ImportPreset[] = [
     defaultMapping: {},
     tips: [
       '确保表格中至少包含「日期」和「金额」两列',
-      '可自定义将任意列对应到 hamsterStash 系统字段',
+      '可自定义将任意列对应到「仓鼠囤囤」系统字段',
     ],
   },
 ];

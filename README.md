@@ -1,8 +1,8 @@
-# hamsterStash
+# HamsterStash (仓鼠囤囤)
 
 > **English** | [简体中文](README.zh-CN.md)
 
-A minimal, local-first paper stationery expense-tracking progressive web app (PWA) designed for personal and micro-business finances.
+A minimal, local-first personal expense, item & asset stash progressive web app (PWA). 集日常收支、物品收纳与资产管理于一体的轻量化个人账本。
 
 ---
 

@@ -1,5 +1,6 @@
 {
-  "name": "hamsterstash",
+  "name": "hamster-stash",
+  "description": "集日常收支、物品收纳与资产管理于一体的轻量化个人账本（Personal expense, item & asset stash）",
   "private": true,
   "version": "0.0.0",
   "type": "module",

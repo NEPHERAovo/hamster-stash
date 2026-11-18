@@ -1,6 +1,6 @@
 # LESSONS.md — Engineering Lessons & Architectural Guardrails
 
-> **MANDATORY**: Read this file before changing any code in hamsterStash.
+> **MANDATORY**: Read this file before changing any code in HamsterStash.
 > Every lesson documented here originated from a verified issue or architectural bug.
 > When a rule is observed or triggered 3 or more times (`Seen: 3`), promote it to `AGENTS.md` as a permanent engineering invariant.
 

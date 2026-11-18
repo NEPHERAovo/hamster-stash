@@ -74,7 +74,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `hamsterStash_records_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `HamsterStash_records_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       toast.success('CSV 账本导出成功');
     } catch {
@@ -91,7 +91,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `hamsterStash_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `HamsterStash_backup_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('JSON 备份导出成功');
@@ -286,7 +286,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
         <div
           className="flex items-center justify-between py-3 cursor-pointer select-none"
-          onClick={() => toast.info('hamsterStash 极简记账 PWA v0.2.2')}
+          onClick={() => toast.info('仓鼠囤囤 · HamsterStash v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
         >
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-(--badge-radius) bg-(--bg-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">

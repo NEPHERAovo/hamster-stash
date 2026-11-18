@@ -1,4 +1,4 @@
-# AGENTS.md — hamsterStash Development Guide & Architecture Spec
+# AGENTS.md — HamsterStash Development Guide & Architecture Spec
 
 > **MANDATORY**: Before changing any code, read `LESSONS.md` and `.agents/skills/paper-design-director/SKILL.md`.
 > All agents and engineers must strictly follow the rules documented here.
@@ -7,7 +7,7 @@
 
 ## 1. Project Overview
 
-**hamsterStash** is a minimal, local-first progressive web app (PWA) designed for personal and micro-business expense tracking.
+**HamsterStash** is a minimal, local-first progressive web app (PWA) designed for personal and micro-business expense tracking.
 
 - **Fast & Focused Capture**: Zero distracting animations; instant launch; transaction entry completes in under 3 seconds.
 - **Crafted Stationery Design System**:
@@ -121,7 +121,7 @@ The application supports two distinct aesthetic skins (`paper` and `modern`), go
 
 ## 5. Micro-Kernel Plugin System (`src/plugin-sdk/`)
 
-hamsterStash features an extensible micro-kernel architecture where feature modules can be developed as isolated plugins:
+HamsterStash features an extensible micro-kernel architecture where feature modules can be developed as isolated plugins:
 
 1. **Strict SDK Boundary**:
    - Modules in `src/plugins/**` must only import from `src/plugin-sdk` or relative paths inside their own module directory.
