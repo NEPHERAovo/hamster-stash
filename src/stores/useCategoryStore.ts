@@ -89,7 +89,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     const txs = await core.txRepo.findAll();
     const hasLinkedTransactions = txs.some((t) => t.categoryId === id);
 
-    if (target.isSystem || hasLinkedTransactions) {
+    if (hasLinkedTransactions) {
       await core.catRepo.update(id, { isArchived: true });
       await get().loadCategories();
       return { archived: true };

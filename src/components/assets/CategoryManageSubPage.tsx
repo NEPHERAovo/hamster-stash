@@ -122,14 +122,17 @@ export const CategoryManageSubPage: React.FC = () => {
       return;
     }
 
-    const actionText = cat.isSystem ? '停用' : '删除';
-    if (!window.confirm(`确认${actionText}分类「${cat.name}」吗？`)) {
+    if (!window.confirm(`确认删除分类「${cat.name}」吗？`)) {
       return;
     }
 
     try {
       const res = await removeCategory(cat.id);
-      toast.success(res.archived ? `已停用分类「${cat.name}」` : `已删除分类「${cat.name}」`);
+      toast.success(
+        res.archived
+          ? `该分类已有历史流水，已停用「${cat.name}」`
+          : `已删除分类「${cat.name}」`
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '操作失败');
     }
@@ -187,15 +190,10 @@ export const CategoryManageSubPage: React.FC = () => {
                   <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
                     <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
                   </div>
-                  <div className="min-w-0 flex items-center gap-1.5">
-                    <span className="text-[13px] font-medium text-(--ink-primary) truncate">
+                  <div className="min-w-0">
+                    <span className="text-[13px] font-medium text-(--ink-primary) truncate block">
                       {cat.name}
                     </span>
-                    {cat.isSystem && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-tertiary) shrink-0">
-                        内置
-                      </span>
-                    )}
                   </div>
                 </div>
 
@@ -212,7 +210,7 @@ export const CategoryManageSubPage: React.FC = () => {
                     type="button"
                     onClick={() => handleRemove(cat)}
                     className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--color-expense) hover:bg-(--color-expense-bg)/50 transition-colors cursor-pointer"
-                    title={cat.isSystem ? '停用分类' : '删除分类'}
+                    title="删除分类"
                   >
                     <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
                   </button>
