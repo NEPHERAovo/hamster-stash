@@ -44,7 +44,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
   return (
     <>
       {showAddButton && onAddClick && (
-        <div className="fixed bottom-[calc(var(--nav-height)+var(--safe-bottom)+12px)] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
+        <div className="fixed bottom-[calc(var(--nav-height)+var(--paper-safe-bottom)+12px)] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
           <button
             type="button"
             onClick={onAddClick}
@@ -62,9 +62,9 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
         </div>
       )}
 
-      <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--safe-bottom)', className)}>
+      <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50', className)}>
         <div className="absolute inset-x-0 bottom-0 top-3.5 bg-(--paper-sunken) border-t border-(--rule-hairline)" />
-        <div className="relative z-10 flex items-end justify-center h-[52px] px-6 gap-1">
+        <div className="relative z-10 flex items-end justify-center h-[calc(52px+var(--paper-safe-bottom))] px-6 gap-1">
           {allTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;
@@ -74,10 +74,10 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                 type="button"
                 onClick={() => onTabChange(tab.id)}
                 className={cn(
-                  'flex-1 flex flex-col items-center justify-center border border-(--rule-hairline) border-b-0 rounded-t-md transition-all cursor-pointer select-none gap-0.5 min-w-0',
+                  'flex-1 flex flex-col items-center justify-center border border-(--rule-hairline) border-b-0 rounded-t-md pb-(--paper-safe-bottom) transition-all cursor-pointer select-none gap-0.5 min-w-0',
                   isActive
-                    ? 'relative z-10 h-12 bg-(--paper-sheet) text-(--ink-solid) shadow-[0_-2px_6px_rgba(0,0,0,0.03)]'
-                    : 'relative z-1 h-10.5 bg-(--paper-sunken) text-(--ink-faint) hover:text-(--ink-secondary)'
+                    ? 'relative z-10 h-[calc(3rem+var(--paper-safe-bottom))] bg-(--paper-sheet) text-(--ink-solid) shadow-[0_-2px_6px_rgba(0,0,0,0.03)]'
+                    : 'relative z-1 h-[calc(2.625rem+var(--paper-safe-bottom))] bg-(--paper-sunken) text-(--ink-faint) hover:text-(--ink-secondary)'
                 )}
               >
                 <Icon
