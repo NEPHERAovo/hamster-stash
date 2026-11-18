@@ -8,6 +8,7 @@ import { getCategoryIcon } from '../../utils/categoryIcons';
 import { TransactionItem } from '../ledger/TransactionItem';
 import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
+import { parseLocalDate } from '../../utils/date';
 
 export interface AccountDetailSubPageProps {
   account: Account;
@@ -50,6 +51,31 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     () => accountTxs.slice(0, visibleCount),
     [accountTxs, visibleCount]
   );
+
+  const monthTotalCountMap = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const tx of accountTxs) {
+      const ym = tx.date.slice(0, 7);
+      counts.set(ym, (counts.get(ym) || 0) + 1);
+    }
+    return counts;
+  }, [accountTxs]);
+
+  const monthGroups = useMemo(() => {
+    const groups: { monthKey: string; label: string; items: Transaction[] }[] = [];
+    for (const tx of visibleTxs) {
+      const monthKey = tx.date.slice(0, 7);
+      const last = groups[groups.length - 1];
+      if (last && last.monthKey === monthKey) {
+        last.items.push(tx);
+      } else {
+        const parsed = parseLocalDate(`${monthKey}-01`);
+        const label = parsed.isValid() ? `${parsed.year()}年${parsed.month() + 1}月` : monthKey;
+        groups.push({ monthKey, label, items: [tx] });
+      }
+    }
+    return groups;
+  }, [visibleTxs]);
 
   const hasMore = visibleCount < accountTxs.length;
 
@@ -224,16 +250,31 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               此账户暂无收支明细
             </div>
           ) : (
-            visibleTxs.map((tx, idx) => (
-              <TransactionItem
-                key={tx.id}
-                transaction={tx}
-                category={catMap.get(tx.categoryId)}
-                account={acctMap.get(tx.accountId)}
-                toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
-                isLastInGroup={idx === visibleTxs.length - 1}
-                onClick={() => onSelectTransaction?.(tx)}
-              />
+            monthGroups.map((group, groupIdx) => (
+              <div key={group.monthKey}>
+                <div
+                  className={cn(
+                    'flex items-center justify-between px-3.5 py-1.5 bg-(--paper-sunken)/45 border-b border-dashed border-(--rule-hairline) text-[11px] font-mono text-(--ink-tertiary) select-none',
+                    groupIdx > 0 && 'border-t'
+                  )}
+                >
+                  <span className="font-semibold text-(--ink-secondary)">{group.label}</span>
+                  <span>{monthTotalCountMap.get(group.monthKey) || group.items.length} 笔</span>
+                </div>
+                {group.items.map((tx, idx) => (
+                  <TransactionItem
+                    key={tx.id}
+                    transaction={tx}
+                    category={catMap.get(tx.categoryId)}
+                    account={acctMap.get(tx.accountId)}
+                    toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
+                    isLastInGroup={idx === group.items.length - 1}
+                    showDate
+                    hideAccountName
+                    onClick={() => onSelectTransaction?.(tx)}
+                  />
+                ))}
+              </div>
             ))
           )}
         </div>

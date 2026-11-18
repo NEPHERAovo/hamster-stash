@@ -8,7 +8,7 @@ import { CategoryBadge } from '../ui/CategoryBadge';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { PluginOverride } from '../../plugin-sdk/components/PluginOverride';
 import { cn } from '../../utils/cn';
-import { formatTime } from '../../utils/date';
+import { dayjs, formatTime, parseLocalDate } from '../../utils/date';
 
 export interface TransactionItemProps {
   transaction: Transaction;
@@ -17,6 +17,8 @@ export interface TransactionItemProps {
   toAccount?: Account;
   isFresh?: boolean;
   isLastInGroup?: boolean;
+  showDate?: boolean;
+  hideAccountName?: boolean;
   runningBalance?: string;
   offsetAmount?: number;
   offsetTargetNote?: string;
@@ -34,6 +36,8 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
   toAccount,
   isFresh = false,
   isLastInGroup = false,
+  showDate = false,
+  hideAccountName = false,
   offsetAmount,
   offsetTargetNote,
   onClick,
@@ -52,6 +56,14 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
 
   const formattedAmount = centsToYuan(transaction.amount);
   const timeStr = formatTime(transaction.createdAt);
+  const dateTimeLabel = (() => {
+    const clock = timeStr || '12:00';
+    if (!showDate || !transaction.date) return clock;
+    const parsed = parseLocalDate(transaction.date);
+    if (!parsed.isValid()) return `${transaction.date} ${clock}`;
+    const isSameYear = parsed.year() === dayjs().year();
+    return `${parsed.format(isSameYear ? 'MM-DD' : 'YYYY-MM-DD')} ${clock}`;
+  })();
 
   const handleClick = () => {
     if (onClick) {
@@ -122,11 +134,15 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
         </div>
 
         <div className="flex items-center gap-1 text-[11px] text-(--ink-tertiary) font-mono">
-          <span>{timeStr || '12:00'}</span>
+          <span>{dateTimeLabel}</span>
           <span>·</span>
           <span>{category?.name || (isTransfer ? '转账' : isIncome ? '收入' : '支出')}</span>
-          <span>·</span>
-          <span>{account?.name || '未知账户'}</span>
+          {!hideAccountName && (
+            <>
+              <span>·</span>
+              <span>{account?.name || '未知账户'}</span>
+            </>
+          )}
           {isTransfer && toAccount && (
             <>
               <span>→</span>
