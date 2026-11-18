@@ -66,10 +66,20 @@ export class AccountService {
    * 删除账户（安全检查：有流水则阻止直接物理删除）
    */
   async deleteAccount(id: string, force: boolean = false): Promise<void> {
-    if (this.txRepo && !force) {
+    const all = await this.acctRepo.findAll();
+    if (all.length <= 1) {
+      throw new Error('系统至少需保留一个资金账户');
+    }
+
+    if (this.txRepo) {
       const txs = await this.txRepo.findByAccount(id);
       if (txs.length > 0) {
-        throw new Error(`该账户下已有 ${txs.length} 条交易流水，请先归档账户或清理流水`);
+        if (!force) {
+          throw new Error(`该账户下已有 ${txs.length} 条交易流水`);
+        }
+        for (const tx of txs) {
+          await this.txRepo.delete(tx.id);
+        }
       }
     }
     await this.acctRepo.delete(id);

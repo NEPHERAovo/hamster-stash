@@ -18,7 +18,7 @@ describe('AccountService', () => {
     acctService = new AccountService(acctRepo, txRepo);
   });
 
-  it('成功创建账户并初始化余额与排序权重', async () => {
+  it('creates an account with initial balance and sort order', async () => {
     const acct1 = await acctService.createAccount({
       name: '招商银行储蓄卡',
       type: 'bank',
@@ -38,7 +38,7 @@ describe('AccountService', () => {
     expect(acct2.sortOrder).toBe(2);
   });
 
-  it('账户名称为空时抛出错误', async () => {
+  it('throws an error when account name is blank', async () => {
     await expect(
       acctService.createAccount({
         name: '   ',
@@ -47,39 +47,61 @@ describe('AccountService', () => {
     ).rejects.toThrow('账户名称不能为空');
   });
 
-  it('计算净资产：准确合并所有有效账户余额', async () => {
+  it('calculates total net worth across active accounts', async () => {
     await acctService.createAccount({
       name: '储蓄卡',
       type: 'bank',
-      initialBalance: 800000, // +8000
+      initialBalance: 800000,
     });
     await acctService.createAccount({
       name: '信用卡',
       type: 'credit',
-      initialBalance: -300000, // -3000 (信用卡负债)
+      initialBalance: -300000,
     });
 
     const netWorth = await acctService.calculateNetWorth();
-    expect(netWorth).toBe(500000); // 8000 - 3000 = 5000 元 (500000 分)
+    expect(netWorth).toBe(500000);
   });
 
-  it('安全检查：存在交易流水的账户阻止物理删除', async () => {
+  it('prevents deleting the last remaining account', async () => {
     const acct = await acctService.createAccount({
+      name: '默认账户',
+      type: 'cash',
+      initialBalance: 0,
+    });
+
+    await expect(acctService.deleteAccount(acct.id)).rejects.toThrow(
+      '系统至少需保留一个资金账户'
+    );
+  });
+
+  it('prevents deleting an account with transactions unless force is specified', async () => {
+    const acct1 = await acctService.createAccount({
       name: '零钱',
       type: 'ewallet',
       initialBalance: 1000,
+    });
+    await acctService.createAccount({
+      name: '备用账户',
+      type: 'cash',
+      initialBalance: 0,
     });
 
     await txRepo.create({
       type: 'expense',
       amount: 500,
-      accountId: acct.id,
+      accountId: acct1.id,
       categoryId: 'cat_food',
       date: '2026-10-09',
     });
 
-    await expect(acctService.deleteAccount(acct.id)).rejects.toThrow(
+    await expect(acctService.deleteAccount(acct1.id, false)).rejects.toThrow(
       '该账户下已有 1 条交易流水'
     );
+
+    await acctService.deleteAccount(acct1.id, true);
+    expect(await acctRepo.findById(acct1.id)).toBeNull();
+    const remainingTxs = await txRepo.findByAccount(acct1.id);
+    expect(remainingTxs.length).toBe(0);
   });
 });

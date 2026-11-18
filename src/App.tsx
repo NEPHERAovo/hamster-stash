@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { ChevronLeft, Plus, Settings } from 'lucide-react';
+import { ChevronLeft, Plus, Settings, Scale } from 'lucide-react';
 import {
   AppShell,
   PageHeader,
@@ -61,7 +61,7 @@ export function App() {
     loadSettlementSummary,
   } = useLedgerStore();
 
-  const { accounts, loadAccounts, createAccount } = useAccountStore();
+  const { accounts, loadAccounts, createAccount, deleteAccount } = useAccountStore();
   const { categories, loadCategories } = useCategoryStore();
 
   const stepMonth = (offset: number) => {
@@ -107,6 +107,18 @@ export function App() {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '创建账户失败');
+    }
+  };
+
+  const handleDeleteAccount = async (acct: Account) => {
+    try {
+      await deleteAccount(acct.id, true);
+      await loadTransactions();
+      await loadSettlementSummary();
+      setActiveDetailAccount(null);
+      toast.success(`已删除账户「${acct.name}」`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '删除账户失败');
     }
   };
 
@@ -182,6 +194,17 @@ export function App() {
             >
               <ChevronLeft className="w-5 h-5 stroke-2" />
               <span>资产</span>
+            </button>
+          }
+          rightAction={
+            <button
+              type="button"
+              onClick={() => setReconcileAccount(currentDetailAccount)}
+              className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+              title="平账校准"
+            >
+              <Scale className="w-3.5 h-3.5 stroke-[1.8]" />
+              <span>平账</span>
             </button>
           }
         />
@@ -335,11 +358,7 @@ export function App() {
                 categories={categories}
                 accounts={accounts}
                 onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
-                onRecordForAccount={() => {
-                  setCurrentTab('ledger');
-                  setIsAddOpen(true);
-                  setActiveDetailAccount(null);
-                }}
+                onDeleteAccount={handleDeleteAccount}
                 onSelectTransaction={(tx) => {
                   setEditingTx(tx);
                   setIsAddOpen(true);

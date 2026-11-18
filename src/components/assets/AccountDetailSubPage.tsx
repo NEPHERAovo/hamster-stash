@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
-import { Scale, Plus } from 'lucide-react';
+import { Scale, Trash2 } from 'lucide-react';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { TransactionItem } from '../ledger/TransactionItem';
+import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
 
 export interface AccountDetailSubPageProps {
@@ -13,8 +14,8 @@ export interface AccountDetailSubPageProps {
   transactions: Transaction[];
   categories: Category[];
   accounts: Account[];
-  onOpenReconcile: () => void;
-  onRecordForAccount: () => void;
+  onOpenReconcile?: () => void;
+  onDeleteAccount?: (account: Account) => void;
   onSelectTransaction?: (tx: Transaction) => void;
 }
 
@@ -24,7 +25,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   categories,
   accounts,
   onOpenReconcile,
-  onRecordForAccount,
+  onDeleteAccount,
   onSelectTransaction,
 }) => {
   const Icon = getCategoryIcon(account.icon || 'wallet');
@@ -86,14 +87,28 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     }
   };
 
+  const handleDeleteClick = () => {
+    if (accounts.length <= 1) {
+      toast.error('系统至少需保留一个资金账户');
+      return;
+    }
+    const hasTxs = accountTxs.length > 0;
+    const msg = hasTxs
+      ? `该账户下已有 ${accountTxs.length} 条交易流水，删除账户将同时清除关联流水，是否确认删除？`
+      : `确认删除账户「${account.name}」吗？`;
+    if (window.confirm(msg)) {
+      onDeleteAccount?.(account);
+    }
+  };
+
   const isNetPositive = netFlow >= 0;
 
   return (
     <div className="w-full page-slide-in pb-6 pt-1 px-4">
-      <div className="bg-(--bg-surface) border border-(--border-hairline) rounded-md shadow-xs p-4 mb-4">
+      <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) shadow-xs p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-sm bg-[rgba(63,130,86,0.13)] text-(--color-income) border border-[rgba(63,130,86,0.22)] flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income) flex items-center justify-center shrink-0">
               <Icon className="w-5 h-5 stroke-[1.85]" />
             </div>
             <div>
@@ -115,7 +130,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 text-center py-3 border-y border-dashed border-(--border-hairline) mb-3.5">
+        <div className="grid grid-cols-3 text-center py-3 border-y border-dashed border-(--rule-hairline) mb-3.5">
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">本月流入</span>
             <span className="text-[13px] font-bold font-mono tabular-nums text-(--color-income)">+¥{centsToYuan(monthIn)}</span>
@@ -132,31 +147,23 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        {onOpenReconcile && (
           <button
             type="button"
-            className="h-9.5 rounded-sm inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--bg-sunken) text-(--ink-primary) border border-(--border-hairline) hover:bg-(--bg-hover) active:scale-[0.98] transition-all cursor-pointer"
+            className="w-full h-9 rounded-(--btn-radius) inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover) active:scale-[0.98] transition-all cursor-pointer border border-(--rule-hairline)"
             onClick={onOpenReconcile}
           >
             <Scale className="w-4 h-4 stroke-[1.85]" />
             <span>平账校准</span>
           </button>
-          <button
-            type="button"
-            className="h-9.5 rounded-sm inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--bg-surface) text-(--ink-secondary) border border-(--border-hairline) hover:bg-(--bg-hover) hover:text-(--ink-primary) active:scale-[0.98] transition-all cursor-pointer"
-            onClick={onRecordForAccount}
-          >
-            <Plus className="w-4 h-4 stroke-2" />
-            <span>记一笔</span>
-          </button>
-        </div>
+        )}
       </div>
 
-      <div className="bg-(--bg-surface) border border-(--border-hairline) rounded-md p-4 mb-4 text-xs font-mono">
+      <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-4 mb-4 text-xs font-mono">
         <div className="text-[10px] text-(--ink-tertiary) uppercase tracking-wider mb-2 font-semibold">
           账户属性信息
         </div>
-        <div className="divide-y divide-(--border-hairline)">
+        <div className="divide-y divide-(--rule-hairline)">
           <div className="flex justify-between py-2">
             <span className="text-(--ink-tertiary)">账户类型</span>
             <span className="text-(--ink-primary) font-medium">{getAccountTypeName(account.type)}</span>
@@ -172,13 +179,13 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-semibold text-(--ink-secondary)">账户流水</span>
           <span className="text-[11px] font-mono text-(--ink-tertiary)">共 {accountTxs.length} 笔</span>
         </div>
 
-        <div className="bg-(--bg-surface) border border-(--border-hairline) rounded-md overflow-hidden">
+        <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) overflow-hidden">
           {accountTxs.length === 0 ? (
             <div className="py-8 text-center text-xs text-(--ink-tertiary)">
               此账户暂无收支明细
@@ -198,6 +205,19 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           )}
         </div>
       </div>
+
+      {onDeleteAccount && (
+        <div className="pt-2 pb-6 flex justify-center">
+          <button
+            type="button"
+            onClick={handleDeleteClick}
+            className="text-xs text-(--color-expense) hover:underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5 py-1.5 px-3 rounded-(--btn-radius) hover:bg-(--color-expense-bg)/40"
+          >
+            <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
+            <span>删除此账户</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

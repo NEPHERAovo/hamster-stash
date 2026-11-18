@@ -9,7 +9,7 @@ interface AccountState {
   loading: boolean;
   loadAccounts: () => Promise<void>;
   createAccount: (input: CreateAccountInput) => Promise<Account>;
-  deleteAccount: (id: string) => Promise<void>;
+  deleteAccount: (id: string, force?: boolean) => Promise<void>;
   setActiveAccount: (id: string | null) => void;
 }
 
@@ -33,9 +33,9 @@ export const useAccountStore = create<AccountState>((set) => ({
     return acct;
   },
 
-  deleteAccount: async (id) => {
+  deleteAccount: async (id, force) => {
     await core.init();
-    await core.acctService.deleteAccount(id);
+    await core.acctService.deleteAccount(id, force);
     const accounts = await core.acctRepo.findAll();
     set({ accounts });
   },

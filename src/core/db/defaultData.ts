@@ -23,8 +23,5 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'createdAt' | 'updatedAt'>[] = [
 ];
 
 export const DEFAULT_ACCOUNTS: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
-  { id: 'acct_wechat', name: '微信零钱', type: 'ewallet', balance: 0, currency: 'CNY', icon: 'wallet', sortOrder: 1 },
-  { id: 'acct_alipay', name: '支付宝', type: 'ewallet', balance: 0, currency: 'CNY', icon: 'wallet', sortOrder: 2 },
-  { id: 'acct_bank', name: '招商银行卡', type: 'bank', balance: 0, currency: 'CNY', icon: 'landmark', sortOrder: 3 },
-  { id: 'acct_cash', name: '现金钱包', type: 'cash', balance: 0, currency: 'CNY', icon: 'banknote', sortOrder: 4 },
+  { id: 'acct_default', name: '默认账户', type: 'cash', balance: 0, currency: 'CNY', icon: 'wallet', sortOrder: 1 },
 ];
