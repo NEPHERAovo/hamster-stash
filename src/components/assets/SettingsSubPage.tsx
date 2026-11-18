@@ -9,6 +9,7 @@ export const SettingsSubPage: React.FC<SettingsSubPageProps> = ({
   isDark,
   onToggleDark,
   onOpenImport,
+  onOpenCategories,
 }) => {
   return (
     <div className="w-full pb-8 select-none">
@@ -17,6 +18,7 @@ export const SettingsSubPage: React.FC<SettingsSubPageProps> = ({
           isDark={isDark}
           onToggleDark={onToggleDark}
           onOpenImport={onOpenImport}
+          onOpenCategories={onOpenCategories}
         />
       </div>
     </div>

@@ -33,6 +33,45 @@ export interface AddTransactionModalProps {
   onSuccess?: (txId: string) => void;
 }
 
+const LOAN_FLOW_OPTIONS = [
+  {
+    id: 'cat_lend_out',
+    label: '借给他人',
+    flowHint: '流出',
+    icon: 'arrow-up-right',
+    direction: 'lend' as const,
+    role: 'origin' as const,
+    isInflow: false,
+  },
+  {
+    id: 'cat_borrow_in',
+    label: '向人借款',
+    flowHint: '流入',
+    icon: 'arrow-down-left',
+    direction: 'borrow' as const,
+    role: 'origin' as const,
+    isInflow: true,
+  },
+  {
+    id: 'cat_loan_repay',
+    label: '收回还款',
+    flowHint: '流入',
+    icon: 'check-circle-2',
+    direction: 'lend' as const,
+    role: 'repayment' as const,
+    isInflow: true,
+  },
+  {
+    id: 'cat_debt_clear',
+    label: '偿还欠款',
+    flowHint: '流出',
+    icon: 'corner-down-right',
+    direction: 'borrow' as const,
+    role: 'repayment' as const,
+    isInflow: false,
+  },
+];
+
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   isOpen,
   onClose,
@@ -172,13 +211,26 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   }, [isOpen, editingTransaction, accounts, initialExt]);
 
   const currentCategories = useMemo(() => {
-    return categories.filter((c) => (txType === 'income' ? c.type === 'income' : c.type === 'expense') && !c.isArchived);
+    if (txType === 'loan') return [];
+    return categories.filter((c) => c.type === txType && !c.isArchived);
   }, [categories, txType]);
 
+  const selectedLoanFlow = useMemo(() => {
+    return LOAN_FLOW_OPTIONS.find((item) => item.id === selectedCatId) || LOAN_FLOW_OPTIONS[0];
+  }, [selectedCatId]);
+
   useEffect(() => {
+    if (txType === 'loan') {
+      const isValidLoan = LOAN_FLOW_OPTIONS.some((item) => item.id === selectedCatId);
+      if (!isValidLoan) {
+        setSelectedCatId(LOAN_FLOW_OPTIONS[0].id);
+      }
+      return;
+    }
+
     if (currentCategories.length > 0) {
       const exists = currentCategories.some((c) => c.id === selectedCatId);
-      if (!exists && !editingTransaction) {
+      if (!exists && (!editingTransaction || editingTransaction.type !== txType)) {
         setSelectedCatId(currentCategories[0].id);
       }
     }
@@ -268,6 +320,21 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setIsSubmitting(true);
     try {
       const createdAtISO = combineLocalDateTimeToIso(dateStr, timeStr);
+      const loanPayload =
+        txType === 'loan'
+          ? {
+              loanDirection: selectedLoanFlow.direction,
+              loanRole: selectedLoanFlow.role,
+              relatedLoanId:
+                selectedLoanFlow.role === 'repayment' && relatedLoanId !== 'none'
+                  ? relatedLoanId
+                  : undefined,
+            }
+          : {
+              loanDirection: undefined,
+              loanRole: undefined,
+              relatedLoanId: undefined,
+            };
 
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, {
@@ -280,7 +347,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           isReimbursable: txType === 'expense' ? isReimbursable : undefined,
           offsetTransactionId: txType === 'income' ? offsetTransactionId : undefined,
           voucher: voucher || undefined,
-          relatedLoanId: relatedLoanId !== 'none' ? relatedLoanId : undefined,
+          ...loanPayload,
           ext: Object.keys(ext).length > 0 ? ext : undefined,
           createdAt: createdAtISO,
         });
@@ -301,12 +368,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         isReimbursable: txType === 'expense' ? isReimbursable : undefined,
         offsetTransactionId: txType === 'income' ? offsetTransactionId : undefined,
         voucher: voucher || undefined,
-        relatedLoanId: relatedLoanId !== 'none' ? relatedLoanId : undefined,
+        ...loanPayload,
         ext: Object.keys(ext).length > 0 ? ext : undefined,
         createdAt: createdAtISO,
       });
 
-      toast.success(`${txType === 'expense' ? '支出' : '收入'}入账成功`);
+      const typeLabel = txType === 'expense' ? '支出' : txType === 'income' ? '收入' : '借贷';
+      toast.success(`${typeLabel}入账成功`);
       onSuccess?.(newTx.id);
 
       if (keepOpen) {
@@ -460,49 +528,89 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </div>
 
         <div className="px-3.5 py-1.5">
-          <div
-            className={cn(
-              'category-grid py-0.5 select-none',
-              currentCategories.length <= 8
-                ? 'grid grid-cols-4 gap-0'
-                : 'grid grid-rows-2 grid-flow-col auto-cols-[calc(25%-6px)] gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
-            )}
-          >
-            {currentCategories.map((cat, idx) => {
-              const isSelected = selectedCatId === cat.id;
-              const IconComp = getCategoryIcon(cat.icon);
-              const col = idx % 4;
-              const row = Math.floor(idx / 4);
-              const hasRightBorder = currentCategories.length <= 8 && col < 3;
-              const hasBottomBorder = currentCategories.length <= 8 && row === 0;
+          {txType === 'loan' ? (
+            <div className="category-grid py-0.5 select-none grid grid-cols-4 gap-0">
+              {LOAN_FLOW_OPTIONS.map((flow, idx) => {
+                const isSelected = selectedLoanFlow.id === flow.id;
+                const IconComp = getCategoryIcon(flow.icon);
+                const hasRightBorder = idx < 3;
 
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCatId(cat.id)}
-                  className={cn(
-                    'flex flex-col items-center justify-center py-2 px-1 transition-all cursor-pointer select-none relative',
-                    hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
-                    hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
-                    isSelected
-                      ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs z-10'
-                      : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50'
-                  )}
-                >
-                  <div className="w-6 h-6 flex items-center justify-center mb-0.5">
-                    <IconComp
-                      className="w-4 h-4 stroke-[1.8]"
-                      style={{ color: isSelected ? 'var(--ink-solid)' : cat.color }}
-                    />
-                  </div>
-                  <span className="text-[10px] leading-tight truncate w-full text-center">
-                    {cat.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={flow.id}
+                    type="button"
+                    onClick={() => setSelectedCatId(flow.id)}
+                    className={cn(
+                      'flex flex-col items-center justify-center py-2 px-1 transition-all cursor-pointer select-none relative',
+                      hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
+                      isSelected
+                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs z-10'
+                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50'
+                    )}
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center mb-0.5">
+                      <IconComp
+                        className={cn(
+                          'w-4 h-4 stroke-[1.8]',
+                          flow.isInflow ? 'text-(--color-income)' : 'text-(--color-expense)'
+                        )}
+                      />
+                    </div>
+                    <span className="text-[10px] leading-tight truncate w-full text-center">
+                      {flow.label}
+                    </span>
+                    <span className="text-[9px] font-mono text-(--ink-faint) leading-none mt-0.5">
+                      {flow.flowHint}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              className={cn(
+                'category-grid py-0.5 select-none',
+                currentCategories.length <= 8
+                  ? 'grid grid-cols-4 gap-0'
+                  : 'grid grid-rows-2 grid-flow-col auto-cols-[calc(25%-6px)] gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
+              )}
+            >
+              {currentCategories.map((cat, idx) => {
+                const isSelected = selectedCatId === cat.id;
+                const IconComp = getCategoryIcon(cat.icon);
+                const col = idx % 4;
+                const row = Math.floor(idx / 4);
+                const hasRightBorder = currentCategories.length <= 8 && col < 3;
+                const hasBottomBorder = currentCategories.length > 4 && currentCategories.length <= 8 && row === 0;
+
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedCatId(cat.id)}
+                    className={cn(
+                      'flex flex-col items-center justify-center py-2 px-1 transition-all cursor-pointer select-none relative',
+                      hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
+                      hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
+                      isSelected
+                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs z-10'
+                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50'
+                    )}
+                  >
+                    <div className="w-6 h-6 flex items-center justify-center mb-0.5">
+                      <IconComp
+                        className="w-4 h-4 stroke-[1.8]"
+                        style={{ color: isSelected ? 'var(--ink-solid)' : cat.color }}
+                      />
+                    </div>
+                    <span className="text-[10px] leading-tight truncate w-full text-center">
+                      {cat.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="px-4 py-1.5 border-t border-b border-dashed border-(--rule-hairline) space-y-1.5">
@@ -775,7 +883,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           <PluginSlot name="tx.modal.metaTray" context={modalContext} />
 
-          {txType === 'loan' && settlementSummary && (
+          {txType === 'loan' && selectedLoanFlow.role === 'repayment' && settlementSummary && (
             <div className="pt-1 text-[11px] font-mono text-(--ink-secondary)">
               <div className="flex items-center gap-1.5">
                 <span className="text-(--ink-tertiary)">关联借据:</span>

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   SlidersHorizontal,
+  Tags,
   FileSpreadsheet,
   FileUp,
   HardDriveUpload,
@@ -32,10 +33,12 @@ export interface SettingsCardProps {
   isDark?: boolean;
   onToggleDark?: () => void;
   onOpenImport?: () => void;
+  onOpenCategories?: () => void;
 }
 
 export const SettingsCard: React.FC<SettingsCardProps> = ({
   onOpenImport,
+  onOpenCategories,
 }) => {
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -218,6 +221,21 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       </div>
 
       <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5">
+
+        <div
+          className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+          onClick={onOpenCategories}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <Tags className="w-3.5 h-3.5 stroke-[1.75]" />
+            </div>
+            <span className="text-[13px] font-medium text-(--ink-primary)">分类管理</span>
+          </div>
+          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
 
         <div
           className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"

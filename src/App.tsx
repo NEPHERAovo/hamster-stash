@@ -16,6 +16,7 @@ import { NetWorthHeader } from './components/assets/NetWorthHeader';
 import { AccountList } from './components/assets/AccountList';
 import { AccountDetailSubPage } from './components/assets/AccountDetailSubPage';
 import { SettingsSubPage } from './components/assets/SettingsSubPage';
+import { CategoryManageSubPage } from './components/assets/CategoryManageSubPage';
 import { ImportSubPage } from './components/assets/ImportSubPage';
 import { LoanChainModal } from './components/assets/LoanChainModal';
 import { ReconcileModal } from './components/assets/ReconcileModal';
@@ -47,6 +48,7 @@ export function App() {
   const [isLoanHubOpen, setIsLoanHubOpen] = useState(false);
   const [activeDetailAccount, setActiveDetailAccount] = useState<Account | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isCategoryManageOpen, setIsCategoryManageOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
   const [freshTxId, setFreshTxId] = useState<string | null>(null);
@@ -393,7 +395,23 @@ export function App() {
           isDark={isDark}
           onToggleDark={toggleDark}
           onOpenImport={() => setIsImportOpen(true)}
+          onOpenCategories={() => setIsCategoryManageOpen(true)}
         />
+      </SubPageShell>
+
+      <SubPageShell
+        isOpen={isCategoryManageOpen}
+        onClose={() => setIsCategoryManageOpen(false)}
+        className="z-50"
+        header={
+          <PageHeader
+            title="分类管理"
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="设置" />}
+          />
+        }
+      >
+        <CategoryManageSubPage />
       </SubPageShell>
 
       <SubPageShell
@@ -419,7 +437,7 @@ export function App() {
         />
       </SubPageShell>
 
-      {!isSettingsOpen && !isImportOpen && !activeDetailAccount && (
+      {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !activeDetailAccount && (
         <BottomNav
           currentTab={currentTab}
           showAddButton={currentTab === 'ledger'}

@@ -8,6 +8,11 @@ interface CategoryState {
   loadCategories: () => Promise<void>;
   getByType: (type: CategoryType) => Category[];
   createCategory: (data: Partial<Category> & { name: string }) => Promise<Category>;
+  updateCategory: (
+    id: string,
+    patch: Partial<Pick<Category, 'name' | 'icon' | 'isArchived' | 'sortOrder'>>
+  ) => Promise<Category>;
+  removeCategory: (id: string) => Promise<{ archived: boolean }>;
 }
 
 export const useCategoryStore = create<CategoryState>((set, get) => ({
@@ -47,5 +52,51 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
     await get().loadCategories();
     return newCat;
+  },
+
+  updateCategory: async (id, patch) => {
+    await core.init();
+    const updates: Partial<Omit<Category, 'id' | 'createdAt'>> = {};
+    if (patch.name !== undefined) {
+      const trimmed = patch.name.trim();
+      if (!trimmed) {
+        throw new Error('分类名称不能为空');
+      }
+      updates.name = trimmed;
+    }
+    if (patch.icon !== undefined) updates.icon = patch.icon;
+    if (patch.isArchived !== undefined) updates.isArchived = patch.isArchived;
+    if (patch.sortOrder !== undefined) updates.sortOrder = patch.sortOrder;
+
+    const updated = await core.catRepo.update(id, updates);
+    await get().loadCategories();
+    return updated;
+  },
+
+  removeCategory: async (id) => {
+    await core.init();
+    const all = await core.catRepo.findAll();
+    const target = all.find((c) => c.id === id);
+    if (!target) {
+      throw new Error('分类不存在');
+    }
+
+    const activeSameType = all.filter((c) => c.type === target.type && !c.isArchived);
+    if (!target.isArchived && activeSameType.length <= 1) {
+      throw new Error('至少需保留一个可用分类');
+    }
+
+    const txs = await core.txRepo.findAll();
+    const hasLinkedTransactions = txs.some((t) => t.categoryId === id);
+
+    if (target.isSystem || hasLinkedTransactions) {
+      await core.catRepo.update(id, { isArchived: true });
+      await get().loadCategories();
+      return { archived: true };
+    }
+
+    await core.catRepo.delete(id);
+    await get().loadCategories();
+    return { archived: false };
   },
 }));
