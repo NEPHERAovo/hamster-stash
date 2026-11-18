@@ -182,4 +182,8 @@ export class MemoryAdapter implements DataAdapter {
       }
     }
   }
+
+  async clearAll(): Promise<void> {
+    this.collections.clear();
+  }
 }

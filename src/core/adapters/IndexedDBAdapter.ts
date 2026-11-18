@@ -273,4 +273,22 @@ export class IndexedDBAdapter implements DataAdapter {
 
     await tx.done;
   }
+
+  async clearAll(): Promise<void> {
+    const db = this.getDB();
+    const storesToClear = [
+      STORES.TRANSACTIONS,
+      STORES.ACCOUNTS,
+      STORES.CATEGORIES,
+      STORES.SETTINGS,
+      STORES.PLUGIN_DATA,
+      STORES.PLUGIN_SETTINGS,
+    ];
+    const tx = db.transaction(storesToClear, 'readwrite');
+    for (const storeName of storesToClear) {
+      await tx.objectStore(storeName).clear();
+    }
+    await tx.done;
+    await this.seedDefaultsIfEmpty();
+  }
 }

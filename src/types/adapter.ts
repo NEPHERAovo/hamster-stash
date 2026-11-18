@@ -47,4 +47,5 @@ export interface DataAdapter {
 
   export(): Promise<ExportData>;
   import(data: ExportData): Promise<void>;
+  clearAll(): Promise<void>;
 }

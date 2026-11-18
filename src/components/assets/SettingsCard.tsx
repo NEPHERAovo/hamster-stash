@@ -7,6 +7,7 @@ import {
   HardDriveUpload,
   ChevronRight,
   Blocks,
+  Trash2,
 } from 'lucide-react';
 import { core } from '../../core';
 import type { ExportData } from '../../types/adapter';
@@ -20,6 +21,7 @@ import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { ExportCsvModal } from './ExportCsvModal';
+import { ClearAllDataModal } from './ClearAllDataModal';
 import { WebDavSyncSection } from './WebDavSyncSection';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
@@ -38,7 +40,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
   const { accounts, loadAccounts } = useAccountStore();
-  const { allTransactions, loadMonth } = useLedgerStore();
+  const { allTransactions, loadMonth, loadTransactions, loadSettlementSummary } = useLedgerStore();
   const { categories, loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const { majorThresholdYuan, setMajorThresholdYuan } = usePreferenceStore();
@@ -50,6 +52,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const [isExportingBackup, setIsExportingBackup] = useState(false);
   const [pendingRestore, setPendingRestore] = useState<{ fileName: string; data: ExportData } | null>(null);
   const [isRestoringBackup, setIsRestoringBackup] = useState(false);
+  const [isClearAllOpen, setIsClearAllOpen] = useState(false);
 
   const openMajorModal = () => {
     setMajorInput(String(majorThresholdYuan));
@@ -145,6 +148,25 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       toast.error(err instanceof Error ? err.message : '恢复备份数据失败');
     } finally {
       setIsRestoringBackup(false);
+    }
+  };
+
+  const handleClearAllData = async () => {
+    await core.init();
+    await core.adapter.clearAll();
+
+    await loadAccounts();
+    await loadCategories();
+    await loadTransactions();
+    await loadSettlementSummary();
+
+    for (const p of plugins) {
+      const id = p.manifest.id;
+      const isEnabled = enabledPlugins[id] ?? p.manifest.defaultEnabled ?? true;
+      if (isEnabled) {
+        await pluginManager.disablePlugin(id);
+        await pluginManager.enablePlugin(id);
+      }
     }
   };
 
@@ -369,6 +391,30 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
       <PluginSlot name="settings.sections" />
 
+      <div className="px-1 text-xs font-mono text-(--color-expense) uppercase tracking-wider pt-1">
+        <span>危险操作</span>
+      </div>
+
+      <div className="bg-(--paper-sheet) paper-card border border-(--color-expense)/30 rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5">
+        <div
+          className="flex items-center justify-between py-2.5 cursor-pointer select-none"
+          onClick={() => setIsClearAllOpen(true)}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--color-expense-bg) flex items-center justify-center text-(--color-expense) shrink-0">
+              <Trash2 className="w-3.5 h-3.5 stroke-[1.75]" />
+            </div>
+            <div>
+              <span className="text-[13px] font-medium text-(--color-expense)">清空所有数据</span>
+              <p className="text-[11px] text-(--ink-tertiary) leading-tight mt-0.5">
+                重置全部本地流水、账户与插件记录
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 text-(--color-expense)/70" />
+        </div>
+      </div>
+
       <PaperModal
         isOpen={isMajorModalOpen}
         onClose={() => setIsMajorModalOpen(false)}
@@ -529,6 +575,15 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
         </div>
       </PaperModal>
+
+      <ClearAllDataModal
+        isOpen={isClearAllOpen}
+        transactionCount={allTransactions.length}
+        accountCount={accounts.length}
+        onClose={() => setIsClearAllOpen(false)}
+        onRequestBackup={() => setIsBackupConfirmOpen(true)}
+        onConfirmClear={handleClearAllData}
+      />
     </div>
   );
 };
