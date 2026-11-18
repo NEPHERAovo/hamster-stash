@@ -89,86 +89,85 @@ export function drawTabIcon(
   color: string
 ) {
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(Math.round(cx), Math.round(cy));
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = 2.1;
+  ctx.lineWidth = 1.9;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
   if (type === 'ledger') {
     ctx.beginPath();
     if (ctx.roundRect) {
-      ctx.roundRect(-7, -9, 14, 18, 2.5);
+      ctx.roundRect(-7, -9, 14, 18, 2);
     } else {
       ctx.strokeRect(-7, -9, 14, 18);
     }
     ctx.stroke();
+
     ctx.beginPath();
     ctx.moveTo(-3.5, -4);
     ctx.lineTo(3.5, -4);
     ctx.moveTo(-3.5, 0);
     ctx.lineTo(3.5, 0);
     ctx.moveTo(-3.5, 4);
-    ctx.lineTo(1, 4);
+    ctx.lineTo(1.5, 4);
     ctx.stroke();
-  } else if (type === 'assets') {
+  } else if (type === 'stats') {
     ctx.beginPath();
-    ctx.moveTo(0, -8);
-    ctx.lineTo(9, -3.5);
-    ctx.lineTo(0, 1);
-    ctx.lineTo(-9, -3.5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-9, 1.5);
-    ctx.lineTo(0, 6);
-    ctx.lineTo(9, 1.5);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-9, 6);
-    ctx.lineTo(0, 10.5);
-    ctx.lineTo(9, 6);
+    ctx.lineWidth = 2.4;
+    ctx.moveTo(-6, 6);
+    ctx.lineTo(-6, -1);
+    ctx.moveTo(0, 6);
+    ctx.lineTo(0, -7);
+    ctx.moveTo(6, 6);
+    ctx.lineTo(6, 2);
     ctx.stroke();
   } else if (type === 'items') {
     ctx.beginPath();
-    ctx.moveTo(0, -9);
-    ctx.lineTo(8.5, -4.5);
-    ctx.lineTo(8.5, 4.5);
-    ctx.lineTo(0, 9);
-    ctx.lineTo(-8.5, 4.5);
-    ctx.lineTo(-8.5, -4.5);
+    ctx.moveTo(0, -8);
+    ctx.lineTo(7.5, -4);
+    ctx.lineTo(7.5, 4);
+    ctx.lineTo(0, 8);
+    ctx.lineTo(-7.5, 4);
+    ctx.lineTo(-7.5, -4);
     ctx.closePath();
     ctx.stroke();
+
     ctx.beginPath();
-    ctx.moveTo(-8.5, -4.5);
+    ctx.moveTo(-7.5, -4);
     ctx.lineTo(0, 0);
-    ctx.lineTo(8.5, -4.5);
+    ctx.lineTo(7.5, -4);
     ctx.moveTo(0, 0);
-    ctx.lineTo(0, 9);
+    ctx.lineTo(0, 8);
     ctx.stroke();
-  } else if (type === 'stats') {
+  } else if (type === 'assets') {
+    ctx.beginPath();
     if (ctx.roundRect) {
-      ctx.beginPath();
-      ctx.roundRect(-7.5, 0, 3.4, 8, 1);
-      ctx.roundRect(-1.7, -7, 3.4, 15, 1);
-      ctx.roundRect(4.1, -3, 3.4, 11, 1);
-      ctx.fill();
+      ctx.roundRect(-8.5, -6.5, 17, 13, 2.5);
     } else {
-      ctx.fillRect(-7.5, 0, 3.4, 8);
-      ctx.fillRect(-1.7, -7, 3.4, 15);
-      ctx.fillRect(4.1, -3, 3.4, 11);
+      ctx.strokeRect(-8.5, -6.5, 17, 13);
     }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-8.5, -1);
+    ctx.lineTo(8.5, -1);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(3.5, -1, 1.2, 0, Math.PI * 2);
+    ctx.fill();
   } else if (type === 'saving') {
     ctx.beginPath();
-    ctx.moveTo(0, -8.5);
-    ctx.bezierCurveTo(4.5, -2, 6.5, 2, 6.5, 4.5);
-    ctx.arc(0, 4.5, 6.5, 0, Math.PI);
-    ctx.bezierCurveTo(-6.5, 2, -4.5, -2, 0, -8.5);
+    ctx.moveTo(0, -7.5);
+    ctx.bezierCurveTo(4, -2, 5.5, 1.5, 5.5, 4);
+    ctx.arc(0, 4, 5.5, 0, Math.PI);
+    ctx.bezierCurveTo(-5.5, 1.5, -4, -2, 0, -7.5);
     ctx.fill();
   } else {
     ctx.beginPath();
-    ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
     ctx.stroke();
   }
   ctx.restore();
@@ -200,24 +199,30 @@ export function uploadLayerTexture(
   offCtx.clearRect(0, 0, texW, texH);
   offCtx.scale(dpr, dpr);
 
+  offCtx.imageSmoothingEnabled = true;
+  offCtx.imageSmoothingQuality = 'high';
+
   const tabCount = Math.max(1, tabs.length);
-  const sidePad = Math.max(4, Math.round(dockW * 0.016));
+  const sidePad = 6;
   const usableW = dockW - sidePad * 2;
   const colW = usableW / tabCount;
   const dockH = canvasH - padY * 2;
 
   tabs.forEach((tab, i) => {
-    const cx = padX + sidePad + colW * (i + 0.5);
+    const rawCx = padX + sidePad + colW * (i + 0.5);
+    const cx = Math.round(rawCx * dpr) / dpr;
     const tabType = resolveTabType(tab);
     const label = resolveTabLabel(tab);
 
-    drawTabIcon(offCtx, tabType, cx, padY + dockH * 0.34, inkColor);
+    const iconY = Math.round((padY + dockH * 0.35) * dpr) / dpr;
+    drawTabIcon(offCtx, tabType, cx, iconY, inkColor);
 
-    offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif';
+    const labelY = Math.round((padY + dockH * 0.72) * dpr) / dpr;
+    offCtx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif';
     offCtx.textAlign = 'center';
     offCtx.textBaseline = 'middle';
     offCtx.fillStyle = inkColor;
-    offCtx.fillText(label, cx, padY + dockH * 0.71);
+    offCtx.fillText(label, cx, labelY);
   });
 
   offCtx.restore();

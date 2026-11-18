@@ -32,7 +32,7 @@ export const FRAGMENT_SHADER_SOURCE = `
   }
 
   vec3 sampleUnderGlass(vec2 uv, vec2 dockHalfSize, float dropR) {
-    vec2 clampedUV = clamp(uv, 0.002, 0.998);
+    vec2 clampedUV = clamp(uv, 0.001, 0.999);
     vec2 pSample = clampedUV * uCanvasSize;
 
     float dDockSample = sdRoundBox(pSample - uDockRect.xy, dockHalfSize, uDockRadius);
@@ -60,7 +60,7 @@ export const FRAGMENT_SHADER_SOURCE = `
 
   void main() {
     vec2 p = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y) / uDpr;
-    vec2 baseUV = p / uCanvasSize;
+    vec2 baseUV = vec2(gl_FragCoord.x / uResolution.x, (uResolution.y - gl_FragCoord.y) / uResolution.y);
 
     vec2 dockHalfSize = uDockRect.zw + vec2(4.0, 1.5) * uTrigger;
     float dockR = min(dockHalfSize.y, uDockRadius);

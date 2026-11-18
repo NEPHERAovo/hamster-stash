@@ -22,6 +22,8 @@ export interface LiquidGlassDockProps {
   className?: string;
 }
 
+const SIDE_PAD = 6;
+
 export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   tabs,
   activeTab,
@@ -176,7 +178,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       const dockH = rect.height;
       const canvasW = dockW + padX * 2;
       const canvasH = dockH + padY * 2;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.max(2, Math.min(window.devicePixelRatio || 1, 3.5));
 
       const targetPixelW = Math.round(canvasW * dpr);
       const targetPixelH = Math.round(canvasH * dpr);
@@ -236,10 +238,9 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       }
 
       const activeIdx = Math.max(0, currentTabs.findIndex((t) => isTabActive(t, visualActiveTabRef.current)));
-      const sidePad = Math.max(4, Math.round(dockW * 0.016));
-      const usableW = dockW - sidePad * 2;
+      const usableW = dockW - SIDE_PAD * 2;
       const colW = usableW / Math.max(1, currentTabs.length);
-      const targetX = sidePad + colW * (activeIdx + 0.5);
+      const targetX = SIDE_PAD + colW * (activeIdx + 0.5);
 
       const spring = stepRef.current(
         dt,
@@ -332,10 +333,9 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
 
     const currentTabs = tabsRef.current;
     if (currentTabs.length > 0) {
-      const sidePad = Math.max(4, Math.round(rect.width * 0.016));
-      const colW = (rect.width - sidePad * 2) / currentTabs.length;
-      const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-      const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor((localX - sidePad) / colW)));
+      const colW = (rect.width - SIDE_PAD * 2) / currentTabs.length;
+      const clampedX = Math.max(SIDE_PAD, Math.min(rect.width - SIDE_PAD - 0.001, e.clientX - rect.left));
+      const tabIdx = Math.floor((clampedX - SIDE_PAD) / colW);
       const selectedTab = currentTabs[tabIdx];
       if (selectedTab) {
         visualActiveTabRef.current = selectedTab.id || selectedTab.path || '';
@@ -362,9 +362,9 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
 
       const currentTabs = tabsRef.current;
       if (currentTabs.length > 0) {
-        const sidePad = Math.max(4, Math.round(rect.width * 0.016));
-        const colW = (rect.width - sidePad * 2) / currentTabs.length;
-        const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor((localX - sidePad) / colW)));
+        const colW = (rect.width - SIDE_PAD * 2) / currentTabs.length;
+        const clampedX = Math.max(SIDE_PAD, Math.min(rect.width - SIDE_PAD - 0.001, e.clientX - rect.left));
+        const tabIdx = Math.floor((clampedX - SIDE_PAD) / colW);
         const selectedTab = currentTabs[tabIdx];
         if (selectedTab) {
           visualActiveTabRef.current = selectedTab.id || selectedTab.path || '';
@@ -396,10 +396,9 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const currentTabs = tabsRef.current;
     if (currentTabs.length === 0) return;
 
-    const sidePad = Math.max(4, Math.round(rect.width * 0.016));
-    const colW = (rect.width - sidePad * 2) / currentTabs.length;
-    const localX = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-    const tabIdx = Math.max(0, Math.min(currentTabs.length - 1, Math.floor((localX - sidePad) / colW)));
+    const colW = (rect.width - SIDE_PAD * 2) / currentTabs.length;
+    const clampedX = Math.max(SIDE_PAD, Math.min(rect.width - SIDE_PAD - 0.001, e.clientX - rect.left));
+    const tabIdx = Math.floor((clampedX - SIDE_PAD) / colW);
     const selectedTab = currentTabs[tabIdx];
     if (selectedTab) {
       const chosenId = selectedTab.id || selectedTab.path || '';
