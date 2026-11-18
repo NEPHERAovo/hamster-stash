@@ -3,8 +3,8 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { SubPageShell, SubPageBackButton } from '../../src/components/layout/SubPageShell';
 
 describe('SubPageShell', () => {
-  it('renders header and children when open', () => {
-    render(
+  it('renders header, grid layer, and children when open', () => {
+    const { container } = render(
       <SubPageShell
         isOpen={true}
         onClose={vi.fn()}
@@ -18,6 +18,7 @@ describe('SubPageShell', () => {
     expect(screen.getByTestId('test-body')).toBeDefined();
     expect(screen.getByText('Header Title')).toBeDefined();
     expect(screen.getByText('Body Content')).toBeDefined();
+    expect(container.querySelector('.grid-layer')).not.toBeNull();
   });
 
   it('does not render when closed', () => {

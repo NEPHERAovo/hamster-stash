@@ -201,8 +201,9 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
           className
         )}
       >
-        <div className="shrink-0">{header}</div>
-        <div className="flex-1 w-full min-h-0 overflow-y-auto overscroll-contain">
+        <div className="grid-layer absolute! inset-0 z-0" aria-hidden="true" />
+        <div className="relative z-1 shrink-0">{header}</div>
+        <div className="relative z-1 flex-1 w-full min-h-0 overflow-y-auto overscroll-contain">
           {children}
         </div>
       </div>
