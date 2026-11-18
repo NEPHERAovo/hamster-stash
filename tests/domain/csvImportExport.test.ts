@@ -3,6 +3,7 @@ import { parseCsv, generateCsv } from '../../src/domain/import-export/csvParser'
 import {
   inferColumnMapping,
   normalizeDate,
+  normalizeDateTime,
   normalizeAmount,
   normalizeTransactionType,
   mapStandardCsvRows,
@@ -138,6 +139,27 @@ describe('Import Modes: Elephant Stash vs Standard CSV', () => {
     expect(normalizeAmount('42.5').cents).toBe(4250);
     expect(normalizeTransactionType('支出')).toBe('expense');
     expect(normalizeTransactionType('收入')).toBe('income');
+  });
+
+  it('parses datetime strings into exact local createdAt timestamps while leaving date-only strings unset', () => {
+    const withHm = normalizeDateTime('2026/10/08 19:19');
+    expect(withHm.date).toBe('2026-10-08');
+    expect(withHm.createdAt).toBeDefined();
+    const hmDate = new Date(withHm.createdAt!);
+    expect(hmDate.getHours()).toBe(19);
+    expect(hmDate.getMinutes()).toBe(19);
+    expect(hmDate.getSeconds()).toBe(0);
+
+    const withHms = normalizeDateTime('2026-10-08 09:05:30');
+    expect(withHms.date).toBe('2026-10-08');
+    const hmsDate = new Date(withHms.createdAt!);
+    expect(hmsDate.getHours()).toBe(9);
+    expect(hmsDate.getMinutes()).toBe(5);
+    expect(hmsDate.getSeconds()).toBe(30);
+
+    const dateOnly = normalizeDateTime('2026-10-08');
+    expect(dateOnly.date).toBe('2026-10-08');
+    expect(dateOnly.createdAt).toBeUndefined();
   });
 
   it('exports transactions to standard CSV format', () => {
@@ -345,5 +367,34 @@ describe('All Data Participates in Account Calculation & Reconcile Flow', () => 
 
     acct = await acctRepo.findById('acct_wechat');
     expect(acct?.balance).toBe(500000);
+  });
+
+  it('importTransactions persists original datetime timestamps from Elephant CSV rows', async () => {
+    const categories: Category[] = [
+      { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', color: '', sortOrder: 1, createdAt: '', updatedAt: '' },
+    ];
+    const accounts: Account[] = [
+      { id: 'acct_wechat', name: '微信零钱', type: 'ewallet', balance: 500000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
+    ];
+
+    const { records } = mapElephantCsvRows(
+      ['日期', '分类名称', '收支', '金额', '账户', '备注'],
+      [['2026/10/08 19:19', '吃饭', '支出', '25.5', '微信零钱', '晚餐']],
+      {
+        defaultAccountId: 'acct_wechat',
+        defaultExpenseCategoryId: 'cat_food',
+        defaultIncomeCategoryId: 'cat_food',
+        existingCategories: categories,
+        existingAccounts: accounts,
+      }
+    );
+
+    await txService.importTransactions(records, true);
+    const all = await txRepo.findAll();
+    expect(all.length).toBe(1);
+    const storedDate = new Date(all[0].createdAt);
+    expect(all[0].date).toBe('2026-10-08');
+    expect(storedDate.getHours()).toBe(19);
+    expect(storedDate.getMinutes()).toBe(19);
   });
 });

@@ -432,6 +432,7 @@ export class TransactionService {
       type: TransactionType;
       amount: number;
       date: string;
+      createdAt?: string;
       categoryId: string;
       accountId: string;
       note?: string;
@@ -455,6 +456,7 @@ export class TransactionService {
         accountId: r.accountId,
         categoryId: r.categoryId,
         date: r.date,
+        createdAt: r.createdAt,
         note: r.note,
         isReimbursable: Boolean(r.isReimbursable),
         reimburseStatus: r.isReimbursable ? 'pending' : undefined,

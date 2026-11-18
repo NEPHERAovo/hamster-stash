@@ -35,6 +35,7 @@ interface LedgerState {
       type: Transaction['type'];
       amount: number;
       date: string;
+      createdAt?: string;
       categoryId: string;
       accountId: string;
       note?: string;

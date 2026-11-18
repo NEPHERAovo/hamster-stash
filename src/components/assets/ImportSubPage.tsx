@@ -742,6 +742,12 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               const cat = categories.find((c) => c.id === rec.categoryId);
               const acct = accounts.find((a) => a.id === rec.accountId);
               const Icon = getCategoryIcon(cat?.icon || 'shopping-cart');
+              const timePart = (() => {
+                if (!rec.createdAt) return '';
+                const d = new Date(rec.createdAt);
+                if (isNaN(d.getTime())) return '';
+                return ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+              })();
 
               return (
                 <div key={i} className="flex items-center justify-between p-2.5 text-xs">
@@ -752,7 +758,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                     <div>
                       <div className="font-semibold text-(--ink-primary)">{cat?.name || '默认'}</div>
                       <div className="text-[10px] font-mono text-(--ink-tertiary)">
-                        {rec.date} · {rec.rawAccountName || acct?.name || '默认'}
+                        {rec.date}{timePart} · {rec.rawAccountName || acct?.name || '默认'}
                         {rec.note && ` · ${rec.note}`}
                       </div>
                     </div>

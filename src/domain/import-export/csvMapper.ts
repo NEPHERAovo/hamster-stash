@@ -61,6 +61,7 @@ export interface PreparedImportRecord {
   type: TransactionType;
   amount: number;            // 整数分
   date: string;              // YYYY-MM-DD
+  createdAt?: string;
   categoryId: string;
   accountId: string;
   rawAccountName?: string;
@@ -93,19 +94,42 @@ export function inferColumnMapping(headers: string[]): CsvColumnMapping {
   };
 }
 
-/**
- * 标准化解析日期字符串为 YYYY-MM-DD
- */
-export function normalizeDate(raw: string): string {
+export function normalizeDateTime(raw: string): { date: string; createdAt?: string } {
   const trimmed = raw.trim();
-  const match = trimmed.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
-  if (match) {
-    const y = match[1];
-    const m = match[2].padStart(2, '0');
-    const d = match[3].padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  const match = trimmed.match(
+    /^(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?:[T\s]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?/
+  );
+  if (!match) {
+    return { date: new Date().toISOString().split('T')[0] };
   }
-  return new Date().toISOString().split('T')[0];
+
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+  const date = `${match[1]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+  if (match[4] !== undefined && match[5] !== undefined) {
+    if (match[7]) {
+      const parsedIso = new Date(trimmed);
+      if (!isNaN(parsedIso.getTime())) {
+        return { date, createdAt: parsedIso.toISOString() };
+      }
+    }
+
+    const hour = Math.min(23, Math.max(0, parseInt(match[4], 10)));
+    const minute = Math.min(59, Math.max(0, parseInt(match[5], 10)));
+    const second = match[6] !== undefined ? Math.min(59, Math.max(0, parseInt(match[6], 10))) : 0;
+    const localDate = new Date(year, month - 1, day, hour, minute, second);
+    if (!isNaN(localDate.getTime())) {
+      return { date, createdAt: localDate.toISOString() };
+    }
+  }
+
+  return { date };
+}
+
+export function normalizeDate(raw: string): string {
+  return normalizeDateTime(raw).date;
 }
 
 /**
@@ -326,7 +350,7 @@ export function mapConfiguredCsvRows(
     }
 
     const rawDate = dateIdx >= 0 ? row[dateIdx] : '';
-    const date = normalizeDate(rawDate);
+    const { date, createdAt } = normalizeDateTime(rawDate);
 
     const rawCat = catIdx >= 0 ? row[catIdx]?.trim() : undefined;
     let categoryId = type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
@@ -365,6 +389,7 @@ export function mapConfiguredCsvRows(
       type,
       amount: cents,
       date,
+      createdAt,
       categoryId,
       accountId,
       rawAccountName,
