@@ -359,6 +359,7 @@ export function App() {
                 accounts={accounts}
                 onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
                 onDeleteAccount={handleDeleteAccount}
+                onClose={() => setActiveDetailAccount(null)}
                 onSelectTransaction={(tx) => {
                   setEditingTx(tx);
                   setIsAddOpen(true);
@@ -375,6 +376,7 @@ export function App() {
                 <AccountList
                   accounts={accounts}
                   onSelectAccount={(acct) => setActiveDetailAccount(acct)}
+                  onDeleteAccount={handleDeleteAccount}
                 />
               </div>
             )}
