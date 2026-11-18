@@ -139,8 +139,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     <PaperModal
       isOpen={isOpen}
       onClose={handleClose}
-      title={isEditing ? '编辑资金账户' : '新建资金账户'}
-      subtitle={isEditing ? '修改账户名称、类型与净资产统计' : '配置账户名称、类型与初始余额'}
+      title={isEditing ? '编辑账户' : '新建账户'}
     >
       <form onSubmit={handleConfirm} className="p-4 space-y-4 select-none">
         <div className="space-y-1.5">
@@ -149,7 +148,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="例如：招商银行卡、美团钱包"
+            placeholder="请输入账户名称"
             maxLength={24}
             autoFocus
             className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary) transition-colors"
@@ -207,7 +206,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
         {!isEditing && (
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">初始余额（元，选填）</label>
+            <label className="text-xs font-mono text-(--ink-tertiary)">初始余额</label>
             <div className="flex items-center gap-2 px-3 h-10 rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
               <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
               <input
