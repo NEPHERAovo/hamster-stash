@@ -318,9 +318,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
       {plugins.length > 0 && (
         <>
-          <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1 flex items-center justify-between">
+          <div className="px-1 text-xs font-mono text-(--ink-tertiary) tracking-wider pt-1">
             <span>插件扩展</span>
-            <span className="text-[10px] text-(--ink-faint) font-normal">MODULAR EXTENSIONS</span>
           </div>
 
           <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5 divide-y divide-dashed divide-(--rule-hairline)/60">

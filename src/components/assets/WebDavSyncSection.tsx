@@ -126,9 +126,8 @@ export const WebDavSyncSection: React.FC = () => {
 
   return (
     <div className="space-y-1.5">
-      <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1 flex items-center justify-between">
+      <div className="px-1 text-xs font-mono text-(--ink-tertiary) tracking-wider pt-1">
         <span>WebDAV 同步</span>
-        <span className="text-[10px] font-mono text-(--ink-faint)">DIFF MERGE & SYNC</span>
       </div>
 
       <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5 py-3">
