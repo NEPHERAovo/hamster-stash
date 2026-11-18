@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  Moon,
   Coins,
   SlidersHorizontal,
   FileSpreadsheet,
@@ -27,14 +26,12 @@ import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { cn } from '../../utils/cn';
 
 export interface SettingsCardProps {
-  isDark: boolean;
-  onToggleDark: () => void;
+  isDark?: boolean;
+  onToggleDark?: () => void;
   onOpenImport?: () => void;
 }
 
 export const SettingsCard: React.FC<SettingsCardProps> = ({
-  isDark,
-  onToggleDark,
   onOpenImport,
 }) => {
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +39,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const { loadAccounts } = useAccountStore();
   const { loadMonth } = useLedgerStore();
   const { loadCategories } = useCategoryStore();
-  const { uiStyle, setUiStyle, setDark } = useThemeStore();
+  const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const { majorThresholdYuan, setMajorThresholdYuan } = usePreferenceStore();
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
@@ -167,7 +164,22 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         size="sm"
       />
 
-      {uiStyle === 'paper' ? (
+      <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1">
+        <span>色彩模式</span>
+      </div>
+
+      <SegToggle
+        options={[
+          { value: 'light', label: '浅色' },
+          { value: 'dark', label: '深色' },
+          { value: 'auto', label: '跟随系统' },
+        ]}
+        value={colorMode}
+        onChange={setColorMode}
+        size="sm"
+      />
+
+      {uiStyle === 'paper' && (
         <>
           <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1">
             <span>配色主题</span>
@@ -177,22 +189,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <ThemeSelector />
           </div>
         </>
-      ) : (
-        <>
-          <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1">
-            <span>色彩模式</span>
-          </div>
-
-          <SegToggle
-            options={[
-              { value: 'light', label: '浅色' },
-              { value: 'dark', label: '深色' },
-            ]}
-            value={isDark ? 'dark' : 'light'}
-            onChange={(val) => setDark(val === 'dark')}
-            size="sm"
-          />
-        </>
       )}
 
       <div className="px-1 text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider pt-1">
@@ -200,36 +196,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       </div>
 
       <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5">
-        {uiStyle === 'paper' && (
-          <div
-            className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
-            onClick={onToggleDark}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-                <Moon className="w-3.5 h-3.5 stroke-[1.75]" />
-              </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">深色模式</span>
-            </div>
-            <div
-              className={cn(
-                'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer select-none shrink-0',
-                isDark ? 'bg-(--ink-primary) border-(--ink-primary)' : 'bg-(--paper-sunken) border-(--rule-hairline)'
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleDark();
-              }}
-            >
-              <div
-                className={cn(
-                  'w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                  isDark ? 'left-4' : 'left-0.5'
-                )}
-              />
-            </div>
-          </div>
-        )}
 
         <div
           className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"

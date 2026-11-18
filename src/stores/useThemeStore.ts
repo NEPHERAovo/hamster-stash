@@ -3,11 +3,15 @@ import { core } from '../core';
 import type { StoredEntity } from '../types/adapter';
 
 export type UiStyle = 'paper' | 'modern';
+export type ColorMode = 'light' | 'dark' | 'auto';
 
 export interface AppThemeSetting extends StoredEntity {
   id: 'app_theme';
   themeId: string;
   uiStyle: UiStyle;
+  colorMode?: ColorMode;
+  lightThemeId?: string;
+  darkThemeId?: string;
 }
 
 export interface ThemeOption {
@@ -34,6 +38,19 @@ export const THEME_OPTIONS: ThemeOption[] = [
 
 const THEME_STORAGE_KEY = 'hamsterstash_theme_v4';
 const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
+const COLOR_MODE_STORAGE_KEY = 'hamsterstash_color_mode_v1';
+const LIGHT_THEME_STORAGE_KEY = 'hamsterstash_light_theme_v1';
+const DARK_THEME_STORAGE_KEY = 'hamsterstash_dark_theme_v1';
+
+const isLightTheme = (id: string) => THEME_OPTIONS.some((t) => t.id === id && !t.isDark);
+const isDarkTheme = (id: string) => THEME_OPTIONS.some((t) => t.id === id && t.isDark);
+
+const getSystemPrefersDark = (): boolean => {
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return false;
+};
 
 const applyUiStyleToDOM = (uiStyle: UiStyle) => {
   if (typeof document !== 'undefined') {
@@ -43,6 +60,7 @@ const applyUiStyleToDOM = (uiStyle: UiStyle) => {
 };
 
 const applyThemeToDOM = (themeId: string) => {
+  if (typeof document === 'undefined') return;
   const theme = THEME_OPTIONS.find((t) => t.id === themeId) || THEME_OPTIONS[0];
 
   THEME_OPTIONS.forEach((t) => {
@@ -63,46 +81,96 @@ const applyThemeToDOM = (themeId: string) => {
   }
 };
 
-const getInitialTheme = (): string => {
+const safeGetStorage = (key: string): string | null => {
   try {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    if (saved && THEME_OPTIONS.some((t) => t.id === saved)) {
-      return saved;
-    }
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeSetStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
   } catch {
     void 0;
   }
-  return 'theme-sage';
+};
+
+const getInitialThemeSlots = (): {
+  colorMode: ColorMode;
+  lightThemeId: string;
+  darkThemeId: string;
+} => {
+  const savedLegacyTheme = safeGetStorage(THEME_STORAGE_KEY);
+  const savedLight = safeGetStorage(LIGHT_THEME_STORAGE_KEY);
+  const savedDark = safeGetStorage(DARK_THEME_STORAGE_KEY);
+  const savedMode = safeGetStorage(COLOR_MODE_STORAGE_KEY);
+
+  const lightThemeId =
+    savedLight && isLightTheme(savedLight)
+      ? savedLight
+      : savedLegacyTheme && isLightTheme(savedLegacyTheme)
+        ? savedLegacyTheme
+        : 'theme-sage';
+
+  const darkThemeId =
+    savedDark && isDarkTheme(savedDark)
+      ? savedDark
+      : savedLegacyTheme && isDarkTheme(savedLegacyTheme)
+        ? savedLegacyTheme
+        : 'theme-carbon';
+
+  let colorMode: ColorMode = 'light';
+  if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto') {
+    colorMode = savedMode;
+  } else if (savedLegacyTheme && isDarkTheme(savedLegacyTheme)) {
+    colorMode = 'dark';
+  }
+
+  return { colorMode, lightThemeId, darkThemeId };
 };
 
 const getInitialUiStyle = (): UiStyle => {
-  try {
-    const saved = localStorage.getItem(UI_STYLE_STORAGE_KEY);
-    if (saved === 'modern' || saved === 'paper') {
-      return saved;
-    }
-  } catch {
-    void 0;
+  const saved = safeGetStorage(UI_STYLE_STORAGE_KEY);
+  if (saved === 'modern' || saved === 'paper') {
+    return saved;
   }
   return 'modern';
 };
 
-const persistThemeToDB = async (themeId: string, uiStyle: UiStyle) => {
+const resolveEffective = (
+  colorMode: ColorMode,
+  lightThemeId: string,
+  darkThemeId: string
+): { isDark: boolean; themeId: string } => {
+  const isDark = colorMode === 'auto' ? getSystemPrefersDark() : colorMode === 'dark';
+  return {
+    isDark,
+    themeId: isDark ? darkThemeId : lightThemeId,
+  };
+};
+
+const persistThemeToDB = async (payload: {
+  themeId: string;
+  uiStyle: UiStyle;
+  colorMode: ColorMode;
+  lightThemeId: string;
+  darkThemeId: string;
+}) => {
   try {
     await core.init();
     const now = new Date().toISOString();
     const existing = await core.adapter.read<AppThemeSetting>('settings', 'app_theme');
     if (existing) {
       await core.adapter.update<AppThemeSetting>('settings', 'app_theme', {
-        themeId,
-        uiStyle,
+        ...payload,
         updatedAt: now,
       });
     } else {
       await core.adapter.create<AppThemeSetting>('settings', {
         id: 'app_theme',
-        themeId,
-        uiStyle,
+        ...payload,
       });
     }
   } catch {
@@ -112,9 +180,13 @@ const persistThemeToDB = async (themeId: string, uiStyle: UiStyle) => {
 
 interface ThemeState {
   currentThemeId: string;
+  lightThemeId: string;
+  darkThemeId: string;
+  colorMode: ColorMode;
   uiStyle: UiStyle;
   isDark: boolean;
-  setTheme: (themeId: string) => void;
+  setTheme: (themeId: string) => 'applied' | 'saved_only';
+  setColorMode: (mode: ColorMode) => void;
   setUiStyle: (style: UiStyle) => void;
   setDark: (dark: boolean) => void;
   toggleDark: () => void;
@@ -122,85 +194,180 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => {
-  const initialThemeId = getInitialTheme();
-  const initialTheme = THEME_OPTIONS.find((t) => t.id === initialThemeId) || THEME_OPTIONS[0];
+  const { colorMode, lightThemeId, darkThemeId } = getInitialThemeSlots();
   const initialUiStyle = getInitialUiStyle();
+  const effective = resolveEffective(colorMode, lightThemeId, darkThemeId);
 
   if (typeof document !== 'undefined') {
-    applyThemeToDOM(initialThemeId);
+    applyThemeToDOM(effective.themeId);
     applyUiStyleToDOM(initialUiStyle);
   }
 
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = () => {
+      const state = get();
+      if (state.colorMode !== 'auto') return;
+      const next = resolveEffective('auto', state.lightThemeId, state.darkThemeId);
+      applyThemeToDOM(next.themeId);
+      safeSetStorage(THEME_STORAGE_KEY, next.themeId);
+      set({
+        currentThemeId: next.themeId,
+        isDark: next.isDark,
+      });
+    };
+    mediaQuery.addEventListener('change', handleSystemChange);
+  }
+
+  const syncStateAndPersist = (next: {
+    colorMode: ColorMode;
+    lightThemeId: string;
+    darkThemeId: string;
+    uiStyle: UiStyle;
+  }) => {
+    const resolved = resolveEffective(next.colorMode, next.lightThemeId, next.darkThemeId);
+    applyThemeToDOM(resolved.themeId);
+    applyUiStyleToDOM(next.uiStyle);
+
+    safeSetStorage(THEME_STORAGE_KEY, resolved.themeId);
+    safeSetStorage(UI_STYLE_STORAGE_KEY, next.uiStyle);
+    safeSetStorage(COLOR_MODE_STORAGE_KEY, next.colorMode);
+    safeSetStorage(LIGHT_THEME_STORAGE_KEY, next.lightThemeId);
+    safeSetStorage(DARK_THEME_STORAGE_KEY, next.darkThemeId);
+
+    set({
+      currentThemeId: resolved.themeId,
+      lightThemeId: next.lightThemeId,
+      darkThemeId: next.darkThemeId,
+      colorMode: next.colorMode,
+      uiStyle: next.uiStyle,
+      isDark: resolved.isDark,
+    });
+
+    void persistThemeToDB({
+      themeId: resolved.themeId,
+      uiStyle: next.uiStyle,
+      colorMode: next.colorMode,
+      lightThemeId: next.lightThemeId,
+      darkThemeId: next.darkThemeId,
+    });
+  };
+
   return {
-    currentThemeId: initialThemeId,
+    currentThemeId: effective.themeId,
+    lightThemeId,
+    darkThemeId,
+    colorMode,
     uiStyle: initialUiStyle,
-    isDark: initialTheme.isDark,
+    isDark: effective.isDark,
 
     loadThemeFromDB: async () => {
       try {
         await core.init();
         const record = await core.adapter.read<AppThemeSetting>('settings', 'app_theme');
-        if (record) {
-          if (record.themeId && THEME_OPTIONS.some((t) => t.id === record.themeId)) {
-            get().setTheme(record.themeId);
-          }
-          if (record.uiStyle && (record.uiStyle === 'paper' || record.uiStyle === 'modern')) {
-            get().setUiStyle(record.uiStyle);
-          }
-        }
+        if (!record) return;
+
+        const state = get();
+        const nextUiStyle: UiStyle =
+          record.uiStyle === 'paper' || record.uiStyle === 'modern'
+            ? record.uiStyle
+            : state.uiStyle;
+        const nextLight =
+          record.lightThemeId && isLightTheme(record.lightThemeId)
+            ? record.lightThemeId
+            : record.themeId && isLightTheme(record.themeId)
+              ? record.themeId
+              : state.lightThemeId;
+        const nextDark =
+          record.darkThemeId && isDarkTheme(record.darkThemeId)
+            ? record.darkThemeId
+            : record.themeId && isDarkTheme(record.themeId)
+              ? record.themeId
+              : state.darkThemeId;
+        const nextMode: ColorMode =
+          record.colorMode === 'light' || record.colorMode === 'dark' || record.colorMode === 'auto'
+            ? record.colorMode
+            : record.themeId && isDarkTheme(record.themeId)
+              ? 'dark'
+              : state.colorMode;
+
+        const resolved = resolveEffective(nextMode, nextLight, nextDark);
+        applyThemeToDOM(resolved.themeId);
+        applyUiStyleToDOM(nextUiStyle);
+
+        safeSetStorage(THEME_STORAGE_KEY, resolved.themeId);
+        safeSetStorage(UI_STYLE_STORAGE_KEY, nextUiStyle);
+        safeSetStorage(COLOR_MODE_STORAGE_KEY, nextMode);
+        safeSetStorage(LIGHT_THEME_STORAGE_KEY, nextLight);
+        safeSetStorage(DARK_THEME_STORAGE_KEY, nextDark);
+
+        set({
+          currentThemeId: resolved.themeId,
+          lightThemeId: nextLight,
+          darkThemeId: nextDark,
+          colorMode: nextMode,
+          uiStyle: nextUiStyle,
+          isDark: resolved.isDark,
+        });
       } catch {
         void 0;
       }
     },
 
-    setTheme: (themeId: string) => {
-      const theme = THEME_OPTIONS.find((t) => t.id === themeId);
-      if (!theme) return;
+    setColorMode: (mode: ColorMode) => {
+      const state = get();
+      syncStateAndPersist({
+        colorMode: mode,
+        lightThemeId: state.lightThemeId,
+        darkThemeId: state.darkThemeId,
+        uiStyle: state.uiStyle,
+      });
+    },
 
-      applyThemeToDOM(theme.id);
-      try {
-        localStorage.setItem(THEME_STORAGE_KEY, theme.id);
-      } catch {
-        void 0;
+    setTheme: (targetThemeId: string) => {
+      const theme = THEME_OPTIONS.find((t) => t.id === targetThemeId);
+      if (!theme) return 'applied';
+
+      const state = get();
+      const nextLight = theme.isDark ? state.lightThemeId : theme.id;
+      const nextDark = theme.isDark ? theme.id : state.darkThemeId;
+
+      if (state.colorMode === 'auto') {
+        syncStateAndPersist({
+          colorMode: 'auto',
+          lightThemeId: nextLight,
+          darkThemeId: nextDark,
+          uiStyle: state.uiStyle,
+        });
+        return theme.isDark === state.isDark ? 'applied' : 'saved_only';
       }
 
-      set({
-        currentThemeId: theme.id,
-        isDark: theme.isDark,
+      const nextMode: ColorMode = theme.isDark ? 'dark' : 'light';
+      syncStateAndPersist({
+        colorMode: nextMode,
+        lightThemeId: nextLight,
+        darkThemeId: nextDark,
+        uiStyle: state.uiStyle,
       });
-
-      void persistThemeToDB(theme.id, get().uiStyle);
+      return 'applied';
     },
 
     setUiStyle: (style: UiStyle) => {
-      applyUiStyleToDOM(style);
-      try {
-        localStorage.setItem(UI_STYLE_STORAGE_KEY, style);
-      } catch {
-        void 0;
-      }
-      set({ uiStyle: style });
-
-      void persistThemeToDB(get().currentThemeId, style);
+      const state = get();
+      syncStateAndPersist({
+        colorMode: state.colorMode,
+        lightThemeId: state.lightThemeId,
+        darkThemeId: state.darkThemeId,
+        uiStyle: style,
+      });
     },
 
     setDark: (dark: boolean) => {
-      const { isDark } = get();
-      if (dark === isDark) return;
-      if (dark) {
-        get().setTheme('theme-carbon');
-      } else {
-        get().setTheme('theme-sage');
-      }
+      get().setColorMode(dark ? 'dark' : 'light');
     },
 
     toggleDark: () => {
-      const { isDark } = get();
-      if (isDark) {
-        get().setTheme('theme-sage');
-      } else {
-        get().setTheme('theme-carbon');
-      }
+      get().setColorMode(get().isDark ? 'light' : 'dark');
     },
   };
 });
