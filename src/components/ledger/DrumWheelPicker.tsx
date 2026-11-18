@@ -172,7 +172,7 @@ export const DrumWheelPicker: React.FC<DrumWheelPickerProps> = ({
   };
 
   return (
-    <div className="relative w-full h-24 my-1 select-none overflow-hidden">
+    <div data-drum-wheel="true" className="relative w-full h-24 my-1 select-none overflow-hidden">
       <div
         className="w-full h-full flex"
         style={{

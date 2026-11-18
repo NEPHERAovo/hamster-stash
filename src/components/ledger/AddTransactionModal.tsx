@@ -20,6 +20,13 @@ import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
 import { readVoucherFile } from '../../utils/voucherFile';
 import {
+  SHEET_SPRING_EASE,
+  VelocityTracker,
+  computeSettleDuration,
+  rubberBand,
+  shouldDismissGesture,
+} from '../../utils/gesturePhysics';
+import {
   addDaysToToday,
   combineLocalDateTimeToIso,
   formatTime,
@@ -105,8 +112,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isVoucherTrayOpen, setIsVoucherTrayOpen] = useState(false);
   const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+  const [sheetTransitionMs, setSheetTransitionMs] = useState(300);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const dragYRef = useRef(0);
+  const sheetVelocityRef = useRef(new VelocityTracker(100));
 
   const offsetSummaryMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -439,7 +454,146 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setDragY(0);
+      dragYRef.current = 0;
+      setIsDraggingSheet(false);
+      setSheetTransitionMs(300);
+      let innerFrame = 0;
+      const outerFrame = requestAnimationFrame(() => {
+        innerFrame = requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+      return () => {
+        cancelAnimationFrame(outerFrame);
+        cancelAnimationFrame(innerFrame);
+      };
+    }
+
+    setIsVisible(false);
+    setIsDraggingSheet(false);
+    setDragY(0);
+    dragYRef.current = 0;
+    const timer = window.setTimeout(() => {
+      setShouldRender(false);
+    }, sheetTransitionMs);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, sheetTransitionMs]);
+
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el || !shouldRender || !isOpen) return;
+
+    let tracking = false;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    const isInsideScrollable = (target: EventTarget | null): boolean => {
+      let node = target as HTMLElement | null;
+      while (node && node !== el) {
+        if (node.dataset?.drumWheel === 'true') return true;
+        const style = window.getComputedStyle(node);
+        const canScrollY =
+          (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+          node.scrollHeight > node.clientHeight + 1;
+        if (canScrollY && node.scrollTop > 0) return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      if (isInsideScrollable(e.target)) return;
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = true;
+      dragging = false;
+      dragYRef.current = 0;
+      sheetVelocityRef.current.reset(0, performance.now());
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!tracking || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+
+      if (!dragging) {
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
+          tracking = false;
+          return;
+        }
+        if (deltaY > 8) {
+          dragging = true;
+          setIsDraggingSheet(true);
+        }
+      }
+
+      if (dragging) {
+        e.preventDefault();
+        const mappedY = deltaY >= 0 ? deltaY : rubberBand(deltaY, 72, 0.25);
+        dragYRef.current = mappedY;
+        sheetVelocityRef.current.push(mappedY, performance.now());
+        setDragY(mappedY);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!tracking) return;
+      tracking = false;
+      if (!dragging) return;
+      dragging = false;
+      setIsDraggingSheet(false);
+
+      const height = Math.max(200, el.getBoundingClientRect().height);
+      const vy = sheetVelocityRef.current.getVelocity(performance.now());
+      const dist = dragYRef.current;
+
+      if (shouldDismissGesture(dist, vy, Math.min(110, height * 0.22), 0.45)) {
+        const duration = computeSettleDuration(height - dist, vy, 180, 290);
+        setSheetTransitionMs(duration);
+        setIsVisible(false);
+        setDragY(0);
+        dragYRef.current = 0;
+        onClose();
+      } else {
+        const duration = computeSettleDuration(dist, vy, 200, 310);
+        setSheetTransitionMs(duration);
+        setDragY(0);
+        dragYRef.current = 0;
+      }
+    };
+
+    const handleTouchCancel = () => {
+      if (!tracking) return;
+      tracking = false;
+      dragging = false;
+      setIsDraggingSheet(false);
+      setSheetTransitionMs(240);
+      setDragY(0);
+      dragYRef.current = 0;
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    el.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchCancel);
+    };
+  }, [shouldRender, isOpen, onClose]);
+
+  if (!shouldRender) return null;
 
   const activeAccount = accounts.find((a) => a.id === selectedAcctId);
 
@@ -472,16 +626,36 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     editingTransaction,
   };
 
+  const dragProgress = Math.max(0, Math.min(1, dragY / 360));
+  const backdropOpacity = isVisible ? 1 - dragProgress * 0.75 : 0;
+  const sheetTransform = !isVisible
+    ? 'translate3d(0, 100%, 0)'
+    : dragY !== 0
+      ? `translate3d(0, ${dragY}px, 0)`
+      : 'translate3d(0, 0, 0)';
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] transition-opacity duration-200 select-none"
+      className={cn(
+        'fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] select-none',
+        !isVisible && 'pointer-events-none'
+      )}
+      style={{
+        opacity: backdropOpacity,
+        transition: isDraggingSheet ? 'none' : `opacity ${sheetTransitionMs}ms ease`,
+      }}
       onClick={onClose}
     >
       <div
+        ref={sheetRef}
         className={cn(
-          'transaction-sheet w-full max-w-[430px] flex flex-col sheet-slide-up relative transition-all duration-300',
+          'transaction-sheet w-full max-w-[430px] flex flex-col relative will-change-transform',
           'bg-(--paper-sheet) paper-sawtooth-top border-t border-(--rule-hairline) shadow-2xl'
         )}
+        style={{
+          transform: sheetTransform,
+          transition: isDraggingSheet ? 'none' : `transform ${sheetTransitionMs}ms ${SHEET_SPRING_EASE}`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
