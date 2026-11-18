@@ -2,6 +2,13 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { SubPageContext, useSubPage } from './SubPageContext';
 import { cn } from '../../utils/cn';
+import {
+  SPRING_OUT_EASE,
+  VelocityTracker,
+  computeSettleDuration,
+  rubberBand,
+  shouldDismissGesture,
+} from '../../utils/gesturePhysics';
 
 export const SubPageBackButton: React.FC<{ label?: string }> = ({ label = '返回' }) => {
   const subPage = useSubPage();
@@ -42,15 +49,16 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   const isSwipingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
-  const startTimeRef = useRef(0);
   const currentDeltaXRef = useRef(0);
+  const velocityRef = useRef(new VelocityTracker(100));
 
   const requestClose = useCallback(() => {
     const el = containerRef.current;
     if (!el || isClosingRef.current) return;
     isClosingRef.current = true;
-    el.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)';
+    el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
     el.style.transform = 'translate3d(100%, 0, 0)';
+    el.style.boxShadow = 'none';
     setTimeout(() => {
       onClose();
       isClosingRef.current = false;
@@ -66,9 +74,10 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     isClosingRef.current = false;
     el.style.transition = 'none';
     el.style.transform = 'translate3d(100%, 0, 0)';
+    el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
 
     const animFrame = requestAnimationFrame(() => {
-      el.style.transition = 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
+      el.style.transition = `transform 300ms ${SPRING_OUT_EASE}`;
       el.style.transform = 'translate3d(0, 0, 0)';
     });
 
@@ -111,8 +120,8 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
 
         startXRef.current = touch.clientX - currentX;
         startYRef.current = touch.clientY;
-        startTimeRef.current = performance.now();
         currentDeltaXRef.current = currentX;
+        velocityRef.current.reset(currentX, performance.now());
         isTrackingRef.current = true;
         isSwipingRef.current = currentX > 0;
       }
@@ -137,10 +146,16 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
 
       if (isSwipingRef.current) {
         e.preventDefault();
-        const clampedX = Math.max(0, deltaX);
-        currentDeltaXRef.current = clampedX;
+        const width = Math.max(1, el.getBoundingClientRect().width);
+        const mappedX = deltaX >= 0 ? deltaX : rubberBand(deltaX, 60, 0.22);
+        currentDeltaXRef.current = mappedX;
+        velocityRef.current.push(mappedX, performance.now());
+
+        const progress = Math.max(0, Math.min(1, mappedX / width));
+        const shadowAlpha = (0.12 * (1 - progress * 0.85)).toFixed(3);
         el.style.transition = 'none';
-        el.style.transform = `translate3d(${clampedX}px, 0, 0)`;
+        el.style.transform = `translate3d(${mappedX}px, 0, 0)`;
+        el.style.boxShadow = `-8px 0 28px rgba(0,0,0,${shadowAlpha})`;
       }
     };
 
@@ -151,20 +166,25 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       if (!isSwipingRef.current) return;
       isSwipingRef.current = false;
 
-      const duration = performance.now() - startTimeRef.current;
-      const velocity = currentDeltaXRef.current / Math.max(1, duration);
+      const width = Math.max(1, el.getBoundingClientRect().width);
+      const velocity = velocityRef.current.getVelocity(performance.now());
+      const dist = currentDeltaXRef.current;
 
-      if (currentDeltaXRef.current > dismissThreshold || velocity > 0.35) {
+      if (shouldDismissGesture(dist, velocity, Math.max(dismissThreshold, width * 0.26), 0.42)) {
         isClosingRef.current = true;
-        el.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+        const duration = computeSettleDuration(width - dist, velocity, 180, 290);
+        el.style.transition = `transform ${duration}ms ${SPRING_OUT_EASE}, box-shadow ${duration}ms ease`;
         el.style.transform = 'translate3d(100%, 0, 0)';
+        el.style.boxShadow = 'none';
         setTimeout(() => {
           onClose();
           isClosingRef.current = false;
-        }, 220);
+        }, duration);
       } else {
-        el.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)';
+        const duration = computeSettleDuration(dist, velocity, 200, 320);
+        el.style.transition = `transform ${duration}ms ${SPRING_OUT_EASE}, box-shadow ${duration}ms ease`;
         el.style.transform = 'translate3d(0, 0, 0)';
+        el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
       }
     };
 
@@ -172,8 +192,9 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       if (!isTrackingRef.current) return;
       isTrackingRef.current = false;
       isSwipingRef.current = false;
-      el.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)';
+      el.style.transition = `transform 260ms ${SPRING_OUT_EASE}, box-shadow 260ms ease`;
       el.style.transform = 'translate3d(0, 0, 0)';
+      el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: true });

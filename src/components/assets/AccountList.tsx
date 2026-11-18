@@ -5,6 +5,12 @@ import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
+import {
+  SPRING_OUT_EASE,
+  VelocityTracker,
+  computeSettleDuration,
+  rubberBand,
+} from '../../utils/gesturePhysics';
 
 export interface AccountListProps {
   accounts: Account[];
@@ -47,11 +53,13 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
 }) => {
   const [offset, setOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [settleMs, setSettleMs] = useState(260);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const isDraggingRef = useRef(false);
   const isHorizontalRef = useRef(false);
   const currentOffsetRef = useRef(0);
+  const velocityRef = useRef(new VelocityTracker(90));
 
   const Icon = getCategoryIcon(account.icon || 'wallet');
   const isNegative = account.balance < 0;
@@ -62,6 +70,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
     isHorizontalRef.current = false;
     startXRef.current = clientX - currentOffsetRef.current;
     startYRef.current = clientY;
+    velocityRef.current.reset(currentOffsetRef.current, performance.now());
   };
 
   const handleDragMove = (clientX: number, clientY: number, preventDefault?: () => void) => {
@@ -85,12 +94,13 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
       preventDefault?.();
       let newOffset = rawDx;
       if (newOffset > 0) {
-        newOffset = 0;
+        newOffset = rubberBand(newOffset, 48, 0.25);
       } else if (newOffset < -ACTION_WIDTH) {
         const overflow = -newOffset - ACTION_WIDTH;
-        newOffset = -ACTION_WIDTH - Math.pow(overflow, 0.72);
+        newOffset = -ACTION_WIDTH - rubberBand(overflow, 140, 0.48);
       }
       currentOffsetRef.current = newOffset;
+      velocityRef.current.push(newOffset, performance.now());
       setOffset(newOffset);
     }
   };
@@ -100,13 +110,18 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
     isDraggingRef.current = false;
     setIsSwiping(false);
 
-    if (currentOffsetRef.current < -ACTION_WIDTH / 2) {
-      currentOffsetRef.current = -ACTION_WIDTH;
-      setOffset(-ACTION_WIDTH);
-    } else {
-      currentOffsetRef.current = 0;
-      setOffset(0);
-    }
+    const vx = velocityRef.current.getVelocity(performance.now());
+    const shouldOpen =
+      vx < -0.35
+        ? currentOffsetRef.current < -16
+        : vx > 0.35
+          ? false
+          : currentOffsetRef.current < -ACTION_WIDTH / 2;
+
+    const target = shouldOpen ? -ACTION_WIDTH : 0;
+    setSettleMs(computeSettleDuration(target - currentOffsetRef.current, vx, 190, 300));
+    currentOffsetRef.current = target;
+    setOffset(target);
   };
 
   const handleRowClick = () => {
@@ -151,7 +166,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
             opacity: actionOpacity,
             transition: isSwiping
               ? 'none'
-              : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), width 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
+              : `transform ${settleMs}ms ${SPRING_OUT_EASE}, width ${settleMs}ms ${SPRING_OUT_EASE}, opacity 200ms ease`,
           }}
         >
           <button
@@ -182,7 +197,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
         onMouseLeave={handleDragEnd}
         style={{
           transform: `translate3d(${offset}px, 0, 0)`,
-          transition: isSwiping ? 'none' : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: isSwiping ? 'none' : `transform ${settleMs}ms ${SPRING_OUT_EASE}`,
         }}
         className="relative z-10 bg-(--bg-surface) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken) select-none will-change-transform"
       >
