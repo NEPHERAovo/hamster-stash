@@ -14,9 +14,11 @@ import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator
 import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { DrumWheelPicker } from './DrumWheelPicker';
+import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
+import { readVoucherFile } from '../../utils/voucherFile';
 import {
   addDaysToToday,
   combineLocalDateTimeToIso,
@@ -100,6 +102,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isDtTrayOpen, setIsDtTrayOpen] = useState(false);
   const [isAcctTrayOpen, setIsAcctTrayOpen] = useState(false);
   const [isOffsetTrayOpen, setIsOffsetTrayOpen] = useState(false);
+  const [isVoucherTrayOpen, setIsVoucherTrayOpen] = useState(false);
+  const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -173,6 +177,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (isOpen) {
       setIsDtTrayOpen(false);
       setIsAcctTrayOpen(false);
+      setIsVoucherTrayOpen(false);
+      setIsVoucherPreviewOpen(false);
 
       if (editingTransaction) {
         const initialType =
@@ -418,18 +424,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    const sizeKb = Math.round(file.size / 1024);
-    const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
-
-    setVoucher({
-      name: file.name,
-      size: sizeStr,
-      title: '票据凭证',
-    });
+    try {
+      const nextVoucher = await readVoucherFile(file);
+      setVoucher(nextVoucher);
+      setIsVoucherTrayOpen(false);
+      toast.success('凭证已添加');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '读取凭证失败');
+    }
   };
 
   if (!isOpen) return null;
@@ -459,6 +466,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setIsAcctTrayOpen(false);
       setIsDtTrayOpen(false);
       setIsOffsetTrayOpen(false);
+      setIsVoucherTrayOpen(false);
     },
     isOpen,
     editingTransaction,
@@ -686,12 +694,20 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   {isReimbursable ? '待报销 ✓' : '报销'}
                 </button>
 
-                {isReimbursable && (
+                {(isReimbursable || Boolean(voucher)) && (
                   <>
                     <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => {
+                        if (voucher) {
+                          setIsVoucherTrayOpen((prev) => !prev);
+                          setIsAcctTrayOpen(false);
+                          setIsDtTrayOpen(false);
+                        } else {
+                          fileInputRef.current?.click();
+                        }
+                      }}
                       className={cn(
                         'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
                         voucher ? 'text-(--brass-metal) font-semibold' : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
@@ -745,6 +761,41 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             onChange={handleFileChange}
             accept="image/*,.pdf"
           />
+
+          {isVoucherTrayOpen && voucher && (
+            <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 flex items-center justify-between gap-2 text-xs font-mono">
+              <div className="min-w-0 flex-1">
+                <div className="text-(--ink-primary) font-medium truncate">{voucher.name}</div>
+                <div className="text-[10px] text-(--ink-tertiary)">{voucher.size}</div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsVoucherPreviewOpen(true)}
+                  className="px-2.5 py-1 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-[11px] font-semibold cursor-pointer"
+                >
+                  查看
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-2 py-1 rounded-(--btn-radius) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) text-[11px] cursor-pointer"
+                >
+                  更换
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVoucher(null);
+                    setIsVoucherTrayOpen(false);
+                  }}
+                  className="px-2 py-1 rounded-(--btn-radius) bg-(--color-expense-bg) text-(--color-expense) text-[11px] cursor-pointer"
+                >
+                  移除
+                </button>
+              </div>
+            </div>
+          )}
 
           {isAcctTrayOpen && (
             <div className="pt-2 pb-0.5 border-t border-dashed border-(--rule-hairline)/60">
@@ -1073,6 +1124,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
         </div>
       </div>
+
+      {isVoucherPreviewOpen && voucher && (
+        <VoucherPreviewModal
+          voucher={voucher}
+          onClose={() => setIsVoucherPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 };

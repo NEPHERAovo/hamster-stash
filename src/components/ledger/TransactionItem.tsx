@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Paperclip } from 'lucide-react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
@@ -7,6 +7,7 @@ import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { CategoryBadge } from '../ui/CategoryBadge';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { PluginOverride } from '../../plugin-sdk/components/PluginOverride';
+import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { cn } from '../../utils/cn';
 import { dayjs, formatTime, parseLocalDate } from '../../utils/date';
 
@@ -43,6 +44,8 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
   onClick,
   onToggleExpand,
 }) => {
+  const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
+
   const isIncome = transaction.type === 'income';
   const isExpense = transaction.type === 'expense';
   const isTransfer = transaction.type === 'transfer';
@@ -108,10 +111,18 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
             </span>
           )}
           {transaction.voucher && (
-            <span className="real-stamp stamp-voucher text-[9px] px-1 py-0.5 inline-flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsVoucherPreviewOpen(true);
+              }}
+              className="real-stamp stamp-voucher text-[9px] px-1 py-0.5 inline-flex items-center gap-0.5 cursor-pointer hover:opacity-100 active:scale-95 transition-transform"
+              title="查看凭证"
+            >
               <Paperclip className="w-2.5 h-2.5 shrink-0" />
               <span>凭证</span>
-            </span>
+            </button>
           )}
           {isExpense && offsetAmount !== undefined && offsetAmount > 0 && (
             <span
@@ -164,6 +175,13 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
           {isIncome ? `+${formattedAmount}` : isExpense ? `-${formattedAmount}` : `⇄ ${formattedAmount}`}
         </span>
       </div>
+
+      {isVoucherPreviewOpen && transaction.voucher && (
+        <VoucherPreviewModal
+          voucher={transaction.voucher}
+          onClose={() => setIsVoucherPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 };
