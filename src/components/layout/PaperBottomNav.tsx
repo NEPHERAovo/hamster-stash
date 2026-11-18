@@ -44,7 +44,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
   return (
     <>
       {showAddButton && onAddClick && (
-        <div className="fixed bottom-[calc(var(--nav-height)+var(--paper-safe-bottom)+12px)] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
+        <div className="fixed bottom-[calc(64px+var(--dock-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
           <button
             type="button"
             onClick={onAddClick}
@@ -62,35 +62,50 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
         </div>
       )}
 
-      <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50', className)}>
-        <div className="absolute inset-x-0 bottom-0 top-3.5 bg-(--paper-sunken) border-t border-(--rule-hairline)" />
-        <div className="relative z-10 flex items-end justify-center h-[calc(52px+var(--paper-safe-bottom))] px-6 gap-1">
-          {allTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = currentTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onTabChange(tab.id)}
-                className={cn(
-                  'flex-1 flex flex-col items-center justify-center border border-(--rule-hairline) border-b-0 rounded-t-md pb-(--paper-safe-bottom) transition-all cursor-pointer select-none gap-0.5 min-w-0',
-                  isActive
-                    ? 'relative z-10 h-[calc(3rem+var(--paper-safe-bottom))] bg-(--paper-sheet) text-(--ink-solid) shadow-[0_-2px_6px_rgba(0,0,0,0.03)]'
-                    : 'relative z-1 h-[calc(2.625rem+var(--paper-safe-bottom))] bg-(--paper-sunken) text-(--ink-faint) hover:text-(--ink-secondary)'
-                )}
-              >
-                <Icon
-                  size={17}
-                  strokeWidth={isActive ? 2 : 1.75}
-                  className="shrink-0"
-                />
-                <span className="text-[9px] font-semibold leading-tight font-sans truncate px-0.5">
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
+      <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--dock-bottom) px-4 pointer-events-none select-none', className)}>
+        <div className="pointer-events-auto relative pt-[3px]">
+          <div
+            className="absolute inset-x-0 bottom-0 h-12 rounded-[5px] bg-(--paper-sunken) border border-(--rule-hairline) shadow-[0_6px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_20px_rgba(0,0,0,0.42)]"
+            aria-hidden="true"
+          />
+          <div className="relative z-10 flex items-end gap-1 px-1 pb-1">
+            {allTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = currentTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onTabChange(tab.id)}
+                  className={cn(
+                    'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-0.5 min-w-0',
+                    isActive
+                      ? 'relative z-10 h-[47px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_5px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.05)]'
+                      : 'relative z-1 h-10 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                  )}
+                >
+                  {isActive && (
+                    <span
+                      className="absolute top-0 inset-x-0 h-[3px] bg-(--color-accent)"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <Icon
+                    size={16}
+                    strokeWidth={isActive ? 2.1 : 1.75}
+                    className="shrink-0"
+                  />
+                  <span className="text-[10px] font-semibold leading-none font-sans truncate px-0.5">
+                    {tab.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[5px] rounded-b-[5px] z-20 bg-(--paper-sunken) border-t border-(--rule-hairline)/90"
+            aria-hidden="true"
+          />
         </div>
       </nav>
     </>

@@ -234,7 +234,7 @@ export function App() {
 
       <main
         ref={mainScrollRef}
-        className="flex-1 w-full min-h-0 overflow-y-auto overscroll-contain px-0 py-0 pb-20 main-scroll-content"
+        className="flex-1 w-full min-h-0 overflow-y-auto overscroll-contain px-0 py-0 pb-[calc(76px+var(--dock-bottom))] main-scroll-content"
       >
         {currentTab === 'ledger' && (
           <div className="w-full">

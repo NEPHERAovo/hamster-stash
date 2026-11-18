@@ -98,7 +98,6 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --dock-bottom: max(18px, calc(var(--safe-bottom) - 12px));
-  --paper-safe-bottom: max(0px, calc(var(--safe-bottom) - 14px));
 }
 
 /* Themes Palette Specifications (5 Light + 5 Dark) */
