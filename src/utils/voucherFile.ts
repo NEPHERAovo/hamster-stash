@@ -1,4 +1,5 @@
 import type { VoucherAttachment } from '../types/transaction';
+import { attachmentStore } from '../core/attachments/attachmentStore';
 
 const MAX_PDF_BYTES = 2 * 1024 * 1024;
 const MAX_IMAGE_EDGE = 1600;
@@ -72,11 +73,25 @@ export async function readVoucherFile(file: File): Promise<VoucherAttachment> {
   const rawDataUrl = await readAsDataUrl(file);
   const fileUrl = isImage ? await compressImageDataUrl(rawDataUrl) : rawDataUrl;
   const approxBytes = Math.round((fileUrl.length * 3) / 4);
+  const size = formatFileSize(isImage ? Math.min(file.size, approxBytes) : file.size);
+  const mimeType = isPdf
+    ? 'application/pdf'
+    : fileUrl.startsWith('data:image/jpeg')
+      ? 'image/jpeg'
+      : file.type || 'image/jpeg';
+
+  const saved = await attachmentStore.saveAttachment({
+    name: file.name,
+    mimeType,
+    size,
+    dataUrl: fileUrl,
+  });
 
   return {
+    attachmentId: saved.id,
     name: file.name,
-    size: formatFileSize(isImage ? Math.min(file.size, approxBytes) : file.size),
+    size,
+    mimeType,
     title: isPdf ? 'PDF 凭证' : '图片凭证',
-    fileUrl,
   };
 }

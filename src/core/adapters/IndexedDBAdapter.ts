@@ -54,6 +54,10 @@ export class IndexedDBAdapter implements DataAdapter {
           db.createObjectStore(STORES.PLUGIN_SETTINGS, { keyPath: 'id' });
         }
 
+        if (!db.objectStoreNames.contains(STORES.ATTACHMENTS)) {
+          db.createObjectStore(STORES.ATTACHMENTS, { keyPath: 'id' });
+        }
+
         if (_oldVersion < 4) {
           if (db.objectStoreNames.contains(STORES.SETTINGS)) {
             db.deleteObjectStore(STORES.SETTINGS);
@@ -283,6 +287,7 @@ export class IndexedDBAdapter implements DataAdapter {
       STORES.SETTINGS,
       STORES.PLUGIN_DATA,
       STORES.PLUGIN_SETTINGS,
+      STORES.ATTACHMENTS,
     ];
     const tx = db.transaction(storesToClear, 'readwrite');
     for (const storeName of storesToClear) {

@@ -4,11 +4,13 @@ export type LoanStatus = 'pending' | 'partially_repaid' | 'settled';
 export type ReimburseStatus = 'pending' | 'settled';
 
 export interface VoucherAttachment {
-  name: string;               // 凭证文件名，如 "发票凭证.pdf"
-  size: string;               // 文件大小，如 "326 KB"
-  title?: string;             // 抬头/票据类型
-  itemName?: string;          // 消费品名/行程事由
-  fileUrl?: string;           // Base64 或本地 Blob URL
+  attachmentId?: string;
+  name: string;
+  size: string;
+  mimeType?: string;
+  title?: string;
+  itemName?: string;
+  fileUrl?: string;
 }
 
 export interface Transaction {

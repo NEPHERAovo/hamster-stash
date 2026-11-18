@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, ExternalLink, FileText, AlertCircle } from 'lucide-react';
+import { X, Download, ExternalLink, FileText, AlertCircle, RefreshCw } from 'lucide-react';
 import type { VoucherAttachment } from '../../types/transaction';
+import { attachmentStore } from '../../core/attachments/attachmentStore';
 
 export interface VoucherPreviewModalProps {
   voucher: VoucherAttachment | null;
   onClose: () => void;
+  onFetchRemote?: (attachmentId: string) => Promise<string | null>;
 }
 
 function dataUrlToBlobUrl(dataUrl: string): string | null {
@@ -28,17 +30,68 @@ function dataUrlToBlobUrl(dataUrl: string): string | null {
 export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
   voucher,
   onClose,
+  onFetchRemote,
 }) => {
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!voucher) {
+      setResolvedUrl(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadContent = async () => {
+      if (voucher.fileUrl) {
+        setResolvedUrl(voucher.fileUrl);
+        return;
+      }
+      if (!voucher.attachmentId) {
+        setResolvedUrl(null);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const local = await attachmentStore.getAttachment(voucher.attachmentId);
+        if (!active) return;
+        if (local?.dataUrl) {
+          setResolvedUrl(local.dataUrl);
+          return;
+        }
+        if (onFetchRemote) {
+          const remoteUrl = await onFetchRemote(voucher.attachmentId);
+          if (!active) return;
+          setResolvedUrl(remoteUrl);
+          return;
+        }
+        setResolvedUrl(null);
+      } catch {
+        if (active) setResolvedUrl(null);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    void loadContent();
+    return () => {
+      active = false;
+    };
+  }, [voucher, onFetchRemote]);
+
   const isPdf = Boolean(
-    voucher?.fileUrl?.startsWith('data:application/pdf') ||
+    voucher?.mimeType === 'application/pdf' ||
+      resolvedUrl?.startsWith('data:application/pdf') ||
       voucher?.name.toLowerCase().endsWith('.pdf')
   );
-  const isImage = Boolean(voucher?.fileUrl && !isPdf);
+  const isImage = Boolean(resolvedUrl && !isPdf);
 
   const pdfBlobUrl = useMemo(() => {
-    if (!voucher?.fileUrl || !isPdf) return null;
-    return dataUrlToBlobUrl(voucher.fileUrl);
-  }, [voucher, isPdf]);
+    if (!resolvedUrl || !isPdf) return null;
+    return dataUrlToBlobUrl(resolvedUrl);
+  }, [resolvedUrl, isPdf]);
 
   useEffect(() => {
     return () => {
@@ -84,9 +137,9 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            {voucher.fileUrl && (
+            {resolvedUrl && (
               <a
-                href={pdfBlobUrl || voucher.fileUrl}
+                href={pdfBlobUrl || resolvedUrl}
                 download={voucher.name}
                 className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors"
                 title="下载凭证"
@@ -106,19 +159,26 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto p-3 flex items-center justify-center bg-(--paper-sunken)/40">
-          {!voucher.fileUrl ? (
+          {isLoading ? (
+            <div className="py-12 flex flex-col items-center gap-2 text-xs text-(--ink-tertiary)">
+              <RefreshCw className="w-5 h-5 animate-spin stroke-[1.8]" />
+              <span>正在加载凭证...</span>
+            </div>
+          ) : !resolvedUrl ? (
             <div className="py-10 px-4 text-center space-y-2">
               <AlertCircle className="w-7 h-7 mx-auto text-(--ink-tertiary) stroke-[1.6]" />
               <div className="text-xs font-medium text-(--ink-primary)">
-                该凭证未保存文件内容
+                本机未找到该凭证文件
               </div>
               <div className="text-[11px] text-(--ink-tertiary)">
-                请在编辑该笔账单时重新上传图片或 PDF 凭证
+                {voucher.attachmentId
+                  ? '如已开启 WebDAV 附件备份，请检查网络或配置后重试'
+                  : '请在编辑该笔账单时重新上传图片或 PDF 凭证'}
               </div>
             </div>
           ) : isImage ? (
             <img
-              src={voucher.fileUrl}
+              src={resolvedUrl}
               alt={voucher.name}
               className="max-w-full max-h-[70vh] object-contain rounded-(--radius-sm)"
             />
@@ -144,7 +204,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
                   </a>
                 )}
                 <a
-                  href={pdfBlobUrl || voucher.fileUrl}
+                  href={pdfBlobUrl || resolvedUrl}
                   download={voucher.name}
                   className="px-3 py-1.5 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-primary) text-xs font-semibold inline-flex items-center gap-1.5"
                 >
