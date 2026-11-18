@@ -108,9 +108,9 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
             </span>
           )}
           {transaction.voucher && (
-            <span className="inline-flex items-center font-mono text-[9px] text-(--brass-metal) border border-[rgba(181,147,90,0.35)] px-1 py-0.5 rounded-xs">
-              <Paperclip className="w-2.5 h-2.5 mr-0.5 text-(--brass-metal)" />
-              <span>凭证存根</span>
+            <span className="real-stamp stamp-voucher text-[9px] px-1 py-0.5 inline-flex items-center gap-0.5">
+              <Paperclip className="w-2.5 h-2.5 shrink-0" />
+              <span>凭证</span>
             </span>
           )}
           {isExpense && offsetAmount !== undefined && offsetAmount > 0 && (

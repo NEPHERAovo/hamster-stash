@@ -301,6 +301,7 @@ body {
   color: var(--color-expense, #BD5840);
   border-color: var(--color-expense, #BD5840);
 }
+.real-stamp.stamp-voucher { color: var(--brass-metal); border-color: var(--brass-metal); }
 
 /* 票据撕纸毛边微锯齿 (Deckle Edge & Torn Paper) */
 .paper-deckle,
