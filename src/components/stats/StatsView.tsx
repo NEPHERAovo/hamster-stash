@@ -19,6 +19,7 @@ import { MonthlyTrendBar } from './MonthlyTrendBar';
 import { SpendingRankList } from './SpendingRankList';
 import { SegToggle } from '../ui/SegToggle';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { dayjs, type Dayjs } from '../../utils/date';
 
 export interface StatsViewProps {
   allTransactions: Transaction[];
@@ -53,45 +54,24 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const uiStyle = useThemeStore((s) => s.uiStyle);
   const isModern = uiStyle === 'modern';
 
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [currentDate, setCurrentDate] = useState<Dayjs>(() => dayjs());
 
   const periodInfo = useMemo(() => {
     if (mode === 'week') {
       return getWeekPeriod(currentDate);
     }
     if (mode === 'year') {
-      return getYearPeriod(currentDate.getFullYear().toString());
+      return getYearPeriod(currentDate.format('YYYY'));
     }
-    const ym = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-    return getMonthPeriod(ym);
+    return getMonthPeriod(currentDate.format('YYYY-MM'));
   }, [mode, currentDate]);
 
   const handlePrevPeriod = () => {
-    setCurrentDate((prev) => {
-      const next = new Date(prev);
-      if (mode === 'week') {
-        next.setDate(next.getDate() - 7);
-      } else if (mode === 'month') {
-        next.setMonth(next.getMonth() - 1);
-      } else {
-        next.setFullYear(next.getFullYear() - 1);
-      }
-      return next;
-    });
+    setCurrentDate((prev) => prev.subtract(1, mode));
   };
 
   const handleNextPeriod = () => {
-    setCurrentDate((prev) => {
-      const next = new Date(prev);
-      if (mode === 'week') {
-        next.setDate(next.getDate() + 7);
-      } else if (mode === 'month') {
-        next.setMonth(next.getMonth() + 1);
-      } else {
-        next.setFullYear(next.getFullYear() + 1);
-      }
-      return next;
-    });
+    setCurrentDate((prev) => prev.add(1, mode));
   };
 
   const periodTransactions = useMemo(() => {
@@ -111,12 +91,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
   const weekBadge = useMemo(() => {
     if (mode !== 'week') return null;
-    const today = new Date();
+    const today = dayjs();
     const thisWeek = getWeekPeriod(today);
     if (periodInfo.start === thisWeek.start) return '本周';
-    const prevWeekDate = new Date(today);
-    prevWeekDate.setDate(today.getDate() - 7);
-    const lastWeek = getWeekPeriod(prevWeekDate);
+    const lastWeek = getWeekPeriod(today.subtract(1, 'week'));
     if (periodInfo.start === lastWeek.start) return '上周';
     return null;
   }, [mode, periodInfo.start]);

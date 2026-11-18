@@ -1,6 +1,13 @@
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import { buildOffsetMap, computeEffectiveExpenseAmount } from './balanceCalculator';
+import {
+  dayjs,
+  getIsoWeekBounds,
+  parseLocalDate,
+  stepYearMonth,
+  type ConfigType,
+} from '../../utils/date';
 
 export type PeriodMode = 'week' | 'month' | 'year';
 
@@ -27,63 +34,29 @@ export interface TrendItem {
   percentage: number; // 0 ~ 100 (相对于这几期中的最大值)
 }
 
-/**
- * 获取某个日期所在周（周一至周日）
- */
-export function getWeekPeriod(targetDate: Date): PeriodInfo {
-  const d = new Date(targetDate);
-  const day = d.getDay(); // 0 is Sunday
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(d);
-  monday.setDate(d.getDate() + diffToMonday);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const formatLocalDate = (date: Date) => {
-    const y = date.getFullYear();
-    const m = (date.getMonth() + 1).toString().padStart(2, '0');
-    const d = date.getDate().toString().padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
-  const start = formatLocalDate(monday);
-  const end = formatLocalDate(sunday);
-
-  const firstDayOfYear = new Date(monday.getFullYear(), 0, 1, 12, 0, 0);
-  const pastDaysOfYear = Math.round((monday.getTime() - firstDayOfYear.getTime()) / 86400000);
-  const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-
-  const m1 = (monday.getMonth() + 1).toString().padStart(2, '0');
-  const d1 = monday.getDate().toString().padStart(2, '0');
-  const m2 = (sunday.getMonth() + 1).toString().padStart(2, '0');
-  const d2 = sunday.getDate().toString().padStart(2, '0');
+export function getWeekPeriod(targetDate: ConfigType): PeriodInfo {
+  const { start: monday, end: sunday, weekNumber, weekYear } = getIsoWeekBounds(targetDate);
+  const start = monday.format('YYYY-MM-DD');
+  const end = sunday.format('YYYY-MM-DD');
 
   return {
     start,
     end,
     key: start,
-    label: `${monday.getFullYear()}年第${weekNum}周 (${m1}.${d1}-${m2}.${d2})`,
+    label: `${weekYear}年第${weekNumber}周 (${monday.format('MM.DD')}-${sunday.format('MM.DD')})`,
   };
 }
 
-/**
- * 获取某月份的起始与结束
- */
 export function getMonthPeriod(yearMonth: string): PeriodInfo {
-  const [yStr, mStr] = yearMonth.split('-');
-  const y = parseInt(yStr, 10);
-  const m = parseInt(mStr, 10);
-
-  const lastDay = new Date(y, m, 0).getDate();
-  const start = `${yearMonth}-01`;
-  const end = `${yearMonth}-${lastDay.toString().padStart(2, '0')}`;
+  const base = dayjs(`${yearMonth}-01`, 'YYYY-MM-DD', true);
+  const start = base.startOf('month').format('YYYY-MM-DD');
+  const end = base.endOf('month').format('YYYY-MM-DD');
 
   return {
     start,
     end,
     key: yearMonth,
-    label: `${y}年${m}月`,
+    label: `${base.year()}年${base.month() + 1}月`,
   };
 }
 
@@ -183,30 +156,16 @@ export function computePeriodTrends(
   const offsetMap = buildOffsetMap(allTransactions);
 
   if (mode === 'month') {
-    const [yStr, mStr] = currentKey.split('-');
-    const curY = parseInt(yStr, 10);
-    const curM = parseInt(mStr, 10);
-
-    const months: { ym: string; label: string }[] = [];
     for (let i = 3; i >= 0; i--) {
-      let targetM = curM - i;
-      let targetY = curY;
-      while (targetM <= 0) {
-        targetM += 12;
-        targetY -= 1;
-      }
-      const ym = `${targetY}-${targetM.toString().padStart(2, '0')}`;
-      months.push({ ym, label: `${targetM}月` });
-    }
-
-    for (const m of months) {
+      const ym = stepYearMonth(currentKey, -i);
+      const monthNum = dayjs(`${ym}-01`, 'YYYY-MM-DD', true).month() + 1;
       let expense = 0;
       for (const t of allTransactions) {
-        if (t.type === 'expense' && t.date.startsWith(m.ym)) {
+        if (t.type === 'expense' && t.date.startsWith(ym)) {
           expense += computeEffectiveExpenseAmount(t, offsetMap);
         }
       }
-      trends.push({ label: m.label, amount: expense, percentage: 0 });
+      trends.push({ label: `${monthNum}月`, amount: expense, percentage: 0 });
     }
   } else if (mode === 'year') {
     const curY = parseInt(currentKey, 10);
@@ -221,12 +180,9 @@ export function computePeriodTrends(
       trends.push({ label: `${y}年`, amount: expense, percentage: 0 });
     }
   } else {
-    const [ky, km, kd] = currentKey.split('-').map(Number);
-    const curDate = new Date(ky, km - 1, kd, 12, 0, 0);
+    const curDate = parseLocalDate(currentKey);
     for (let i = 3; i >= 0; i--) {
-      const d = new Date(curDate);
-      d.setDate(d.getDate() - i * 7);
-      const week = getWeekPeriod(d);
+      const week = getWeekPeriod(curDate.subtract(i, 'week'));
 
       let expense = 0;
       for (const t of allTransactions) {
@@ -234,9 +190,12 @@ export function computePeriodTrends(
           expense += computeEffectiveExpenseAmount(t, offsetMap);
         }
       }
-      const m = parseInt(week.start.split('-')[1], 10);
-      const day = parseInt(week.start.split('-')[2], 10);
-      trends.push({ label: `${m}.${day}`, amount: expense, percentage: 0 });
+      const weekStart = parseLocalDate(week.start);
+      trends.push({
+        label: `${weekStart.month() + 1}.${weekStart.date()}`,
+        amount: expense,
+        percentage: 0,
+      });
     }
   }
 
