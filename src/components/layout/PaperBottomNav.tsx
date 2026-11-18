@@ -50,7 +50,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
             onClick={onAddClick}
             title={isAddOpen ? '收起便签' : '提笔入账'}
             aria-label={isAddOpen ? '收起便签' : '提笔入账'}
-            className="pointer-events-auto absolute right-4.5 bottom-0 w-[46px] h-[46px] rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_4px_14px_rgba(0,0,0,0.22),0_1px_3px_rgba(0,0,0,0.12)] flex items-center justify-center hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+            className="pointer-events-auto absolute right-4.5 bottom-0 w-[46px] h-[46px] rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
           >
             <Plus
               className={cn(
@@ -65,7 +65,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
       <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--dock-bottom) px-4 pointer-events-none select-none', className)}>
         <div className="pointer-events-auto relative pt-[3px]">
           <div
-            className="absolute inset-x-0 bottom-0 h-12 rounded-[5px] bg-(--paper-sunken) border border-(--rule-hairline) shadow-[0_6px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_20px_rgba(0,0,0,0.42)]"
+            className="absolute inset-x-0 bottom-0 h-12 rounded-[5px] bg-(--paper-sunken) border border-(--rule-hairline) shadow-[0_2px_6px_rgba(0,0,0,0.04)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
             aria-hidden="true"
           />
           <div className="relative z-10 flex items-end gap-1 px-1 pb-1">
@@ -80,7 +80,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                   className={cn(
                     'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-0.5 min-w-0',
                     isActive
-                      ? 'relative z-10 h-[47px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_5px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.05)]'
+                      ? 'relative z-10 h-[47px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
                       : 'relative z-1 h-10 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
                   )}
                 >
