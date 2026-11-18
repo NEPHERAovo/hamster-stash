@@ -21,9 +21,9 @@ export default defineConfig({
     },
 
     manifest: {
-      name: '仓鼠囤囤 · HamsterStash',
+      name: '仓鼠囤囤',
       short_name: '仓鼠囤囤',
-      description: '集日常收支、物品收纳与资产管理于一体的轻量化个人账本（Personal expense, item & asset stash）',
+      description: '集日常收支、物品收纳与资产管理于一体的轻量化个人账本',
       theme_color: '#ffffff',
       background_color: '#F3F4F6',
       display: 'standalone',

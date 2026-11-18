@@ -286,7 +286,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
         <div
           className="flex items-center justify-between py-3 cursor-pointer select-none"
-          onClick={() => toast.info('仓鼠囤囤 · HamsterStash v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
+          onClick={() => toast.info('仓鼠囤囤 v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
         >
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-(--badge-radius) bg-(--bg-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
