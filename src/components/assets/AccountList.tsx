@@ -194,8 +194,11 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
             <div className="text-[13px] font-semibold text-(--ink-primary) truncate">
               {account.name}
             </div>
-            <div className="text-[10px] font-mono text-(--ink-tertiary)">
-              {getAccountTypeLabel(account.type)}
+            <div className="text-[10px] font-mono text-(--ink-tertiary) flex items-center gap-1">
+              <span>{getAccountTypeLabel(account.type)}</span>
+              {account.includeInNetWorth === false && (
+                <span className="text-(--ink-faint)">· 不计净资产</span>
+              )}
             </div>
           </div>
         </div>

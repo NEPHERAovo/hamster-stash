@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Plus, Settings, Scale } from 'lucide-react';
+import { Plus, Settings, Pencil } from 'lucide-react';
 import {
   AppShell,
   PageHeader,
@@ -42,6 +42,7 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('ledger');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [isLoanHubOpen, setIsLoanHubOpen] = useState(false);
   const [activeDetailAccount, setActiveDetailAccount] = useState<Account | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -67,7 +68,7 @@ export function App() {
     loadSettlementSummary,
   } = useLedgerStore();
 
-  const { accounts, loadAccounts, createAccount, deleteAccount } = useAccountStore();
+  const { accounts, loadAccounts, createAccount, updateAccount, deleteAccount } = useAccountStore();
   const { categories, loadCategories } = useCategoryStore();
 
   const todayMonth = currentYearMonth();
@@ -131,7 +132,7 @@ export function App() {
     : null;
 
   const totalNetWorth = accounts.reduce(
-    (acc, cur) => acc + (cur.isArchived ? 0 : cur.balance),
+    (acc, cur) => acc + (cur.isArchived || cur.includeInNetWorth === false ? 0 : cur.balance),
     0
   );
 
@@ -318,12 +319,12 @@ export function App() {
               currentDetailAccount ? (
                 <button
                   type="button"
-                  onClick={() => setReconcileAccount(currentDetailAccount)}
+                  onClick={() => setEditingAccount(currentDetailAccount)}
                   className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                  title="平账校准"
+                  title="编辑账户"
                 >
-                  <Scale className="w-3.5 h-3.5 stroke-[1.8]" />
-                  <span>平账</span>
+                  <Pencil className="w-3.5 h-3.5 stroke-[1.8]" />
+                  <span>编辑</span>
                 </button>
               ) : undefined
             }
@@ -337,6 +338,10 @@ export function App() {
             categories={categories}
             accounts={accounts}
             onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
+            onToggleIncludeInNetWorth={async (acct, nextValue) => {
+              await updateAccount(acct.id, { includeInNetWorth: nextValue });
+              toast.success(nextValue ? '已计入个人净资产' : '已从净资产统计中排除');
+            }}
             onDeleteAccount={handleDeleteAccount}
             onSelectTransaction={(tx) => {
               setEditingTx(tx);
@@ -433,10 +438,17 @@ export function App() {
       />
 
       <CreateAccountModal
-        isOpen={isCreateAccountOpen}
-        onClose={() => setIsCreateAccountOpen(false)}
+        isOpen={isCreateAccountOpen || Boolean(editingAccount)}
+        editingAccount={editingAccount}
+        onClose={() => {
+          setIsCreateAccountOpen(false);
+          setEditingAccount(null);
+        }}
         onSubmit={async (input) => {
           await createAccount(input);
+        }}
+        onUpdate={async (id, patch) => {
+          await updateAccount(id, patch);
         }}
       />
 

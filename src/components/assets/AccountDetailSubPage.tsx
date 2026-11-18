@@ -16,6 +16,7 @@ export interface AccountDetailSubPageProps {
   categories: Category[];
   accounts: Account[];
   onOpenReconcile?: () => void;
+  onToggleIncludeInNetWorth?: (account: Account, nextValue: boolean) => Promise<void>;
   onDeleteAccount?: (account: Account) => void;
   onSelectTransaction?: (tx: Transaction) => void;
 }
@@ -26,6 +27,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   categories,
   accounts,
   onOpenReconcile,
+  onToggleIncludeInNetWorth,
   onDeleteAccount,
   onSelectTransaction,
 }) => {
@@ -150,6 +152,16 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   };
 
   const isNetPositive = netFlow >= 0;
+  const isIncludedInNetWorth = account.includeInNetWorth !== false;
+
+  const handleToggleNetWorth = async () => {
+    if (!onToggleIncludeInNetWorth) return;
+    try {
+      await onToggleIncludeInNetWorth(account, !isIncludedInNetWorth);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '更新设置失败');
+    }
+  };
 
   return (
     <div className="w-full pb-6 pt-1 px-4">
@@ -164,8 +176,15 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               <div className="text-[11px] font-mono text-(--ink-tertiary)">{getAccountTypeName(account.type)}</div>
             </div>
           </div>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-(--color-income-bg) text-(--color-income) font-mono">
-            正常计入
+          <span
+            className={cn(
+              'text-[10px] font-semibold px-2 py-0.5 rounded-full font-mono',
+              isIncludedInNetWorth
+                ? 'bg-(--color-income-bg) text-(--color-income)'
+                : 'bg-(--paper-sunken) text-(--ink-tertiary)'
+            )}
+          >
+            {isIncludedInNetWorth ? '计入净资产' : '不计入净资产'}
           </span>
         </div>
 
@@ -216,9 +235,49 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
             <span className="text-(--ink-tertiary)">账户类型</span>
             <span className="text-(--ink-primary) font-medium">{getAccountTypeName(account.type)}</span>
           </div>
-          <div className="flex justify-between py-2">
+          <div className="flex items-center justify-between py-2">
             <span className="text-(--ink-tertiary)">净资产统计</span>
-            <span className="text-(--color-income) font-medium">计入个人净资产</span>
+            {onToggleIncludeInNetWorth ? (
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'font-medium',
+                    isIncludedInNetWorth ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
+                  )}
+                >
+                  {isIncludedInNetWorth ? '已计入' : '不计入'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isIncludedInNetWorth}
+                  aria-label="计入个人净资产"
+                  onClick={handleToggleNetWorth}
+                  className={cn(
+                    'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
+                    isIncludedInNetWorth
+                      ? 'bg-(--ink-primary) border-(--ink-primary)'
+                      : 'bg-(--paper-sunken) border-(--rule-hairline)'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
+                      isIncludedInNetWorth ? 'left-4' : 'left-0.5'
+                    )}
+                  />
+                </button>
+              </div>
+            ) : (
+              <span
+                className={cn(
+                  'font-medium',
+                  isIncludedInNetWorth ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
+                )}
+              >
+                {isIncludedInNetWorth ? '计入个人净资产' : '不计入净资产'}
+              </span>
+            )}
           </div>
         </div>
       </div>
