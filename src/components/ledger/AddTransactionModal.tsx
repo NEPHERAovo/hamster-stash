@@ -237,6 +237,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   }, [txType, currentCategories, selectedCatId, editingTransaction]);
 
   useEffect(() => {
+    if (txType !== 'expense') {
+      setExt((prev) => {
+        if (!('owned-items' in prev)) return prev;
+        const rest = { ...prev };
+        delete rest['owned-items'];
+        return rest;
+      });
+    }
+  }, [txType]);
+
+  useEffect(() => {
     if (accounts.length > 0 && (!selectedAcctId || !accounts.some((a) => a.id === selectedAcctId))) {
       setSelectedAcctId(accounts[0].id);
     }

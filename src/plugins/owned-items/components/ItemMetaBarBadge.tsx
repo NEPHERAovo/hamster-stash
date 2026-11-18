@@ -16,6 +16,8 @@ export interface ItemMetaBarBadgeProps {
 export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) => {
   const items = usePluginItemStore((s) => s.items);
 
+  if (context.txType !== 'expense') return null;
+
   const itemExt = getOwnedItemExt(context.ext);
   const selectedItemId = itemExt?.itemId;
   const isCreateNew = Boolean(itemExt?.createNewItem);
