@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { ChevronLeft, Plus, Settings, Scale } from 'lucide-react';
+import { Plus, Settings, Scale } from 'lucide-react';
 import {
   AppShell,
   PageHeader,
   BottomNav,
+  SubPageShell,
+  SubPageBackButton,
   type NavTab,
 } from './components/layout';
 import { BalanceSummaryCard } from './components/ledger/BalanceSummaryCard';
@@ -153,63 +155,7 @@ export function App() {
 
   return (
     <AppShell>
-      {isImportOpen ? (
-        <PageHeader
-          title="账本导入向导"
-          centerTitle={true}
-          leftAction={
-            <button
-              type="button"
-              onClick={() => setIsImportOpen(false)}
-              className="flex items-center text-sm font-semibold text-(--ink-secondary) hover:text-(--ink-primary) cursor-pointer"
-            >
-              <ChevronLeft className="w-5 h-5 stroke-2" />
-              <span>返回</span>
-            </button>
-          }
-        />
-      ) : isSettingsOpen ? (
-        <PageHeader
-          title={isModern ? '设置' : 'Settings'}
-          centerTitle={true}
-          leftAction={
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(false)}
-              className="flex items-center text-sm font-semibold text-(--ink-secondary) hover:text-(--ink-primary) cursor-pointer"
-            >
-              <ChevronLeft className="w-5 h-5 stroke-2" />
-              <span>资产</span>
-            </button>
-          }
-        />
-      ) : currentDetailAccount ? (
-        <PageHeader
-          title={currentDetailAccount.name}
-          centerTitle={true}
-          leftAction={
-            <button
-              type="button"
-              onClick={() => setActiveDetailAccount(null)}
-              className="flex items-center text-sm font-semibold text-(--ink-secondary) hover:text-(--ink-primary) cursor-pointer"
-            >
-              <ChevronLeft className="w-5 h-5 stroke-2" />
-              <span>资产</span>
-            </button>
-          }
-          rightAction={
-            <button
-              type="button"
-              onClick={() => setReconcileAccount(currentDetailAccount)}
-              className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-              title="平账校准"
-            >
-              <Scale className="w-3.5 h-3.5 stroke-[1.8]" />
-              <span>平账</span>
-            </button>
-          }
-        />
-      ) : currentTab === 'ledger' ? (
+      {currentTab === 'ledger' ? (
         <PageHeader
           title={folioMonthTitle}
           showMonthStep={true}
@@ -335,55 +281,104 @@ export function App() {
 
         {currentTab === 'assets' && (
           <div className="w-full">
-            {isImportOpen ? (
-              <ImportSubPage
-                onClose={() => setIsImportOpen(false)}
-                onImportSuccess={() => {
-                  loadAccounts();
-                  loadCategories();
-                  loadTransactions();
-                  loadSettlementSummary();
-                }}
+            <div className="space-y-3.5 px-4 pt-2">
+              <NetWorthHeader
+                netWorthCents={totalNetWorth}
+                summary={settlementSummary}
+                onClickLoanHub={() => setIsLoanHubOpen(true)}
               />
-            ) : isSettingsOpen ? (
-              <SettingsSubPage
-                onClose={() => setIsSettingsOpen(false)}
-                isDark={isDark}
-                onToggleDark={toggleDark}
-                onOpenImport={() => setIsImportOpen(true)}
-              />
-            ) : currentDetailAccount ? (
-              <AccountDetailSubPage
-                account={currentDetailAccount}
-                transactions={displayTransactions}
-                categories={categories}
-                accounts={accounts}
-                onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
-                onDeleteAccount={handleDeleteAccount}
-                onClose={() => setActiveDetailAccount(null)}
-                onSelectTransaction={(tx) => {
-                  setEditingTx(tx);
-                  setIsAddOpen(true);
-                }}
-              />
-            ) : (
-              <div className="space-y-3.5 px-4 pt-2">
-                <NetWorthHeader
-                  netWorthCents={totalNetWorth}
-                  summary={settlementSummary}
-                  onClickLoanHub={() => setIsLoanHubOpen(true)}
-                />
 
-                <AccountList
-                  accounts={accounts}
-                  onSelectAccount={(acct) => setActiveDetailAccount(acct)}
-                  onDeleteAccount={handleDeleteAccount}
-                />
-              </div>
-            )}
+              <AccountList
+                accounts={accounts}
+                onSelectAccount={(acct) => setActiveDetailAccount(acct)}
+                onDeleteAccount={handleDeleteAccount}
+              />
+            </div>
           </div>
         )}
       </main>
+
+      <SubPageShell
+        isOpen={Boolean(currentDetailAccount)}
+        onClose={() => setActiveDetailAccount(null)}
+        header={
+          <PageHeader
+            title={currentDetailAccount?.name || ''}
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="资产" />}
+            rightAction={
+              currentDetailAccount ? (
+                <button
+                  type="button"
+                  onClick={() => setReconcileAccount(currentDetailAccount)}
+                  className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                  title="平账校准"
+                >
+                  <Scale className="w-3.5 h-3.5 stroke-[1.8]" />
+                  <span>平账</span>
+                </button>
+              ) : undefined
+            }
+          />
+        }
+      >
+        {currentDetailAccount && (
+          <AccountDetailSubPage
+            account={currentDetailAccount}
+            transactions={displayTransactions}
+            categories={categories}
+            accounts={accounts}
+            onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
+            onDeleteAccount={handleDeleteAccount}
+            onSelectTransaction={(tx) => {
+              setEditingTx(tx);
+              setIsAddOpen(true);
+            }}
+          />
+        )}
+      </SubPageShell>
+
+      <SubPageShell
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        header={
+          <PageHeader
+            title={isModern ? '设置' : 'Settings'}
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="资产" />}
+          />
+        }
+      >
+        <SettingsSubPage
+          onClose={() => setIsSettingsOpen(false)}
+          isDark={isDark}
+          onToggleDark={toggleDark}
+          onOpenImport={() => setIsImportOpen(true)}
+        />
+      </SubPageShell>
+
+      <SubPageShell
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        className="z-50"
+        header={
+          <PageHeader
+            title="账本导入向导"
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="返回" />}
+          />
+        }
+      >
+        <ImportSubPage
+          onClose={() => setIsImportOpen(false)}
+          onImportSuccess={() => {
+            loadAccounts();
+            loadCategories();
+            loadTransactions();
+            loadSettlementSummary();
+          }}
+        />
+      </SubPageShell>
 
       {!isSettingsOpen && !isImportOpen && !activeDetailAccount && (
         <BottomNav

@@ -30,12 +30,12 @@ import { useLedgerStore } from '../../stores/useLedgerStore';
 import { toast } from '../../stores/useToastStore';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
-import { useSwipeBack } from '../../hooks/useSwipeBack';
+import { useSubPage } from '../layout/SubPageContext';
 import { cn } from '../../utils/cn';
 import type { TransactionType } from '../../types/transaction';
 
 export interface ImportSubPageProps {
-  onClose: () => void;
+  onClose?: () => void;
   onImportSuccess?: () => void;
 }
 
@@ -45,8 +45,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   onClose,
   onImportSuccess,
 }) => {
-  const swipeRef = useSwipeBack<HTMLDivElement>({ onClose });
+  const subPage = useSubPage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      subPage?.requestClose();
+    }
+  };
 
   const { accounts, createAccount, loadAccounts } = useAccountStore();
   const { categories, createCategory, loadCategories } = useCategoryStore();
@@ -318,7 +326,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
 
       await loadCategories();
       onImportSuccess?.();
-      onClose();
+      handleClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : '导入失败');
     } finally {
@@ -332,7 +340,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   ];
 
   return (
-    <div ref={swipeRef} className="w-full page-slide-in pb-12 pt-1 px-4 text-(--ink-primary) space-y-4">
+    <div className="w-full pb-12 pt-1 px-4 text-(--ink-primary) space-y-4">
       <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-3 shadow-xs">
         <div className="flex items-center justify-between relative px-2">
           <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-[1px] bg-(--rule-hairline) z-0" />
@@ -480,7 +488,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           </div>
 
           <div className="pt-2 flex items-center justify-between">
-            <PaperButton variant="secondary" size="sm" onClick={onClose}>
+            <PaperButton variant="secondary" size="sm" onClick={handleClose}>
               取消
             </PaperButton>
             <PaperButton

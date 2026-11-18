@@ -37,6 +37,8 @@ const getAccountTypeLabel = (type: string) => {
   }
 };
 
+const ACTION_WIDTH = 76;
+
 const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   account,
   canDelete,
@@ -44,50 +46,72 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   onDelete,
 }) => {
   const [offset, setOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
-  const isSwipingRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const isHorizontalRef = useRef(false);
+  const currentOffsetRef = useRef(0);
 
   const Icon = getCategoryIcon(account.icon || 'wallet');
   const isNegative = account.balance < 0;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleDragStart = (clientX: number, clientY: number) => {
     if (!canDelete) return;
-    startXRef.current = e.touches[0].clientX;
-    startYRef.current = e.touches[0].clientY;
-    isSwipingRef.current = false;
+    isDraggingRef.current = true;
+    isHorizontalRef.current = false;
+    startXRef.current = clientX - currentOffsetRef.current;
+    startYRef.current = clientY;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!canDelete) return;
-    const diffX = e.touches[0].clientX - startXRef.current;
-    const diffY = e.touches[0].clientY - startYRef.current;
+  const handleDragMove = (clientX: number, clientY: number, preventDefault?: () => void) => {
+    if (!isDraggingRef.current) return;
+    const rawDx = clientX - startXRef.current;
+    const deltaY = Math.abs(clientY - startYRef.current);
+    const deltaX = Math.abs(clientX - (startXRef.current + currentOffsetRef.current));
 
-    if (!isSwipingRef.current) {
-      if (Math.abs(diffY) > Math.abs(diffX)) return;
-      if (Math.abs(diffX) > 6) {
-        isSwipingRef.current = true;
+    if (!isHorizontalRef.current) {
+      if (deltaY > deltaX && deltaY > 6) {
+        isDraggingRef.current = false;
+        return;
+      }
+      if (deltaX > 6) {
+        isHorizontalRef.current = true;
+        setIsSwiping(true);
       }
     }
 
-    if (isSwipingRef.current) {
-      const newOffset = Math.min(0, Math.max(-72, diffX));
+    if (isHorizontalRef.current) {
+      preventDefault?.();
+      let newOffset = rawDx;
+      if (newOffset > 0) {
+        newOffset = 0;
+      } else if (newOffset < -ACTION_WIDTH) {
+        const overflow = -newOffset - ACTION_WIDTH;
+        newOffset = -ACTION_WIDTH - Math.pow(overflow, 0.72);
+      }
+      currentOffsetRef.current = newOffset;
       setOffset(newOffset);
     }
   };
 
-  const handleTouchEnd = () => {
-    if (!isSwipingRef.current) return;
-    isSwipingRef.current = false;
-    if (offset < -36) {
-      setOffset(-72);
+  const handleDragEnd = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsSwiping(false);
+
+    if (currentOffsetRef.current < -ACTION_WIDTH / 2) {
+      currentOffsetRef.current = -ACTION_WIDTH;
+      setOffset(-ACTION_WIDTH);
     } else {
+      currentOffsetRef.current = 0;
       setOffset(0);
     }
   };
 
   const handleRowClick = () => {
     if (offset < 0) {
+      currentOffsetRef.current = 0;
       setOffset(0);
     } else {
       onSelect();
@@ -98,19 +122,34 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
     e.stopPropagation();
     if (!canDelete) {
       toast.error('系统至少需保留一个资金账户');
+      currentOffsetRef.current = 0;
       setOffset(0);
       return;
     }
     if (window.confirm(`确认删除账户「${account.name}」吗？`)) {
       onDelete?.();
     }
+    currentOffsetRef.current = 0;
     setOffset(0);
   };
 
+  const actionTranslate = Math.max(0, ACTION_WIDTH + offset);
+  const actionOpacity = offset === 0 ? 0 : Math.min(1, Math.abs(offset) / 30);
+
   return (
-    <div className="relative overflow-hidden border-b border-dashed border-(--rule-hairline)/60 last:border-b-0">
+    <div className="relative overflow-hidden border-b border-dashed border-(--rule-hairline)/60 last:border-b-0 bg-(--bg-surface)">
       {canDelete && (
-        <div className="absolute inset-y-0 right-0 w-[72px] bg-(--color-expense) flex items-center justify-center z-0">
+        <div
+          className={cn(
+            'absolute inset-y-0 right-0 w-[76px] bg-(--color-expense) flex items-center justify-center z-0 overflow-hidden select-none',
+            offset === 0 && 'pointer-events-none opacity-0'
+          )}
+          style={{
+            transform: `translate3d(${actionTranslate}px, 0, 0)`,
+            opacity: actionOpacity,
+            transition: isSwiping ? 'none' : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
+          }}
+        >
           <button
             type="button"
             onClick={handleDeleteClick}
@@ -125,13 +164,25 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
 
       <div
         onClick={handleRowClick}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ transform: `translate3d(${offset}px, 0, 0)` }}
-        className="relative z-10 bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer transition-transform duration-150 ease-out hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40"
+        onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+        onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY, () => e.cancelable && e.preventDefault())}
+        onTouchEnd={handleDragEnd}
+        onTouchCancel={handleDragEnd}
+        onMouseDown={(e) => {
+          if (e.button === 0) handleDragStart(e.clientX, e.clientY);
+        }}
+        onMouseMove={(e) => {
+          if (isDraggingRef.current) handleDragMove(e.clientX, e.clientY, () => e.preventDefault());
+        }}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        style={{
+          transform: `translate3d(${offset}px, 0, 0)`,
+          transition: isSwiping ? 'none' : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        className="relative z-10 bg-(--bg-surface) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken) select-none will-change-transform"
       >
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0 pointer-events-none">
           <div className="w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0 rounded-(--badge-radius) bg-(--paper-sunken)">
             <Icon className="w-3.5 h-3.5 stroke-[1.8]" />
           </div>
@@ -145,7 +196,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
           </div>
         </div>
 
-        <div className="shrink-0 text-right ml-2.5">
+        <div className="shrink-0 text-right ml-2.5 pointer-events-none">
           <span
             className={cn(
               'font-mono text-sm font-semibold tabular-nums',

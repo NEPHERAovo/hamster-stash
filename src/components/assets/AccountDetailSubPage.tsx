@@ -7,7 +7,6 @@ import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { TransactionItem } from '../ledger/TransactionItem';
 import { toast } from '../../stores/useToastStore';
-import { useSwipeBack } from '../../hooks/useSwipeBack';
 import { cn } from '../../utils/cn';
 
 export interface AccountDetailSubPageProps {
@@ -18,7 +17,6 @@ export interface AccountDetailSubPageProps {
   onOpenReconcile?: () => void;
   onDeleteAccount?: (account: Account) => void;
   onSelectTransaction?: (tx: Transaction) => void;
-  onClose?: () => void;
 }
 
 export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
@@ -29,9 +27,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   onOpenReconcile,
   onDeleteAccount,
   onSelectTransaction,
-  onClose,
 }) => {
-  const swipeRef = useSwipeBack<HTMLDivElement>({ onClose });
   const Icon = getCategoryIcon(account.icon || 'wallet');
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
@@ -108,7 +104,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   const isNetPositive = netFlow >= 0;
 
   return (
-    <div ref={swipeRef} className="w-full page-slide-in pb-6 pt-1 px-4">
+    <div className="w-full pb-6 pt-1 px-4">
       <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) shadow-xs p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
