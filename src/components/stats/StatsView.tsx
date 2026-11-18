@@ -109,6 +109,18 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const trendTitle =
     mode === 'week' ? '周度支出趋势' : mode === 'month' ? '月度支出趋势' : '年度支出趋势';
 
+  const weekBadge = useMemo(() => {
+    if (mode !== 'week') return null;
+    const today = new Date();
+    const thisWeek = getWeekPeriod(today);
+    if (periodInfo.start === thisWeek.start) return '本周';
+    const prevWeekDate = new Date(today);
+    prevWeekDate.setDate(today.getDate() - 7);
+    const lastWeek = getWeekPeriod(prevWeekDate);
+    if (periodInfo.start === lastWeek.start) return '上周';
+    return null;
+  }, [mode, periodInfo.start]);
+
   const formattedPeriodTitle = useMemo(() => {
     if (mode === 'month') {
       const parts = periodInfo.key.split('-');
@@ -123,9 +135,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
       return isModern ? `${periodInfo.key} 年` : `Year ${periodInfo.key}`;
     }
     if (mode === 'week') {
-      const startParts = periodInfo.start.split('-');
-      const endParts = periodInfo.end.split('-');
-      return `${periodInfo.key} · ${startParts[1]}.${startParts[2]}-${endParts[1]}.${endParts[2]}`;
+      const [sy, sm, sd] = periodInfo.start.split('-');
+      const [ey, em, ed] = periodInfo.end.split('-');
+      if (sy !== ey) {
+        return `${sy}.${sm}.${sd} – ${ey}.${em}.${ed}`;
+      }
+      return `${sy} · ${sm}.${sd} – ${em}.${ed}`;
     }
     return periodInfo.label;
   }, [mode, periodInfo, isModern]);
@@ -148,9 +163,16 @@ export const StatsView: React.FC<StatsViewProps> = ({
       )}
 
       <div className="flex items-center justify-between px-1 select-none">
-        <span className="text-lg sm:text-xl text-(--ink-solid) font-serif not-italic tracking-tight">
-          {formattedPeriodTitle}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-lg sm:text-xl text-(--ink-solid) font-serif not-italic tracking-tight truncate">
+            {formattedPeriodTitle}
+          </span>
+          {weekBadge && (
+            <span className="px-1.5 py-0.5 text-[10px] font-mono rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) shrink-0">
+              {weekBadge}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
