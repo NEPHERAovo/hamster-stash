@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Scale, Trash2 } from 'lucide-react';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
@@ -32,11 +32,44 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   const accountTxs = useMemo(() => {
     return transactions.filter(
       (t) => t.accountId === account.id || t.toAccountId === account.id
     );
   }, [transactions, account.id]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [account.id]);
+
+  const visibleTxs = useMemo(
+    () => accountTxs.slice(0, visibleCount),
+    [accountTxs, visibleCount]
+  );
+
+  const hasMore = visibleCount < accountTxs.length;
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore) {
+          setVisibleCount((prev) => Math.min(accountTxs.length, prev + PAGE_SIZE));
+        }
+      },
+      { rootMargin: '300px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, accountTxs.length]);
 
   const { monthIn, monthOut, netFlow } = useMemo(() => {
     let monthIn = 0;
@@ -191,19 +224,33 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               此账户暂无收支明细
             </div>
           ) : (
-            accountTxs.map((tx, idx) => (
+            visibleTxs.map((tx, idx) => (
               <TransactionItem
                 key={tx.id}
                 transaction={tx}
                 category={catMap.get(tx.categoryId)}
                 account={acctMap.get(tx.accountId)}
                 toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
-                isLastInGroup={idx === accountTxs.length - 1}
+                isLastInGroup={idx === visibleTxs.length - 1}
                 onClick={() => onSelectTransaction?.(tx)}
               />
             ))
           )}
         </div>
+
+        {accountTxs.length > 0 && (
+          <div ref={sentinelRef} className="h-6 flex items-center justify-center pt-1">
+            {hasMore ? (
+              <span className="text-[11px] text-(--ink-faint) opacity-70">
+                正在加载更多流水...
+              </span>
+            ) : (
+              <span className="text-[10px] text-(--ink-tertiary)/50 font-mono tracking-wider">
+                已加载全部 {accountTxs.length} 笔流水
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {onDeleteAccount && (
