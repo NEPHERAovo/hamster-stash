@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  Coins,
   SlidersHorizontal,
   FileSpreadsheet,
   FileUp,
@@ -232,22 +231,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
           <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
             <span>≥ ¥{majorThresholdYuan}</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </div>
-
-        <div
-          className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
-          onClick={() => toast.info('当前货币为 CNY')}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <Coins className="w-3.5 h-3.5 stroke-[1.75]" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">默认货币</span>
-          </div>
-          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
-            <span>CNY</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </div>
         </div>

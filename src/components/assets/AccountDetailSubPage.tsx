@@ -124,25 +124,14 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     };
   }, [accountTxs, account.id]);
 
-  const getAccountTypeLabel = (type: string) => {
-    switch (type) {
-      case 'ewallet': return '电子钱包 · CNY';
-      case 'bank': return '储蓄卡 · CNY';
-      case 'credit': return '信用卡 · 信用额度';
-      case 'cash': return '现金钱包 · CNY';
-      case 'investment': return '投资账户 · CNY';
-      default: return '账户 · CNY';
-    }
-  };
-
   const getAccountTypeName = (type: string) => {
     switch (type) {
       case 'ewallet': return '电子钱包';
       case 'bank': return '储蓄卡';
       case 'credit': return '信用卡';
       case 'cash': return '现金钱包';
-      case 'investment': return '投资理财账户';
-      default: return '普通资金账户';
+      case 'investment': return '投资理财';
+      default: return '普通账户';
     }
   };
 
@@ -172,7 +161,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
             </div>
             <div>
               <div className="font-bold text-sm text-(--ink-primary)">{account.name}</div>
-              <div className="text-[11px] font-mono text-(--ink-tertiary)">{getAccountTypeLabel(account.type)}</div>
+              <div className="text-[11px] font-mono text-(--ink-tertiary)">{getAccountTypeName(account.type)}</div>
             </div>
           </div>
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-(--color-income-bg) text-(--color-income) font-mono">
@@ -226,10 +215,6 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           <div className="flex justify-between py-2">
             <span className="text-(--ink-tertiary)">账户类型</span>
             <span className="text-(--ink-primary) font-medium">{getAccountTypeName(account.type)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-(--ink-tertiary)">结算币种</span>
-            <span className="text-(--ink-primary) font-medium">{account.currency || 'CNY'}</span>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-(--ink-tertiary)">净资产统计</span>

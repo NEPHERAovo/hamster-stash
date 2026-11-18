@@ -209,9 +209,6 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
           >
             ¥ {centsToYuan(account.balance)}
           </span>
-          <div className="text-[10px] font-mono text-(--ink-tertiary)">
-            {account.currency}
-          </div>
         </div>
       </div>
     </div>
