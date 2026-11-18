@@ -19,6 +19,7 @@ export const WebDavSyncSection: React.FC = () => {
   const [password, setPassword] = useState('');
   const [syncPath, setSyncPath] = useState('');
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [autoSyncDaily, setAutoSyncDaily] = useState(false);
 
   const [isTesting, setIsTesting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -31,7 +32,7 @@ export const WebDavSyncSection: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    void syncService.getWebDavConfig().then(({ config, lastSyncAt: lastSync }) => {
+    void syncService.getWebDavConfig().then(({ config, lastSyncAt: lastSync, autoSyncDaily: autoDaily }) => {
       if (!mounted) return;
       if (config) {
         setUrl(config.url || '');
@@ -42,6 +43,7 @@ export const WebDavSyncSection: React.FC = () => {
       if (lastSync) {
         setLastSyncAt(lastSync);
       }
+      setAutoSyncDaily(autoDaily);
     });
     return () => {
       mounted = false;
@@ -60,6 +62,23 @@ export const WebDavSyncSection: React.FC = () => {
     syncPath: syncPath.trim() || undefined,
   };
 
+  const handleToggleAutoSync = async () => {
+    const next = !autoSyncDaily;
+    if (next && (!currentConfig.url || !currentConfig.username || !currentConfig.password)) {
+      toast.warning('请先填写并保存 WebDAV 配置后再开启自动同步');
+      setIsOpen(true);
+      return;
+    }
+    setAutoSyncDaily(next);
+    try {
+      await syncService.setAutoSyncDaily(next);
+      toast.success(next ? '已开启每日自动同步' : '已关闭每日自动同步');
+    } catch {
+      setAutoSyncDaily(!next);
+      toast.error('保存自动同步设置失败');
+    }
+  };
+
   const handleSave = async () => {
     if (!currentConfig.url || !currentConfig.username || !currentConfig.password) {
       toast.error('请填写完整的 WebDAV 地址、账号与密码');
@@ -68,7 +87,7 @@ export const WebDavSyncSection: React.FC = () => {
 
     setIsSaving(true);
     try {
-      await syncService.saveWebDavConfig(currentConfig);
+      await syncService.saveWebDavConfig(currentConfig, autoSyncDaily);
       toast.success('WebDAV 配置已保存');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '保存配置失败');
@@ -169,6 +188,33 @@ export const WebDavSyncSection: React.FC = () => {
               {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
+          <div>
+            <div className="text-[12px] font-medium text-(--ink-primary)">每日自动同步</div>
+            <div className="text-[10px] text-(--ink-tertiary)">每日首次打开应用时静默同步一次</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoSyncDaily}
+            aria-label="每日自动同步"
+            onClick={handleToggleAutoSync}
+            className={cn(
+              'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
+              autoSyncDaily
+                ? 'bg-(--ink-primary) border-(--ink-primary)'
+                : 'bg-(--paper-sunken) border-(--rule-hairline)'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
+                autoSyncDaily ? 'left-4' : 'left-0.5'
+              )}
+            />
+          </button>
         </div>
 
         {isOpen && (

@@ -35,6 +35,7 @@ import { usePluginUIStore } from './core/plugin/SlotStore';
 import { PluginSubPageOutlet } from './plugin-sdk/components/PluginSubPageOutlet';
 import { PluginModalOutlet } from './plugin-sdk/components/PluginModalOutlet';
 import { pluginManager } from './core/plugin/PluginManager';
+import { syncService } from './domain/sync/syncService';
 import { cn } from './utils/cn';
 import { currentYearMonth, stepYearMonth } from './utils/date';
 
@@ -109,6 +110,31 @@ export function App() {
     pluginManager.init();
     void useThemeStore.getState().loadThemeFromDB();
     void usePreferenceStore.getState().loadPreferencesFromDB();
+
+    const triggerDailySync = () => {
+      void syncService.runAutoSyncIfNeeded().then((result) => {
+        if (!result.ran) return;
+        if (result.changedLocal) {
+          void Promise.all([
+            loadAccounts(),
+            loadCategories(),
+            loadTransactions(),
+            loadSettlementSummary(),
+            useThemeStore.getState().loadThemeFromDB(),
+          ]);
+        }
+        toast.info('已完成今日自动同步');
+      });
+    };
+
+    triggerDailySync();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        triggerDailySync();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [loadAccounts, loadCategories, loadTransactions, loadSettlementSummary]);
 
   const handleCreateNewAccount = () => {
