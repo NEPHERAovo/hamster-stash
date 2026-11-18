@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Blocks,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import { core } from '../../core';
 import type { ExportData } from '../../types/adapter';
@@ -17,6 +18,7 @@ import { useCategoryStore } from '../../stores/useCategoryStore';
 import { toast } from '../../stores/useToastStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
+import { usePwaStore } from '../../stores/usePwaStore';
 import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
@@ -47,6 +49,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const { categories, loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const { majorThresholdYuan, setMajorThresholdYuan } = usePreferenceStore();
+  const { needRefresh, isChecking, applyUpdate, checkForUpdates } = usePwaStore();
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
   const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
@@ -316,7 +319,42 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
 
         <div
-          className="flex items-center justify-between py-3 cursor-pointer select-none"
+          className="flex items-center justify-between py-2.5 border-t border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+          onClick={async () => {
+            if (needRefresh) {
+              await applyUpdate();
+              return;
+            }
+            const status = await checkForUpdates();
+            if (status === 'update_available') {
+              toast.info('发现新版本资源，请点击立即更新');
+            } else if (status === 'up_to_date') {
+              toast.success('当前已是最新版本');
+            } else {
+              toast.info('当前环境未启用离线缓存更新');
+            }
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <RefreshCw className={cn('w-3.5 h-3.5 stroke-[1.75]', isChecking && 'animate-spin')} />
+            </div>
+            <span className="text-[13px] font-medium text-(--ink-primary)">检查更新</span>
+          </div>
+          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
+            {needRefresh ? (
+              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
+                有新版本
+              </span>
+            ) : (
+              <span>{isChecking ? '检查中...' : '离线缓存'}</span>
+            )}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        <div
+          className="flex items-center justify-between py-3 border-t border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
           onClick={() => toast.info('仓鼠囤囤 v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
         >
           <div className="flex items-center gap-2.5">
