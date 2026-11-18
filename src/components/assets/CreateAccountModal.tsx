@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PaperModal } from '../ui/PaperModal';
-import type { AccountType } from '../../types/account';
+import type { Account, AccountType } from '../../types/account';
+import type { UpdateAccountInput } from '../../domain/account/accountService';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
@@ -8,12 +9,15 @@ import { cn } from '../../utils/cn';
 export interface CreateAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editingAccount?: Account | null;
   onSubmit: (input: {
     name: string;
     type: AccountType;
     initialBalance: number;
     icon: string;
+    includeInNetWorth: boolean;
   }) => Promise<void>;
+  onUpdate?: (id: string, patch: UpdateAccountInput) => Promise<void>;
 }
 
 const ACCOUNT_TYPES: { value: AccountType; label: string; defaultIcon: string }[] = [
@@ -39,12 +43,16 @@ const ACCOUNT_ICONS = [
 export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   isOpen,
   onClose,
+  editingAccount,
   onSubmit,
+  onUpdate,
 }) => {
+  const isEditing = Boolean(editingAccount);
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('bank');
   const [icon, setIcon] = useState('landmark');
   const [balanceStr, setBalanceStr] = useState('');
+  const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetForm = () => {
@@ -52,7 +60,21 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     setType('bank');
     setIcon('landmark');
     setBalanceStr('');
+    setIncludeInNetWorth(true);
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (editingAccount) {
+      setName(editingAccount.name);
+      setType(editingAccount.type);
+      setIcon(editingAccount.icon || 'wallet');
+      setIncludeInNetWorth(editingAccount.includeInNetWorth !== false);
+      setBalanceStr('');
+    } else {
+      resetForm();
+    }
+  }, [isOpen, editingAccount]);
 
   const handleClose = () => {
     resetForm();
@@ -75,25 +97,39 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       return;
     }
 
-    const parsedBalance = balanceStr.trim() === '' ? 0 : Number(balanceStr.trim());
-    if (!Number.isFinite(parsedBalance)) {
-      toast.error('请输入有效的初始余额');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
+      if (editingAccount && onUpdate) {
+        await onUpdate(editingAccount.id, {
+          name: trimmed,
+          type,
+          icon,
+          includeInNetWorth,
+        });
+        toast.success(`已更新账户「${trimmed}」`);
+        resetForm();
+        onClose();
+        return;
+      }
+
+      const parsedBalance = balanceStr.trim() === '' ? 0 : Number(balanceStr.trim());
+      if (!Number.isFinite(parsedBalance)) {
+        toast.error('请输入有效的初始余额');
+        return;
+      }
+
       await onSubmit({
         name: trimmed,
         type,
         initialBalance: Math.round(parsedBalance * 100),
         icon,
+        includeInNetWorth,
       });
       toast.success(`已新增账户「${trimmed}」`);
       resetForm();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '创建账户失败');
+      toast.error(err instanceof Error ? err.message : isEditing ? '更新账户失败' : '创建账户失败');
     } finally {
       setIsSubmitting(false);
     }
@@ -103,8 +139,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     <PaperModal
       isOpen={isOpen}
       onClose={handleClose}
-      title="新建资金账户"
-      subtitle="配置账户名称、类型与初始余额"
+      title={isEditing ? '编辑资金账户' : '新建资金账户'}
+      subtitle={isEditing ? '修改账户名称、类型与净资产统计' : '配置账户名称、类型与初始余额'}
     >
       <form onSubmit={handleConfirm} className="p-4 space-y-4 select-none">
         <div className="space-y-1.5">
@@ -169,20 +205,48 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">初始余额（元，选填）</label>
-          <div className="flex items-center gap-2 px-3 h-10 rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
-            <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              value={balanceStr}
-              onChange={(e) => setBalanceStr(e.target.value)}
-              placeholder="0.00"
-              className="flex-1 bg-transparent text-sm font-mono font-semibold text-(--ink-primary) placeholder:text-(--ink-faint) outline-none"
-            />
+        {!isEditing && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-mono text-(--ink-tertiary)">初始余额（元，选填）</label>
+            <div className="flex items-center gap-2 px-3 h-10 rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
+              <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={balanceStr}
+                onChange={(e) => setBalanceStr(e.target.value)}
+                placeholder="0.00"
+                className="flex-1 bg-transparent text-sm font-mono font-semibold text-(--ink-primary) placeholder:text-(--ink-faint) outline-none"
+              />
+            </div>
           </div>
+        )}
+
+        <div className="flex items-center justify-between py-2.5 px-3 rounded-(--input-radius) bg-(--paper-sunken)/70 border border-(--rule-hairline)">
+          <div>
+            <div className="text-xs font-medium text-(--ink-primary)">计入个人净资产</div>
+            <div className="text-[11px] text-(--ink-tertiary)">关闭后该账户余额不计入总净资产</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={includeInNetWorth}
+            onClick={() => setIncludeInNetWorth((prev) => !prev)}
+            className={cn(
+              'w-9 h-5 rounded-full border transition-colors relative cursor-pointer shrink-0',
+              includeInNetWorth
+                ? 'bg-(--ink-primary) border-(--ink-primary)'
+                : 'bg-(--paper-sheet) border-(--rule-hairline)'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-3.5 h-3.5 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
+                includeInNetWorth ? 'left-4.5' : 'left-0.5 bg-(--ink-tertiary)'
+              )}
+            />
+          </button>
         </div>
 
         <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
@@ -198,7 +262,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             disabled={isSubmitting}
             className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
           >
-            {isSubmitting ? '创建中...' : '确认创建'}
+            {isSubmitting ? '保存中...' : isEditing ? '保存修改' : '确认创建'}
           </button>
         </div>
       </form>

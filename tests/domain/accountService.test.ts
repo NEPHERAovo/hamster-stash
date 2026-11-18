@@ -63,6 +63,49 @@ describe('AccountService', () => {
     expect(netWorth).toBe(500000);
   });
 
+  it('excludes accounts with includeInNetWorth set to false from total net worth', async () => {
+    await acctService.createAccount({
+      name: '工资卡',
+      type: 'bank',
+      initialBalance: 800000,
+      includeInNetWorth: true,
+    });
+    await acctService.createAccount({
+      name: '代管资金',
+      type: 'ewallet',
+      initialBalance: 250000,
+      includeInNetWorth: false,
+    });
+
+    const netWorth = await acctService.calculateNetWorth();
+    expect(netWorth).toBe(800000);
+  });
+
+  it('updates account metadata including name, type, icon, and includeInNetWorth', async () => {
+    const acct = await acctService.createAccount({
+      name: '默认卡',
+      type: 'bank',
+      initialBalance: 100000,
+    });
+
+    const updated = await acctService.updateAccount(acct.id, {
+      name: '招行信用卡',
+      type: 'credit',
+      icon: 'credit-card',
+      includeInNetWorth: false,
+    });
+
+    expect(updated.name).toBe('招行信用卡');
+    expect(updated.type).toBe('credit');
+    expect(updated.icon).toBe('credit-card');
+    expect(updated.includeInNetWorth).toBe(false);
+    expect(await acctService.calculateNetWorth()).toBe(0);
+
+    await expect(
+      acctService.updateAccount(acct.id, { name: '   ' })
+    ).rejects.toThrow('账户名称不能为空');
+  });
+
   it('prevents deleting the last remaining account', async () => {
     const acct = await acctService.createAccount({
       name: '默认账户',

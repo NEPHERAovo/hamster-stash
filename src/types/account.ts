@@ -8,8 +8,9 @@ export interface Account {
   currency: string;           // 默认 'CNY'
   icon: string;               // Lucide 图标名称，如 'wallet' | 'landmark' | 'credit-card'
   color?: string;             // 主题色彩标记
-  sortOrder: number;          // 排序权重
-  isArchived?: boolean;       // 是否归档
+  sortOrder: number;
+  includeInNetWorth?: boolean;
+  isArchived?: boolean;
   createdAt: string;          // ISO 8601
   updatedAt: string;          // ISO 8601
 }

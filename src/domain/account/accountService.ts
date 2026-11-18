@@ -6,10 +6,19 @@ import { pluginManager } from '../../core/plugin/PluginManager';
 export interface CreateAccountInput {
   name: string;
   type: AccountType;
-  initialBalance?: number; // 单位：分
+  initialBalance?: number;
   currency?: string;
   icon?: string;
   color?: string;
+  includeInNetWorth?: boolean;
+}
+
+export interface UpdateAccountInput {
+  name?: string;
+  type?: AccountType;
+  icon?: string;
+  color?: string;
+  includeInNetWorth?: boolean;
 }
 
 export class AccountService {
@@ -42,13 +51,33 @@ export class AccountService {
       currency: input.currency || 'CNY',
       icon: input.icon || 'wallet',
       color: input.color,
+      includeInNetWorth: input.includeInNetWorth ?? true,
       sortOrder,
     });
   }
 
-  /**
-   * 计算所有账户净资产总和（单位：分）
-   */
+  async updateAccount(id: string, patch: UpdateAccountInput): Promise<Account> {
+    const existing = await this.acctRepo.findById(id);
+    if (!existing) {
+      throw new Error('账户不存在');
+    }
+
+    const updates: Partial<Account> = {};
+    if (patch.name !== undefined) {
+      const trimmed = patch.name.trim();
+      if (!trimmed) {
+        throw new Error('账户名称不能为空');
+      }
+      updates.name = trimmed;
+    }
+    if (patch.type !== undefined) updates.type = patch.type;
+    if (patch.icon !== undefined) updates.icon = patch.icon;
+    if (patch.color !== undefined) updates.color = patch.color;
+    if (patch.includeInNetWorth !== undefined) updates.includeInNetWorth = patch.includeInNetWorth;
+
+    return this.acctRepo.update(id, updates);
+  }
+
   async calculateNetWorth(): Promise<number> {
     return pluginManager.runMiddleware(
       'account:netWorth',
@@ -59,7 +88,10 @@ export class AccountService {
 
   private async internalCalculateNetWorth(): Promise<number> {
     const accounts = await this.acctRepo.findAll();
-    return accounts.reduce((acc, cur) => acc + (cur.isArchived ? 0 : cur.balance), 0);
+    return accounts.reduce(
+      (acc, cur) => acc + (cur.isArchived || cur.includeInNetWorth === false ? 0 : cur.balance),
+      0
+    );
   }
 
   /**
