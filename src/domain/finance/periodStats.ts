@@ -83,10 +83,23 @@ export function filterTransactionsByPeriod(
   return transactions.filter((t) => t.date >= startDate && t.date <= endDate);
 }
 
-/**
- * 计算分类支出占比与 SVG 环形图参数
- * 环形半径 r = 52，周长 = 2 * PI * 52 ≈ 326.73
- */
+export const STATS_CHART_PALETTE = [
+  '#D1493B',
+  '#2B6CB0',
+  '#D98A1A',
+  '#2E8B57',
+  '#7C4DFF',
+  '#0F8B8D',
+  '#E06D3B',
+  '#B83280',
+  '#5C8D3E',
+  '#64748B',
+] as const;
+
+export function getStatsChartColor(rankIndex: number): string {
+  return STATS_CHART_PALETTE[rankIndex % STATS_CHART_PALETTE.length];
+}
+
 export function computeCategoryDonutStats(
   transactions: Transaction[],
   categories: Category[],
@@ -122,7 +135,7 @@ export function computeCategoryDonutStats(
   let accumulatedOffset = 0;
   const items: CategoryStatItem[] = [];
 
-  for (const entry of sorted) {
+  for (const [idx, entry] of sorted.entries()) {
     const cat = catMap.get(entry.categoryId);
     const percentage = Math.round((entry.amount / totalExpense) * 100);
     const fraction = entry.amount / totalExpense;
@@ -131,7 +144,7 @@ export function computeCategoryDonutStats(
     items.push({
       categoryId: entry.categoryId,
       name: cat?.name || '其他',
-      color: cat?.color || 'var(--ink-secondary)',
+      color: getStatsChartColor(idx),
       amount: entry.amount,
       percentage,
       dashLength,

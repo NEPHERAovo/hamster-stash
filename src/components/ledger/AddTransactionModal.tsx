@@ -792,8 +792,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   >
                     <div className="w-6 h-6 flex items-center justify-center mb-0.5">
                       <IconComp
-                        className="w-4 h-4 stroke-[1.8]"
-                        style={{ color: isSelected ? 'var(--ink-solid)' : cat.color }}
+                        className={cn(
+                          'w-4 h-4 stroke-[1.8]',
+                          isSelected
+                            ? 'text-(--ink-solid)'
+                            : txType === 'income'
+                              ? 'text-(--color-income)'
+                              : 'text-(--ink-secondary)'
+                        )}
                       />
                     </div>
                     <span className="text-[10px] leading-tight truncate w-full text-center">

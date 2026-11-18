@@ -32,7 +32,7 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
         ¥ {centsToYuan(totalExpense)}
       </div>
 
-      <div className="w-full h-3 overflow-hidden flex border border-(--rule-hairline) my-2.5 rounded-(--radius-full)">
+      <div className="w-full h-3 overflow-hidden flex gap-0.5 bg-(--paper-sunken) border border-(--rule-hairline) my-2.5 rounded-(--radius-full)">
         {items.map((item) => (
           <div
             key={item.categoryId}
