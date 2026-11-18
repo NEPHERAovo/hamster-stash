@@ -54,8 +54,13 @@ export class IndexedDBAdapter implements DataAdapter {
           db.createObjectStore(STORES.PLUGIN_SETTINGS, { keyPath: 'id' });
         }
 
-        if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-          db.createObjectStore(STORES.SETTINGS);
+        if (_oldVersion < 4) {
+          if (db.objectStoreNames.contains(STORES.SETTINGS)) {
+            db.deleteObjectStore(STORES.SETTINGS);
+          }
+          db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
+        } else if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+          db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
         }
       },
     });
@@ -200,23 +205,30 @@ export class IndexedDBAdapter implements DataAdapter {
     const txs = await this.query<Transaction>(STORES.TRANSACTIONS);
     const accts = await this.query<Account>(STORES.ACCOUNTS);
     const cats = await this.query<Category>(STORES.CATEGORIES);
+    const settingsList = await this.query<StoredEntity>(STORES.SETTINGS);
     const pluginData = await this.query<StoredEntity>(STORES.PLUGIN_DATA);
     const pluginSettings = await this.query<StoredEntity>(STORES.PLUGIN_SETTINGS);
 
     const settingsMap: Record<string, unknown> = {};
-    for (const s of pluginSettings) {
+    for (const s of settingsList) {
       if (s.id) settingsMap[s.id] = s;
     }
 
+    const pluginSettingsMap: Record<string, unknown> = {};
+    for (const s of pluginSettings) {
+      if (s.id) pluginSettingsMap[s.id] = s;
+    }
+
     return {
-      version: '3.0.0',
+      version: '4.0.0',
       exportedAt: new Date().toISOString(),
       transactions: txs,
       accounts: accts,
       categories: cats,
+      settings: settingsMap,
       plugins: {
         data: pluginData,
-        settings: settingsMap,
+        settings: pluginSettingsMap,
       },
     };
   }
@@ -227,6 +239,7 @@ export class IndexedDBAdapter implements DataAdapter {
       STORES.TRANSACTIONS,
       STORES.ACCOUNTS,
       STORES.CATEGORIES,
+      STORES.SETTINGS,
       STORES.PLUGIN_DATA,
       STORES.PLUGIN_SETTINGS,
     ];
@@ -235,12 +248,19 @@ export class IndexedDBAdapter implements DataAdapter {
     await tx.objectStore(STORES.TRANSACTIONS).clear();
     await tx.objectStore(STORES.ACCOUNTS).clear();
     await tx.objectStore(STORES.CATEGORIES).clear();
+    await tx.objectStore(STORES.SETTINGS).clear();
     await tx.objectStore(STORES.PLUGIN_DATA).clear();
     await tx.objectStore(STORES.PLUGIN_SETTINGS).clear();
 
     for (const t of data.transactions) await tx.objectStore(STORES.TRANSACTIONS).put(t);
     for (const a of data.accounts) await tx.objectStore(STORES.ACCOUNTS).put(a);
     for (const c of data.categories) await tx.objectStore(STORES.CATEGORIES).put(c);
+
+    if (data.settings) {
+      for (const [k, v] of Object.entries(data.settings)) {
+        await tx.objectStore(STORES.SETTINGS).put({ id: k, ...(typeof v === 'object' && v !== null ? v : {}) });
+      }
+    }
 
     if (data.plugins?.data) {
       for (const d of data.plugins.data) await tx.objectStore(STORES.PLUGIN_DATA).put(d);

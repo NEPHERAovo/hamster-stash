@@ -6,6 +6,7 @@ export interface StoredEntity {
   id: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface QueryOptions {
@@ -22,6 +23,7 @@ export interface ExportData {
   transactions: Transaction[];
   accounts: Account[];
   categories: Category[];
+  settings?: Record<string, unknown>;
   plugins?: {
     data: unknown[];
     settings?: Record<string, unknown>;

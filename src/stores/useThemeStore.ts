@@ -1,6 +1,14 @@
 import { create } from 'zustand';
+import { core } from '../core';
+import type { StoredEntity } from '../types/adapter';
 
 export type UiStyle = 'paper' | 'modern';
+
+export interface AppThemeSetting extends StoredEntity {
+  id: 'app_theme';
+  themeId: string;
+  uiStyle: UiStyle;
+}
 
 export interface ThemeOption {
   id: string;
@@ -79,6 +87,29 @@ const getInitialUiStyle = (): UiStyle => {
   return 'modern';
 };
 
+const persistThemeToDB = async (themeId: string, uiStyle: UiStyle) => {
+  try {
+    await core.init();
+    const now = new Date().toISOString();
+    const existing = await core.adapter.read<AppThemeSetting>('settings', 'app_theme');
+    if (existing) {
+      await core.adapter.update<AppThemeSetting>('settings', 'app_theme', {
+        themeId,
+        uiStyle,
+        updatedAt: now,
+      });
+    } else {
+      await core.adapter.create<AppThemeSetting>('settings', {
+        id: 'app_theme',
+        themeId,
+        uiStyle,
+      });
+    }
+  } catch {
+    void 0;
+  }
+};
+
 interface ThemeState {
   currentThemeId: string;
   uiStyle: UiStyle;
@@ -87,6 +118,7 @@ interface ThemeState {
   setUiStyle: (style: UiStyle) => void;
   setDark: (dark: boolean) => void;
   toggleDark: () => void;
+  loadThemeFromDB: () => Promise<void>;
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => {
@@ -104,6 +136,23 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     uiStyle: initialUiStyle,
     isDark: initialTheme.isDark,
 
+    loadThemeFromDB: async () => {
+      try {
+        await core.init();
+        const record = await core.adapter.read<AppThemeSetting>('settings', 'app_theme');
+        if (record) {
+          if (record.themeId && THEME_OPTIONS.some((t) => t.id === record.themeId)) {
+            get().setTheme(record.themeId);
+          }
+          if (record.uiStyle && (record.uiStyle === 'paper' || record.uiStyle === 'modern')) {
+            get().setUiStyle(record.uiStyle);
+          }
+        }
+      } catch {
+        void 0;
+      }
+    },
+
     setTheme: (themeId: string) => {
       const theme = THEME_OPTIONS.find((t) => t.id === themeId);
       if (!theme) return;
@@ -119,6 +168,8 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         currentThemeId: theme.id,
         isDark: theme.isDark,
       });
+
+      void persistThemeToDB(theme.id, get().uiStyle);
     },
 
     setUiStyle: (style: UiStyle) => {
@@ -129,6 +180,8 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         void 0;
       }
       set({ uiStyle: style });
+
+      void persistThemeToDB(get().currentThemeId, style);
     },
 
     setDark: (dark: boolean) => {

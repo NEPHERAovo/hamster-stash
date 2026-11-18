@@ -7,7 +7,7 @@ import { AccountService } from '../domain/account/accountService';
 import type { DataAdapter } from '../types/adapter';
 
 class CoreContext {
-  private adapter: DataAdapter;
+  public adapter: DataAdapter;
   public acctRepo: AccountRepository;
   public txRepo: TransactionRepository;
   public catRepo: CategoryRepository;

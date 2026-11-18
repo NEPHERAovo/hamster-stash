@@ -118,23 +118,30 @@ export class MemoryAdapter implements DataAdapter {
     const txs = await this.query<Transaction>('transactions');
     const accts = await this.query<Account>('accounts');
     const cats = await this.query<Category>('categories');
+    const settingsList = await this.query<StoredEntity>('settings');
     const pluginData = await this.query<StoredEntity>('plugin_data');
     const pluginSettings = await this.query<StoredEntity>('plugin_settings');
 
     const settingsMap: Record<string, unknown> = {};
-    for (const s of pluginSettings) {
+    for (const s of settingsList) {
       if (s.id) settingsMap[s.id] = s;
     }
 
+    const pluginSettingsMap: Record<string, unknown> = {};
+    for (const s of pluginSettings) {
+      if (s.id) pluginSettingsMap[s.id] = s;
+    }
+
     return {
-      version: '3.0.0',
+      version: '4.0.0',
       exportedAt: new Date().toISOString(),
       transactions: txs,
       accounts: accts,
       categories: cats,
+      settings: settingsMap,
       plugins: {
         data: pluginData,
-        settings: settingsMap,
+        settings: pluginSettingsMap,
       },
     };
   }
@@ -143,18 +150,27 @@ export class MemoryAdapter implements DataAdapter {
     const txCol = this.getCollection('transactions');
     const acctCol = this.getCollection('accounts');
     const catCol = this.getCollection('categories');
+    const setCol = this.getCollection('settings');
     const pDataCol = this.getCollection('plugin_data');
     const pSetCol = this.getCollection('plugin_settings');
 
     txCol.clear();
     acctCol.clear();
     catCol.clear();
+    setCol.clear();
     pDataCol.clear();
     pSetCol.clear();
 
     for (const t of data.transactions) txCol.set(t.id, t);
     for (const a of data.accounts) acctCol.set(a.id, a);
     for (const c of data.categories) catCol.set(c.id, c);
+
+    if (data.settings) {
+      const now = new Date().toISOString();
+      for (const [k, v] of Object.entries(data.settings)) {
+        setCol.set(k, { id: k, createdAt: now, updatedAt: now, ...(typeof v === 'object' && v !== null ? v : {}) });
+      }
+    }
 
     if (data.plugins?.data) {
       for (const d of (data.plugins.data as StoredEntity[])) pDataCol.set(d.id, d);

@@ -93,6 +93,7 @@ export function App() {
     loadTransactions();
     loadSettlementSummary();
     pluginManager.init();
+    void useThemeStore.getState().loadThemeFromDB();
   }, [loadAccounts, loadCategories, loadTransactions, loadSettlementSummary]);
 
   const handleCreateNewAccount = async () => {

@@ -1,5 +1,5 @@
 export const DB_NAME = 'hamsterStash_db';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORES = {
   TRANSACTIONS: 'transactions',

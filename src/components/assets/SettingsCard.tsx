@@ -17,6 +17,7 @@ import { toast } from '../../stores/useToastStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
+import { WebDavSyncSection } from './WebDavSyncSection';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
@@ -84,7 +85,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const handleExportJson = async () => {
     try {
       await core.init();
-      const exportData = await core.txRepo['adapter'].export();
+      const exportData = await core.adapter.export();
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -111,11 +112,12 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       }
 
       await core.init();
-      await core.txRepo['adapter'].import(data);
+      await core.adapter.import(data);
 
       await loadAccounts();
       await loadCategories();
       await loadMonth();
+      await useThemeStore.getState().loadThemeFromDB();
 
       toast.success('JSON 数据恢复成功！');
     } catch (err) {
@@ -299,6 +301,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
         </div>
       </div>
+
+      <WebDavSyncSection />
 
       {plugins.length > 0 && (
         <>
