@@ -134,6 +134,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   };
 
   const actionTranslate = Math.max(0, ACTION_WIDTH + offset);
+  const actionWidth = Math.max(ACTION_WIDTH, Math.ceil(Math.abs(offset)));
   const actionOpacity = offset === 0 ? 0 : Math.min(1, Math.abs(offset) / 30);
 
   return (
@@ -141,13 +142,16 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
       {canDelete && (
         <div
           className={cn(
-            'absolute inset-y-0 right-0 w-[76px] bg-(--color-expense) flex items-center justify-center z-0 overflow-hidden select-none',
+            'absolute inset-y-0 right-0 bg-(--color-expense) flex items-center justify-center z-0 overflow-hidden select-none',
             offset === 0 && 'pointer-events-none opacity-0'
           )}
           style={{
+            width: `${actionWidth}px`,
             transform: `translate3d(${actionTranslate}px, 0, 0)`,
             opacity: actionOpacity,
-            transition: isSwiping ? 'none' : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
+            transition: isSwiping
+              ? 'none'
+              : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), width 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
           }}
         >
           <button
