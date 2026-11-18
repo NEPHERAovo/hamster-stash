@@ -241,14 +241,14 @@ export function App() {
         />
       ) : activeNavTab ? (
         <PageHeader
-          title={activeNavTab.id === 'items' ? (isModern ? '持有物品' : 'Owned Items') : activeNavTab.label}
+          title={activeNavTab.id === 'items' ? (isModern ? '物品' : 'Owned Items') : activeNavTab.label}
           rightAction={
             activeNavTab.id === 'items' ? (
               <button
                 type="button"
                 onClick={() => usePluginUIStore.getState().openModal('item-form')}
                 className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                title="新增持有物品"
+                title="新增物品"
               >
                 <Plus className="w-3.5 h-3.5 stroke-2" />
                 <span>新建</span>

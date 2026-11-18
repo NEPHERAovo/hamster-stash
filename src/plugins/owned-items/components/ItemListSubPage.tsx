@@ -95,7 +95,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             <div>
               <h1 className="font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) leading-none mt-0.5">
                 <span className="paper-title inline">Owned Items</span>
-                <span className="modern-title hidden">持有物品</span>
+                <span className="modern-title hidden">物品</span>
               </h1>
             </div>
           </div>
@@ -249,7 +249,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
         ) : (
           <div className="py-12 text-center text-xs text-(--ink-tertiary) space-y-2">
             <Package className="w-8 h-8 stroke-[1.2] mx-auto opacity-40 text-(--ink-tertiary)" />
-            <p>该分类下暂无持有物品</p>
+            <p>该分类下暂无物品</p>
             <button
               type="button"
               onClick={() => openModal('item-form')}

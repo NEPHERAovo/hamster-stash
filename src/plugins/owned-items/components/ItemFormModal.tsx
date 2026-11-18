@@ -154,7 +154,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               <span className="modern-title hidden">{editingItem ? '编辑物品' : '新建物品'}</span>
             </span>
             <span className="text-xs font-mono text-(--ink-tertiary) paper-title inline">
-              · {editingItem ? '编辑物品' : '新建持有物品'}
+              · {editingItem ? '编辑物品' : '新建物品'}
             </span>
           </div>
           <button
@@ -176,7 +176,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="如: iPhone 16 Pro、公路自行车"
+                placeholder="请输入物品名称"
                 className="flex-1 bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-sm font-semibold text-(--ink-solid) outline-none focus:border-(--ink-primary)"
                 autoFocus
               />
@@ -245,7 +245,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                    初始购入金额 (元, 选填)
+                    购入金额
                   </label>
                   <input
                     type="number"
@@ -260,7 +260,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
                 <div>
                   <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                    支出扣款账户
+                    支出账户
                   </label>
                   <select
                     value={selectedAcctId}
@@ -293,13 +293,13 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
           <div>
             <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-              随笔备注 (选填)
+              备注
             </label>
             <input
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="如: 官网教育优惠购入，带 AppleCare+"
+              placeholder="添加备注"
               className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-secondary) outline-none focus:border-(--ink-primary)"
             />
           </div>
