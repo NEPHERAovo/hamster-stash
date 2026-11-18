@@ -17,6 +17,13 @@ import { DrumWheelPicker } from './DrumWheelPicker';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
+import {
+  addDaysToToday,
+  combineLocalDateTimeToIso,
+  formatTime,
+  nowTime,
+  todayDate,
+} from '../../utils/date';
 
 export interface AddTransactionModalProps {
   isOpen: boolean;
@@ -106,27 +113,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   const setDateDelta = (daysFromToday: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + daysFromToday);
-    setDateStr(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    setDateStr(addDaysToToday(daysFromToday));
   };
 
-  const todayStr = useMemo(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  }, []);
-
-  const yesterdayStr = useMemo(() => {
-    const now = new Date();
-    now.setDate(now.getDate() - 1);
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  }, []);
-
-  const beforeYesterdayStr = useMemo(() => {
-    const now = new Date();
-    now.setDate(now.getDate() - 2);
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  }, []);
+  const todayStr = todayDate();
+  const yesterdayStr = addDaysToToday(-1);
+  const beforeYesterdayStr = addDaysToToday(-2);
 
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -157,20 +149,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setDateStr(editingTransaction.date);
         setExt({ ...(editingTransaction.ext || {}) });
 
-        if (editingTransaction.createdAt) {
-          try {
-            const d = new Date(editingTransaction.createdAt);
-            if (!isNaN(d.getTime())) {
-              const h = String(d.getHours()).padStart(2, '0');
-              const m = String(d.getMinutes()).padStart(2, '0');
-              setTimeStr(`${h}:${m}`);
-            }
-          } catch {
-            setTimeStr('12:00');
-          }
-        } else {
-          setTimeStr('12:00');
-        }
+        setTimeStr(formatTime(editingTransaction.createdAt) || '12:00');
 
         setNote(editingTransaction.note || '');
         setIsReimbursable(Boolean(editingTransaction.isReimbursable));
@@ -178,11 +157,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setVoucher(editingTransaction.voucher || null);
         setRelatedLoanId(editingTransaction.relatedLoanId || 'none');
       } else {
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const curTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        setDateStr(today);
-        setTimeStr(curTime);
+        setDateStr(todayDate());
+        setTimeStr(nowTime());
         setExpr('0');
         setNote('');
         setIsReimbursable(false);
@@ -291,7 +267,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const createdAtISO = `${dateStr}T${timeStr}:00.000Z`;
+      const createdAtISO = combineLocalDateTimeToIso(dateStr, timeStr);
 
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, {
