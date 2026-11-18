@@ -44,7 +44,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
   return (
     <>
       {showAddButton && onAddClick && (
-        <div className="fixed bottom-[calc(64px+var(--dock-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
+        <div className="fixed bottom-[calc(68px+var(--dock-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
           <button
             type="button"
             onClick={onAddClick}
@@ -65,7 +65,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
       <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--dock-bottom) px-4 pointer-events-none select-none', className)}>
         <div className="pointer-events-auto relative pt-[3px]">
           <div
-            className="absolute inset-x-0 bottom-0 h-12 rounded-[5px] bg-(--paper-sunken) border border-(--rule-hairline) shadow-[0_2px_6px_rgba(0,0,0,0.04)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
+            className="absolute inset-x-0 bottom-0 h-13 rounded-[5px] bg-(--paper-sunken) border border-(--rule-hairline) shadow-[0_2px_6px_rgba(0,0,0,0.04)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
             aria-hidden="true"
           />
           <div className="relative z-10 flex items-end gap-1 px-1 pb-1">
@@ -78,10 +78,10 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                   type="button"
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-0.5 min-w-0',
+                    'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-1 min-w-0',
                     isActive
-                      ? 'relative z-10 h-[47px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
-                      : 'relative z-1 h-10 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                      ? 'relative z-10 h-[51px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
+                      : 'relative z-1 h-11 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
                   )}
                 >
                   {isActive && (
@@ -91,7 +91,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                     />
                   )}
                   <Icon
-                    size={16}
+                    size={17}
                     strokeWidth={isActive ? 2.1 : 1.75}
                     className="shrink-0"
                   />
