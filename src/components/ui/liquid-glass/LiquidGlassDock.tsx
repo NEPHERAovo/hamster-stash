@@ -149,6 +149,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const offCanvas = document.createElement('canvas');
     const offCtx = offCanvas.getContext('2d');
 
+    let isDestroyed = false;
     let animationFrameId: number;
     let lastTime = performance.now();
     let lastCanvasW = 0;
@@ -158,14 +159,16 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const padY = 20;
 
     const render = (now: number) => {
-      if (!gl || !canvas || !dockShell) return;
+      if (isDestroyed || !gl || !canvas || !dockShell) return;
 
-      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      const dt = Math.min(0.033, Math.max(0, (now - lastTime) / 1000));
       lastTime = now;
 
       const rect = dockShell.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) {
-        animationFrameId = requestAnimationFrame(render);
+        if (!isDestroyed) {
+          animationFrameId = requestAnimationFrame(render);
+        }
         return;
       }
 
@@ -290,13 +293,15 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      animationFrameId = requestAnimationFrame(render);
+      if (!isDestroyed) {
+        animationFrameId = requestAnimationFrame(render);
+      }
     };
 
-    render(performance.now());
     animationFrameId = requestAnimationFrame(render);
 
     return () => {
+      isDestroyed = true;
       cancelAnimationFrame(animationFrameId);
       if (gl) {
         gl.deleteTexture(inactiveTex);
