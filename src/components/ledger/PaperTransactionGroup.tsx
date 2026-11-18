@@ -65,7 +65,7 @@ export const PaperTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
             key={date}
             className={cn(
               contained ? 'mx-0' : 'mx-4',
-              'mb-3.5 bg-(--paper-sheet) rounded-[2px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] border border-(--rule-hairline) overflow-hidden select-none'
+              'mb-3.5 bg-(--paper-sheet) rounded-[2px] shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] border border-(--rule-hairline) overflow-hidden select-none'
             )}
           >
             <div className="day-divider flex items-baseline justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) select-none bg-(--paper-sunken)/30">

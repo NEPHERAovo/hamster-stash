@@ -194,7 +194,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
           <div
             className={cn(
               contained ? 'mx-0' : 'mx-4',
-              'my-2 bg-(--paper-sheet) rounded-(--radius-sm) shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
+              'my-2 bg-(--paper-sheet) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
             )}
           >
             <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/30">
@@ -225,7 +225,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
           <div
             className={cn(
               contained ? 'mx-0' : 'mx-4',
-              'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-center select-none'
+              'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] text-center select-none'
             )}
           >
             <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
