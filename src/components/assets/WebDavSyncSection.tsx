@@ -10,6 +10,7 @@ import { toast } from '../../stores/useToastStore';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperInput } from '../ui/PaperInput';
 import { cn } from '../../utils/cn';
+import { formatMonthDayTime } from '../../utils/date';
 
 export const WebDavSyncSection: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,13 +50,7 @@ export const WebDavSyncSection: React.FC = () => {
 
   const formatSyncTime = (iso?: string | null) => {
     if (!iso) return '从未同步';
-    try {
-      const d = new Date(iso);
-      const pad = (n: number) => String(n).padStart(2, '0');
-      return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    } catch {
-      return iso;
-    }
+    return formatMonthDayTime(iso) || iso;
   };
 
   const currentConfig = {

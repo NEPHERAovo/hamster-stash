@@ -27,6 +27,7 @@ import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { cn } from '../../utils/cn';
+import { todayDate } from '../../utils/date';
 
 export interface SettingsCardProps {
   isDark?: boolean;
@@ -99,7 +100,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `HamsterStash_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `HamsterStash_backup_${todayDate()}.json`;
       a.click();
       URL.revokeObjectURL(url);
       setIsBackupConfirmOpen(false);

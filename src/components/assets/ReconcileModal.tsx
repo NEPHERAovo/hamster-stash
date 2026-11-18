@@ -6,6 +6,7 @@ import { PaperButton } from '../ui/PaperButton';
 import { centsToYuan, yuanToCents } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { cn } from '../../utils/cn';
+import { todayDate } from '../../utils/date';
 
 export interface ReconcileModalProps {
   account: Account | null;
@@ -32,7 +33,7 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
     if (!targetYuan.trim()) return;
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayDate();
       await reconcileAccount({
         accountId: account.id,
         targetBalance: targetCents,

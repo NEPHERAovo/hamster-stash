@@ -5,6 +5,7 @@ import { useLedgerStore } from '../../stores/useLedgerStore';
 import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
+import { dayjs, todayDate } from '../../utils/date';
 
 export interface ExportCsvModalProps {
   isOpen: boolean;
@@ -12,13 +13,6 @@ export interface ExportCsvModalProps {
 }
 
 type ExportRangeMode = 'all' | 'this_month' | 'last_3m' | 'this_year' | 'custom';
-
-const formatLocalDate = (d: Date) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
 
 const RANGE_OPTIONS: { value: ExportRangeMode; label: string }[] = [
   { value: 'all', label: '全部数据' },
@@ -31,31 +25,29 @@ const RANGE_OPTIONS: { value: ExportRangeMode; label: string }[] = [
 export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose }) => {
   const allTransactions = useLedgerStore((s) => s.allTransactions);
   const [rangeMode, setRangeMode] = useState<ExportRangeMode>('all');
-  const [customStart, setCustomStart] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-  });
-  const [customEnd, setCustomEnd] = useState(() => formatLocalDate(new Date()));
+  const [customStart, setCustomStart] = useState(() =>
+    dayjs().startOf('month').format('YYYY-MM-DD')
+  );
+  const [customEnd, setCustomEnd] = useState(() => todayDate());
   const [isExporting, setIsExporting] = useState(false);
 
   const resolvedBounds = useMemo(() => {
-    const today = new Date();
-    const todayStr = formatLocalDate(today);
+    const today = dayjs();
+    const todayStr = today.format('YYYY-MM-DD');
 
     if (rangeMode === 'all') {
       return { start: null as string | null, end: null as string | null, label: '全部历史流水' };
     }
     if (rangeMode === 'this_month') {
-      const start = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+      const start = today.startOf('month').format('YYYY-MM-DD');
       return { start, end: todayStr, label: `${start} 至 ${todayStr}` };
     }
     if (rangeMode === 'last_3m') {
-      const startDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-      const start = formatLocalDate(startDate);
+      const start = today.subtract(2, 'month').startOf('month').format('YYYY-MM-DD');
       return { start, end: todayStr, label: `${start} 至 ${todayStr}` };
     }
     if (rangeMode === 'this_year') {
-      const start = `${today.getFullYear()}-01-01`;
+      const start = today.startOf('year').format('YYYY-MM-DD');
       return { start, end: todayStr, label: `${start} 至 ${todayStr}` };
     }
     return {
@@ -108,7 +100,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const suffix = start && end ? `${start}_${end}` : `all_${formatLocalDate(new Date())}`;
+      const suffix = start && end ? `${start}_${end}` : `all_${todayDate()}`;
       a.download = `HamsterStash_records_${suffix}.csv`;
       a.click();
       URL.revokeObjectURL(url);

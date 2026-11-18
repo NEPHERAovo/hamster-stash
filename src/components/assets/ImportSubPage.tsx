@@ -32,6 +32,7 @@ import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { useSubPage } from '../layout/SubPageContext';
 import { cn } from '../../utils/cn';
+import { formatTime } from '../../utils/date';
 import type { TransactionType } from '../../types/transaction';
 
 export interface ImportSubPageProps {
@@ -742,12 +743,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               const cat = categories.find((c) => c.id === rec.categoryId);
               const acct = accounts.find((a) => a.id === rec.accountId);
               const Icon = getCategoryIcon(cat?.icon || 'shopping-cart');
-              const timePart = (() => {
-                if (!rec.createdAt) return '';
-                const d = new Date(rec.createdAt);
-                if (isNaN(d.getTime())) return '';
-                return ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-              })();
+              const formattedTime = formatTime(rec.createdAt);
+              const timePart = formattedTime ? ` ${formattedTime}` : '';
 
               return (
                 <div key={i} className="flex items-center justify-between p-2.5 text-xs">
