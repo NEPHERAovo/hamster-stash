@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Download, ExternalLink, FileText, AlertCircle, RefreshCw } from 'lucide-react';
 import type { VoucherAttachment } from '../../types/transaction';
 import { attachmentStore } from '../../core/attachments/attachmentStore';
+import { syncService } from '../../domain/sync/syncService';
 
 export interface VoucherPreviewModalProps {
   voucher: VoucherAttachment | null;
@@ -61,13 +62,12 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
           setResolvedUrl(local.dataUrl);
           return;
         }
-        if (onFetchRemote) {
-          const remoteUrl = await onFetchRemote(voucher.attachmentId);
-          if (!active) return;
-          setResolvedUrl(remoteUrl);
-          return;
-        }
-        setResolvedUrl(null);
+        const remoteFetcher =
+          onFetchRemote || ((id: string) => syncService.fetchAttachmentFromWebDav(id));
+        const remoteUrl = await remoteFetcher(voucher.attachmentId);
+        if (!active) return;
+        setResolvedUrl(remoteUrl);
+        return;
       } catch {
         if (active) setResolvedUrl(null);
       } finally {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { SyncService } from '../../src/domain/sync/syncService';
+import { SyncService, stripInlineVoucherPayloads } from '../../src/domain/sync/syncService';
 import type { WebDavConfig } from '../../src/domain/sync/webdavClient';
+import type { ExportData } from '../../src/types/adapter';
 
 describe('WebDAV daily auto-sync scheduler', () => {
   const service = new SyncService();
@@ -27,5 +28,39 @@ describe('WebDAV daily auto-sync scheduler', () => {
   it('skips auto-sync when already synced today', () => {
     const todayMorning = new Date(2026, 10, 18, 8, 30, 0).toISOString();
     expect(service.shouldRunDailyAutoSync(validConfig, true, todayMorning, '2026-11-18')).toBe(false);
+  });
+
+  it('strips inline base64 voucher payloads while retaining lightweight attachment references', () => {
+    const payload: ExportData = {
+      version: '4.0.0',
+      exportedAt: '2026-11-18T10:00:00.000Z',
+      accounts: [],
+      categories: [],
+      transactions: [
+        {
+          id: 'tx_1',
+          type: 'expense',
+          amount: 2500,
+          categoryId: 'cat_food',
+          accountId: 'acct_default',
+          date: '2026-11-18',
+          createdAt: '2026-11-18T10:00:00.000Z',
+          updatedAt: '2026-11-18T10:00:00.000Z',
+          voucher: {
+            attachmentId: 'att_abcdef0123456789',
+            name: 'invoice.jpg',
+            size: '120 KB',
+            mimeType: 'image/jpeg',
+            fileUrl: 'data:image/jpeg;base64,HUGE_PAYLOAD',
+          },
+        },
+      ],
+    };
+
+    const stripped = stripInlineVoucherPayloads(payload);
+    expect(stripped.transactions[0].voucher?.attachmentId).toBe('att_abcdef0123456789');
+    expect(stripped.transactions[0].voucher?.name).toBe('invoice.jpg');
+    expect(stripped.transactions[0].voucher?.fileUrl).toBeUndefined();
+    expect(JSON.stringify(stripped)).not.toContain('HUGE_PAYLOAD');
   });
 });

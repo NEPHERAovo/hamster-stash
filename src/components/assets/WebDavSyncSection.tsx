@@ -20,6 +20,7 @@ export const WebDavSyncSection: React.FC = () => {
   const [syncPath, setSyncPath] = useState('');
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [autoSyncDaily, setAutoSyncDaily] = useState(false);
+  const [syncAttachments, setSyncAttachments] = useState(false);
 
   const [isTesting, setIsTesting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -32,19 +33,22 @@ export const WebDavSyncSection: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    void syncService.getWebDavConfig().then(({ config, lastSyncAt: lastSync, autoSyncDaily: autoDaily }) => {
-      if (!mounted) return;
-      if (config) {
-        setUrl(config.url || '');
-        setUsername(config.username || '');
-        setPassword(config.password || '');
-        setSyncPath(config.syncPath || '');
-      }
-      if (lastSync) {
-        setLastSyncAt(lastSync);
-      }
-      setAutoSyncDaily(autoDaily);
-    });
+    void syncService
+      .getWebDavConfig()
+      .then(({ config, lastSyncAt: lastSync, autoSyncDaily: autoDaily, syncAttachments: syncAtt }) => {
+        if (!mounted) return;
+        if (config) {
+          setUrl(config.url || '');
+          setUsername(config.username || '');
+          setPassword(config.password || '');
+          setSyncPath(config.syncPath || '');
+        }
+        if (lastSync) {
+          setLastSyncAt(lastSync);
+        }
+        setAutoSyncDaily(autoDaily);
+        setSyncAttachments(syncAtt);
+      });
     return () => {
       mounted = false;
     };
@@ -79,6 +83,23 @@ export const WebDavSyncSection: React.FC = () => {
     }
   };
 
+  const handleToggleSyncAttachments = async () => {
+    const next = !syncAttachments;
+    if (next && (!currentConfig.url || !currentConfig.username || !currentConfig.password)) {
+      toast.warning('请先填写并保存 WebDAV 配置后再开启附件备份');
+      setIsOpen(true);
+      return;
+    }
+    setSyncAttachments(next);
+    try {
+      await syncService.setSyncAttachments(next);
+      toast.success(next ? '已开启凭证附件独立备份' : '已关闭凭证附件备份');
+    } catch {
+      setSyncAttachments(!next);
+      toast.error('保存附件备份设置失败');
+    }
+  };
+
   const handleSave = async () => {
     if (!currentConfig.url || !currentConfig.username || !currentConfig.password) {
       toast.error('请填写完整的 WebDAV 地址、账号与密码');
@@ -87,7 +108,7 @@ export const WebDavSyncSection: React.FC = () => {
 
     setIsSaving(true);
     try {
-      await syncService.saveWebDavConfig(currentConfig, autoSyncDaily);
+      await syncService.saveWebDavConfig(currentConfig, { autoSyncDaily, syncAttachments });
       toast.success('WebDAV 配置已保存');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '保存配置失败');
@@ -122,8 +143,8 @@ export const WebDavSyncSection: React.FC = () => {
 
     setIsSyncing(true);
     try {
-      await syncService.saveWebDavConfig(currentConfig);
-      const res = await syncService.syncWithWebDav(currentConfig);
+      await syncService.saveWebDavConfig(currentConfig, { autoSyncDaily, syncAttachments });
+      const res = await syncService.syncWithWebDav(currentConfig, { syncAttachments });
 
       await Promise.all([
         loadAccounts(),
@@ -193,7 +214,7 @@ export const WebDavSyncSection: React.FC = () => {
         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
           <div>
             <div className="text-[12px] font-medium text-(--ink-primary)">每日自动同步</div>
-            <div className="text-[10px] text-(--ink-tertiary)">每日首次打开应用时静默同步一次</div>
+            <div className="text-[10px] text-(--ink-tertiary)">每日首次打开应用自动备份并提示</div>
           </div>
           <button
             type="button"
@@ -212,6 +233,33 @@ export const WebDavSyncSection: React.FC = () => {
               className={cn(
                 'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
                 autoSyncDaily ? 'left-4' : 'left-0.5'
+              )}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
+          <div>
+            <div className="text-[12px] font-medium text-(--ink-primary)">备份凭证附件</div>
+            <div className="text-[10px] text-(--ink-tertiary)">按需单独上传与查看下载，节省云端流量</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={syncAttachments}
+            aria-label="备份凭证附件"
+            onClick={handleToggleSyncAttachments}
+            className={cn(
+              'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
+              syncAttachments
+                ? 'bg-(--ink-primary) border-(--ink-primary)'
+                : 'bg-(--paper-sunken) border-(--rule-hairline)'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
+                syncAttachments ? 'left-4' : 'left-0.5'
               )}
             />
           </button>

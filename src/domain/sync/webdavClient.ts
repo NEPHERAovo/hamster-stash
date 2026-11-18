@@ -80,6 +80,28 @@ export class WebDavClient {
     }
   }
 
+  async fileExists(config: WebDavConfig, filename: string): Promise<boolean> {
+    const targetUrl = this.resolveUrl(config, filename);
+    const headers = {
+      Authorization: this.getAuthHeader(config),
+    };
+    try {
+      const headResp = await fetch(targetUrl, { method: 'HEAD', headers });
+      if (headResp.ok) return true;
+      if (headResp.status === 404) return false;
+      if (headResp.status === 405 || headResp.status === 501) {
+        const propResp = await fetch(targetUrl, {
+          method: 'PROPFIND',
+          headers: { ...headers, Depth: '0' },
+        });
+        return propResp.ok || propResp.status === 207;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   async putFile(config: WebDavConfig, filename: string, content: string): Promise<void> {
     const targetUrl = this.resolveUrl(config, filename);
     const headers = {
@@ -94,7 +116,7 @@ export class WebDavClient {
     });
 
     if (resp.status === 409) {
-      await this.ensureParentDir(config);
+      await this.ensureParentDir(config, filename);
       const retryResp = await fetch(targetUrl, {
         method: 'PUT',
         headers,
@@ -111,12 +133,21 @@ export class WebDavClient {
     }
   }
 
-  private async ensureParentDir(config: WebDavConfig): Promise<void> {
+  private async ensureParentDir(config: WebDavConfig, filename?: string): Promise<void> {
     const baseUrl = config.url.trim().replace(/\/+$/, '');
     const dir = (config.syncPath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
-    if (!dir) return;
+    const fileDir = filename
+      ? filename
+          .trim()
+          .replace(/^\/+/, '')
+          .split('/')
+          .slice(0, -1)
+          .join('/')
+      : '';
+    const combinedDir = [dir, fileDir].filter(Boolean).join('/');
+    if (!combinedDir) return;
 
-    const parts = dir.split('/');
+    const parts = combinedDir.split('/').filter(Boolean);
     let current = baseUrl;
     for (const part of parts) {
       current = `${current}/${part}`;

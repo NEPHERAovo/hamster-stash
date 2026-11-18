@@ -115,19 +115,33 @@ export function App() {
     void usePreferenceStore.getState().loadPreferencesFromDB();
 
     const triggerDailySync = () => {
-      void syncService.runAutoSyncIfNeeded().then((result) => {
-        if (!result.ran) return;
-        if (result.changedLocal) {
-          void Promise.all([
-            loadAccounts(),
-            loadCategories(),
-            loadTransactions(),
-            loadSettlementSummary(),
-            useThemeStore.getState().loadThemeFromDB(),
-          ]);
-        }
-        toast.info('已完成今日自动同步');
-      });
+      void syncService
+        .runAutoSyncIfNeeded({
+          onStart: () => {
+            toast.info('正在进行今日 WebDAV 自动备份...');
+          },
+        })
+        .then((result) => {
+          if (!result.ran) return;
+          if (result.success) {
+            if (result.changedLocal) {
+              void Promise.all([
+                loadAccounts(),
+                loadCategories(),
+                loadTransactions(),
+                loadSettlementSummary(),
+                useThemeStore.getState().loadThemeFromDB(),
+              ]);
+            }
+            const attHint =
+              result.uploadedAttachments && result.uploadedAttachments > 0
+                ? `（含 ${result.uploadedAttachments} 个凭证附件）`
+                : '';
+            toast.success(`今日数据已自动备份至云端${attHint}`);
+          } else {
+            toast.warning('今日自动备份失败，请检查网络或 WebDAV 配置');
+          }
+        });
     };
 
     triggerDailySync();
