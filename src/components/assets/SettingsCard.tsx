@@ -12,13 +12,13 @@ import { core } from '../../core';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
-import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 import { toast } from '../../stores/useToastStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
+import { ExportCsvModal } from './ExportCsvModal';
 import { WebDavSyncSection } from './WebDavSyncSection';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
@@ -44,6 +44,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
   const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
+  const [isExportCsvOpen, setIsExportCsvOpen] = useState(false);
 
   const openMajorModal = () => {
     setMajorInput(String(majorThresholdYuan));
@@ -77,28 +78,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '切换插件失败');
-    }
-  };
-
-  const handleExportCsv = async () => {
-    try {
-      await core.init();
-      const [txs, cats, accts] = await Promise.all([
-        core.txRepo.findAll(),
-        core.catRepo.findAll(),
-        core.acctRepo.findAll(),
-      ]);
-
-      const csvContent = exportTransactionsToCsv(txs, cats, accts);
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HamsterStash_records_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      toast.success('CSV 账本导出成功');
-    } catch {
-      toast.error('导出 CSV 账本失败');
     }
   };
 
@@ -246,7 +225,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
         <div
           className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
-          onClick={handleExportCsv}
+          onClick={() => setIsExportCsvOpen(true)}
         >
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
@@ -434,6 +413,11 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
         </div>
       </PaperModal>
+
+      <ExportCsvModal
+        isOpen={isExportCsvOpen}
+        onClose={() => setIsExportCsvOpen(false)}
+      />
     </div>
   );
 };
