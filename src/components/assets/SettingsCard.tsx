@@ -9,6 +9,7 @@ import {
   Blocks,
 } from 'lucide-react';
 import { core } from '../../core';
+import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
@@ -36,15 +37,19 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 }) => {
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
-  const { loadAccounts } = useAccountStore();
-  const { loadMonth } = useLedgerStore();
-  const { loadCategories } = useCategoryStore();
+  const { accounts, loadAccounts } = useAccountStore();
+  const { allTransactions, loadMonth } = useLedgerStore();
+  const { categories, loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const { majorThresholdYuan, setMajorThresholdYuan } = usePreferenceStore();
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
   const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
   const [isExportCsvOpen, setIsExportCsvOpen] = useState(false);
+  const [isBackupConfirmOpen, setIsBackupConfirmOpen] = useState(false);
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<{ fileName: string; data: ExportData } | null>(null);
+  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
 
   const openMajorModal = () => {
     setMajorInput(String(majorThresholdYuan));
@@ -82,6 +87,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   };
 
   const handleExportJson = async () => {
+    setIsExportingBackup(true);
     try {
       await core.init();
       const exportData = await core.adapter.export();
@@ -93,9 +99,12 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       a.download = `HamsterStash_backup_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      setIsBackupConfirmOpen(false);
       toast.success('JSON 备份导出成功');
     } catch {
       toast.error('导出 JSON 备份失败');
+    } finally {
+      setIsExportingBackup(false);
     }
   };
 
@@ -105,13 +114,24 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
-      if (!data.transactions || !data.accounts) {
+      const data = JSON.parse(text) as ExportData;
+      if (!Array.isArray(data.transactions) || !Array.isArray(data.accounts)) {
         throw new Error('无效的备份文件结构');
       }
+      setPendingRestore({ fileName: file.name, data });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '备份文件解析失败');
+    } finally {
+      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
+    }
+  };
 
+  const handleConfirmRestoreJson = async () => {
+    if (!pendingRestore) return;
+    setIsRestoringBackup(true);
+    try {
       await core.init();
-      await core.adapter.import(data);
+      await core.adapter.import(pendingRestore.data);
 
       await loadAccounts();
       await loadCategories();
@@ -119,11 +139,12 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       await useThemeStore.getState().loadThemeFromDB();
       await usePreferenceStore.getState().loadPreferencesFromDB();
 
-      toast.success('JSON 数据恢复成功！');
+      setPendingRestore(null);
+      toast.success('JSON 数据恢复成功');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '恢复备份数据失败');
     } finally {
-      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
+      setIsRestoringBackup(false);
     }
   };
 
@@ -240,7 +261,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
         <div
           className="flex items-center justify-between py-2.5 last:border-b-0 cursor-pointer select-none"
-          onClick={handleExportJson}
+          onClick={() => setIsBackupConfirmOpen(true)}
         >
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
@@ -418,6 +439,96 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         isOpen={isExportCsvOpen}
         onClose={() => setIsExportCsvOpen(false)}
       />
+
+      <PaperModal
+        isOpen={isBackupConfirmOpen}
+        onClose={() => setIsBackupConfirmOpen(false)}
+        title="确认全量备份"
+        subtitle="将导出完整本地账本快照（JSON）"
+      >
+        <div className="p-4 space-y-4 select-none">
+          <div className="p-3 rounded-(--radius-sm) bg-(--paper-sunken)/70 border border-dashed border-(--rule-hairline) text-xs font-mono space-y-1.5">
+            <div className="flex items-center justify-between text-(--ink-secondary)">
+              <span>记账流水</span>
+              <span className="font-semibold text-(--ink-solid)">{allTransactions.length} 笔</span>
+            </div>
+            <div className="flex items-center justify-between text-(--ink-secondary)">
+              <span>资金账户</span>
+              <span className="font-semibold text-(--ink-solid)">{accounts.length} 个</span>
+            </div>
+            <div className="flex items-center justify-between text-(--ink-secondary)">
+              <span>收支分类</span>
+              <span className="font-semibold text-(--ink-solid)">{categories.length} 项</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-(--ink-tertiary) leading-relaxed">
+            备份文件包含全部流水、账户、分类、偏好配置与插件扩展数据，可用于跨设备迁移或覆盖恢复。
+          </p>
+
+          <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
+            <button
+              type="button"
+              onClick={() => setIsBackupConfirmOpen(false)}
+              className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isExportingBackup}
+              onClick={handleExportJson}
+              className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
+            >
+              {isExportingBackup ? '导出中...' : '确认导出备份'}
+            </button>
+          </div>
+        </div>
+      </PaperModal>
+
+      <PaperModal
+        isOpen={Boolean(pendingRestore)}
+        onClose={() => setPendingRestore(null)}
+        title="确认恢复备份"
+        subtitle={pendingRestore?.fileName}
+      >
+        <div className="p-4 space-y-4 select-none">
+          {pendingRestore && (
+            <div className="p-3 rounded-(--radius-sm) bg-(--paper-sunken)/70 border border-dashed border-(--rule-hairline) text-xs font-mono space-y-1.5">
+              <div className="flex items-center justify-between text-(--ink-secondary)">
+                <span>备份流水</span>
+                <span className="font-semibold text-(--ink-solid)">{pendingRestore.data.transactions.length} 笔</span>
+              </div>
+              <div className="flex items-center justify-between text-(--ink-secondary)">
+                <span>备份账户</span>
+                <span className="font-semibold text-(--ink-solid)">{pendingRestore.data.accounts.length} 个</span>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-(--color-expense) leading-relaxed">
+            恢复操作将完全覆盖当前设备中的所有账本数据，此操作不可撤销，请确认已做好备份。
+          </p>
+
+          <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
+            <button
+              type="button"
+              onClick={() => setPendingRestore(null)}
+              className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              disabled={isRestoringBackup}
+              onClick={handleConfirmRestoreJson}
+              className="flex-1 h-10 rounded-(--btn-radius) bg-(--color-expense) text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+            >
+              {isRestoringBackup ? '恢复中...' : '确认覆盖恢复'}
+            </button>
+          </div>
+        </div>
+      </PaperModal>
     </div>
   );
 };
