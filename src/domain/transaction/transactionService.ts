@@ -9,6 +9,7 @@ import type { TransactionRepository } from '../../core/repositories/TransactionR
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { CategoryRepository } from '../../core/repositories/CategoryRepository';
 import { pluginManager } from '../../core/plugin/PluginManager';
+import { todayDate } from '../../utils/date';
 
 export interface CreateTransactionInput {
   type: TransactionType;
@@ -232,7 +233,7 @@ export class TransactionService {
       throw new Error(`报销交易不存在或非待报销交易: ${txId}`);
     }
 
-    const today = settleDate || new Date().toISOString().split('T')[0];
+    const today = settleDate || todayDate();
 
     await this.txRepo.update(orig.id, {
       reimburseStatus: 'settled',
@@ -267,7 +268,7 @@ export class TransactionService {
       throw new Error('该笔借贷已完全结清');
     }
 
-    const today = settleDate || new Date().toISOString().split('T')[0];
+    const today = settleDate || todayDate();
 
     const categoryId = orig.loanDirection === 'lend' ? 'cat_loan_repay' : 'cat_debt_clear';
 

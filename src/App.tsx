@@ -36,6 +36,7 @@ import { PluginSubPageOutlet } from './plugin-sdk/components/PluginSubPageOutlet
 import { PluginModalOutlet } from './plugin-sdk/components/PluginModalOutlet';
 import { pluginManager } from './core/plugin/PluginManager';
 import { cn } from './utils/cn';
+import { currentYearMonth, stepYearMonth } from './utils/date';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('ledger');
@@ -69,17 +70,12 @@ export function App() {
   const { accounts, loadAccounts, createAccount, deleteAccount } = useAccountStore();
   const { categories, loadCategories } = useCategoryStore();
 
-  const todayMonth = useMemo(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  }, []);
+  const todayMonth = currentYearMonth();
 
   const isCurrentNaturalMonth = currentMonth === todayMonth;
 
   const stepMonth = (offset: number) => {
-    const [y, m] = currentMonth.split('-').map(Number);
-    const d = new Date(y, m - 1 + offset, 1);
-    const nextMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const nextMonth = stepYearMonth(currentMonth, offset);
     setCurrentMonth(nextMonth);
     loadMonth(nextMonth);
   };

@@ -3,6 +3,7 @@ import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
 import { generateCsv } from './csvParser';
 import { centsToYuan } from '../finance/balanceCalculator';
+import { parseCsvDateTime } from '../../utils/date';
 
 export type ImportMode = 'elephant' | 'standard' | 'preset';
 
@@ -95,37 +96,7 @@ export function inferColumnMapping(headers: string[]): CsvColumnMapping {
 }
 
 export function normalizeDateTime(raw: string): { date: string; createdAt?: string } {
-  const trimmed = raw.trim();
-  const match = trimmed.match(
-    /^(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?:[T\s]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?/
-  );
-  if (!match) {
-    return { date: new Date().toISOString().split('T')[0] };
-  }
-
-  const year = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10);
-  const day = parseInt(match[3], 10);
-  const date = `${match[1]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-  if (match[4] !== undefined && match[5] !== undefined) {
-    if (match[7]) {
-      const parsedIso = new Date(trimmed);
-      if (!isNaN(parsedIso.getTime())) {
-        return { date, createdAt: parsedIso.toISOString() };
-      }
-    }
-
-    const hour = Math.min(23, Math.max(0, parseInt(match[4], 10)));
-    const minute = Math.min(59, Math.max(0, parseInt(match[5], 10)));
-    const second = match[6] !== undefined ? Math.min(59, Math.max(0, parseInt(match[6], 10))) : 0;
-    const localDate = new Date(year, month - 1, day, hour, minute, second);
-    if (!isNaN(localDate.getTime())) {
-      return { date, createdAt: localDate.toISOString() };
-    }
-  }
-
-  return { date };
+  return parseCsvDateTime(raw);
 }
 
 export function normalizeDate(raw: string): string {

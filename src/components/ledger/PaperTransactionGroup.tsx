@@ -5,6 +5,7 @@ import type { Account } from '../../types/account';
 import { TransactionItem } from './TransactionItem';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
+import { parseLocalDate } from '../../utils/date';
 
 export interface SkinTransactionGroupProps {
   visibleDates: string[];
@@ -47,10 +48,10 @@ export const PaperTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
           }
         }
 
-        const d = new Date(date + 'T00:00:00');
-        const dayCode = isNaN(d.getTime())
+        const d = parseLocalDate(date);
+        const dayCode = !d.isValid()
           ? date
-          : `${String(d.getDate()).padStart(2, '0')} ${dayNames[d.getDay()]}`;
+          : `${d.format('DD')} ${dayNames[d.day()]}`;
 
         const daySumFormatted =
           dayNet >= 0

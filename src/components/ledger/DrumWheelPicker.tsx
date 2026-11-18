@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { cn } from '../../utils/cn';
+import { dayjs, parseLocalDate } from '../../utils/date';
 
 export interface DrumWheelPickerProps {
   dateStr: string; // 'YYYY-MM-DD'
@@ -17,28 +18,24 @@ const WEEK_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', 
 
 const generateDateItems = (selectedDate: string): Item[] => {
   const items: Item[] = [];
-  const now = new Date();
-  const sel = selectedDate ? new Date(selectedDate + 'T00:00:00') : now;
-  const selTime = isNaN(sel.getTime()) ? now.getTime() : sel.getTime();
+  const today = dayjs().startOf('day');
+  const parsedSel = selectedDate ? parseLocalDate(selectedDate).startOf('day') : today;
+  const sel = parsedSel.isValid() ? parsedSel : today;
 
-  const minTime = Math.min(now.getTime() - 45 * 86400000, selTime - 15 * 86400000);
-  const maxTime = Math.max(now.getTime() + 15 * 86400000, selTime + 15 * 86400000);
+  const minFromToday = today.subtract(45, 'day');
+  const minFromSel = sel.subtract(15, 'day');
+  const start = minFromSel.isBefore(minFromToday) ? minFromSel : minFromToday;
 
-  const start = new Date(minTime);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(maxTime);
-  end.setHours(0, 0, 0, 0);
+  const maxFromToday = today.add(15, 'day');
+  const maxFromSel = sel.add(15, 'day');
+  const end = maxFromSel.isAfter(maxFromToday) ? maxFromSel : maxFromToday;
 
-  const cur = new Date(start);
-  while (cur <= end) {
-    const y = cur.getFullYear();
-    const m = String(cur.getMonth() + 1).padStart(2, '0');
-    const d = String(cur.getDate()).padStart(2, '0');
-    const val = `${y}-${m}-${d}`;
-    const week = WEEK_NAMES[cur.getDay()];
-    const label = `${m}-${d} ${week}`;
-    items.push({ label, value: val });
-    cur.setDate(cur.getDate() + 1);
+  let cur = start;
+  while (!cur.isAfter(end)) {
+    const val = cur.format('YYYY-MM-DD');
+    const week = WEEK_NAMES[cur.day()];
+    items.push({ label: `${cur.format('MM-DD')} ${week}`, value: val });
+    cur = cur.add(1, 'day');
   }
   return items;
 };

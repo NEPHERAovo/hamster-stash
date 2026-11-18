@@ -8,6 +8,7 @@ import { CategoryBadge } from '../ui/CategoryBadge';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { PluginOverride } from '../../plugin-sdk/components/PluginOverride';
 import { cn } from '../../utils/cn';
+import { formatTime } from '../../utils/date';
 
 export interface TransactionItemProps {
   transaction: Transaction;
@@ -50,19 +51,7 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
     (isTransfer ? '转账' : isReconcile ? '平账' : isLoan ? '往来借贷' : '记账');
 
   const formattedAmount = centsToYuan(transaction.amount);
-
-  const timeStr = (() => {
-    if (!transaction.createdAt) return '';
-    try {
-      const d = new Date(transaction.createdAt);
-      if (isNaN(d.getTime())) return '';
-      const h = String(d.getHours()).padStart(2, '0');
-      const m = String(d.getMinutes()).padStart(2, '0');
-      return `${h}:${m}`;
-    } catch {
-      return '';
-    }
-  })();
+  const timeStr = formatTime(transaction.createdAt);
 
   const handleClick = () => {
     if (onClick) {

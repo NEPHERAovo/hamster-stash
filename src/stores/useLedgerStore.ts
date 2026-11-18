@@ -11,6 +11,7 @@ import type {
   PendingSettlementSummary,
 } from '../domain/transaction/transactionService';
 import { useAccountStore } from './useAccountStore';
+import { currentYearMonth } from '../utils/date';
 
 interface LedgerState {
   currentMonth: string; // YYYY-MM
@@ -45,13 +46,6 @@ interface LedgerState {
   ) => Promise<{ importedCount: number }>;
 }
 
-const getDefaultMonth = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-};
-
 const initialSettlementSummary: PendingSettlementSummary = {
   lendPendingAmount: 0,
   reimbPendingAmount: 0,
@@ -62,7 +56,7 @@ const initialSettlementSummary: PendingSettlementSummary = {
 };
 
 export const useLedgerStore = create<LedgerState>((set, get) => ({
-  currentMonth: getDefaultMonth(),
+  currentMonth: currentYearMonth(),
   transactions: [],
   allTransactions: [],
   summary: { totalIncome: 0, totalExpense: 0, netBalance: 0, retentionRate: 0 },
@@ -86,7 +80,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     await core.init();
 
     const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
-    const currentMonth = get().currentMonth || getDefaultMonth();
+    const currentMonth = get().currentMonth || currentYearMonth();
     const monthTxs = all.filter((t) => t.date.startsWith(currentMonth));
     const summary = computeMonthSummary(monthTxs, all);
     const settlementSummary = await core.txService.getPendingSettlementSummary();

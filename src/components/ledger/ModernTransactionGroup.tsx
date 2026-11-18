@@ -3,6 +3,7 @@ import type { SkinTransactionGroupProps } from './PaperTransactionGroup';
 import { TransactionItem } from './TransactionItem';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
+import { parseLocalDate } from '../../utils/date';
 
 const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
@@ -33,9 +34,9 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
           }
         }
 
-        const d = new Date(date + 'T00:00:00');
-        const dayNum = String(d.getDate()).padStart(2, '0');
-        const dayWeek = dayNames[d.getDay()] || '';
+        const d = parseLocalDate(date);
+        const dayNum = d.isValid() ? d.format('DD') : date.slice(-2);
+        const dayWeek = d.isValid() ? dayNames[d.day()] || '' : '';
 
         const daySumFormatted =
           dayNet >= 0
