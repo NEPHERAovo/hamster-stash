@@ -5,7 +5,6 @@ import {
   FileSpreadsheet,
   FileUp,
   HardDriveUpload,
-  Info,
   ChevronRight,
   Blocks,
 } from 'lucide-react';
@@ -289,8 +288,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           onClick={() => toast.info('仓鼠囤囤 v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-(--badge-radius) bg-(--bg-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <Info className="w-4 h-4 stroke-[1.75]" />
+            <div className="w-7 h-7 rounded-(--badge-radius) overflow-hidden flex items-center justify-center shrink-0 border border-(--rule-hairline) bg-(--paper-sunken)">
+              <img src="/pwa-64x64.png" alt="仓鼠囤囤" className="w-full h-full object-cover" />
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">关于</span>
           </div>
