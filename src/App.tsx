@@ -19,6 +19,7 @@ import { SettingsSubPage } from './components/assets/SettingsSubPage';
 import { ImportSubPage } from './components/assets/ImportSubPage';
 import { LoanChainModal } from './components/assets/LoanChainModal';
 import { ReconcileModal } from './components/assets/ReconcileModal';
+import { CreateAccountModal } from './components/assets/CreateAccountModal';
 import { Toast } from './components/ui/Toast';
 import { toast } from './stores/useToastStore';
 import { useLedgerStore } from './stores/useLedgerStore';
@@ -39,6 +40,7 @@ import { cn } from './utils/cn';
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('ledger');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
   const [isLoanHubOpen, setIsLoanHubOpen] = useState(false);
   const [activeDetailAccount, setActiveDetailAccount] = useState<Account | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -112,19 +114,8 @@ export function App() {
     void usePreferenceStore.getState().loadPreferencesFromDB();
   }, [loadAccounts, loadCategories, loadTransactions, loadSettlementSummary]);
 
-  const handleCreateNewAccount = async () => {
-    const name = prompt('请输入新账户名称 (如: 招商银行信用卡、美团钱包等):');
-    if (!name || !name.trim()) return;
-
-    try {
-      await createAccount({
-        name: name.trim(),
-        type: 'bank',
-        initialBalance: 0,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '创建账户失败');
-    }
+  const handleCreateNewAccount = () => {
+    setIsCreateAccountOpen(true);
   };
 
   const handleDeleteAccount = async (acct: Account) => {
@@ -443,6 +434,14 @@ export function App() {
         account={reconcileAccount}
         isOpen={Boolean(reconcileAccount)}
         onClose={() => setReconcileAccount(null)}
+      />
+
+      <CreateAccountModal
+        isOpen={isCreateAccountOpen}
+        onClose={() => setIsCreateAccountOpen(false)}
+        onSubmit={async (input) => {
+          await createAccount(input);
+        }}
       />
 
       <PluginSubPageOutlet />
