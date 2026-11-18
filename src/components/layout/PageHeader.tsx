@@ -11,6 +11,8 @@ export interface PageHeaderProps {
   showMonthStep?: boolean;
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
+  showBackToToday?: boolean;
+  onBackToToday?: () => void;
   centerTitle?: boolean;
   className?: string;
 }
@@ -24,6 +26,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   showMonthStep = false,
   onPrevMonth,
   onNextMonth,
+  showBackToToday = false,
+  onBackToToday,
   centerTitle = false,
   className,
 }) => {
@@ -79,6 +83,16 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <div className="flex items-center gap-1.5">
             {showMonthStep && (
               <>
+                {showBackToToday && onBackToToday && (
+                  <button
+                    type="button"
+                    onClick={onBackToToday}
+                    className="h-7 px-2 flex items-center justify-center border border-(--rule-hairline) text-(--color-accent) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs text-[11px] font-medium"
+                    title="回到本月"
+                  >
+                    本月
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onPrevMonth}

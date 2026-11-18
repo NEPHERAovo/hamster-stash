@@ -66,12 +66,24 @@ export function App() {
   const { accounts, loadAccounts, createAccount, deleteAccount } = useAccountStore();
   const { categories, loadCategories } = useCategoryStore();
 
+  const todayMonth = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  const isCurrentNaturalMonth = currentMonth === todayMonth;
+
   const stepMonth = (offset: number) => {
     const [y, m] = currentMonth.split('-').map(Number);
     const d = new Date(y, m - 1 + offset, 1);
     const nextMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     setCurrentMonth(nextMonth);
     loadMonth(nextMonth);
+  };
+
+  const jumpToCurrentMonth = () => {
+    setCurrentMonth(todayMonth);
+    loadMonth(todayMonth);
   };
 
   const MONTH_NAMES = [
@@ -148,10 +160,14 @@ export function App() {
 
   const displayTransactions = allTransactions.length > 0 ? allTransactions : transactions;
 
+  const currentMonthTransactions = useMemo(
+    () => displayTransactions.filter((t) => t.date.startsWith(currentMonth)),
+    [displayTransactions, currentMonth]
+  );
+
   const displayMonthSummary = useMemo(() => {
-    const monthTxs = displayTransactions.filter((t) => t.date.startsWith(currentMonth));
-    return computeMonthSummary(monthTxs, displayTransactions);
-  }, [displayTransactions, currentMonth]);
+    return computeMonthSummary(currentMonthTransactions, displayTransactions);
+  }, [currentMonthTransactions, displayTransactions]);
 
   return (
     <AppShell>
@@ -161,6 +177,8 @@ export function App() {
           showMonthStep={true}
           onPrevMonth={() => stepMonth(-1)}
           onNextMonth={() => stepMonth(1)}
+          showBackToToday={!isCurrentNaturalMonth}
+          onBackToToday={jumpToCurrentMonth}
         />
       ) : currentTab === 'stats' ? (
         <PageHeader
@@ -244,7 +262,8 @@ export function App() {
             />
 
             <TransactionGroup
-              transactions={displayTransactions}
+              transactions={currentMonthTransactions}
+              searchTransactions={displayTransactions}
               categories={categories}
               accounts={accounts}
               pageSize={15}

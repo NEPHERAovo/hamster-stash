@@ -13,6 +13,7 @@ import { cn } from '../../utils/cn';
 
 export interface TransactionGroupProps {
   transactions: Transaction[];
+  searchTransactions?: Transaction[];
   categories: Category[];
   accounts: Account[];
   onSelectTransaction?: (tx: Transaction) => void;
@@ -24,6 +25,7 @@ export interface TransactionGroupProps {
 
 export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   transactions,
+  searchTransactions,
   categories,
   accounts,
   onSelectTransaction,
@@ -56,9 +58,16 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 
   const [filter, setFilter] = useState<'all' | 'reimbursable' | 'major'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [visibleGroupCount, setVisibleGroupCount] = useState<number>(pageSize);
   const [localFreshTxId, setLocalFreshTxId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const isSearching = searchQuery.trim().length > 0;
+  const scopeKey = `${isSearching ? 'search' : transactions.length}:${transactions[0]?.id || ''}:${filter}:${searchQuery.trim()}`;
+  const [pagination, setPagination] = useState<{ key: string; count: number }>({
+    key: scopeKey,
+    count: pageSize,
+  });
+  const visibleGroupCount = pagination.key === scopeKey ? pagination.count : pageSize;
 
   const activeFreshId = externalFreshTxId || localFreshTxId;
 
@@ -72,15 +81,16 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   }, [activeFreshId]);
 
   const filteredTransactions = useMemo(() => {
-    let list = transactions;
+    const trimmedQuery = searchQuery.trim();
+    let list = trimmedQuery && searchTransactions ? searchTransactions : transactions;
     if (filter === 'reimbursable') {
       list = list.filter((t) => t.isReimbursable);
     } else if (filter === 'major') {
       list = list.filter((t) => t.amount >= 20000);
     }
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
+    if (trimmedQuery) {
+      const q = trimmedQuery.toLowerCase();
       list = list.filter((t) => {
         const noteMatch = t.note?.toLowerCase().includes(q);
         const cat = catMap.get(t.categoryId);
@@ -94,7 +104,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     }
 
     return list;
-  }, [transactions, filter, searchQuery, catMap, acctMap]);
+  }, [transactions, searchTransactions, filter, searchQuery, catMap, acctMap]);
 
   const groups = useMemo(() => {
     return filteredTransactions.reduce((acc, tx) => {
@@ -122,7 +132,10 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && hasMore) {
-          setVisibleGroupCount((prev) => Math.min(sortedDates.length, prev + pageSize));
+          setPagination((prev) => {
+            const base = prev.key === scopeKey ? prev.count : pageSize;
+            return { key: scopeKey, count: Math.min(sortedDates.length, base + pageSize) };
+          });
         }
       },
       { rootMargin: '350px' }
@@ -130,7 +143,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, sortedDates.length, pageSize]);
+  }, [hasMore, sortedDates.length, pageSize, scopeKey]);
 
   return (
     <div className="w-full">
