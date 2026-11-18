@@ -23,16 +23,16 @@ export const Toast: React.FC = () => {
   })();
 
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[350] pointer-events-none transition-all duration-300">
+    <div className="fixed inset-0 z-[350] flex items-center justify-center pointer-events-none px-8 pb-[8vh]">
       <div
         className={cn(
-          'flex items-center gap-1.5 px-4 py-2 rounded-full shadow-(--shadow-lg) text-xs font-semibold select-none',
-          'bg-(--ink-primary) text-(--bg-base)',
-          'animate-[toastSlideDown_0.25s_cubic-bezier(0.32,0.72,0,1)_forwards]'
+          'flex items-center gap-2 max-w-[78vw] sm:max-w-[320px] px-4 py-2.5 rounded-(--radius-lg) backdrop-blur-md shadow-[0_6px_20px_rgba(0,0,0,0.16)] text-[13px] font-medium select-none',
+          'bg-(--ink-solid)/90 text-(--paper-sheet)',
+          'animate-[toastPopIn_0.2s_cubic-bezier(0.22,1,0.36,1)_forwards]'
         )}
       >
-        <Icon className="w-3.5 h-3.5 stroke-[2.2] shrink-0" />
-        <span className="whitespace-pre-line leading-tight">{currentToast.text}</span>
+        <Icon className="w-4 h-4 stroke-[2.2] shrink-0" />
+        <span className="whitespace-pre-line leading-snug">{currentToast.text}</span>
       </div>
     </div>
   );
