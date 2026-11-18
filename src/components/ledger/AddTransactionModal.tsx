@@ -652,8 +652,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
 
           {isAcctTrayOpen && (
-            <div className="pt-1.5 pb-0.5 border-t border-dashed border-(--rule-hairline)/60">
-              <div className="grid grid-cols-3 gap-1">
+            <div className="pt-2 pb-0.5 border-t border-dashed border-(--rule-hairline)/60">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {accounts.map((a) => (
                   <button
                     key={a.id}
@@ -663,10 +663,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       setIsAcctTrayOpen(false);
                     }}
                     className={cn(
-                      'px-2 py-1 text-xs font-mono rounded-[3px] text-left truncate transition-all cursor-pointer border',
+                      'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) max-w-[140px] truncate transition-all cursor-pointer border',
                       selectedAcctId === a.id
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-hairline) -rotate-1'
-                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50 border-transparent'
+                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
+                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
                     )}
                   >
                     {a.name}
