@@ -74,36 +74,43 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
             aria-hidden="true"
           />
           <div className="relative z-10 flex items-end gap-1 px-1 pb-1">
-            {allTabs.map((tab) => {
+            {allTabs.map((tab, idx) => {
               const Icon = tab.icon;
               const isActive = currentTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => onTabChange(tab.id)}
-                  className={cn(
-                    'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-1 min-w-0',
-                    isActive
-                      ? 'relative z-10 h-[51px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
-                      : 'relative z-1 h-11 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                  )}
-                >
-                  {isActive && (
-                    <span
-                      className="absolute top-0 inset-x-0 h-[3px] bg-(--color-accent)"
+                <React.Fragment key={tab.id}>
+                  {idx > 0 && (
+                    <div
+                      className="w-0 h-4.5 border-r border-dashed border-(--rule-hairline)/80 self-center mb-0.5 shrink-0 pointer-events-none"
                       aria-hidden="true"
                     />
                   )}
-                  <Icon
-                    size={17}
-                    strokeWidth={isActive ? 2.1 : 1.75}
-                    className="shrink-0"
-                  />
-                  <span className="text-[10px] font-semibold leading-none font-sans truncate px-0.5">
-                    {tab.label}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onTabChange(tab.id)}
+                    className={cn(
+                      'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-1 min-w-0',
+                      isActive
+                        ? 'relative z-10 h-[51px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
+                        : 'relative z-1 h-11 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                    )}
+                  >
+                    {isActive && (
+                      <span
+                        className="absolute top-0 inset-x-0 h-[3px] bg-(--color-accent)"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <Icon
+                      size={17}
+                      strokeWidth={isActive ? 2.1 : 1.75}
+                      className="shrink-0"
+                    />
+                    <span className="text-[10px] font-semibold leading-none font-sans truncate px-0.5">
+                      {tab.label}
+                    </span>
+                  </button>
+                </React.Fragment>
               );
             })}
           </div>
