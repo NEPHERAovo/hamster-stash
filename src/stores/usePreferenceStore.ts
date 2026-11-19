@@ -6,6 +6,7 @@ export interface AppPreferencesSetting extends StoredEntity {
   id: 'app_preferences';
   majorThresholdYuan: number;
   isReimbursementEnabled?: boolean;
+  isAmortizationEnabled?: boolean;
 }
 
 const PREFS_STORAGE_KEY = 'hamsterstash_prefs_v1';
@@ -17,27 +18,41 @@ const sanitizeThreshold = (value: unknown): number => {
   return Math.round(num);
 };
 
-const getInitialPreferences = (): { majorThresholdYuan: number; isReimbursementEnabled: boolean } => {
+interface PreferencesPayload {
+  majorThresholdYuan: number;
+  isReimbursementEnabled: boolean;
+  isAmortizationEnabled: boolean;
+}
+
+const getInitialPreferences = (): PreferencesPayload => {
   let majorThresholdYuan = DEFAULT_MAJOR_THRESHOLD_YUAN;
   let isReimbursementEnabled = true;
+  let isAmortizationEnabled = false;
   try {
     const raw = localStorage.getItem(PREFS_STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as { majorThresholdYuan?: unknown; isReimbursementEnabled?: unknown };
+      const parsed = JSON.parse(raw) as {
+        majorThresholdYuan?: unknown;
+        isReimbursementEnabled?: unknown;
+        isAmortizationEnabled?: unknown;
+      };
       if (parsed.majorThresholdYuan !== undefined) {
         majorThresholdYuan = sanitizeThreshold(parsed.majorThresholdYuan);
       }
       if (typeof parsed.isReimbursementEnabled === 'boolean') {
         isReimbursementEnabled = parsed.isReimbursementEnabled;
       }
+      if (typeof parsed.isAmortizationEnabled === 'boolean') {
+        isAmortizationEnabled = parsed.isAmortizationEnabled;
+      }
     }
   } catch {
     void 0;
   }
-  return { majorThresholdYuan, isReimbursementEnabled };
+  return { majorThresholdYuan, isReimbursementEnabled, isAmortizationEnabled };
 };
 
-const persistPreferencesToDB = async (prefs: { majorThresholdYuan: number; isReimbursementEnabled: boolean }) => {
+const persistPreferencesToDB = async (prefs: PreferencesPayload) => {
   try {
     await core.init();
     const now = new Date().toISOString();
@@ -61,8 +76,10 @@ const persistPreferencesToDB = async (prefs: { majorThresholdYuan: number; isRei
 interface PreferenceState {
   majorThresholdYuan: number;
   isReimbursementEnabled: boolean;
+  isAmortizationEnabled: boolean;
   setMajorThresholdYuan: (yuan: number) => void;
   setReimbursementEnabled: (enabled: boolean) => void;
+  setAmortizationEnabled: (enabled: boolean) => void;
   loadPreferencesFromDB: () => Promise<void>;
 }
 
@@ -71,12 +88,14 @@ const initialPrefs = getInitialPreferences();
 export const usePreferenceStore = create<PreferenceState>((set, get) => ({
   majorThresholdYuan: initialPrefs.majorThresholdYuan,
   isReimbursementEnabled: initialPrefs.isReimbursementEnabled,
+  isAmortizationEnabled: initialPrefs.isAmortizationEnabled,
 
   setMajorThresholdYuan: (yuan: number) => {
     const clean = sanitizeThreshold(yuan);
     const updated = {
       majorThresholdYuan: clean,
       isReimbursementEnabled: get().isReimbursementEnabled,
+      isAmortizationEnabled: get().isAmortizationEnabled,
     };
     try {
       localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(updated));
@@ -91,6 +110,7 @@ export const usePreferenceStore = create<PreferenceState>((set, get) => ({
     const updated = {
       majorThresholdYuan: get().majorThresholdYuan,
       isReimbursementEnabled: enabled,
+      isAmortizationEnabled: get().isAmortizationEnabled,
     };
     try {
       localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(updated));
@@ -98,6 +118,21 @@ export const usePreferenceStore = create<PreferenceState>((set, get) => ({
       void 0;
     }
     set({ isReimbursementEnabled: enabled });
+    void persistPreferencesToDB(updated);
+  },
+
+  setAmortizationEnabled: (enabled: boolean) => {
+    const updated = {
+      majorThresholdYuan: get().majorThresholdYuan,
+      isReimbursementEnabled: get().isReimbursementEnabled,
+      isAmortizationEnabled: enabled,
+    };
+    try {
+      localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      void 0;
+    }
+    set({ isAmortizationEnabled: enabled });
     void persistPreferencesToDB(updated);
   },
 
@@ -112,7 +147,14 @@ export const usePreferenceStore = create<PreferenceState>((set, get) => ({
         const reimbEnabled = typeof record.isReimbursementEnabled === 'boolean'
           ? record.isReimbursementEnabled
           : get().isReimbursementEnabled;
-        const updated = { majorThresholdYuan: clean, isReimbursementEnabled: reimbEnabled };
+        const amortEnabled = typeof record.isAmortizationEnabled === 'boolean'
+          ? record.isAmortizationEnabled
+          : get().isAmortizationEnabled;
+        const updated = {
+          majorThresholdYuan: clean,
+          isReimbursementEnabled: reimbEnabled,
+          isAmortizationEnabled: amortEnabled,
+        };
         try {
           localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(updated));
         } catch {
