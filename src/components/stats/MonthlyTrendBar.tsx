@@ -39,7 +39,6 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   }
 
   const activeIdx = Math.min(Math.max(0, selectedIdx), trends.length - 1);
-  const activeItem = trends[activeIdx] || trends[trends.length - 1];
 
   const maxAmount = Math.max(...trends.map((t) => t.amount), 1);
 
@@ -133,14 +132,6 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
             </div>
           )}
         </div>
-        {activeItem && (
-          <div className="font-mono text-xs text-(--ink-secondary) flex items-center gap-1.5">
-            <span className="text-(--ink-tertiary)">{valuePrefix}{activeItem.label}</span>
-            <strong className="text-(--ink-solid) font-bold tabular-nums">
-              ¥{centsToYuan(activeItem.amount)}
-            </strong>
-          </div>
-        )}
       </div>
 
       <div
