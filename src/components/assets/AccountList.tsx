@@ -4,6 +4,7 @@ import type { Account } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
+import { confirmAction } from '../../stores/useConfirmStore';
 import { cn } from '../../utils/cn';
 import {
   SPRING_OUT_EASE,
@@ -133,7 +134,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
     }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
+  const handleDeleteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!canDelete) {
       toast.error('系统至少需保留一个资金账户');
@@ -141,7 +142,13 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
       setOffset(0);
       return;
     }
-    if (window.confirm(`确认删除账户「${account.name}」吗？`)) {
+    const confirmed = await confirmAction({
+      title: '删除账户',
+      message: `确认删除账户「${account.name}」吗？`,
+      confirmText: '确认删除',
+      isDestructive: true,
+    });
+    if (confirmed) {
       onDelete?.();
     }
     currentOffsetRef.current = 0;

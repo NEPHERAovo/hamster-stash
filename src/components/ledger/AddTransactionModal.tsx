@@ -14,6 +14,7 @@ import { evaluateArithmetic } from '../../utils/math';
 import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
+import { confirmAction } from '../../stores/useConfirmStore';
 import { DrumWheelPicker } from './DrumWheelPicker';
 import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
@@ -457,14 +458,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const handleDelete = async () => {
     if (!editingTransaction) return;
-    if (window.confirm('确定要删除这笔便签记录吗？')) {
-      try {
-        await deleteTransaction(editingTransaction.id);
-        toast.info('流水已撕下删除');
-        closeWithAnimation(240);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : '删除失败');
-      }
+    const confirmed = await confirmAction({
+      title: '删除便签',
+      message: '确定要删除这笔便签记录吗？',
+      confirmText: '确认删除',
+      isDestructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await deleteTransaction(editingTransaction.id);
+      toast.info('流水已撕下删除');
+      closeWithAnimation(240);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '删除失败');
     }
   };
 

@@ -26,6 +26,7 @@ import { LoanChainModal } from './components/assets/LoanChainModal';
 import { ReconcileModal } from './components/assets/ReconcileModal';
 import { CreateAccountModal } from './components/assets/CreateAccountModal';
 import { Toast } from './components/ui/Toast';
+import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { PwaUpdateBanner } from './components/ui/PwaUpdateBanner';
 import { toast } from './stores/useToastStore';
 import { useLedgerStore } from './stores/useLedgerStore';
@@ -547,6 +548,7 @@ export function App() {
       <PluginModalOutlet />
       <PwaUpdateBanner />
       <Toast />
+      <ConfirmDialog />
     </AppShell>
   );
 }

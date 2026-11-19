@@ -7,6 +7,7 @@ import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { TransactionItem } from '../ledger/TransactionItem';
 import { toast } from '../../stores/useToastStore';
+import { confirmAction } from '../../stores/useConfirmStore';
 import { cn } from '../../utils/cn';
 import { parseLocalDate } from '../../utils/date';
 
@@ -137,7 +138,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     }
   };
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = async () => {
     if (accounts.length <= 1) {
       toast.error('系统至少需保留一个资金账户');
       return;
@@ -146,7 +147,13 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     const msg = hasTxs
       ? `该账户下已有 ${accountTxs.length} 条交易流水，删除账户将同时清除关联流水，是否确认删除？`
       : `确认删除账户「${account.name}」吗？`;
-    if (window.confirm(msg)) {
+    const confirmed = await confirmAction({
+      title: '删除账户',
+      message: msg,
+      confirmText: '确认删除',
+      isDestructive: true,
+    });
+    if (confirmed) {
       onDeleteAccount?.(account);
     }
   };

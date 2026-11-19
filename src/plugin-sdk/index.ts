@@ -46,6 +46,7 @@ export { PaperKeypad, type PaperKeypadProps } from '../components/ui/PaperKeypad
 export { DrumWheelPicker, type DrumWheelPickerProps } from '../components/ledger/DrumWheelPicker';
 
 export { toast } from '../stores/useToastStore';
+export { confirmAction, type ConfirmOptions } from '../stores/useConfirmStore';
 export { centsToYuan, yuanToCents } from '../domain/finance/balanceCalculator';
 export { getCategoryIcon } from '../utils/categoryIcons';
 export { cn } from '../utils/cn';

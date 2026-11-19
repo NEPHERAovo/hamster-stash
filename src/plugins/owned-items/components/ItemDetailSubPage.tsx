@@ -17,6 +17,7 @@ import {
   yuanToCents,
   getCategoryIcon,
   toast,
+  confirmAction,
   cn,
 } from '../../../plugin-sdk';
 import { type ItemStatus, getOwnedItemExt } from '../types';
@@ -165,7 +166,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`确定要从手帐中移除物品「${item.name}」吗？（关联的历史流水不会被删除，仅解除物品关联）`)) {
+    const confirmed = await confirmAction({
+      title: '移除物品',
+      message: `确定要从手帐中移除物品「${item.name}」吗？（关联的历史流水不会被删除，仅解除物品关联）`,
+      confirmText: '确认移除',
+      isDestructive: true,
+    });
+    if (confirmed) {
       try {
         for (const tx of itemTransactions) {
           const nextExt = { ...(tx.ext || {}) };

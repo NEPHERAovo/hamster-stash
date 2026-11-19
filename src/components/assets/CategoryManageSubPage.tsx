@@ -6,6 +6,7 @@ import { getCategoryIcon } from '../../utils/categoryIcons';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { toast } from '../../stores/useToastStore';
+import { confirmAction } from '../../stores/useConfirmStore';
 import { cn } from '../../utils/cn';
 
 const CATEGORY_ICON_CHOICES = [
@@ -122,7 +123,13 @@ export const CategoryManageSubPage: React.FC = () => {
       return;
     }
 
-    if (!window.confirm(`确认删除分类「${cat.name}」吗？`)) {
+    const confirmed = await confirmAction({
+      title: '删除分类',
+      message: `确认删除分类「${cat.name}」吗？`,
+      confirmText: '确认删除',
+      isDestructive: true,
+    });
+    if (!confirmed) {
       return;
     }
 
