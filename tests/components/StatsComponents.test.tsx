@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { DonutChart } from '../../src/components/stats/DonutChart';
 import { CategoryLegend } from '../../src/components/stats/CategoryLegend';
 import { MonthlyTrendBar } from '../../src/components/stats/MonthlyTrendBar';
 import { SpendingRankList } from '../../src/components/stats/SpendingRankList';
+import { CategoryDetailSubPage } from '../../src/components/stats/CategoryDetailSubPage';
 import { CategoryBadge } from '../../src/components/ui/CategoryBadge';
 import type { CategoryStatItem, TrendItem } from '../../src/domain/finance/periodStats';
 
@@ -67,13 +68,85 @@ describe('Modular Stats & UI Components', () => {
     expect(screen.getByText('¥700.00')).toBeInTheDocument();
   });
 
-  it('renders SpendingRankList with stacked track and rank rows', () => {
-    render(<SpendingRankList items={mockItems} totalExpense={70000} />);
+  it('renders SpendingRankList with category breakdown rows and triggers click', () => {
+    const handleSelect = vi.fn();
+    render(<SpendingRankList items={mockItems} totalExpense={70000} onSelectCategory={handleSelect} />);
 
-    expect(screen.getByText('支出构成')).toBeInTheDocument();
-    expect(screen.getByText('¥ 700.00')).toBeInTheDocument();
+    expect(screen.getByText('餐饮')).toBeInTheDocument();
     expect(screen.getByText('¥420.00')).toBeInTheDocument();
+    expect(screen.getByText('60%')).toBeInTheDocument();
+    expect(screen.getByText('交通')).toBeInTheDocument();
     expect(screen.getByText('¥280.00')).toBeInTheDocument();
+    expect(screen.getByText('40%')).toBeInTheDocument();
+
+    const foodBtn = screen.getByText('餐饮').closest('button');
+    expect(foodBtn).not.toBeNull();
+    fireEvent.click(foodBtn!);
+    expect(handleSelect).toHaveBeenCalledWith('cat_food');
+  });
+
+  it('renders CategoryDetailSubPage with summary metrics and transactions', () => {
+    render(
+      <CategoryDetailSubPage
+        data={{
+          category: {
+            id: 'cat_food',
+            name: '餐饮',
+            type: 'expense',
+            icon: 'utensils',
+            color: 'var(--cat-food)',
+            sortOrder: 1,
+            createdAt: '',
+            updatedAt: '',
+          },
+          periodLabel: '2026年11月',
+          transactions: [
+            {
+              id: 'tx_1',
+              amount: 42000,
+              type: 'expense',
+              categoryId: 'cat_food',
+              accountId: 'acct_1',
+              date: '2026-11-05',
+              time: '12:00',
+              note: '午餐牛肉面',
+              createdAt: '2026-11-05T12:00:00Z',
+              updatedAt: '2026-11-05T12:00:00Z',
+            },
+          ],
+          totalExpense: 42000,
+          categoryPercentage: 60,
+        }}
+        categories={[
+          {
+            id: 'cat_food',
+            name: '餐饮',
+            type: 'expense',
+            icon: 'utensils',
+            color: 'var(--cat-food)',
+            sortOrder: 1,
+            createdAt: '',
+            updatedAt: '',
+          },
+        ]}
+        accounts={[
+          {
+            id: 'acct_1',
+            name: '现金',
+            type: 'cash',
+            balance: 100000,
+            sortOrder: 1,
+            createdAt: '',
+            updatedAt: '',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('2026年11月')).toBeInTheDocument();
+    expect(screen.getByText('¥420.00')).toBeInTheDocument();
+    expect(screen.getByText('60%')).toBeInTheDocument();
+    expect(screen.getByText('午餐牛肉面')).toBeInTheDocument();
   });
 
   it('renders CategoryBadge cleanly with Lucide icon and low-saturation background', () => {

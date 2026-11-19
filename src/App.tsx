@@ -11,7 +11,11 @@ import {
 import { BalanceSummaryCard } from './components/ledger/BalanceSummaryCard';
 import { TransactionGroup } from './components/ledger/TransactionGroup';
 import { AddTransactionModal } from './components/ledger/AddTransactionModal';
-import { StatsView } from './components/stats/StatsView';
+import {
+  StatsView,
+  CategoryDetailSubPage,
+  type CategoryDrilldownData,
+} from './components/stats';
 import { NetWorthHeader } from './components/assets/NetWorthHeader';
 import { AccountList } from './components/assets/AccountList';
 import { AccountDetailSubPage } from './components/assets/AccountDetailSubPage';
@@ -55,6 +59,7 @@ export function App() {
   const [freshTxId, setFreshTxId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [statsMode, setStatsMode] = useState<PeriodMode>('month');
+  const [activeCategoryDrilldown, setActiveCategoryDrilldown] = useState<CategoryDrilldownData | null>(null);
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
@@ -318,6 +323,7 @@ export function App() {
                 accounts={accounts}
                 mode={statsMode}
                 onModeChange={setStatsMode}
+                onOpenCategoryDrilldown={setActiveCategoryDrilldown}
                 onSelectTransaction={(tx) => {
                   setEditingTx(tx);
                   setIsAddOpen(true);
@@ -454,7 +460,31 @@ export function App() {
         />
       </SubPageShell>
 
-      {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !activeDetailAccount && (
+      <SubPageShell
+        isOpen={Boolean(activeCategoryDrilldown)}
+        onClose={() => setActiveCategoryDrilldown(null)}
+        header={
+          <PageHeader
+            title={activeCategoryDrilldown?.category.name || '分类明细'}
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="统计" />}
+          />
+        }
+      >
+        {activeCategoryDrilldown && (
+          <CategoryDetailSubPage
+            data={activeCategoryDrilldown}
+            categories={categories}
+            accounts={accounts}
+            onSelectTransaction={(tx) => {
+              setEditingTx(tx);
+              setIsAddOpen(true);
+            }}
+          />
+        )}
+      </SubPageShell>
+
+      {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !activeDetailAccount && !activeCategoryDrilldown && (
         <BottomNav
           currentTab={currentTab}
           showAddButton={currentTab === 'ledger'}

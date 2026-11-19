@@ -14,12 +14,22 @@ import {
 } from '../../domain/finance/periodStats';
 import { TransactionGroup } from '../ledger/TransactionGroup';
 import { DonutChart } from './DonutChart';
-import { CategoryLegend } from './CategoryLegend';
 import { MonthlyTrendBar } from './MonthlyTrendBar';
 import { SpendingRankList } from './SpendingRankList';
+import { CategoryDetailSubPage } from './CategoryDetailSubPage';
+import { SubPageShell, SubPageBackButton } from '../layout/SubPageShell';
+import { PageHeader } from '../layout/PageHeader';
 import { SegToggle } from '../ui/SegToggle';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { dayjs, type Dayjs } from '../../utils/date';
+
+export interface CategoryDrilldownData {
+  category: Category;
+  periodLabel: string;
+  transactions: Transaction[];
+  totalExpense: number;
+  categoryPercentage: number;
+}
 
 export interface StatsViewProps {
   allTransactions: Transaction[];
@@ -28,6 +38,7 @@ export interface StatsViewProps {
   onSelectTransaction?: (tx: Transaction) => void;
   mode?: PeriodMode;
   onModeChange?: (mode: PeriodMode) => void;
+  onOpenCategoryDrilldown?: (data: CategoryDrilldownData) => void;
 }
 
 const MONTH_NAMES = [
@@ -46,8 +57,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
   onSelectTransaction,
   mode: controlledMode,
   onModeChange,
+  onOpenCategoryDrilldown,
 }) => {
   const [internalMode, setInternalMode] = useState<PeriodMode>('month');
+  const [internalDrilldown, setInternalDrilldown] = useState<CategoryDrilldownData | null>(null);
   const mode = controlledMode || internalMode;
   const setMode = onModeChange || setInternalMode;
 
@@ -123,6 +136,25 @@ export const StatsView: React.FC<StatsViewProps> = ({
     return periodInfo.label;
   }, [mode, periodInfo, isModern]);
 
+  const handleSelectCategory = (categoryId: string) => {
+    const targetCategory = categories.find((c) => c.id === categoryId);
+    if (!targetCategory) return;
+    const statItem = donutItems.find((d) => d.categoryId === categoryId);
+    const catTxs = periodTransactions.filter((tx) => tx.categoryId === categoryId);
+    const drilldownData: CategoryDrilldownData = {
+      category: targetCategory,
+      periodLabel: formattedPeriodTitle,
+      transactions: catTxs,
+      totalExpense: statItem ? statItem.amount : 0,
+      categoryPercentage: statItem ? statItem.percentage : 0,
+    };
+    if (onOpenCategoryDrilldown) {
+      onOpenCategoryDrilldown(drilldownData);
+    } else {
+      setInternalDrilldown(drilldownData);
+    }
+  };
+
   return (
     <div className="py-2 space-y-3.5 pb-6">
       {!controlledMode && (
@@ -179,18 +211,30 @@ export const StatsView: React.FC<StatsViewProps> = ({
           <span>本周期暂无支出记录</span>
         </div>
       ) : (
-        <SpendingRankList items={donutItems} totalExpense={totalExpense} />
-      )}
+        <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-serif italic text-(--ink-secondary)">
+              支出构成
+            </span>
+            <span className="font-mono text-xs text-(--ink-tertiary)">
+              共 {donutItems.length} 项分类
+            </span>
+          </div>
 
-      {totalExpense > 0 && (
-        <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs">
-          <div className="flex items-center gap-5 sm:gap-8 justify-around">
+          <div className="flex items-center justify-center py-1">
             <DonutChart
               items={donutItems}
               totalExpense={totalExpense}
               circumference={circumference}
             />
-            <CategoryLegend items={donutItems} limit={6} />
+          </div>
+
+          <div className="border-t border-(--rule-hairline)/60 pt-1">
+            <SpendingRankList
+              items={donutItems}
+              totalExpense={totalExpense}
+              onSelectCategory={handleSelectCategory}
+            />
           </div>
         </div>
       )}
@@ -216,6 +260,27 @@ export const StatsView: React.FC<StatsViewProps> = ({
           contained
         />
       </div>
+
+      <SubPageShell
+        isOpen={Boolean(internalDrilldown)}
+        onClose={() => setInternalDrilldown(null)}
+        header={
+          <PageHeader
+            title={internalDrilldown?.category.name || '分类明细'}
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="统计" />}
+          />
+        }
+      >
+        {internalDrilldown && (
+          <CategoryDetailSubPage
+            data={internalDrilldown}
+            categories={categories}
+            accounts={accounts}
+            onSelectTransaction={onSelectTransaction}
+          />
+        )}
+      </SubPageShell>
     </div>
   );
 };
