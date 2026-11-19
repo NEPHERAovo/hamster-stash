@@ -166,7 +166,7 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
       title="添加到手机桌面"
       subtitle="独立应用 · 离线全量可用"
     >
-      <div className="space-y-4 pt-1 pb-4">
+      <div className="p-4 pt-3 pb-[calc(18px+var(--safe-bottom))] space-y-4 select-none">
         {isInstalled ? (
           <div className="p-3 rounded-(--radius-md) bg-(--color-income-bg) border border-(--color-income)/20 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-(--color-income) text-white flex items-center justify-center shrink-0">
