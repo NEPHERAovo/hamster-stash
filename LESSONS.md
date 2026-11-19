@@ -58,3 +58,15 @@
 - **Why**: Constant toast popups create visual anxiety, obscure underlying content, and violate the physical quietude of a crafted stationery journal. Redundant subtitles waste vertical mobile viewport space and make the UI feel like an instruction manual rather than an organic notebook.
 - **Evidence**: Purged 18 lightweight toasts and redundant subtitles across modal forms and WebDAV sync in commit `02491c6` and follow-up de-noising pass.
 - **Seen**: 1
+
+### 8. iOS WebKit Viewport Height Chain & Stacking Context Clipping
+- **Rule**: Never apply `-webkit-fill-available` to block root containers (`#root`). Use standard `height: 100%; min-height: 100%` with `@supports (height: 100dvh) { height: 100dvh; min-height: 100dvh; }`. Ensure the outermost application shell anchors to `fixed inset-0 w-full h-full`, and never combine `position: relative`, `z-index`, and `overflow: hidden` on containing blocks that hold `position: fixed` or `position: absolute` children.
+- **Why**: In WebKit (iOS Safari and WKWebView), `-webkit-fill-available` on a block container behaves as an intrinsic keyword rather than a definite length, causing child percentage heights (`height: 100%`) to collapse down to in-flow content height (~475px). This truncates absolute subpages and causes WebKit stacking context roots to clip fixed descendants like bottom navigation and floating action buttons.
+- **Evidence**: Fixed in commit `1d21809`.
+- **Seen**: 1
+
+### 9. Decoupled Backdrop Blur Transitions
+- **Rule**: Always isolate the backdrop blur overlay into its own dedicated element and drive its opacity using a fast easing curve (`cubic-bezier(0.16, 1, 0.3, 1)` with `will-change: opacity`). Never apply backdrop opacity transitions to an outer container that wraps the sliding sheet.
+- **Why**: Bottom sheet drawers slide up rapidly with spring curves (`cubic-bezier(0.32, 0.72, 0, 1)`), reaching near-full displacement within 100ms. If the backdrop is animated with slow `ease` or attached to the sheet's parent container, WebKit defers rasterizing expensive GPU backdrop filters, causing a noticeable delay where the blur pops in a beat after the sheet finishes sliding.
+- **Evidence**: Fixed in commit `458890a`.
+- **Seen**: 1
