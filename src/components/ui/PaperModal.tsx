@@ -34,7 +34,6 @@ export const PaperModal: React.FC<PaperModalProps> = ({
   const [mounted, setMounted] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [visible, setVisible] = useState(false);
-  const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [transitionMs, setTransitionMs] = useState(300);
 
@@ -51,7 +50,6 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       setShouldRender(true);
-      setDragY(0);
       dragYRef.current = 0;
       setIsDragging(false);
       setTransitionMs(300);
@@ -67,7 +65,6 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 
     setVisible(false);
     setIsDragging(false);
-    setDragY(0);
     dragYRef.current = 0;
     const timer = window.setTimeout(() => {
       document.body.style.overflow = '';
@@ -121,7 +118,8 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         const mappedY = deltaY >= 0 ? deltaY : rubberBand(deltaY, 72, 0.25);
         dragYRef.current = mappedY;
         velocityRef.current.push(mappedY, performance.now());
-        setDragY(mappedY);
+        el.style.transform = `translate3d(0, ${mappedY}px, 0)`;
+        el.style.transition = 'none';
       }
     };
 
@@ -139,14 +137,19 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       if (shouldDismissGesture(dist, vy, Math.min(100, height * 0.22), 0.45)) {
         const duration = computeSettleDuration(height - dist, vy, 180, 290);
         setTransitionMs(duration);
+        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
+        el.style.transform = 'translate3d(0, 100%, 0)';
         setVisible(false);
-        setDragY(0);
-        dragYRef.current = 0;
-        onClose();
+        setTimeout(() => {
+          setShouldRender(false);
+          dragYRef.current = 0;
+          onClose();
+        }, duration);
       } else {
         const duration = computeSettleDuration(dist, vy, 200, 310);
         setTransitionMs(duration);
-        setDragY(0);
+        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
+        el.style.transform = 'translate3d(0, 0, 0)';
         dragYRef.current = 0;
       }
     };
@@ -157,7 +160,8 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       dragging = false;
       setIsDragging(false);
       setTransitionMs(240);
-      setDragY(0);
+      el.style.transition = `transform 240ms ${SHEET_SPRING_EASE}`;
+      el.style.transform = 'translate3d(0, 0, 0)';
       dragYRef.current = 0;
     };
 
@@ -186,13 +190,8 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 
   if (!mounted || !shouldRender) return null;
 
-  const dragProgress = Math.max(0, Math.min(1, dragY / 320));
-  const backdropOpacity = visible ? 1 - dragProgress * 0.75 : 0;
-  const sheetTransform = !visible
-    ? 'translate3d(0, 100%, 0)'
-    : dragY !== 0
-      ? `translate3d(0, ${dragY}px, 0)`
-      : 'translate3d(0, 0, 0)';
+  const backdropOpacity = visible ? 1 : 0;
+  const sheetTransform = visible ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)';
 
   return createPortal(
     <div

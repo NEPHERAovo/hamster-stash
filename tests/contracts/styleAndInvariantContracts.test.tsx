@@ -42,7 +42,7 @@ describe('Style & Invariant Contracts', () => {
     expect(queryByText(/11月 Ledger/i)).toBeNull();
     expect(queryByText('收入')).not.toBeNull();
     expect(queryByText('支出')).not.toBeNull();
-    expect(queryByText('净余')).not.toBeNull();
+    expect(queryByText('结余')).not.toBeNull();
   });
 
   it('contract: in TransactionGroup, the last transaction of each day must NOT have a bottom border', () => {

@@ -538,7 +538,7 @@ body {
   --btn-primary-bg: #1677FF; --btn-primary-fg: #FFFFFF; --btn-radius: 9999px; --input-radius: 9999px; --badge-radius: 9999px;
   --toggle-bg: var(--paper-sunken); --toggle-radius: 9999px; --toggle-active-bg: #1677FF; --toggle-active-fg: #FFFFFF; --toggle-item-radius: 9999px;
   --keypad-radius: 16px; --keypad-digit-bg: var(--paper-sheet); --keypad-digit-border: var(--rule-hairline);
-  --keypad-op-bg: var(--paper-sunken); --keypad-op-border: var(--rule-hairline);
+  --keypad-op-bg: var(--paper-sheet); --keypad-op-border: var(--border-strong);
   --keypad-action-bg: #1677FF; --keypad-action-fg: #FFFFFF;
 }
 
@@ -554,6 +554,8 @@ body {
   --color-expense: #E06C53; --color-expense-bg: rgba(224, 108, 83, 0.14); --ink-expense: #E06C53;
   --btn-primary-bg: #4D94FF; --btn-primary-fg: #0D0F17;
   --toggle-active-bg: #4D94FF; --toggle-active-fg: #0D0F17;
+  --keypad-radius: 16px; --keypad-digit-bg: var(--paper-sheet); --keypad-digit-border: var(--rule-hairline);
+  --keypad-op-bg: var(--paper-sheet); --keypad-op-border: var(--border-strong);
   --keypad-action-bg: #4D94FF; --keypad-action-fg: #0D0F17;
 }
 
@@ -656,40 +658,19 @@ body {
   border-bottom: 1px solid var(--rule-hairline) !important;
   margin-bottom: 0 !important;
 }
-
-[data-ui-style="modern"] .entry-row:last-child {
-  border-bottom: none !important;
-}
-
+[data-ui-style="modern"] .entry-row:last-child { border-bottom: none !important; }
 [data-ui-style="modern"] .keypad-tray {
-  gap: 8px !important;
-  padding: 10px 12px calc(10px + var(--safe-bottom)) !important;
-  background-color: var(--paper-sunken) !important;
-  border-top: none !important;
+  gap: 8px !important; padding: 10px 12px calc(10px + var(--safe-bottom)) !important; background-color: var(--paper-sunken) !important; border-top: none !important;
 }
-
 [data-ui-style="modern"] .keypad-tray button {
-  border-radius: var(--keypad-radius) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: var(--keypad-radius) !important; border: 1px solid var(--rule-hairline) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
-
-.transaction-sheet {
-  border-top-left-radius: 2px; border-top-right-radius: 2px; overflow: visible;
+[data-ui-style="modern"] .keypad-tray .keypad-op-btn {
+  background-color: var(--paper-sheet) !important; border: 1px solid var(--border-strong) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
-
+.transaction-sheet { border-top-left-radius: 2px; border-top-right-radius: 2px; overflow: visible; }
 [data-ui-style="modern"] .transaction-sheet {
-  border-top-left-radius: 28px !important;
-  border-top-right-radius: 28px !important;
-  overflow: hidden !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  border-top-left-radius: 28px !important; border-top-right-radius: 28px !important; overflow: hidden !important; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
 }
-
-[data-ui-style="modern"] .metadata-bar {
-  gap: 8px !important;
-  justify-content: flex-start !important;
-}
-
-[data-ui-style="modern"] .main-scroll-content {
-  padding-bottom: 9rem !important;
-}
+[data-ui-style="modern"] .metadata-bar { gap: 8px !important; justify-content: flex-start !important; }
+[data-ui-style="modern"] .main-scroll-content { padding-bottom: 9rem !important; }

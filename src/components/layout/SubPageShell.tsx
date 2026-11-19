@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { SubPageContext, useSubPage } from './SubPageContext';
 import { cn } from '../../utils/cn';
@@ -40,10 +40,11 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   header,
   children,
   className,
-  edgeThreshold = 44,
+  edgeThreshold = 120,
   dismissThreshold = 80,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [shouldRender, setShouldRender] = useState(isOpen);
   const isClosingRef = useRef(false);
   const isTrackingRef = useRef(false);
   const isSwipingRef = useRef(false);
@@ -61,12 +62,34 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     el.style.boxShadow = 'none';
     setTimeout(() => {
       onClose();
+      setShouldRender(false);
       isClosingRef.current = false;
     }, 240);
   }, [onClose]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      setShouldRender(true);
+    } else if (shouldRender && !isClosingRef.current) {
+      const el = containerRef.current;
+      if (!el) {
+        setShouldRender(false);
+        return;
+      }
+      isClosingRef.current = true;
+      el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
+      el.style.transform = 'translate3d(100%, 0, 0)';
+      el.style.boxShadow = 'none';
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        isClosingRef.current = false;
+      }, 240);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, shouldRender]);
+
+  useEffect(() => {
+    if (!shouldRender || !isOpen) return;
 
     const el = containerRef.current;
     if (!el) return;
@@ -75,20 +98,21 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     el.style.transition = 'none';
     el.style.transform = 'translate3d(100%, 0, 0)';
     el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
+    void el.offsetHeight;
 
     const animFrame = requestAnimationFrame(() => {
-      el.style.transition = `transform 300ms ${SPRING_OUT_EASE}`;
+      el.style.transition = `transform 280ms ${SPRING_OUT_EASE}, box-shadow 280ms ease`;
       el.style.transform = 'translate3d(0, 0, 0)';
     });
 
     return () => {
       cancelAnimationFrame(animFrame);
     };
-  }, [isOpen]);
+  }, [shouldRender, isOpen]);
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || !isOpen) return;
+    if (!el || !shouldRender) return;
 
     const getCurrentTranslateX = (): number => {
       const transform = window.getComputedStyle(el).transform;
@@ -135,7 +159,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       const deltaY = touch.clientY - startYRef.current;
 
       if (!isSwipingRef.current) {
-        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 6) {
           isTrackingRef.current = false;
           return;
         }
@@ -145,7 +169,9 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       }
 
       if (isSwipingRef.current) {
-        e.preventDefault();
+        if (e.cancelable) {
+          e.preventDefault();
+        }
         const width = Math.max(1, el.getBoundingClientRect().width);
         const mappedX = deltaX >= 0 ? deltaX : rubberBand(deltaX, 60, 0.22);
         currentDeltaXRef.current = mappedX;
@@ -170,18 +196,19 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       const velocity = velocityRef.current.getVelocity(performance.now());
       const dist = currentDeltaXRef.current;
 
-      if (shouldDismissGesture(dist, velocity, Math.max(dismissThreshold, width * 0.26), 0.42)) {
+      if (shouldDismissGesture(dist, velocity, Math.max(dismissThreshold, width * 0.25), 0.38)) {
         isClosingRef.current = true;
-        const duration = computeSettleDuration(width - dist, velocity, 180, 290);
+        const duration = computeSettleDuration(width - dist, velocity, 180, 280);
         el.style.transition = `transform ${duration}ms ${SPRING_OUT_EASE}, box-shadow ${duration}ms ease`;
         el.style.transform = 'translate3d(100%, 0, 0)';
         el.style.boxShadow = 'none';
         setTimeout(() => {
           onClose();
+          setShouldRender(false);
           isClosingRef.current = false;
         }, duration);
       } else {
-        const duration = computeSettleDuration(dist, velocity, 200, 320);
+        const duration = computeSettleDuration(dist, velocity, 180, 280);
         el.style.transition = `transform ${duration}ms ${SPRING_OUT_EASE}, box-shadow ${duration}ms ease`;
         el.style.transform = 'translate3d(0, 0, 0)';
         el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
@@ -192,7 +219,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       if (!isTrackingRef.current) return;
       isTrackingRef.current = false;
       isSwipingRef.current = false;
-      el.style.transition = `transform 260ms ${SPRING_OUT_EASE}, box-shadow 260ms ease`;
+      el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
       el.style.transform = 'translate3d(0, 0, 0)';
       el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
     };
@@ -208,22 +235,22 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       el.removeEventListener('touchend', handleTouchEnd);
       el.removeEventListener('touchcancel', handleTouchCancel);
     };
-  }, [isOpen, edgeThreshold, dismissThreshold, onClose]);
+  }, [shouldRender, edgeThreshold, dismissThreshold, onClose]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <SubPageContext.Provider value={{ requestClose }}>
       <div
         ref={containerRef}
         className={cn(
-          'absolute inset-0 z-40 bg-(--paper-base) flex flex-col overflow-hidden will-change-transform',
+          'absolute inset-0 z-40 bg-(--paper-base) flex flex-col overflow-hidden will-change-transform touch-pan-y',
           'shadow-[-8px_0_28px_rgba(0,0,0,0.12)]',
           className
         )}
       >
         <div className="grid-layer absolute! inset-0 z-0" aria-hidden="true" />
-        <div className="relative z-1 shrink-0">{header}</div>
+        {header && <div className="relative z-1 shrink-0">{header}</div>}
         <div className="relative z-1 flex-1 w-full min-h-0 overflow-y-auto overscroll-contain">
           {children}
         </div>

@@ -61,8 +61,8 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
         <span className="text-(--ink-faint) px-2 text-xs select-none">=</span>
 
         <div className="flex items-baseline gap-1">
-          <span className="text-[9px] uppercase tracking-wider text-(--ink-tertiary)">净余</span>
-          <span className="font-bold text-(--ink-solid)">
+          <span className="text-[9px] uppercase tracking-wider text-(--ink-tertiary)">结余</span>
+          <span className={cn('font-bold', isSurplus ? 'text-(--color-income)' : 'text-(--color-expense)')}>
             {isSurplus ? '+' : ''}{centsToYuan(summary.netBalance)}
           </span>
         </div>

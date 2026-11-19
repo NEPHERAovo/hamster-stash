@@ -16,6 +16,7 @@ export interface SkinTransactionGroupProps {
   acctMap: Map<string, Account>;
   activeFreshId?: string | null;
   contained?: boolean;
+  isSearching?: boolean;
   onSelectTransaction?: (tx: Transaction) => void;
 }
 
@@ -30,6 +31,7 @@ export const PaperTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
   acctMap,
   activeFreshId,
   contained = false,
+  isSearching = false,
   onSelectTransaction,
 }) => {
   return (
@@ -58,8 +60,12 @@ export const PaperTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
             ? `+¥${centsToYuan(dayNet)}`
             : `-¥${centsToYuan(Math.abs(dayNet))}`;
 
-        const dayNum = dayCode.slice(0, 2);
-        const dayWeek = dayCode.slice(3);
+        const dayNum = isSearching
+          ? (!d.isValid() ? date : d.format('YYYY.MM.DD'))
+          : dayCode.slice(0, 2);
+        const dayWeek = isSearching
+          ? (!d.isValid() ? '' : dayNames[d.day()])
+          : dayCode.slice(3);
 
         return (
           <div
@@ -101,6 +107,7 @@ export const PaperTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
                   toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
                   isFresh={activeFreshId === tx.id}
                   isLastInGroup={idx === txList.length - 1}
+                  showDate={isSearching}
                   offsetAmount={offsetMap.get(tx.id)}
                   offsetTargetNote={tx.offsetTransactionId ? expenseNoteMap.get(tx.offsetTransactionId) : undefined}
                   onClick={() => onSelectTransaction?.(tx)}

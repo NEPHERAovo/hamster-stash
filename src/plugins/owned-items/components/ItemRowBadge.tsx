@@ -20,6 +20,7 @@ export const ItemRowBadge: React.FC<ItemRowBadgeProps> = ({ context }) => {
   if (!itemId) return null;
 
   const item = items.find((i) => i.id === itemId);
+  if (!item) return null;
 
   return (
     <div className="flex items-center gap-1 shrink-0">

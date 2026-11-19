@@ -16,6 +16,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
   acctMap,
   activeFreshId,
   contained = false,
+  isSearching = false,
   onSelectTransaction,
 }) => {
   return (
@@ -35,7 +36,11 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
         }
 
         const d = parseLocalDate(date);
-        const dayNum = d.isValid() ? d.format('DD') : date.slice(-2);
+        const dayNum = !d.isValid()
+          ? date
+          : isSearching
+            ? d.format('YYYY年M月D日')
+            : `${d.format('DD')}日`;
         const dayWeek = d.isValid() ? dayNames[d.day()] || '' : '';
 
         const daySumFormatted =
@@ -48,7 +53,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
             <div className="day-divider flex items-center justify-between px-1 pb-1.5 text-xs text-(--ink-secondary)">
               <div className="flex items-center gap-1.5 font-sans font-semibold">
                 <span className="text-[13px] font-bold text-(--ink-primary)">
-                  {dayNum}日
+                  {dayNum}
                 </span>
                 <span className="text-xs text-(--ink-tertiary)">
                   {dayWeek}
@@ -77,6 +82,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
                   toAccount={tx.toAccountId ? acctMap.get(tx.toAccountId) : undefined}
                   isFresh={activeFreshId === tx.id}
                   isLastInGroup={idx === txList.length - 1}
+                  showDate={isSearching}
                   offsetAmount={offsetMap.get(tx.id)}
                   offsetTargetNote={tx.offsetTransactionId ? expenseNoteMap.get(tx.offsetTransactionId) : undefined}
                   onClick={() => onSelectTransaction?.(tx)}

@@ -37,7 +37,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const { deleteItem, changeStatus } = usePluginItemStore();
   const transactions = useHostTransactions();
   const accounts = useHostAccounts();
-  const { recordTransaction } = useHostTransactionActions();
+  const { recordTransaction, updateTransaction } = useHostTransactionActions();
   const { openModal } = usePluginNavigation();
 
   const [isSellPanelOpen, setIsSellPanelOpen] = useState(false);
@@ -167,6 +167,11 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const handleDelete = async () => {
     if (window.confirm(`确定要从手帐中移除物品「${item.name}」吗？（关联的历史流水不会被删除，仅解除物品关联）`)) {
       try {
+        for (const tx of itemTransactions) {
+          const nextExt = { ...(tx.ext || {}) };
+          delete nextExt['owned-items'];
+          await updateTransaction(tx.id, { ext: nextExt });
+        }
         await deleteItem(item.id);
         toast.info('物品已移除');
         onClose();

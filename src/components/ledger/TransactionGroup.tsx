@@ -250,6 +250,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               acctMap={acctMap}
               activeFreshId={activeFreshId}
               contained={contained}
+              isSearching={isSearching}
               onSelectTransaction={onSelectTransaction}
             />
           ) : (
@@ -262,6 +263,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               acctMap={acctMap}
               activeFreshId={activeFreshId}
               contained={contained}
+              isSearching={isSearching}
               onSelectTransaction={onSelectTransaction}
             />
           )}

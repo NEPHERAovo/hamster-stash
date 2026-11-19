@@ -248,7 +248,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
               <SlidersHorizontal className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">大额消费阈值</span>
+            <span className="text-[13px] font-medium text-(--ink-primary)">大额阈值</span>
           </div>
           <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
             <span>≥ ¥{majorThresholdYuan}</span>
@@ -457,7 +457,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       <PaperModal
         isOpen={isMajorModalOpen}
         onClose={() => setIsMajorModalOpen(false)}
-        title="大额消费阈值"
+        title="大额阈值"
         subtitle="账本筛选“大额”时生效"
       >
         <div className="p-4 space-y-4">
@@ -483,7 +483,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">自定义金额（元）</label>
+            <label className="text-xs font-mono text-(--ink-tertiary)">自定义金额</label>
             <div className="flex items-center gap-2 px-3 h-10 rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
               <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
               <input

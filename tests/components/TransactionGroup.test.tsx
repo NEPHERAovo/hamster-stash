@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { TransactionGroup } from '../../src/components/ledger/TransactionGroup';
+import { useThemeStore } from '../../src/stores/useThemeStore';
 import type { Transaction } from '../../src/types/transaction';
 import type { Category } from '../../src/types/category';
 import type { Account } from '../../src/types/account';
@@ -154,5 +155,41 @@ describe('TransactionGroup component', () => {
     const card = container.querySelector('#ledgerSurface > div');
     expect(card?.className).toContain('mx-0');
     expect(card?.className).not.toContain('mx-4');
+  });
+
+  it('displays full specific dates in group header when searching', () => {
+    useThemeStore.setState({ uiStyle: 'paper' });
+    render(
+      <TransactionGroup
+        transactions={mockTransactions}
+        searchTransactions={mockTransactions}
+        categories={mockCategories}
+        accounts={mockAccounts}
+      />
+    );
+
+    const input = screen.getByPlaceholderText('搜索备注、分类、账户...');
+    fireEvent.change(input, { target: { value: '咖啡' } });
+
+    expect(screen.getByText('耶加雪菲手冲咖啡')).toBeInTheDocument();
+    expect(screen.getByText('2026.11.12')).toBeInTheDocument();
+  });
+
+  it('displays full specific dates in modern skin when searching', () => {
+    useThemeStore.setState({ uiStyle: 'modern' });
+    render(
+      <TransactionGroup
+        transactions={mockTransactions}
+        searchTransactions={mockTransactions}
+        categories={mockCategories}
+        accounts={mockAccounts}
+      />
+    );
+
+    const input = screen.getByPlaceholderText('搜索备注、分类、账户...');
+    fireEvent.change(input, { target: { value: '咖啡' } });
+
+    expect(screen.getByText('耶加雪菲手冲咖啡')).toBeInTheDocument();
+    expect(screen.getByText('2026年11月12日')).toBeInTheDocument();
   });
 });

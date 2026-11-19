@@ -114,7 +114,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
-  const [dragY, setDragY] = useState(0);
   const [isDraggingSheet, setIsDraggingSheet] = useState(false);
   const [sheetTransitionMs, setSheetTransitionMs] = useState(300);
 
@@ -457,7 +456,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
-      setDragY(0);
       dragYRef.current = 0;
       setIsDraggingSheet(false);
       setSheetTransitionMs(300);
@@ -475,7 +473,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
     setIsVisible(false);
     setIsDraggingSheet(false);
-    setDragY(0);
     dragYRef.current = 0;
     const timer = window.setTimeout(() => {
       setShouldRender(false);
@@ -540,7 +537,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         const mappedY = deltaY >= 0 ? deltaY : rubberBand(deltaY, 72, 0.25);
         dragYRef.current = mappedY;
         sheetVelocityRef.current.push(mappedY, performance.now());
-        setDragY(mappedY);
+        el.style.transform = `translate3d(0, ${mappedY}px, 0)`;
+        el.style.transition = 'none';
       }
     };
 
@@ -558,14 +556,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       if (shouldDismissGesture(dist, vy, Math.min(110, height * 0.22), 0.45)) {
         const duration = computeSettleDuration(height - dist, vy, 180, 290);
         setSheetTransitionMs(duration);
+        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
+        el.style.transform = 'translate3d(0, 100%, 0)';
         setIsVisible(false);
-        setDragY(0);
-        dragYRef.current = 0;
-        onClose();
+        setTimeout(() => {
+          setShouldRender(false);
+          dragYRef.current = 0;
+          onClose();
+        }, duration);
       } else {
         const duration = computeSettleDuration(dist, vy, 200, 310);
         setSheetTransitionMs(duration);
-        setDragY(0);
+        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
+        el.style.transform = 'translate3d(0, 0, 0)';
         dragYRef.current = 0;
       }
     };
@@ -576,7 +579,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       dragging = false;
       setIsDraggingSheet(false);
       setSheetTransitionMs(240);
-      setDragY(0);
+      el.style.transition = `transform 240ms ${SHEET_SPRING_EASE}`;
+      el.style.transform = 'translate3d(0, 0, 0)';
       dragYRef.current = 0;
     };
 
@@ -626,13 +630,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     editingTransaction,
   };
 
-  const dragProgress = Math.max(0, Math.min(1, dragY / 360));
-  const backdropOpacity = isVisible ? 1 - dragProgress * 0.75 : 0;
-  const sheetTransform = !isVisible
-    ? 'translate3d(0, 100%, 0)'
-    : dragY !== 0
-      ? `translate3d(0, ${dragY}px, 0)`
-      : 'translate3d(0, 0, 0)';
+  const backdropOpacity = isVisible ? 1 : 0;
+  const sheetTransform = isVisible ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)';
 
   return (
     <div
@@ -1005,7 +1004,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {isDtTrayOpen && (
             <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none font-mono text-xs">
               <div className="flex items-center gap-1.5 text-[11px] text-(--ink-tertiary) px-0.5">
-                <span className="text-[10px] text-(--ink-faint)">快捷:</span>
                 <button
                   type="button"
                   onClick={() => setDateDelta(0)}
@@ -1181,7 +1179,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <button
             type="button"
             onClick={() => handleOperator('+')}
-            className="h-11 bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
+            className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
             title="加法运算"
           >
             +
@@ -1211,7 +1209,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <button
             type="button"
             onClick={() => handleOperator('-')}
-            className="h-11 bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
+            className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
             title="减法运算"
           >
             −
@@ -1241,7 +1239,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <button
             type="button"
             onClick={handleBackspace}
-            className="h-11 bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) flex items-center justify-center transition-colors cursor-pointer"
+            className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) flex items-center justify-center transition-colors cursor-pointer"
             title="退格"
           >
             <Delete className="w-4 h-4 stroke-[1.8]" />
@@ -1267,7 +1265,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               type="button"
               onClick={() => handleSubmit(true)}
               disabled={isSubmitting}
-              className="h-11 bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
+              className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
               title="保存并继续记录下一笔"
             >
               再记一笔
@@ -1276,7 +1274,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <button
               type="button"
               onClick={handleClear}
-              className="h-11 bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-tertiary) font-mono text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
+              className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-tertiary) font-mono text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
               title="清空重置"
             >
               C

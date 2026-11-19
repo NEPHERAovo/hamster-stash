@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { render } from '@testing-library/react';
+import React from 'react';
 import { PluginManager } from '../../src/core/plugin/PluginManager';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
 import { OwnedItemsPlugin } from '../../src/plugins/owned-items';
+import { ItemRowBadge } from '../../src/plugins/owned-items/components/ItemRowBadge';
 import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
@@ -218,5 +221,28 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
     expect(usePluginUIStore.getState().navTabs.some((t) => t.id === 'items')).toBe(false);
     expect(usePluginUIStore.getState().slots['tx.modal.metaBar']?.length || 0).toBe(0);
+  });
+
+  it('ItemRowBadge does not render when linked item does not exist or has been deleted', () => {
+    usePluginItemStore.setState({ items: [] });
+    const tx: Transaction = {
+      id: 'tx_orphaned',
+      type: 'expense',
+      amount: 10000,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-19',
+      ext: {
+        'owned-items': {
+          itemId: 'deleted_item_id',
+          itemRole: 'buy',
+        },
+      },
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const { container } = render(React.createElement(ItemRowBadge, { context: { transaction: tx } }));
+    expect(container.firstChild).toBeNull();
   });
 });
