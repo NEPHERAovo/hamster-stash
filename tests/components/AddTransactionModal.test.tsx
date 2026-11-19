@@ -58,11 +58,14 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
     fireEvent.click(amortizeBtn);
 
     expect(screen.getByText('3期')).toBeInTheDocument();
-    expect(screen.getByText('6期 (半年)')).toBeInTheDocument();
-    expect(screen.getByText('12期 (1年)')).toBeInTheDocument();
+    expect(screen.getByText('6期')).toBeInTheDocument();
+    expect(screen.getByText('12期')).toBeInTheDocument();
+    expect(screen.getByText('24期')).toBeInTheDocument();
+    expect(screen.getByText('36期')).toBeInTheDocument();
+    expect(screen.getByText('自定义')).toBeInTheDocument();
 
     // 选择 6期
-    fireEvent.click(screen.getByText('6期 (半年)'));
+    fireEvent.click(screen.getByText('6期'));
 
     // 胶囊文本更新为 "分期: 6期"
     expect(screen.getByText('分期: 6期')).toBeInTheDocument();
@@ -86,6 +89,45 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
             amortize: expect.objectContaining({
               enabled: true,
               months: 6,
+            }),
+          }),
+        })
+      );
+    });
+  });
+
+  it('分期支出支持自定义期数', async () => {
+    usePreferenceStore.setState({ isAmortizationEnabled: true });
+    const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
+    useLedgerStore.setState({ recordTransaction: recordSpy });
+
+    render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('分期'));
+    fireEvent.click(screen.getByText('自定义'));
+
+    const customInput = screen.getByPlaceholderText('期数');
+    fireEvent.change(customInput, { target: { value: '5' } });
+
+    expect(screen.getByText('分期: 5期')).toBeInTheDocument();
+
+    // 输入金额 5000
+    fireEvent.click(screen.getByText('5'));
+    fireEvent.click(screen.getByText('0'));
+    fireEvent.click(screen.getByText('0'));
+    fireEvent.click(screen.getByText('0'));
+
+    fireEvent.click(screen.getByText('完成'));
+
+    await waitFor(() => {
+      expect(recordSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'expense',
+          amount: 500000,
+          ext: expect.objectContaining({
+            amortize: expect.objectContaining({
+              enabled: true,
+              months: 5,
             }),
           }),
         })

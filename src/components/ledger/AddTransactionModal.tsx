@@ -112,6 +112,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const isAmortizationEnabled = usePreferenceStore((s) => s.isAmortizationEnabled);
   const [amortizeMonths, setAmortizeMonths] = useState<number | null>(null);
   const [isAmortizeTrayOpen, setIsAmortizeTrayOpen] = useState(false);
+  const [isCustomAmortize, setIsCustomAmortize] = useState(false);
+  const [customAmortizeInput, setCustomAmortizeInput] = useState('');
 
   const [isDtTrayOpen, setIsDtTrayOpen] = useState(false);
   const [isAcctTrayOpen, setIsAcctTrayOpen] = useState(false);
@@ -245,7 +247,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setExt({ ...(editingTransaction.ext || {}) });
 
         const existingAmortize = editingTransaction.ext?.amortize as { enabled?: boolean; months?: number } | undefined;
-        setAmortizeMonths(existingAmortize?.enabled && existingAmortize.months ? existingAmortize.months : null);
+        const initialMonths = existingAmortize?.enabled && existingAmortize.months ? existingAmortize.months : null;
+        setAmortizeMonths(initialMonths);
+        const isStandard = initialMonths === null || [3, 6, 12, 24, 36].includes(initialMonths);
+        setIsCustomAmortize(!isStandard && initialMonths !== null);
+        setCustomAmortizeInput(initialMonths && !isStandard ? String(initialMonths) : '');
 
         setTimeStr(formatTime(editingTransaction.createdAt) || '12:00');
 
@@ -265,6 +271,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setVoucher(null);
         setRelatedLoanId('none');
         setAmortizeMonths(null);
+        setIsCustomAmortize(false);
+        setCustomAmortizeInput('');
         setExt({ ...(initialExt || {}) });
       }
     }
@@ -1131,20 +1139,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 {[
                   { label: '不分期', months: null },
                   { label: '3期', months: 3 },
-                  { label: '6期 (半年)', months: 6 },
-                  { label: '12期 (1年)', months: 12 },
-                  { label: '24期 (2年)', months: 24 },
+                  { label: '6期', months: 6 },
+                  { label: '12期', months: 12 },
+                  { label: '24期', months: 24 },
+                  { label: '36期', months: 36 },
                 ].map((opt) => (
                   <button
                     key={opt.label}
                     type="button"
                     onClick={() => {
                       setAmortizeMonths(opt.months);
+                      setIsCustomAmortize(false);
+                      setCustomAmortizeInput('');
                       setIsAmortizeTrayOpen(false);
                     }}
                     className={cn(
                       'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) transition-all cursor-pointer border',
-                      amortizeMonths === opt.months
+                      amortizeMonths === opt.months && !isCustomAmortize
                         ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
                         : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
                     )}
@@ -1152,12 +1163,60 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     {opt.label}
                   </button>
                 ))}
+
+                {isCustomAmortize ? (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-(--btn-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={2}
+                      max={120}
+                      autoFocus
+                      value={customAmortizeInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomAmortizeInput(val);
+                        const num = parseInt(val, 10);
+                        if (Number.isFinite(num) && num > 1) {
+                          setAmortizeMonths(num);
+                        } else {
+                          setAmortizeMonths(null);
+                        }
+                      }}
+                      placeholder="期数"
+                      className="w-10 bg-transparent text-xs font-mono text-center font-semibold text-(--ink-primary) outline-none"
+                    />
+                    <span className="text-[11px] text-(--ink-tertiary)">期</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomAmortize(true);
+                      setCustomAmortizeInput(
+                        amortizeMonths && ![3, 6, 12, 24, 36].includes(amortizeMonths)
+                          ? String(amortizeMonths)
+                          : ''
+                      );
+                    }}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) transition-all cursor-pointer border',
+                      amortizeMonths !== null && ![3, 6, 12, 24, 36].includes(amortizeMonths)
+                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
+                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
+                    )}
+                  >
+                    {amortizeMonths && ![3, 6, 12, 24, 36].includes(amortizeMonths)
+                      ? `${amortizeMonths}期`
+                      : '自定义'}
+                  </button>
+                )}
               </div>
+
               {amortizeMonths && (
-                <div className="text-[11px] font-mono text-(--ink-tertiary) px-0.5 flex items-center justify-between">
-                  <span>平滑分摊至统计与走势</span>
+                <div className="text-[11px] font-mono text-(--ink-tertiary) px-0.5 text-right">
                   <span>
-                    约 ¥{centsToYuan(Math.floor(yuanToCents(evaluateArithmetic(expr)) / amortizeMonths))}/月
+                    约 ¥{centsToYuan(Math.floor(yuanToCents(evaluateArithmetic(expr)) / amortizeMonths))} / 月
                   </span>
                 </div>
               )}
