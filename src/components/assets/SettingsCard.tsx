@@ -405,31 +405,29 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           />
         </div>
 
-        <div
-          className="flex items-center justify-between py-2.5 border-t border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
-          onClick={handleInstallClick}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <Download className="w-3.5 h-3.5 stroke-[1.75]" />
+        {!isInstalled && (
+          <div
+            className="flex items-center justify-between py-2.5 border-t border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+            onClick={handleInstallClick}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+                <Download className="w-3.5 h-3.5 stroke-[1.75]" />
+              </div>
+              <span className="text-[13px] font-medium text-(--ink-primary)">添加到桌面</span>
             </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">添加到桌面</span>
+            <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
+              {installPrompt ? (
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
+                  直接安装
+                </span>
+              ) : (
+                <span>安装指引</span>
+              )}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
-            {isInstalled ? (
-              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
-                已安装
-              </span>
-            ) : installPrompt ? (
-              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
-                直接安装
-              </span>
-            ) : (
-              <span>安装指引</span>
-            )}
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </div>
+        )}
 
         <div
           className="flex items-center justify-between py-2.5 border-t border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"

@@ -21,7 +21,14 @@ export const detectBrowserFamily = (userAgent?: string): BrowserFamily => {
 
 export const checkIsStandalone = (): boolean => {
   if (typeof window === 'undefined') return false;
-  const isStandaloneMedia = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
-  const isIosStandalone = typeof navigator !== 'undefined' && 'standalone' in navigator && Boolean((navigator as unknown as { standalone?: boolean }).standalone);
+  const isStandaloneMedia =
+    window.matchMedia &&
+    (window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches);
+  const isIosStandalone =
+    typeof navigator !== 'undefined' &&
+    'standalone' in navigator &&
+    Boolean((navigator as unknown as { standalone?: boolean }).standalone);
   return Boolean(isStandaloneMedia || isIosStandalone);
 };

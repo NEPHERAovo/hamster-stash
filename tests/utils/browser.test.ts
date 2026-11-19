@@ -39,9 +39,9 @@ describe('checkIsStandalone', () => {
     vi.restoreAllMocks();
   });
 
-  it('returns true when display-mode is standalone', () => {
+  it('returns true when display-mode is standalone, fullscreen, or minimal-ui', () => {
     window.matchMedia = vi.fn().mockImplementation((query) => ({
-      matches: query === '(display-mode: standalone)',
+      matches: query === '(display-mode: fullscreen)',
       media: query,
       onchange: null,
       addListener: vi.fn(),

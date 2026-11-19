@@ -18,6 +18,26 @@ if (typeof window !== 'undefined') {
   window.addEventListener('appinstalled', () => {
     usePwaStore.getState().markInstalled();
   });
+
+  if (window.matchMedia) {
+    const standaloneMq = window.matchMedia('(display-mode: standalone)');
+    standaloneMq.addEventListener?.('change', (e) => {
+      if (e.matches) {
+        usePwaStore.getState().markInstalled();
+      }
+    });
+  }
+
+  if (typeof navigator !== 'undefined' && 'getInstalledRelatedApps' in navigator) {
+    (navigator as unknown as { getInstalledRelatedApps: () => Promise<unknown[]> })
+      .getInstalledRelatedApps()
+      .then((apps) => {
+        if (apps && apps.length > 0) {
+          usePwaStore.getState().markInstalled();
+        }
+      })
+      .catch(() => void 0);
+  }
 }
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
