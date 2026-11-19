@@ -58,13 +58,13 @@ describe('Modular Stats & UI Components', () => {
     expect(screen.getByText('40%')).toBeInTheDocument();
   });
 
-  it('renders MonthlyTrendBar with trend items and labels', () => {
+  it('renders MonthlyTrendBar with vertical combo chart and interactive selection', () => {
     render(<MonthlyTrendBar title="月度支出趋势" trends={mockTrends} />);
 
     expect(screen.getByText('月度支出趋势')).toBeInTheDocument();
     expect(screen.getByText('09月')).toBeInTheDocument();
     expect(screen.getByText('10月')).toBeInTheDocument();
-    expect(screen.getByText('11月')).toBeInTheDocument();
+    expect(screen.getAllByText('11月').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('¥700.00')).toBeInTheDocument();
   });
 

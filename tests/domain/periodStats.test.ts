@@ -92,9 +92,9 @@ describe('Period Statistics Domain Logic', () => {
     ];
 
     const trends = computePeriodTrends(txs, 'month', '2026-10');
-    expect(trends.length).toBe(4); // 7月, 8月, 9月, 10月
-    expect(trends[3].label).toBe('10月');
-    expect(trends[3].amount).toBe(10000);
-    expect(trends[3].percentage).toBe(100); // 最大值 100%
+    expect(trends.length).toBe(6); // 5月, 6月, 7月, 8月, 9月, 10月
+    expect(trends[5].label).toBe('10月');
+    expect(trends[5].amount).toBe(10000);
+    expect(trends[5].percentage).toBe(100); // 最大值 100%
   });
 });

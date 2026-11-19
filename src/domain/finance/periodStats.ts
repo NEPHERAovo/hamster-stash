@@ -158,18 +158,19 @@ export function computeCategoryDonutStats(
 }
 
 /**
- * 计算近期趋势柱状条数据 (近 4 个周期)
+ * 计算近期趋势柱状条数据 (近 6 个周期)
  */
 export function computePeriodTrends(
   allTransactions: Transaction[],
   mode: PeriodMode,
-  currentKey: string
+  currentKey: string,
+  count: number = mode === 'year' ? 5 : 6
 ): TrendItem[] {
   const trends: TrendItem[] = [];
   const offsetMap = buildOffsetMap(allTransactions);
 
   if (mode === 'month') {
-    for (let i = 3; i >= 0; i--) {
+    for (let i = count - 1; i >= 0; i--) {
       const ym = stepYearMonth(currentKey, -i);
       const monthNum = dayjs(`${ym}-01`, 'YYYY-MM-DD', true).month() + 1;
       let expense = 0;
@@ -182,7 +183,7 @@ export function computePeriodTrends(
     }
   } else if (mode === 'year') {
     const curY = parseInt(currentKey, 10);
-    for (let i = 3; i >= 0; i--) {
+    for (let i = count - 1; i >= 0; i--) {
       const y = (curY - i).toString();
       let expense = 0;
       for (const t of allTransactions) {
@@ -194,7 +195,7 @@ export function computePeriodTrends(
     }
   } else {
     const curDate = parseLocalDate(currentKey);
-    for (let i = 3; i >= 0; i--) {
+    for (let i = count - 1; i >= 0; i--) {
       const week = getWeekPeriod(curDate.subtract(i, 'week'));
 
       let expense = 0;
