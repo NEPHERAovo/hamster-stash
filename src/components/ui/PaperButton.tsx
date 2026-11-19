@@ -31,8 +31,8 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
       primary: 'bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-(--shadow-xs) hover:opacity-95 active:scale-[0.98]',
       secondary: 'paper-glass-blur bg-(--paper-sheet) text-(--ink-secondary) border border-(--rule-hairline) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-[0.98]',
       sunken: 'paper-glass-blur bg-(--paper-sunken) text-(--ink-primary) border border-(--rule-hairline) hover:bg-(--paper-sunken)/80 active:scale-[0.98]',
-      income: 'bg-(--color-income-bg) text-(--color-income) border border-[rgba(63,130,86,0.22)] active:scale-[0.98]',
-      danger: 'bg-(--color-expense-bg) text-(--color-expense) border border-[rgba(189,88,64,0.22)] active:scale-[0.98]',
+      income: 'bg-(--color-income-bg) text-(--color-income) border border-(--color-income)/25 active:scale-[0.98]',
+      danger: 'bg-(--color-expense-bg) text-(--color-expense) border border-(--color-expense)/25 active:scale-[0.98]',
       ghost: 'bg-transparent text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-[0.98]',
     };
 

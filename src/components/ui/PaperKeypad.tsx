@@ -189,7 +189,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
           }}
           className={cn(
             'h-11 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer',
-            'rounded-(--keypad-radius) border border-[rgba(189,88,64,0.25)] bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.96]'
+            'rounded-(--keypad-radius) border border-(--color-expense)/25 bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.96]'
           )}
         >
           <Trash2 className="w-3.5 h-3.5 stroke-2" />

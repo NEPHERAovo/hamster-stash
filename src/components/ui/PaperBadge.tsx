@@ -24,13 +24,13 @@ export const PaperBadge: React.FC<PaperBadgeProps> = ({
     default:
       'bg-(--bg-sunken) text-(--ink-secondary) border border-(--border-hairline)',
     income:
-      'bg-(--color-income-bg) text-(--color-income) border border-[rgba(63,130,86,0.22)]',
+      'bg-(--color-income-bg) text-(--color-income) border border-(--color-income)/25',
     expense:
-      'bg-(--color-expense-bg) text-(--color-expense) border border-[rgba(189,88,64,0.22)]',
+      'bg-(--color-expense-bg) text-(--color-expense) border border-(--color-expense)/25',
     accent:
-      'bg-(--color-accent-bg) text-(--color-accent) border border-[rgba(120,99,75,0.22)]',
+      'bg-(--color-accent-bg) text-(--color-accent) border border-(--color-accent)/25',
     warning:
-      'bg-[rgba(186,110,56,0.12)] text-[#BA6E38] border border-[rgba(186,110,56,0.22)]',
+      'bg-(--cat-food)/12 text-(--cat-food) border border-(--cat-food)/25',
     sunken:
       'bg-(--bg-sunken) text-(--ink-secondary) border-transparent',
     outline:

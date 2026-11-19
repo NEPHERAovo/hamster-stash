@@ -56,7 +56,7 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
             onClick={onAddClick}
             title={isAddOpen ? '收起便签' : '记一笔'}
             aria-label={isAddOpen ? '收起便签' : '记一笔'}
-            className="pointer-events-auto absolute right-4 bottom-0 w-14 h-14 rounded-full bg-[#1677FF] dark:bg-[#4D94FF] text-white flex items-center justify-center shadow-[0_4px_12px_-2px_rgba(22,119,255,0.24)] active:scale-90 transition-all cursor-pointer"
+            className="pointer-events-auto absolute right-4 bottom-0 w-14 h-14 rounded-full bg-(--btn-primary-bg) text-(--btn-primary-fg) flex items-center justify-center shadow-[0_4px_12px_-2px_var(--color-accent-bg)] active:scale-90 transition-all cursor-pointer"
           >
             <Plus
               className={cn(
