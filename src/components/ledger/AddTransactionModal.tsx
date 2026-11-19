@@ -8,6 +8,7 @@ import {
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useAccountStore } from '../../stores/useAccountStore';
+import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { evaluateArithmetic } from '../../utils/math';
 import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator';
@@ -106,6 +107,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [voucher, setVoucher] = useState<VoucherAttachment | null>(null);
   const [relatedLoanId, setRelatedLoanId] = useState<string>('none');
   const [ext, setExt] = useState<Record<string, unknown>>({});
+  const isReimbursementEnabled = usePreferenceStore((s) => s.isReimbursementEnabled);
 
   const [isDtTrayOpen, setIsDtTrayOpen] = useState(false);
   const [isAcctTrayOpen, setIsAcctTrayOpen] = useState(false);
@@ -912,26 +914,28 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {txType === 'expense' && (
               <>
                 <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsReimbursable((prev) => {
-                      const next = !prev;
-                      if (!next) {
-                        setVoucher(null);
-                      }
-                      return next;
-                    });
-                  }}
-                  className={cn(
-                    'px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
-                    isReimbursable
-                      ? 'bg-(--color-expense-bg) text-(--color-expense) font-semibold'
-                      : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                  )}
-                >
-                  {isReimbursable ? '待报销 ✓' : '报销'}
-                </button>
+                {(isReimbursementEnabled || isReimbursable) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsReimbursable((prev) => {
+                        const next = !prev;
+                        if (!next) {
+                          setVoucher(null);
+                        }
+                        return next;
+                      });
+                    }}
+                    className={cn(
+                      'px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
+                      isReimbursable
+                        ? 'bg-(--color-expense-bg) text-(--color-expense) font-semibold'
+                        : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                    )}
+                  >
+                    {isReimbursable ? '待报销 ✓' : '报销'}
+                  </button>
+                )}
 
                 {(isReimbursable || Boolean(voucher)) && (
                   <>

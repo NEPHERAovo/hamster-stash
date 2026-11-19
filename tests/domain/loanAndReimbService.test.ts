@@ -247,5 +247,17 @@ describe('Loan Linking & Reimbursement Settlement Business Logic', () => {
       expect(summary.pendingLoans.length).toBe(1);
       expect(summary.pendingReimbursements.length).toBe(1);
     });
+
+    it('allows toggling reimbursement feature switch on and off in preference store', async () => {
+      const { usePreferenceStore } = await import('../../src/stores/usePreferenceStore');
+      const store = usePreferenceStore.getState();
+      expect(store.isReimbursementEnabled).toBe(true);
+
+      store.setReimbursementEnabled(false);
+      expect(usePreferenceStore.getState().isReimbursementEnabled).toBe(false);
+
+      store.setReimbursementEnabled(true);
+      expect(usePreferenceStore.getState().isReimbursementEnabled).toBe(true);
+    });
   });
 });

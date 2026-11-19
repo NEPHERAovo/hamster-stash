@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   SlidersHorizontal,
+  ReceiptText,
   Tags,
   FileSpreadsheet,
   FileUp,
@@ -48,7 +49,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const { allTransactions, loadMonth, loadTransactions, loadSettlementSummary } = useLedgerStore();
   const { categories, loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
-  const { majorThresholdYuan, setMajorThresholdYuan } = usePreferenceStore();
+  const { majorThresholdYuan, setMajorThresholdYuan, isReimbursementEnabled, setReimbursementEnabled } = usePreferenceStore();
   const { needRefresh, isChecking, applyUpdate, checkForUpdates } = usePwaStore();
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
@@ -254,6 +255,35 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <span>≥ ¥{majorThresholdYuan}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </div>
+        </div>
+
+        <div className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 select-none">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <ReceiptText className="w-3.5 h-3.5 stroke-[1.75]" />
+            </div>
+            <div>
+              <div className="text-[13px] font-medium text-(--ink-primary)">报销功能</div>
+              <div className="text-[10px] text-(--ink-tertiary)">支持标记垫付待报销与流水筛选</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isReimbursementEnabled}
+            onClick={() => setReimbursementEnabled(!isReimbursementEnabled)}
+            className={cn(
+              'w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0',
+              isReimbursementEnabled ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
+            )}
+          >
+            <span
+              className={cn(
+                'absolute top-0.5 w-4 h-4 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
+                isReimbursementEnabled ? 'left-4.5' : 'left-0.5'
+              )}
+            />
+          </button>
         </div>
 
         <div

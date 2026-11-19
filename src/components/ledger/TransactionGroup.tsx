@@ -39,6 +39,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   const effectiveLoading = isLoading !== undefined ? isLoading : !isInitialLoaded;
   const uiStyle = useThemeStore((s) => s.uiStyle);
   const majorThresholdYuan = usePreferenceStore((s) => s.majorThresholdYuan);
+  const isReimbursementEnabled = usePreferenceStore((s) => s.isReimbursementEnabled);
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -82,12 +83,28 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     }
   }, [activeFreshId]);
 
+  const effectiveFilter = !isReimbursementEnabled && filter === 'reimbursable' ? 'all' : filter;
+
+  const filterOptions = useMemo(() => {
+    if (!isReimbursementEnabled) {
+      return [
+        { value: 'all', label: '全部' },
+        { value: 'major', label: '大额' },
+      ];
+    }
+    return [
+      { value: 'all', label: '全部' },
+      { value: 'reimbursable', label: '待报销' },
+      { value: 'major', label: '大额' },
+    ];
+  }, [isReimbursementEnabled]);
+
   const filteredTransactions = useMemo(() => {
     const trimmedQuery = searchQuery.trim();
     let list = trimmedQuery && searchTransactions ? searchTransactions : transactions;
-    if (filter === 'reimbursable') {
+    if (effectiveFilter === 'reimbursable') {
       list = list.filter((t) => t.isReimbursable);
-    } else if (filter === 'major') {
+    } else if (effectiveFilter === 'major') {
       const majorThresholdCents = Math.round(majorThresholdYuan * 100);
       list = list.filter((t) => t.amount >= majorThresholdCents);
     }
@@ -107,7 +124,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     }
 
     return list;
-  }, [transactions, searchTransactions, filter, searchQuery, catMap, acctMap, majorThresholdYuan]);
+  }, [transactions, searchTransactions, effectiveFilter, searchQuery, catMap, acctMap, majorThresholdYuan]);
 
   const groups = useMemo(() => {
     return filteredTransactions.reduce((acc, tx) => {
@@ -175,13 +192,9 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 
           <div className="shrink-0">
             <SegToggle
-              options={[
-                { value: 'all', label: '全部' },
-                { value: 'reimbursable', label: '待报销' },
-                { value: 'major', label: '大额' },
-              ]}
-              value={filter}
-              onChange={setFilter}
+              options={filterOptions}
+              value={effectiveFilter}
+              onChange={(val) => setFilter(val as 'all' | 'reimbursable' | 'major')}
               size="sm"
               fullWidth={false}
             />

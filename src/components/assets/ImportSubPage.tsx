@@ -27,6 +27,7 @@ import { IMPORT_PRESETS, type ImportPreset } from '../../domain/import-export/im
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
+import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { toast } from '../../stores/useToastStore';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -60,6 +61,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   const { accounts, createAccount, loadAccounts } = useAccountStore();
   const { categories, createCategory, loadCategories } = useCategoryStore();
   const { importTransactions } = useLedgerStore();
+  const isReimbursementEnabled = usePreferenceStore((s) => s.isReimbursementEnabled);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [selectedPresetId, setSelectedPresetId] = useState<string>('elephant');
@@ -320,10 +322,18 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       }
 
       const res = await importTransactions(records, true);
+      const reimbursableCount = records.filter((r) => r.isReimbursable).length;
+
       toast.success(
         `成功导入 ${res.importedCount} 笔流水` +
           (skippedCount > 0 ? `（跳过 ${skippedCount} 笔）` : '')
       );
+
+      if (reimbursableCount > 0 && !isReimbursementEnabled) {
+        toast.info(
+          `导入流水中含 ${reimbursableCount} 笔待报销账单。当前设置中已停用报销功能，可在设置中开启以查看报销状态。`
+        );
+      }
 
       await loadCategories();
       onImportSuccess?.();
@@ -515,7 +525,12 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               { key: 'categoryCol', label: '分类名称列', required: false, desc: '账单分类名称' },
               { key: 'accountCol', label: '账户渠道列', required: false, desc: '支付方式 / 账户' },
               { key: 'noteCol', label: '备注说明列', required: false, desc: '商户或备注信息' },
-              { key: 'reimburseCol', label: '是否报销列', required: false, desc: '报销标记' },
+              {
+                key: 'reimburseCol',
+                label: '是否报销列',
+                required: false,
+                desc: !isReimbursementEnabled ? '报销标记（设置中已停用报销）' : '报销标记',
+              },
             ].map((field) => (
               <div key={field.key} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
                 <div>
@@ -734,6 +749,13 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               </span>
             </label>
           </div>
+
+          {previewData.some((r) => r.isReimbursable) && !isReimbursementEnabled && (
+            <div className="p-2.5 rounded-(--radius-sm) bg-(--paper-sunken) text-(--ink-secondary) text-[11px] flex items-center gap-2 border border-(--rule-hairline)">
+              <AlertCircle className="w-3.5 h-3.5 text-(--ink-tertiary) shrink-0" />
+              <span>表格中包含待报销流水。当前设置中已停用报销功能，导入后可随时在设置中开启报销查看。</span>
+            </div>
+          )}
 
           <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) divide-y divide-(--rule-hairline) shadow-xs overflow-hidden">
             <div className="px-3.5 py-2 text-[11px] font-semibold text-(--ink-tertiary) bg-(--paper-sunken)">
