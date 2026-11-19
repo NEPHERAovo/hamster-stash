@@ -33,8 +33,8 @@ export function useLiquidSpring() {
     }
 
     if (!isDragging) {
-      const force = (targetX - s.dropletX) * 300;
-      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-28 * dt);
+      const force = (targetX - s.dropletX) * 480;
+      s.dropletVelX = (s.dropletVelX + force * dt) * Math.exp(-34 * dt);
       s.dropletX += s.dropletVelX * dt;
 
       if (Math.abs(targetX - s.dropletX) < 0.1 && Math.abs(s.dropletVelX) < 0.5) {

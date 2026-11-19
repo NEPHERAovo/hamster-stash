@@ -340,7 +340,7 @@ export function App() {
           )}
 
           {activeNavTab && (
-            <div className="w-full tab-stagger-1">
+            <div className="w-full">
               <activeNavTab.component />
             </div>
           )}

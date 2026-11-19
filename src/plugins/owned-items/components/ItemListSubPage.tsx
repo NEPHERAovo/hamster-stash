@@ -80,7 +80,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   };
 
   return (
-    <div className="w-full pb-20 animate-fade-in select-none">
+    <div className="w-full pb-20 select-none">
       {onClose && (
         <div className="sticky top-0 z-30 px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 bg-(--paper-base) border-b border-(--rule-hairline) flex items-center justify-between min-h-[calc(3rem+var(--safe-top))] box-border">
           <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           </div>
         </div>
 
-        <div className="tab-stagger-2 space-y-3.5">
+        <div className="tab-stagger-2 w-full space-y-3.5">
           <div className="flex items-center gap-6 px-1 pt-1 border-b border-(--rule-hairline) font-mono text-xs">
           {[
             { key: 'using', label: `在用 (${overallSummary.usingCount})` },
