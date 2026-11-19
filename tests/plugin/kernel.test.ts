@@ -177,5 +177,36 @@ describe('Plugin Kernel (插件微内核核心能力)', () => {
       const bypassResult = await manager.runMiddleware('test:hook', { val: 2 }, async (p) => p);
       expect(bypassResult).toEqual({ val: 2 });
     });
+
+    it('支持按需懒加载插件 (LazyPluginWrapper)，未启用时不执行载入逻辑', async () => {
+      let loadCalled = false;
+
+      manager.registerLazyPlugin({
+        manifest: {
+          id: 'lazy-test',
+          name: 'Lazy Test',
+          version: '1.0.0',
+          description: 'Lazy loaded plugin',
+          icon: 'box',
+          defaultEnabled: false,
+        },
+        load: async () => {
+          loadCalled = true;
+          return new TestPlugin();
+        },
+      });
+
+      expect(manager.getPlugins().length).toBe(1);
+      expect(manager.getPlugins()[0].manifest.id).toBe('lazy-test');
+      expect(loadCalled).toBe(false);
+
+      await manager.init();
+      expect(loadCalled).toBe(false);
+      expect(manager.isPluginEnabled('lazy-test')).toBe(false);
+
+      await manager.enablePlugin('lazy-test');
+      expect(loadCalled).toBe(true);
+      expect(manager.isPluginEnabled('lazy-test')).toBe(true);
+    });
   });
 });

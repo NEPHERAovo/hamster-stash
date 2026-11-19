@@ -9,6 +9,11 @@ export default defineConfig({
     host: true,
   },
   build: {
+    modulePreload: {
+      resolveDependencies: (_url, deps) => {
+        return deps.filter((dep) => !dep.includes('plugin-'));
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

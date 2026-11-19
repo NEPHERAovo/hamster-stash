@@ -1,4 +1,5 @@
-import type { BasePlugin } from './types';
+import type { BasePlugin, LazyPluginDefinition } from './types';
+import { LazyPluginWrapper } from './LazyPluginWrapper';
 import { PluginRegistry } from './PluginRegistry';
 import type { DataAdapter } from '../../types/adapter';
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
@@ -18,6 +19,11 @@ export class PluginManager {
 
   registerPlugin(plugin: BasePlugin): void {
     this.registry.register(plugin);
+  }
+
+  registerLazyPlugin(def: LazyPluginDefinition): void {
+    const wrapper = new LazyPluginWrapper(def.manifest, def.load);
+    this.registry.register(wrapper);
   }
 
   getPlugins(): BasePlugin[] {

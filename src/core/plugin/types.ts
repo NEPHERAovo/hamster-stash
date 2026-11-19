@@ -87,6 +87,11 @@ export abstract class BasePlugin {
   renderSettings?(ctx: PluginContext): ReactNode;
 }
 
+export interface LazyPluginDefinition {
+  readonly manifest: PluginManifest;
+  readonly load: () => Promise<BasePlugin>;
+}
+
 export interface SlotDescriptor {
   pluginId: string;
   slotName: string;
