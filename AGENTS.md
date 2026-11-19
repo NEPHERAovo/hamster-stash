@@ -177,14 +177,16 @@ HamsterStash features an extensible micro-kernel architecture where feature modu
 
 ## 8. Autonomous Atomic Git Workflow
 
-To maintain an unblemished repository history and rapid delivery cadence:
+To maintain an unblemished repository history and clean atomic review:
 
 1. **Package Manager Invariant**:
    - Always execute commands using `pnpm` or `pnpm dlx`. Never invoke `npm`, `npx`, or `yarn`.
-2. **Atomic Task Units**:
-   - Decompose work into discrete, cohesive increments (domain/types, UI, plugin, tests, documentation).
-3. **Immediate Push Requirement**:
-   - As soon as an increment passes `pnpm check`, immediately run `git add`, `git commit`, and `git push` without waiting for user prompting.
+2. **Strictly Unitized Atomic Commits**:
+   - Commits must be strictly unitized and granular: each discrete requirement, bugfix, or component modification must have its own dedicated commit with targeted tests and changes.
+   - Never combine multiple distinct issues or unrelated refactorings into a single monolithic commit.
+3. **Local Commit Only (No Proactive Push)**:
+   - Commit each unitized increment locally immediately after verifying it passes `pnpm check`.
+   - Strictly forbidden to execute `git push` autonomously or proactively. Never push commits to any remote repository unless the user explicitly requests or commands a push.
 4. **Commit Message Format**:
    - Format: `<scope>: <imperative English summary>`
    - Allowed scopes: `ledger`, `stats`, `assets`, `plugin-sdk`, `plugin/items`, `ui`, `test`, `docs`, `ci`, `chore`.

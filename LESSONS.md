@@ -46,3 +46,9 @@
 - **Why**: Scattered inline conditionals degrade maintainability, clutter JSX templates, and cause UI drift between skins.
 - **Evidence**: Refactored in commit `fafc784`.
 - **Seen**: 1
+
+### 6. Granular Unitized Commits & No Proactive Remote Push
+- **Rule**: Decompose modifications into granular, unitized commits per discrete issue or feature slice. Never combine multiple independent tasks into one monolithic commit, and never run `git push` to a remote repository without explicit user authorization.
+- **Why**: Monolithic commits obscure review diffs, break atomic git bisect, and autonomous remote pushing bypasses user review gates and can pollute remote history.
+- **Evidence**: Prompted during development session after bundled commit `e2e4f34`.
+- **Seen**: 1
