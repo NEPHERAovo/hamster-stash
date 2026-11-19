@@ -663,10 +663,14 @@ body {
   gap: 8px !important; padding: 10px 12px calc(10px + var(--safe-bottom)) !important; background-color: var(--paper-sunken) !important; border-top: none !important;
 }
 [data-ui-style="modern"] .keypad-tray button {
-  border-radius: var(--keypad-radius) !important; border: 1px solid var(--rule-hairline) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: var(--keypad-radius) !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 [data-ui-style="modern"] .keypad-tray .keypad-op-btn {
-  background-color: var(--paper-sheet) !important; border: 1px solid var(--border-strong) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background-color: var(--paper-sheet) !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .transaction-sheet { border-top-left-radius: 2px; border-top-right-radius: 2px; overflow: visible; }
 [data-ui-style="modern"] .transaction-sheet {
