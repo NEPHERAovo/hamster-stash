@@ -287,67 +287,69 @@ export function App() {
         ref={mainScrollRef}
         className="flex-1 w-full min-h-0 overflow-y-auto overscroll-contain px-0 py-0 pb-[calc(76px+var(--dock-bottom))] main-scroll-content"
       >
-        {currentTab === 'ledger' && (
-          <div className="w-full">
-            <BalanceSummaryCard
-              summary={displayMonthSummary}
-              monthStr={currentMonth}
-            />
-
-            <TransactionGroup
-              transactions={currentMonthTransactions}
-              searchTransactions={displayTransactions}
-              categories={categories}
-              accounts={accounts}
-              pageSize={15}
-              freshTxId={freshTxId}
-              onSelectTransaction={(tx) => {
-                setEditingTx(tx);
-                setIsAddOpen(true);
-              }}
-            />
-          </div>
-        )}
-
-        {currentTab === 'stats' && (
-          <div className="w-full px-4">
-            <StatsView
-              allTransactions={displayTransactions}
-              categories={categories}
-              accounts={accounts}
-              mode={statsMode}
-              onModeChange={setStatsMode}
-              onSelectTransaction={(tx) => {
-                setEditingTx(tx);
-                setIsAddOpen(true);
-              }}
-            />
-          </div>
-        )}
-
-        {activeNavTab && (
-          <div className="w-full">
-            <activeNavTab.component />
-          </div>
-        )}
-
-        {currentTab === 'assets' && (
-          <div className="w-full">
-            <div className="space-y-3.5 px-4 pt-2">
-              <NetWorthHeader
-                netWorthCents={totalNetWorth}
-                summary={settlementSummary}
-                onClickLoanHub={() => setIsLoanHubOpen(true)}
+        <div key={currentTab} className="tab-page-enter w-full">
+          {currentTab === 'ledger' && (
+            <div className="w-full">
+              <BalanceSummaryCard
+                summary={displayMonthSummary}
+                monthStr={currentMonth}
               />
 
-              <AccountList
+              <TransactionGroup
+                transactions={currentMonthTransactions}
+                searchTransactions={displayTransactions}
+                categories={categories}
                 accounts={accounts}
-                onSelectAccount={(acct) => setActiveDetailAccount(acct)}
-                onDeleteAccount={handleDeleteAccount}
+                pageSize={15}
+                freshTxId={freshTxId}
+                onSelectTransaction={(tx) => {
+                  setEditingTx(tx);
+                  setIsAddOpen(true);
+                }}
               />
             </div>
-          </div>
-        )}
+          )}
+
+          {currentTab === 'stats' && (
+            <div className="w-full px-4">
+              <StatsView
+                allTransactions={displayTransactions}
+                categories={categories}
+                accounts={accounts}
+                mode={statsMode}
+                onModeChange={setStatsMode}
+                onSelectTransaction={(tx) => {
+                  setEditingTx(tx);
+                  setIsAddOpen(true);
+                }}
+              />
+            </div>
+          )}
+
+          {activeNavTab && (
+            <div className="w-full">
+              <activeNavTab.component />
+            </div>
+          )}
+
+          {currentTab === 'assets' && (
+            <div className="w-full">
+              <div className="space-y-3.5 px-4 pt-2">
+                <NetWorthHeader
+                  netWorthCents={totalNetWorth}
+                  summary={settlementSummary}
+                  onClickLoanHub={() => setIsLoanHubOpen(true)}
+                />
+
+                <AccountList
+                  accounts={accounts}
+                  onSelectAccount={(acct) => setActiveDetailAccount(acct)}
+                  onDeleteAccount={handleDeleteAccount}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <SubPageShell
