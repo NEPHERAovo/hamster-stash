@@ -53,9 +53,12 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     }
   }, [activeTab]);
 
-  const { step, setDragPosition } = useLiquidSpring();
+  const { step, setDragPosition, resetTarget } = useLiquidSpring();
   const stepRef = useRef(step);
   stepRef.current = step;
+  const resetTargetRef = useRef(resetTarget);
+  resetTargetRef.current = resetTarget;
+  const lastTabCountRef = useRef(tabs.length);
 
   const isPointerDownRef = useRef(false);
   const pointerDownXRef = useRef(0);
@@ -241,6 +244,11 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       const usableW = dockW - SIDE_PAD * 2;
       const colW = usableW / Math.max(1, currentTabs.length);
       const targetX = SIDE_PAD + colW * (activeIdx + 0.5);
+
+      if (lastTabCountRef.current !== currentTabs.length) {
+        lastTabCountRef.current = currentTabs.length;
+        resetTargetRef.current(targetX);
+      }
 
       const spring = stepRef.current(
         dt,

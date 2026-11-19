@@ -518,10 +518,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   };
 
+  if (isOpen && !shouldRender) {
+    setShouldRender(true);
+  }
+
   useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-    } else if (shouldRender && !isClosingRef.current) {
+    if (!isOpen && shouldRender && !isClosingRef.current) {
       closeWithAnimation(240);
     }
   }, [isOpen, shouldRender, closeWithAnimation]);
@@ -743,7 +745,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   return (
     <div
       ref={backdropRef}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] select-none"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] select-none opacity-0"
       onClick={() => closeWithAnimation(240)}
     >
       <div
