@@ -215,82 +215,86 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between px-1 select-none">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-lg sm:text-xl text-(--ink-solid) font-serif not-italic tracking-tight truncate">
-            {formattedPeriodTitle}
-          </span>
-          {weekBadge && (
-            <span className="px-1.5 py-0.5 text-[10px] font-mono rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) shrink-0">
-              {weekBadge}
+      <div className="tab-stagger-1 space-y-2">
+        <div className="flex items-center justify-between px-1 select-none">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg sm:text-xl text-(--ink-solid) font-serif not-italic tracking-tight truncate">
+              {formattedPeriodTitle}
             </span>
-          )}
+            {weekBadge && (
+              <span className="px-1.5 py-0.5 text-[10px] font-mono rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) shrink-0">
+                {weekBadge}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handlePrevPeriod}
+              className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
+              title="上个周期"
+              aria-label="上个周期"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 stroke-2" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNextPeriod}
+              className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
+              title="下个周期"
+              aria-label="下个周期"
+            >
+              <ChevronRight className="w-3.5 h-3.5 stroke-2" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={handlePrevPeriod}
-            className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
-            title="上个周期"
-            aria-label="上个周期"
-          >
-            <ChevronLeft className="w-3.5 h-3.5 stroke-2" />
-          </button>
-          <button
-            type="button"
-            onClick={handleNextPeriod}
-            className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
-            title="下个周期"
-            aria-label="下个周期"
-          >
-            <ChevronRight className="w-3.5 h-3.5 stroke-2" />
-          </button>
-        </div>
+
+        {totalExpense === 0 ? (
+          <div className="w-full p-6 bg-(--paper-sheet) paper-card border border-(--rule-hairline) text-center text-xs text-(--ink-tertiary) flex flex-col items-center gap-1.5 select-none transition-all duration-200 rounded-(--radius-md) shadow-xs">
+            <PieChart className="w-6 h-6 stroke-[1.5] text-(--ink-faint)" />
+            <span>本周期暂无支出记录</span>
+          </div>
+        ) : (
+          <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-serif italic text-(--ink-secondary)">
+                支出构成
+              </span>
+              <span className="font-mono text-xs text-(--ink-tertiary)">
+                共 {donutItems.length} 项分类
+              </span>
+            </div>
+
+            <div className="flex items-center justify-center py-1">
+              <DonutChart
+                items={donutItems}
+                totalExpense={totalExpense}
+                circumference={circumference}
+              />
+            </div>
+
+            <div className="border-t border-(--rule-hairline)/60 pt-1">
+              <SpendingRankList
+                items={donutItems}
+                totalExpense={totalExpense}
+                onSelectCategory={handleSelectCategory}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {totalExpense === 0 ? (
-        <div className="w-full p-6 bg-(--paper-sheet) paper-card border border-(--rule-hairline) text-center text-xs text-(--ink-tertiary) flex flex-col items-center gap-1.5 select-none transition-all duration-200 rounded-(--radius-md) shadow-xs">
-          <PieChart className="w-6 h-6 stroke-[1.5] text-(--ink-faint)" />
-          <span>本周期暂无支出记录</span>
-        </div>
-      ) : (
-        <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-serif italic text-(--ink-secondary)">
-              支出构成
-            </span>
-            <span className="font-mono text-xs text-(--ink-tertiary)">
-              共 {donutItems.length} 项分类
-            </span>
-          </div>
+      <div className="tab-stagger-2">
+        <MonthlyTrendBar
+          title={trendTitle}
+          trends={trends}
+          onStepPrev={handleStepTrendPrev}
+          onStepNext={handleStepTrendNext}
+          canStepNext={canStepTrendNext}
+        />
+      </div>
 
-          <div className="flex items-center justify-center py-1">
-            <DonutChart
-              items={donutItems}
-              totalExpense={totalExpense}
-              circumference={circumference}
-            />
-          </div>
-
-          <div className="border-t border-(--rule-hairline)/60 pt-1">
-            <SpendingRankList
-              items={donutItems}
-              totalExpense={totalExpense}
-              onSelectCategory={handleSelectCategory}
-            />
-          </div>
-        </div>
-      )}
-
-      <MonthlyTrendBar
-        title={trendTitle}
-        trends={trends}
-        onStepPrev={handleStepTrendPrev}
-        onStepNext={handleStepTrendNext}
-        canStepNext={canStepTrendNext}
-      />
-
-      <div className="space-y-1.5 pt-1">
+      <div className="tab-stagger-3 space-y-1.5 pt-1">
         <div className="flex items-center justify-between px-1 select-none">
           <span className="text-xs font-semibold text-(--ink-secondary)">
             周期账单

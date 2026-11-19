@@ -112,7 +112,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       )}
 
       <div className={cn('px-4 space-y-3.5', onClose ? 'pt-3' : 'pt-2')}>
-        <div className="relative bg-(--paper-sheet) paper-summary-card text-(--ink-solid) rounded-(--radius-lg) border border-(--rule-hairline) shadow-xs paper-deckle-bottom pb-4">
+        <div className="tab-stagger-1 relative bg-(--paper-sheet) paper-summary-card text-(--ink-solid) rounded-(--radius-lg) border border-(--rule-hairline) shadow-xs paper-deckle-bottom pb-4">
           <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
 
           <div className="p-4 pt-4.5 space-y-3">
@@ -144,7 +144,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           </div>
         </div>
 
-        <div className="flex items-center gap-6 px-1 pt-1 border-b border-(--rule-hairline) font-mono text-xs">
+        <div className="tab-stagger-2 space-y-3.5">
+          <div className="flex items-center gap-6 px-1 pt-1 border-b border-(--rule-hairline) font-mono text-xs">
           {[
             { key: 'using', label: `在用 (${overallSummary.usingCount})` },
             { key: 'idle', label: `闲置 (${overallSummary.idleCount})` },
@@ -260,6 +261,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

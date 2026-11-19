@@ -210,84 +210,86 @@ export function App() {
 
   return (
     <AppShell>
-      {currentTab === 'ledger' ? (
-        <PageHeader
-          title={folioMonthTitle}
-          showMonthStep={true}
-          onPrevMonth={() => stepMonth(-1)}
-          onNextMonth={() => stepMonth(1)}
-          showBackToToday={!isCurrentNaturalMonth}
-          onBackToToday={jumpToCurrentMonth}
-        />
-      ) : currentTab === 'stats' ? (
-        <PageHeader
-          title={isModern ? '统计' : 'Statistics'}
-          rightAction={
-            <div className="flex items-center gap-1 font-mono text-xs select-none">
-              {(['week', 'month', 'year'] as const).map((m) => (
+      <div key={currentTab} className="tab-header-enter w-full">
+        {currentTab === 'ledger' ? (
+          <PageHeader
+            title={folioMonthTitle}
+            showMonthStep={true}
+            onPrevMonth={() => stepMonth(-1)}
+            onNextMonth={() => stepMonth(1)}
+            showBackToToday={!isCurrentNaturalMonth}
+            onBackToToday={jumpToCurrentMonth}
+          />
+        ) : currentTab === 'stats' ? (
+          <PageHeader
+            title={isModern ? '统计' : 'Statistics'}
+            rightAction={
+              <div className="flex items-center gap-1 font-mono text-xs select-none">
+                {(['week', 'month', 'year'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setStatsMode(m)}
+                    className={cn(
+                      'relative px-2 py-1 text-xs transition-colors cursor-pointer',
+                      statsMode === m
+                        ? 'font-bold text-(--ink-solid)'
+                        : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
+                    )}
+                  >
+                    <span>{m === 'week' ? '周' : m === 'month' ? '月' : '年'}</span>
+                    {statsMode === m && (
+                      <span className="absolute bottom-0 left-1.5 right-1.5 h-0.5 bg-(--ink-solid) rounded-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            }
+          />
+        ) : activeNavTab ? (
+          <PageHeader
+            title={activeNavTab.id === 'items' ? (isModern ? '物品' : 'Owned Items') : activeNavTab.label}
+            rightAction={
+              activeNavTab.id === 'items' ? (
                 <button
-                  key={m}
                   type="button"
-                  onClick={() => setStatsMode(m)}
-                  className={cn(
-                    'relative px-2 py-1 text-xs transition-colors cursor-pointer',
-                    statsMode === m
-                      ? 'font-bold text-(--ink-solid)'
-                      : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-                  )}
+                  onClick={() => usePluginUIStore.getState().openModal('item-form')}
+                  className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                  title="新增物品"
                 >
-                  <span>{m === 'week' ? '周' : m === 'month' ? '月' : '年'}</span>
-                  {statsMode === m && (
-                    <span className="absolute bottom-0 left-1.5 right-1.5 h-0.5 bg-(--ink-solid) rounded-full" />
-                  )}
+                  <Plus className="w-3.5 h-3.5 stroke-2" />
+                  <span>新建</span>
                 </button>
-              ))}
-            </div>
-          }
-        />
-      ) : activeNavTab ? (
-        <PageHeader
-          title={activeNavTab.id === 'items' ? (isModern ? '物品' : 'Owned Items') : activeNavTab.label}
-          rightAction={
-            activeNavTab.id === 'items' ? (
-              <button
-                type="button"
-                onClick={() => usePluginUIStore.getState().openModal('item-form')}
-                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                title="新增物品"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-2" />
-                <span>新建</span>
-              </button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <PageHeader
-          title={isModern ? '资产' : 'Assets'}
-          rightAction={
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setIsSettingsOpen(true)}
-                className="w-7 h-7 flex items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
-                title="设置"
-              >
-                <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateNewAccount}
-                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                title="新增资金账户"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-2" />
-                <span>新建</span>
-              </button>
-            </div>
-          }
-        />
-      )}
+              ) : undefined
+            }
+          />
+        ) : (
+          <PageHeader
+            title={isModern ? '资产' : 'Assets'}
+            rightAction={
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="w-7 h-7 flex items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
+                  title="设置"
+                >
+                  <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateNewAccount}
+                  className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                  title="新增资金账户"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-2" />
+                  <span>新建</span>
+                </button>
+              </div>
+            }
+          />
+        )}
+      </div>
 
       <main
         ref={mainScrollRef}
@@ -296,23 +298,27 @@ export function App() {
         <div key={currentTab} className="tab-page-enter w-full">
           {currentTab === 'ledger' && (
             <div className="w-full">
-              <BalanceSummaryCard
-                summary={displayMonthSummary}
-                monthStr={currentMonth}
-              />
+              <div className="tab-stagger-1 w-full">
+                <BalanceSummaryCard
+                  summary={displayMonthSummary}
+                  monthStr={currentMonth}
+                />
+              </div>
 
-              <TransactionGroup
-                transactions={currentMonthTransactions}
-                searchTransactions={displayTransactions}
-                categories={categories}
-                accounts={accounts}
-                pageSize={15}
-                freshTxId={freshTxId}
-                onSelectTransaction={(tx) => {
-                  setEditingTx(tx);
-                  setIsAddOpen(true);
-                }}
-              />
+              <div className="tab-stagger-2 w-full">
+                <TransactionGroup
+                  transactions={currentMonthTransactions}
+                  searchTransactions={displayTransactions}
+                  categories={categories}
+                  accounts={accounts}
+                  pageSize={15}
+                  freshTxId={freshTxId}
+                  onSelectTransaction={(tx) => {
+                    setEditingTx(tx);
+                    setIsAddOpen(true);
+                  }}
+                />
+              </div>
             </div>
           )}
 
@@ -334,7 +340,7 @@ export function App() {
           )}
 
           {activeNavTab && (
-            <div className="w-full">
+            <div className="w-full tab-stagger-1">
               <activeNavTab.component />
             </div>
           )}
@@ -342,17 +348,21 @@ export function App() {
           {currentTab === 'assets' && (
             <div className="w-full">
               <div className="space-y-3.5 px-4 pt-2">
-                <NetWorthHeader
-                  netWorthCents={totalNetWorth}
-                  summary={settlementSummary}
-                  onClickLoanHub={() => setIsLoanHubOpen(true)}
-                />
+                <div className="tab-stagger-1 w-full">
+                  <NetWorthHeader
+                    netWorthCents={totalNetWorth}
+                    summary={settlementSummary}
+                    onClickLoanHub={() => setIsLoanHubOpen(true)}
+                  />
+                </div>
 
-                <AccountList
-                  accounts={accounts}
-                  onSelectAccount={(acct) => setActiveDetailAccount(acct)}
-                  onDeleteAccount={handleDeleteAccount}
-                />
+                <div className="tab-stagger-2 w-full">
+                  <AccountList
+                    accounts={accounts}
+                    onSelectAccount={(acct) => setActiveDetailAccount(acct)}
+                    onDeleteAccount={handleDeleteAccount}
+                  />
+                </div>
               </div>
             </div>
           )}
