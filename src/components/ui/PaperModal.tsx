@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import {
+  GestureSmoother,
   SHEET_SPRING_EASE,
   VelocityTracker,
   computeSettleDuration,
@@ -33,14 +34,43 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
-  const [visible, setVisible] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [transitionMs, setTransitionMs] = useState(300);
 
+  const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isClosingRef = useRef(false);
   const dragYRef = useRef(0);
+  const smootherRef = useRef<GestureSmoother | null>(null);
   const velocityRef = useRef(new VelocityTracker(100));
+
+  const closeWithAnimation = useCallback(
+    (duration = 240) => {
+      if (isClosingRef.current) return;
+      isClosingRef.current = true;
+      smootherRef.current?.stop();
+
+      const el = sheetRef.current;
+      const bd = backdropRef.current;
+      if (el) {
+        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
+        el.style.transform = 'translate3d(0, 100%, 0)';
+      }
+      if (bd) {
+        bd.style.transition = `opacity ${duration}ms ease`;
+        bd.style.opacity = '0';
+        bd.style.pointerEvents = 'none';
+      }
+      window.setTimeout(() => {
+        document.body.style.overflow = '';
+        onClose();
+        setShouldRender(false);
+        isClosingRef.current = false;
+        dragYRef.current = 0;
+        smootherRef.current?.reset(0);
+      }, duration);
+    },
+    [onClose]
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -50,32 +80,72 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       setShouldRender(true);
-      dragYRef.current = 0;
-      setIsDragging(false);
-      setTransitionMs(300);
-      let innerFrame = 0;
-      const outerFrame = requestAnimationFrame(() => {
-        innerFrame = requestAnimationFrame(() => setVisible(true));
-      });
-      return () => {
-        cancelAnimationFrame(outerFrame);
-        cancelAnimationFrame(innerFrame);
-      };
+    } else if (shouldRender && !isClosingRef.current) {
+      closeWithAnimation(240);
     }
+  }, [isOpen, shouldRender, closeWithAnimation]);
 
-    setVisible(false);
-    setIsDragging(false);
-    dragYRef.current = 0;
-    const timer = window.setTimeout(() => {
-      document.body.style.overflow = '';
-      setShouldRender(false);
-    }, transitionMs);
-    return () => window.clearTimeout(timer);
-  }, [isOpen, transitionMs]);
+  useEffect(() => {
+    if (!shouldRender || !isOpen) return;
+
+    const el = sheetRef.current;
+    const bd = backdropRef.current;
+    if (!el) return;
+
+    isClosingRef.current = false;
+    el.style.transition = 'none';
+    el.style.transform = 'translate3d(0, 100%, 0)';
+    if (bd) {
+      bd.style.transition = 'none';
+      bd.style.opacity = '0';
+      bd.style.pointerEvents = 'auto';
+    }
+    void el.offsetHeight;
+
+    const animFrame = requestAnimationFrame(() => {
+      el.style.transition = `transform 280ms ${SHEET_SPRING_EASE}`;
+      el.style.transform = 'translate3d(0, 0, 0)';
+      if (bd) {
+        bd.style.transition = 'opacity 280ms ease';
+        bd.style.opacity = '1';
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(animFrame);
+    };
+  }, [shouldRender, isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        closeWithAnimation(240);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, closeWithAnimation]);
 
   useEffect(() => {
     const el = sheetRef.current;
     if (!el || !shouldRender || !isOpen) return;
+
+    const smoother = new GestureSmoother(
+      (smoothedY) => {
+        if (isClosingRef.current) return;
+        const clampedY = Math.max(0, smoothedY);
+        el.style.transform = `translate3d(0, ${clampedY}px, 0)`;
+        const bd = backdropRef.current;
+        if (bd) {
+          const height = el.getBoundingClientRect().height || 500;
+          const progress = Math.max(0, Math.min(1, 1 - clampedY / (height * 1.2)));
+          bd.style.opacity = String(progress);
+        }
+      },
+      0,
+      26
+    );
+    smootherRef.current = smoother;
 
     let tracking = false;
     let dragging = false;
@@ -83,7 +153,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     let startY = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
+      if (isClosingRef.current || e.touches.length !== 1) return;
       if (scrollRef.current && scrollRef.current.contains(e.target as Node) && scrollRef.current.scrollTop > 0) {
         return;
       }
@@ -93,11 +163,12 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       tracking = true;
       dragging = false;
       dragYRef.current = 0;
+      smoother.reset(0);
       velocityRef.current.reset(0, performance.now());
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!tracking || e.touches.length !== 1) return;
+      if (!tracking || e.touches.length !== 1 || isClosingRef.current) return;
       const touch = e.touches[0];
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
@@ -109,7 +180,8 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         }
         if (deltaY > 8) {
           dragging = true;
-          setIsDragging(true);
+          el.style.transition = 'none';
+          if (backdropRef.current) backdropRef.current.style.transition = 'none';
         }
       }
 
@@ -118,51 +190,54 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         const mappedY = deltaY >= 0 ? deltaY : rubberBand(deltaY, 72, 0.25);
         dragYRef.current = mappedY;
         velocityRef.current.push(mappedY, performance.now());
-        el.style.transform = `translate3d(0, ${mappedY}px, 0)`;
-        el.style.transition = 'none';
+        smoother.setTarget(mappedY);
       }
     };
 
     const handleTouchEnd = () => {
       if (!tracking) return;
       tracking = false;
-      if (!dragging) return;
+      if (!dragging || isClosingRef.current) return;
       dragging = false;
-      setIsDragging(false);
 
+      smoother.stop();
       const height = Math.max(200, el.getBoundingClientRect().height);
       const vy = velocityRef.current.getVelocity(performance.now());
-      const dist = dragYRef.current;
+      const dist = smoother.getCurrent();
 
       if (shouldDismissGesture(dist, vy, Math.min(100, height * 0.22), 0.45)) {
-        const duration = computeSettleDuration(height - dist, vy, 180, 290);
-        setTransitionMs(duration);
-        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
-        el.style.transform = 'translate3d(0, 100%, 0)';
-        setVisible(false);
-        setTimeout(() => {
-          setShouldRender(false);
-          dragYRef.current = 0;
-          onClose();
-        }, duration);
+        const duration = computeSettleDuration(height - dist, vy, 180, 280);
+        closeWithAnimation(duration);
       } else {
-        const duration = computeSettleDuration(dist, vy, 200, 310);
-        setTransitionMs(duration);
+        const duration = computeSettleDuration(dist, vy, 200, 300);
         el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
         el.style.transform = 'translate3d(0, 0, 0)';
+        const bd = backdropRef.current;
+        if (bd) {
+          bd.style.transition = `opacity ${duration}ms ease`;
+          bd.style.opacity = '1';
+        }
         dragYRef.current = 0;
+        smoother.reset(0);
       }
     };
 
     const handleTouchCancel = () => {
       if (!tracking) return;
       tracking = false;
+      if (!dragging || isClosingRef.current) return;
       dragging = false;
-      setIsDragging(false);
-      setTransitionMs(240);
+
+      smoother.stop();
       el.style.transition = `transform 240ms ${SHEET_SPRING_EASE}`;
       el.style.transform = 'translate3d(0, 0, 0)';
+      const bd = backdropRef.current;
+      if (bd) {
+        bd.style.transition = `opacity 240ms ease`;
+        bd.style.opacity = '1';
+      }
       dragYRef.current = 0;
+      smoother.reset(0);
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -171,44 +246,29 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     el.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () => {
+      smoother.stop();
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
       el.removeEventListener('touchcancel', handleTouchCancel);
     };
-  }, [shouldRender, isOpen, onClose]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [shouldRender, isOpen, closeWithAnimation]);
 
   if (!mounted || !shouldRender) return null;
 
-  const backdropOpacity = visible ? 1 : 0;
-  const sheetTransform = visible ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)';
-
   return createPortal(
     <div
+      ref={backdropRef}
       className={cn(
         'fixed inset-0 z-50 flex items-end justify-center',
-        visible ? 'pointer-events-auto' : 'pointer-events-none'
+        isOpen ? 'pointer-events-auto' : 'pointer-events-none'
       )}
-      style={{
-        opacity: backdropOpacity,
-        transition: isDragging ? 'none' : `opacity ${transitionMs}ms ease`,
-      }}
       role="dialog"
       aria-modal="true"
     >
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
-        onClick={onClose}
+        onClick={() => closeWithAnimation(240)}
         aria-hidden="true"
       />
 
@@ -219,15 +279,11 @@ export const PaperModal: React.FC<PaperModalProps> = ({
           'bg-(--paper-sheet) paper-card border-t sm:border border-(--rule-hairline) shadow-2xl rounded-t-(--radius-lg) sm:rounded-b-(--radius-lg)',
           className
         )}
-        style={{
-          transform: sheetTransform,
-          transition: isDragging ? 'none' : `transform ${transitionMs}ms ${SHEET_SPRING_EASE}`,
-        }}
       >
         {showHandle && (
           <div
             className="py-2.5 flex items-center justify-center cursor-pointer select-none"
-            onClick={onClose}
+            onClick={() => closeWithAnimation(240)}
             title="关闭"
           >
             <div className="w-9 h-1 rounded-full bg-(--ink-tertiary)/30" />
@@ -253,7 +309,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
               {headerExtra}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => closeWithAnimation(240)}
                 className="p-1 rounded-full text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-pointer"
                 title="关闭"
               >
