@@ -9,7 +9,9 @@ import { TransactionItem } from '../ledger/TransactionItem';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { cn } from '../../utils/cn';
-import { parseLocalDate } from '../../utils/date';
+import { parseLocalDate, currentYearMonth, stepYearMonth } from '../../utils/date';
+import { computeAccountMonthlyBalanceTrends } from '../../domain/finance/periodStats';
+import { MonthlyTrendBar } from '../stats/MonthlyTrendBar';
 
 export interface AccountDetailSubPageProps {
   account: Account;
@@ -46,9 +48,32 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     );
   }, [transactions, account.id]);
 
+  const [trendOffset, setTrendOffset] = useState<number>(0);
+
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
+    setTrendOffset(0);
   }, [account.id]);
+
+  const currentMonthKey = useMemo(() => currentYearMonth(), []);
+  const trendTargetMonth = useMemo(
+    () => stepYearMonth(currentMonthKey, trendOffset),
+    [currentMonthKey, trendOffset]
+  );
+
+  const accountTrends = useMemo(() => {
+    return computeAccountMonthlyBalanceTrends(account, transactions, trendTargetMonth, 6);
+  }, [account, transactions, trendTargetMonth]);
+
+  const handleStepTrendPrev = () => {
+    setTrendOffset((prev) => prev - 1);
+  };
+
+  const handleStepTrendNext = () => {
+    setTrendOffset((prev) => Math.min(0, prev + 1));
+  };
+
+  const canStepTrendNext = trendOffset < 0;
 
   const visibleTxs = useMemo(
     () => accountTxs.slice(0, visibleCount),
@@ -288,6 +313,17 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           </div>
         </div>
       </div>
+
+      <MonthlyTrendBar
+        title="月度资产走势"
+        trends={accountTrends}
+        barColor="var(--color-income)"
+        valuePrefix="月末: "
+        onStepPrev={handleStepTrendPrev}
+        onStepNext={handleStepTrendNext}
+        canStepNext={canStepTrendNext}
+        className="mb-4"
+      />
 
       <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between px-1">

@@ -6,9 +6,11 @@ import {
   filterTransactionsByPeriod,
   computeCategoryDonutStats,
   computePeriodTrends,
+  computeAccountMonthlyBalanceTrends,
 } from '../../src/domain/finance/periodStats';
 import type { Transaction } from '../../src/types/transaction';
 import type { Category } from '../../src/types/category';
+import type { Account } from '../../src/types/account';
 
 describe('Period Statistics Domain Logic', () => {
   it('should compute week period boundaries correctly (Monday to Sunday)', () => {
@@ -96,5 +98,44 @@ describe('Period Statistics Domain Logic', () => {
     expect(trends[5].label).toBe('10月');
     expect(trends[5].amount).toBe(10000);
     expect(trends[5].percentage).toBe(100); // 最大值 100%
+  });
+
+  it('should compute monthly balance trends for a specific account', () => {
+    const mockAccount: Account = {
+      id: 'acct_1',
+      name: '招商银行',
+      type: 'bank',
+      balance: 150000, // 1500.00 current balance
+      currency: 'CNY',
+      icon: 'wallet',
+      sortOrder: 1,
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const txs: Transaction[] = [
+      // September expense 500.00
+      { id: '1', type: 'expense', amount: 50000, categoryId: 'c1', accountId: 'acct_1', date: '2026-09-15', createdAt: '', updatedAt: '' },
+      // October income 800.00
+      { id: '2', type: 'income', amount: 80000, categoryId: 'c1', accountId: 'acct_1', date: '2026-10-15', createdAt: '', updatedAt: '' },
+      // November expense 200.00 (current month)
+      { id: '3', type: 'expense', amount: 20000, categoryId: 'c1', accountId: 'acct_1', date: '2026-11-05', createdAt: '', updatedAt: '' },
+    ];
+
+    const trends = computeAccountMonthlyBalanceTrends(mockAccount, txs, '2026-11', 6);
+    expect(trends.length).toBe(6);
+
+    // Current month (November): balance is exactly account.balance = 150000
+    expect(trends[5].label).toBe('11月');
+    expect(trends[5].amount).toBe(150000);
+
+    // October month-end: November had -20000, so end of October balance was 150000 - (-20000) = 170000
+    expect(trends[4].label).toBe('10月');
+    expect(trends[4].amount).toBe(170000);
+
+    // September month-end: October had +80000, November had -20000. Total post-Sep delta = +60000.
+    // End of September balance was 150000 - (+60000) = 90000
+    expect(trends[3].label).toBe('9月');
+    expect(trends[3].amount).toBe(90000);
   });
 });

@@ -1,5 +1,6 @@
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
+import type { Account } from '../../types/account';
 import { buildOffsetMap, computeEffectiveExpenseAmount } from './balanceCalculator';
 import {
   dayjs,
@@ -216,6 +217,64 @@ export function computePeriodTrends(
   const maxAmount = Math.max(...trends.map((t) => t.amount), 1);
   for (const t of trends) {
     t.percentage = Math.round((t.amount / maxAmount) * 100);
+  }
+
+  return trends;
+}
+
+/**
+ * 计算单个账户在近 N 个月份月末的资产结余走势
+ */
+export function computeAccountMonthlyBalanceTrends(
+  account: Account,
+  allTransactions: Transaction[],
+  targetEndMonth: string,
+  count: number = 6
+): TrendItem[] {
+  const trends: TrendItem[] = [];
+
+  const computeTxDelta = (tx: Transaction): number => {
+    let delta = 0;
+    if (tx.accountId === account.id) {
+      if (tx.type === 'expense') delta -= tx.amount;
+      else if (tx.type === 'income') delta += tx.amount;
+      else if (tx.type === 'transfer') delta -= tx.amount;
+      else if (tx.type === 'loan') {
+        if (tx.loanDirection === 'lend' && tx.loanRole === 'origin') delta -= tx.amount;
+        else if (tx.loanDirection === 'borrow' && tx.loanRole === 'origin') delta += tx.amount;
+        else if (tx.loanDirection === 'lend' && tx.loanRole === 'repayment') delta += tx.amount;
+        else if (tx.loanDirection === 'borrow' && tx.loanRole === 'repayment') delta -= tx.amount;
+      }
+    }
+    if (tx.toAccountId === account.id && tx.type === 'transfer') {
+      delta += tx.amount;
+    }
+    return delta;
+  };
+
+  for (let i = count - 1; i >= 0; i--) {
+    const ym = stepYearMonth(targetEndMonth, -i);
+    const monthNum = dayjs(`${ym}-01`, 'YYYY-MM-DD', true).month() + 1;
+    const monthEnd = dayjs(`${ym}-01`, 'YYYY-MM-DD', true).endOf('month').format('YYYY-MM-DD');
+
+    let postMonthDelta = 0;
+    for (const tx of allTransactions) {
+      if (tx.date > monthEnd) {
+        postMonthDelta += computeTxDelta(tx);
+      }
+    }
+
+    const monthEndBalance = account.balance - postMonthDelta;
+    trends.push({
+      label: `${monthNum}月`,
+      amount: monthEndBalance,
+      percentage: 0,
+    });
+  }
+
+  const maxAmount = Math.max(...trends.map((t) => Math.max(0, t.amount)), 1);
+  for (const t of trends) {
+    t.percentage = maxAmount > 0 ? Math.round((Math.max(0, t.amount) / maxAmount) * 100) : 0;
   }
 
   return trends;

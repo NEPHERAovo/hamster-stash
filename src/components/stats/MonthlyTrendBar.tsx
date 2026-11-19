@@ -16,6 +16,8 @@ export interface MonthlyTrendBarProps {
   onStepPrev?: () => void;
   onStepNext?: () => void;
   canStepNext?: boolean;
+  barColor?: string;
+  valuePrefix?: string;
 }
 
 export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
@@ -25,6 +27,8 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   onStepPrev,
   onStepNext,
   canStepNext = false,
+  barColor = 'var(--color-expense)',
+  valuePrefix = '',
 }) => {
   const [selectedIdx, setSelectedIdx] = useState<number>(() => Math.max(0, trends.length - 1));
   const touchStartXRef = useRef<number | null>(null);
@@ -131,7 +135,7 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
         </div>
         {activeItem && (
           <div className="font-mono text-xs text-(--ink-secondary) flex items-center gap-1.5">
-            <span className="text-(--ink-tertiary)">{activeItem.label}</span>
+            <span className="text-(--ink-tertiary)">{valuePrefix}{activeItem.label}</span>
             <strong className="text-(--ink-solid) font-bold tabular-nums">
               ¥{centsToYuan(activeItem.amount)}
             </strong>
@@ -188,7 +192,7 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
                   width={barW}
                   height={p.barH}
                   rx="4"
-                  fill="var(--color-expense)"
+                  fill={barColor}
                   opacity={isSelected ? 1 : 0.45}
                   className="transition-all duration-200"
                 />
