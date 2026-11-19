@@ -56,9 +56,11 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     });
   });
 
-  it('激活插件后注册底部一级导航 Tab、手帐 UI 插槽、子页面与弹窗', async () => {
+  it('插件默认处于未激活状态，激活后注册底部一级导航 Tab、手帐 UI 插槽、子页面与弹窗', async () => {
     await manager.init();
+    expect(manager.isPluginEnabled('owned-items')).toBe(false);
 
+    await manager.enablePlugin('owned-items');
     expect(manager.isPluginEnabled('owned-items')).toBe(true);
 
     const uiState = usePluginUIStore.getState();
@@ -80,6 +82,7 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
   it('中间件拦截：支出态下勾选 createNewItem 时自动由账单生成新物品并关联 buy 角色', async () => {
     await manager.init();
+    await manager.enablePlugin('owned-items');
 
     const inputPayload: CreateTransactionInput = {
       type: 'expense',
@@ -115,6 +118,7 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
   it('中间件拦截：记录二手售出流水时自动将物品状态流转为 sold', async () => {
     await manager.init();
+    await manager.enablePlugin('owned-items');
 
     const item = await usePluginItemStore.getState().createItem({
       name: 'iPad Mini 6',
@@ -213,6 +217,7 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
   it('停用插件后干净卸载 UI 插槽与一级导航 Tab', async () => {
     await manager.init();
+    await manager.enablePlugin('owned-items');
     expect(usePluginUIStore.getState().navTabs.some((t) => t.id === 'items')).toBe(true);
     expect(usePluginUIStore.getState().slots['tx.modal.metaBar']?.length).toBe(1);
 

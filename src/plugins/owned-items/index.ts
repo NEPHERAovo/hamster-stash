@@ -23,7 +23,7 @@ export class OwnedItemsPlugin extends BasePlugin {
     version: '1.0.0',
     description: '追踪大件与数码物品生命周期、购入沉淀、配件维护与日均持有成本。',
     icon: 'package',
-    defaultEnabled: true,
+    defaultEnabled: false,
   };
 
   async onActivate(ctx: PluginContext): Promise<void> {
