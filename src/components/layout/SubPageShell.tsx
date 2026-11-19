@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 import { SubPageContext, useSubPage } from './SubPageContext';
 import { cn } from '../../utils/cn';
 import {
+  GestureSmoother,
   SPRING_OUT_EASE,
   VelocityTracker,
   computeSettleDuration,
@@ -51,12 +52,14 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const currentDeltaXRef = useRef(0);
+  const smootherRef = useRef<GestureSmoother | null>(null);
   const velocityRef = useRef(new VelocityTracker(100));
 
   const requestClose = useCallback(() => {
     const el = containerRef.current;
     if (!el || isClosingRef.current) return;
     isClosingRef.current = true;
+    smootherRef.current?.stop();
     el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
     el.style.transform = 'translate3d(100%, 0, 0)';
     el.style.boxShadow = 'none';
@@ -114,6 +117,17 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     const el = containerRef.current;
     if (!el || !shouldRender) return;
 
+    const smoother = new GestureSmoother((smoothedX) => {
+      if (isClosingRef.current) return;
+      const clampedX = Math.max(0, smoothedX);
+      const width = Math.max(1, el.getBoundingClientRect().width);
+      const progress = Math.max(0, Math.min(1, clampedX / width));
+      const shadowAlpha = (0.12 * (1 - progress * 0.85)).toFixed(3);
+      el.style.transform = `translate3d(${clampedX}px, 0, 0)`;
+      el.style.boxShadow = `-8px 0 28px rgba(0,0,0,${shadowAlpha})`;
+    }, 0, 26);
+    smootherRef.current = smoother;
+
     const getCurrentTranslateX = (): number => {
       const transform = window.getComputedStyle(el).transform;
       if (!transform || transform === 'none') return 0;
@@ -145,6 +159,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
         startXRef.current = touch.clientX - currentX;
         startYRef.current = touch.clientY;
         currentDeltaXRef.current = currentX;
+        smoother.reset(currentX);
         velocityRef.current.reset(currentX, performance.now());
         isTrackingRef.current = true;
         isSwipingRef.current = currentX > 0;
@@ -152,7 +167,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isTrackingRef.current || e.touches.length !== 1) return;
+      if (!isTrackingRef.current || e.touches.length !== 1 || isClosingRef.current) return;
 
       const touch = e.touches[0];
       const deltaX = touch.clientX - startXRef.current;
@@ -165,6 +180,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
         }
         if (deltaX > 6) {
           isSwipingRef.current = true;
+          el.style.transition = 'none';
         }
       }
 
@@ -172,16 +188,10 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
         if (e.cancelable) {
           e.preventDefault();
         }
-        const width = Math.max(1, el.getBoundingClientRect().width);
         const mappedX = deltaX >= 0 ? deltaX : rubberBand(deltaX, 60, 0.22);
         currentDeltaXRef.current = mappedX;
         velocityRef.current.push(mappedX, performance.now());
-
-        const progress = Math.max(0, Math.min(1, mappedX / width));
-        const shadowAlpha = (0.12 * (1 - progress * 0.85)).toFixed(3);
-        el.style.transition = 'none';
-        el.style.transform = `translate3d(${mappedX}px, 0, 0)`;
-        el.style.boxShadow = `-8px 0 28px rgba(0,0,0,${shadowAlpha})`;
+        smoother.setTarget(mappedX);
       }
     };
 
@@ -189,12 +199,13 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       if (!isTrackingRef.current) return;
       isTrackingRef.current = false;
 
-      if (!isSwipingRef.current) return;
+      if (!isSwipingRef.current || isClosingRef.current) return;
       isSwipingRef.current = false;
 
+      smoother.stop();
       const width = Math.max(1, el.getBoundingClientRect().width);
       const velocity = velocityRef.current.getVelocity(performance.now());
-      const dist = currentDeltaXRef.current;
+      const dist = smoother.getCurrent();
 
       if (shouldDismissGesture(dist, velocity, Math.max(dismissThreshold, width * 0.25), 0.38)) {
         isClosingRef.current = true;
@@ -212,16 +223,21 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
         el.style.transition = `transform ${duration}ms ${SPRING_OUT_EASE}, box-shadow ${duration}ms ease`;
         el.style.transform = 'translate3d(0, 0, 0)';
         el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
+        smoother.reset(0);
       }
     };
 
     const handleTouchCancel = () => {
       if (!isTrackingRef.current) return;
       isTrackingRef.current = false;
+      if (isClosingRef.current) return;
       isSwipingRef.current = false;
+
+      smoother.stop();
       el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
       el.style.transform = 'translate3d(0, 0, 0)';
       el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
+      smoother.reset(0);
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -230,6 +246,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     el.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () => {
+      smoother.stop();
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
