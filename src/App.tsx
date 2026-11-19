@@ -392,7 +392,7 @@ export function App() {
             onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
             onToggleIncludeInNetWorth={async (acct, nextValue) => {
               await updateAccount(acct.id, { includeInNetWorth: nextValue });
-              toast.success(nextValue ? '已计入个人净资产' : '已从净资产统计中排除');
+              toast.success(nextValue ? '已计入净资产' : '已不计入净资产');
             }}
             onDeleteAccount={handleDeleteAccount}
             onSelectTransaction={(tx) => {

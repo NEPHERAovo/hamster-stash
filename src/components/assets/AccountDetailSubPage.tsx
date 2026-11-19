@@ -198,31 +198,19 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   return (
     <div className="w-full pb-6 pt-1 px-4">
       <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) shadow-xs p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income) flex items-center justify-center shrink-0">
-              <Icon className="w-5 h-5 stroke-[1.85]" />
-            </div>
-            <div>
-              <div className="font-bold text-sm text-(--ink-primary)">{account.name}</div>
-              <div className="text-[11px] font-mono text-(--ink-tertiary)">{getAccountTypeName(account.type)}</div>
-            </div>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income) flex items-center justify-center shrink-0">
+            <Icon className="w-5 h-5 stroke-[1.85]" />
           </div>
-          <span
-            className={cn(
-              'text-[10px] font-semibold px-2 py-0.5 rounded-full font-mono',
-              isIncludedInNetWorth
-                ? 'bg-(--color-income-bg) text-(--color-income)'
-                : 'bg-(--paper-sunken) text-(--ink-tertiary)'
-            )}
-          >
-            {isIncludedInNetWorth ? '计入净资产' : '不计入净资产'}
-          </span>
+          <div>
+            <div className="font-bold text-sm text-(--ink-primary)">{account.name}</div>
+            <div className="text-[11px] font-mono text-(--ink-tertiary)">{getAccountTypeName(account.type)}</div>
+          </div>
         </div>
 
         <div className="mb-3.5">
           <div className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider mb-0.5 font-mono">
-            当前账面余额
+            余额
           </div>
           <div className="text-3xl font-bold tracking-tight text-(--ink-primary) tabular-nums font-mono">
             ¥{centsToYuan(account.balance)}
@@ -231,15 +219,15 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
 
         <div className="grid grid-cols-3 text-center py-3 border-y border-dashed border-(--rule-hairline) mb-3.5">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">本月流入</span>
+            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">收入</span>
             <span className="text-[13px] font-bold font-mono tabular-nums text-(--color-income)">+¥{centsToYuan(monthIn)}</span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">本月流出</span>
+            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">支出</span>
             <span className="text-[13px] font-bold font-mono tabular-nums text-(--color-expense)">-¥{centsToYuan(monthOut)}</span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">净变动</span>
+            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">结余</span>
             <span className={cn('text-[13px] font-bold font-mono tabular-nums', isNetPositive ? 'text-(--color-income)' : 'text-(--color-expense)')}>
               {isNetPositive ? `+¥${centsToYuan(netFlow)}` : `-¥${centsToYuan(Math.abs(netFlow))}`}
             </span>
@@ -268,38 +256,28 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
             <span className="text-(--ink-primary) font-medium">{getAccountTypeName(account.type)}</span>
           </div>
           <div className="flex items-center justify-between py-2">
-            <span className="text-(--ink-tertiary)">净资产统计</span>
+            <span className="text-(--ink-tertiary)">计入净资产</span>
             {onToggleIncludeInNetWorth ? (
-              <div className="flex items-center gap-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isIncludedInNetWorth}
+                aria-label="计入净资产"
+                onClick={handleToggleNetWorth}
+                className={cn(
+                  'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
+                  isIncludedInNetWorth
+                    ? 'bg-(--ink-primary) border-(--ink-primary)'
+                    : 'bg-(--paper-sunken) border-(--rule-hairline)'
+                )}
+              >
                 <span
                   className={cn(
-                    'font-medium',
-                    isIncludedInNetWorth ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
+                    'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
+                    isIncludedInNetWorth ? 'left-4' : 'left-0.5'
                   )}
-                >
-                  {isIncludedInNetWorth ? '已计入' : '不计入'}
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={isIncludedInNetWorth}
-                  aria-label="计入个人净资产"
-                  onClick={handleToggleNetWorth}
-                  className={cn(
-                    'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
-                    isIncludedInNetWorth
-                      ? 'bg-(--ink-primary) border-(--ink-primary)'
-                      : 'bg-(--paper-sunken) border-(--rule-hairline)'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                      isIncludedInNetWorth ? 'left-4' : 'left-0.5'
-                    )}
-                  />
-                </button>
-              </div>
+                />
+              </button>
             ) : (
               <span
                 className={cn(
@@ -307,7 +285,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
                   isIncludedInNetWorth ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
                 )}
               >
-                {isIncludedInNetWorth ? '计入个人净资产' : '不计入净资产'}
+                {isIncludedInNetWorth ? '计入' : '不计入'}
               </span>
             )}
           </div>
@@ -318,7 +296,6 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         title="月度资产走势"
         trends={accountTrends}
         barColor="var(--color-income)"
-        valuePrefix="月末: "
         onStepPrev={handleStepTrendPrev}
         onStepNext={handleStepTrendNext}
         canStepNext={canStepTrendNext}

@@ -55,8 +55,8 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
       subtitle="对齐实际盘点金额并自动生成平账流水"
     >
       <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between py-2 px-3 bg-(--bg-sunken) rounded-(--radius-sm) text-xs">
-          <span className="text-(--ink-tertiary)">当前账面余额:</span>
+        <div className="flex items-center justify-between py-2 px-3 bg-(--paper-sunken) rounded-(--radius-sm) text-xs">
+          <span className="text-(--ink-tertiary)">当前余额:</span>
           <span className="font-bold text-(--ink-primary) tabular-nums">
             ¥ {centsToYuan(currentCents)}
           </span>
@@ -66,7 +66,7 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
           <label className="text-xs font-semibold text-(--ink-secondary) block">
             实际清点金额 (元)
           </label>
-          <div className="flex items-center h-12 px-3 bg-(--bg-surface) border border-(--border-default) rounded-(--radius-md) focus-within:border-(--ink-primary)">
+          <div className="flex items-center h-12 px-3 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) focus-within:border-(--ink-primary)">
             <span className="text-lg font-bold text-(--ink-secondary) mr-2">¥</span>
             <input
               type="number"

@@ -17,7 +17,6 @@ export interface MonthlyTrendBarProps {
   onStepNext?: () => void;
   canStepNext?: boolean;
   barColor?: string;
-  valuePrefix?: string;
 }
 
 export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
@@ -28,7 +27,6 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   onStepNext,
   canStepNext = false,
   barColor = 'var(--color-expense)',
-  valuePrefix = '',
 }) => {
   const [selectedIdx, setSelectedIdx] = useState<number>(() => Math.max(0, trends.length - 1));
   const touchStartXRef = useRef<number | null>(null);
