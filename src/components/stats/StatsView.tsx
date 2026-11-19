@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, PieChart } from 'lucide-react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
@@ -21,7 +21,7 @@ import { SubPageShell, SubPageBackButton } from '../layout/SubPageShell';
 import { PageHeader } from '../layout/PageHeader';
 import { SegToggle } from '../ui/SegToggle';
 import { useThemeStore } from '../../stores/useThemeStore';
-import { dayjs, type Dayjs } from '../../utils/date';
+import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
 
 export interface CategoryDrilldownData {
   category: Category;
@@ -95,9 +95,36 @@ export const StatsView: React.FC<StatsViewProps> = ({
     return computeCategoryDonutStats(periodTransactions, categories, allTransactions);
   }, [periodTransactions, categories, allTransactions]);
 
+  const [trendOffset, setTrendOffset] = useState<number>(0);
+
+  useEffect(() => {
+    setTrendOffset(0);
+  }, [periodInfo.key, mode]);
+
+  const trendTargetKey = useMemo(() => {
+    if (trendOffset === 0) return periodInfo.key;
+    if (mode === 'month') return stepYearMonth(periodInfo.key, trendOffset);
+    if (mode === 'year') {
+      const y = parseInt(periodInfo.key, 10) + trendOffset;
+      return y.toString();
+    }
+    const d = parseLocalDate(periodInfo.key).add(trendOffset, 'week');
+    return d.format('YYYY-MM-DD');
+  }, [periodInfo.key, trendOffset, mode]);
+
   const trends = useMemo(() => {
-    return computePeriodTrends(allTransactions, mode, periodInfo.key);
-  }, [allTransactions, mode, periodInfo.key]);
+    return computePeriodTrends(allTransactions, mode, trendTargetKey);
+  }, [allTransactions, mode, trendTargetKey]);
+
+  const handleStepTrendPrev = () => {
+    setTrendOffset((prev) => prev - 1);
+  };
+
+  const handleStepTrendNext = () => {
+    setTrendOffset((prev) => Math.min(0, prev + 1));
+  };
+
+  const canStepTrendNext = trendOffset < 0;
 
   const trendTitle =
     mode === 'week' ? '周度支出趋势' : mode === 'month' ? '月度支出趋势' : '年度支出趋势';
@@ -239,7 +266,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
       )}
 
-      <MonthlyTrendBar title={trendTitle} trends={trends} />
+      <MonthlyTrendBar
+        title={trendTitle}
+        trends={trends}
+        onStepPrev={handleStepTrendPrev}
+        onStepNext={handleStepTrendNext}
+        canStepNext={canStepTrendNext}
+      />
 
       <div className="space-y-1.5 pt-1">
         <div className="flex items-center justify-between px-1 select-none">

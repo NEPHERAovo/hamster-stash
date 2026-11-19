@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
 
@@ -12,14 +13,22 @@ export interface MonthlyTrendBarProps {
   title: string;
   trends: TrendItem[];
   className?: string;
+  onStepPrev?: () => void;
+  onStepNext?: () => void;
+  canStepNext?: boolean;
 }
 
 export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   title,
   trends,
   className,
+  onStepPrev,
+  onStepNext,
+  canStepNext = false,
 }) => {
   const [selectedIdx, setSelectedIdx] = useState<number>(() => Math.max(0, trends.length - 1));
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   if (trends.length === 0) {
     return null;
@@ -56,6 +65,29 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
 
   const polylinePoints = pointsData.map((p) => `${p.cx},${p.cy}`).join(' ');
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 35) {
+      if (deltaX > 0) {
+        onStepPrev?.();
+      } else if (deltaX < 0 && canStepNext) {
+        onStepNext?.();
+      }
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -64,8 +96,38 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
       )}
     >
       <div className="flex items-center justify-between mb-2 select-none">
-        <div className="text-[13px] font-semibold text-(--ink-primary) tracking-tight">
-          {title}
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-semibold text-(--ink-primary) tracking-tight">
+            {title}
+          </span>
+          {(onStepPrev || onStepNext) && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onStepPrev}
+                className="w-5.5 h-5.5 flex items-center justify-center border border-(--rule-hairline) rounded-(--btn-radius) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono shadow-2xs"
+                title="上个月"
+                aria-label="上个月"
+              >
+                <ChevronLeft className="w-3 h-3 stroke-2" />
+              </button>
+              <button
+                type="button"
+                onClick={onStepNext}
+                disabled={!canStepNext}
+                className={cn(
+                  'w-5.5 h-5.5 flex items-center justify-center border border-(--rule-hairline) rounded-(--btn-radius) bg-(--paper-base) text-(--ink-secondary) font-mono shadow-2xs transition-all',
+                  canStepNext
+                    ? 'hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 cursor-pointer'
+                    : 'opacity-35 cursor-not-allowed pointer-events-none'
+                )}
+                title="下个月"
+                aria-label="下个月"
+              >
+                <ChevronRight className="w-3 h-3 stroke-2" />
+              </button>
+            </div>
+          )}
         </div>
         {activeItem && (
           <div className="font-mono text-xs text-(--ink-secondary) flex items-center gap-1.5">
@@ -77,7 +139,11 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
         )}
       </div>
 
-      <div className="w-full relative">
+      <div
+        className="w-full relative touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           className="w-full h-auto overflow-visible select-none"

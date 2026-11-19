@@ -59,13 +59,35 @@ describe('Modular Stats & UI Components', () => {
   });
 
   it('renders MonthlyTrendBar with vertical combo chart and interactive selection', () => {
-    render(<MonthlyTrendBar title="月度支出趋势" trends={mockTrends} />);
+    const handleStepPrev = vi.fn();
+    const handleStepNext = vi.fn();
+
+    render(
+      <MonthlyTrendBar
+        title="月度支出趋势"
+        trends={mockTrends}
+        onStepPrev={handleStepPrev}
+        onStepNext={handleStepNext}
+        canStepNext={true}
+      />
+    );
 
     expect(screen.getByText('月度支出趋势')).toBeInTheDocument();
     expect(screen.getByText('09月')).toBeInTheDocument();
     expect(screen.getByText('10月')).toBeInTheDocument();
     expect(screen.getAllByText('11月').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('¥700.00')).toBeInTheDocument();
+
+    const prevBtn = screen.getByTitle('上个月');
+    const nextBtn = screen.getByTitle('下个月');
+    expect(prevBtn).toBeInTheDocument();
+    expect(nextBtn).toBeInTheDocument();
+
+    fireEvent.click(prevBtn);
+    expect(handleStepPrev).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(nextBtn);
+    expect(handleStepNext).toHaveBeenCalledTimes(1);
   });
 
   it('renders SpendingRankList with category breakdown rows and triggers click', () => {
