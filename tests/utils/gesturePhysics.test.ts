@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
+  GestureSmoother,
   VelocityTracker,
   computeSettleDuration,
   rubberBand,
@@ -45,5 +46,31 @@ describe('Nonlinear gesture physics utility', () => {
     expect(shouldDismissGesture(40, 0.65, 90, 0.45)).toBe(true);
     expect(shouldDismissGesture(15, 0.8, 90, 0.45)).toBe(false);
     expect(shouldDismissGesture(120, -0.5, 90)).toBe(false);
+  });
+
+  it('filters raw target updates with smooth exponential decay', () => {
+    vi.useFakeTimers();
+    let currentPos = 0;
+    const updateSpy = vi.fn((pos: number) => {
+      currentPos = pos;
+    });
+
+    const smoother = new GestureSmoother(updateSpy, 0, 26);
+    smoother.setTarget(100);
+
+    // Initial instant should not jump directly to 100
+    expect(currentPos).toBe(0);
+
+    // Advance 1 frame (~16ms)
+    vi.advanceTimersByTime(16);
+    expect(currentPos).toBeGreaterThan(0);
+    expect(currentPos).toBeLessThan(100);
+
+    // Advance more frames to settle
+    vi.advanceTimersByTime(200);
+    expect(currentPos).toBeCloseTo(100, 0);
+
+    smoother.stop();
+    vi.useRealTimers();
   });
 });

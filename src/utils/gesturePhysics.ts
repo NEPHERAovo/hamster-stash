@@ -68,3 +68,63 @@ export function shouldDismissGesture(
   if (velocityPxPerMs >= velocityThreshold && distancePx > 24) return true;
   return distancePx > distanceThreshold;
 }
+
+export class GestureSmoother {
+  private current: number;
+  private target: number;
+  private rafId: number | null = null;
+  private readonly onUpdate: (pos: number) => void;
+  private readonly omega: number;
+
+  constructor(onUpdate: (pos: number) => void, initialPos = 0, omega = 26) {
+    this.onUpdate = onUpdate;
+    this.current = initialPos;
+    this.target = initialPos;
+    this.omega = omega;
+  }
+
+  reset(val = 0): void {
+    this.current = val;
+    this.target = val;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  }
+
+  setTarget(target: number): void {
+    this.target = target;
+    if (this.rafId === null) {
+      let lastTime = performance.now();
+      const tick = (now: number) => {
+        const dt = Math.min(0.064, Math.max(0.001, (now - lastTime) / 1000));
+        lastTime = now;
+
+        const factor = 1 - Math.exp(-this.omega * dt);
+        this.current += (this.target - this.current) * factor;
+
+        this.onUpdate(this.current);
+
+        if (Math.abs(this.target - this.current) > 0.2) {
+          this.rafId = requestAnimationFrame(tick);
+        } else {
+          this.current = this.target;
+          this.onUpdate(this.current);
+          this.rafId = null;
+        }
+      };
+      this.rafId = requestAnimationFrame(tick);
+    }
+  }
+
+  getCurrent(): number {
+    return this.current;
+  }
+
+  stop(): void {
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  }
+}
