@@ -43,6 +43,11 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
 
   return (
     <>
+      <div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] h-[calc(62px+var(--dock-bottom))] pointer-events-none z-30 border-t border-(--rule-hairline)/60 bg-gradient-to-t from-(--paper-base)/85 via-(--paper-base)/40 to-transparent backdrop-blur-[2px]"
+        aria-hidden="true"
+      />
+
       {showAddButton && onAddClick && (
         <div className="fixed bottom-[calc(68px+var(--dock-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
           <button
