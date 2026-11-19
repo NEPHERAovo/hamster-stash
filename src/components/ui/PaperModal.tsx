@@ -56,7 +56,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         el.style.transform = 'translate3d(0, 100%, 0)';
       }
       if (bd) {
-        bd.style.transition = `opacity ${duration}ms ease`;
+        bd.style.transition = `opacity ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`;
         bd.style.opacity = '0';
         bd.style.pointerEvents = 'none';
       }
@@ -106,7 +106,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       el.style.transition = `transform 280ms ${SHEET_SPRING_EASE}`;
       el.style.transform = 'translate3d(0, 0, 0)';
       if (bd) {
-        bd.style.transition = 'opacity 280ms ease';
+        bd.style.transition = 'opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)';
         bd.style.opacity = '1';
       }
     });
@@ -214,7 +214,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
         el.style.transform = 'translate3d(0, 0, 0)';
         const bd = backdropRef.current;
         if (bd) {
-          bd.style.transition = `opacity ${duration}ms ease`;
+          bd.style.transition = `opacity ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`;
           bd.style.opacity = '1';
         }
         dragYRef.current = 0;
@@ -233,7 +233,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       el.style.transform = 'translate3d(0, 0, 0)';
       const bd = backdropRef.current;
       if (bd) {
-        bd.style.transition = `opacity 240ms ease`;
+        bd.style.transition = 'opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)';
         bd.style.opacity = '1';
       }
       dragYRef.current = 0;
@@ -258,16 +258,16 @@ export const PaperModal: React.FC<PaperModalProps> = ({
 
   return createPortal(
     <div
-      ref={backdropRef}
       className={cn(
-        'fixed inset-0 z-50 flex items-end justify-center',
+        'fixed inset-0 z-50 flex items-end justify-center select-none',
         isOpen ? 'pointer-events-auto' : 'pointer-events-none'
       )}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
+        ref={backdropRef}
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] will-change-[opacity]"
         onClick={() => closeWithAnimation(240)}
         aria-hidden="true"
       />

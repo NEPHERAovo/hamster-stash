@@ -487,7 +487,7 @@ body {
 
 /* 抽屉弹出动效 */
 .sheet-slide-up {
-  animation: sheetSlideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: sheetSlideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   will-change: transform;
 }
 
@@ -497,7 +497,7 @@ body {
 }
 
 .modal-backdrop-fade {
-  animation: modalBackdropFade 0.25s ease-out forwards;
+  animation: modalBackdropFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: opacity;
 }
 

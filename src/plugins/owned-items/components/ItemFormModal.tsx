@@ -136,9 +136,15 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] transition-opacity duration-200 select-none"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end justify-center select-none"
+      role="dialog"
+      aria-modal="true"
     >
+      <div
+        className="fixed inset-0 bg-stone-900/25 backdrop-blur-[2px] modal-backdrop-fade will-change-[opacity]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <div
         className="w-full max-w-[430px] bg-(--paper-sheet) transaction-sheet rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09)] border-t border-(--rule-hairline) flex flex-col sheet-slide-up relative overflow-visible paper-sawtooth-top"
         onClick={(e) => e.stopPropagation()}
