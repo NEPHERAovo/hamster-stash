@@ -412,7 +412,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           createdAt: createdAtISO,
         });
 
-        toast.success('便签流水已更新');
         onSuccess?.(editingTransaction.id);
         closeWithAnimation(240);
         return;
