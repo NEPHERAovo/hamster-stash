@@ -197,8 +197,19 @@ body.theme-pine, :root[data-theme="theme-pine"], .theme-pine {
   box-sizing: border-box;
 }
 
-html, body, #root { height: 100%; min-height: 100%; margin: 0; overflow: hidden; }
-@supports (-webkit-touch-callout: none) { html, body, #root { height: -webkit-fill-available; min-height: -webkit-fill-available; } }
+html, body, #root {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+  html, body, #root {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
 html { background-color: var(--paper-base, var(--bg-base)); }
 
 body {

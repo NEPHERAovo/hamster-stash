@@ -13,14 +13,14 @@ export const AppShell: React.FC<AppShellProps> = ({
   showGrid = true,
 }) => {
   return (
-    <div className="h-full min-h-full w-full flex flex-col items-center bg-(--paper-base) text-(--ink-primary) overflow-hidden select-none">
+    <div className="fixed inset-0 w-full h-full flex flex-col items-center bg-(--paper-base) text-(--ink-primary) overflow-hidden select-none">
       <div className="paper-grain" aria-hidden="true" />
 
       {showGrid && <div className="grid-layer" aria-hidden="true" />}
 
       <div
         className={cn(
-          'w-full max-w-[430px] mx-auto h-full min-h-full relative z-1 bg-transparent shadow-[-1px_0_0_var(--rule-hairline),1px_0_0_var(--rule-hairline)] flex flex-col overflow-hidden transition-colors duration-300',
+          'w-full max-w-[430px] mx-auto h-full flex-1 min-h-0 relative bg-transparent shadow-[-1px_0_0_var(--rule-hairline),1px_0_0_var(--rule-hairline)] flex flex-col overflow-hidden transition-colors duration-300',
           className
         )}
       >
