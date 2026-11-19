@@ -11,6 +11,7 @@ import {
   Blocks,
   Trash2,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import { core } from '../../core';
 import type { ExportData } from '../../types/adapter';
@@ -26,6 +27,7 @@ import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { ExportCsvModal } from './ExportCsvModal';
 import { ClearAllDataModal } from './ClearAllDataModal';
+import { PwaInstallGuideModal } from './PwaInstallGuideModal';
 import { WebDavSyncSection } from './WebDavSyncSection';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
@@ -58,7 +60,15 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
     isAmortizationEnabled,
     setAmortizationEnabled,
   } = usePreferenceStore();
-  const { needRefresh, isChecking, applyUpdate, checkForUpdates } = usePwaStore();
+  const {
+    needRefresh,
+    isChecking,
+    isInstalled,
+    installPrompt,
+    applyUpdate,
+    checkForUpdates,
+    promptInstall,
+  } = usePwaStore();
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
   const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
@@ -68,6 +78,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const [pendingRestore, setPendingRestore] = useState<{ fileName: string; data: ExportData } | null>(null);
   const [isRestoringBackup, setIsRestoringBackup] = useState(false);
   const [isClearAllOpen, setIsClearAllOpen] = useState(false);
+  const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
 
   const openMajorModal = () => {
     setMajorInput(String(majorThresholdYuan));
@@ -102,6 +113,21 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '切换插件失败');
     }
+  };
+
+  const handleInstallClick = async () => {
+    if (isInstalled) {
+      toast.info('当前已在桌面独立应用模式中');
+      return;
+    }
+    if (installPrompt) {
+      const outcome = await promptInstall();
+      if (outcome === 'accepted') {
+        toast.success('已加入桌面安装任务');
+        return;
+      }
+    }
+    setIsInstallGuideOpen(true);
   };
 
   const handleExportJson = async () => {
@@ -377,6 +403,32 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             onChange={handleImportJson}
             className="hidden"
           />
+        </div>
+
+        <div
+          className="flex items-center justify-between py-2.5 border-t border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+          onClick={handleInstallClick}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <Download className="w-3.5 h-3.5 stroke-[1.75]" />
+            </div>
+            <span className="text-[13px] font-medium text-(--ink-primary)">添加到桌面</span>
+          </div>
+          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
+            {isInstalled ? (
+              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
+                已安装
+              </span>
+            ) : installPrompt ? (
+              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
+                直接安装
+              </span>
+            ) : (
+              <span>安装指引</span>
+            )}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
         </div>
 
         <div
@@ -683,6 +735,11 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         onClose={() => setIsClearAllOpen(false)}
         onRequestBackup={() => setIsBackupConfirmOpen(true)}
         onConfirmClear={handleClearAllData}
+      />
+
+      <PwaInstallGuideModal
+        isOpen={isInstallGuideOpen}
+        onClose={() => setIsInstallGuideOpen(false)}
       />
     </div>
   );

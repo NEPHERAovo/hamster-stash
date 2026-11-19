@@ -1,10 +1,22 @@
 import { create } from 'zustand';
+import { checkIsStandalone } from '../utils/browser';
+
+export interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
 
 interface PwaState {
   needRefresh: boolean;
   dismissed: boolean;
   isChecking: boolean;
   isUpdating: boolean;
+  isInstalled: boolean;
+  installPrompt: BeforeInstallPromptEvent | null;
   updateHandler: ((reloadPage?: boolean) => Promise<void>) | null;
   registration: ServiceWorkerRegistration | null;
   bindServiceWorker: (
@@ -16,6 +28,10 @@ interface PwaState {
   dismissPrompt: () => void;
   applyUpdate: () => Promise<void>;
   checkForUpdates: () => Promise<'update_available' | 'up_to_date' | 'unsupported'>;
+  setInstallPrompt: (event: BeforeInstallPromptEvent | null) => void;
+  markInstalled: () => void;
+  promptInstall: () => Promise<'accepted' | 'dismissed' | 'unsupported'>;
+  checkIsInstalled: () => boolean;
 }
 
 export const usePwaStore = create<PwaState>((set, get) => ({
@@ -23,6 +39,8 @@ export const usePwaStore = create<PwaState>((set, get) => ({
   dismissed: false,
   isChecking: false,
   isUpdating: false,
+  isInstalled: checkIsStandalone(),
+  installPrompt: null,
   updateHandler: null,
   registration: null,
 
@@ -80,5 +98,37 @@ export const usePwaStore = create<PwaState>((set, get) => ({
     } finally {
       set({ isChecking: false });
     }
+  },
+
+  setInstallPrompt: (event) => {
+    set({ installPrompt: event });
+  },
+
+  markInstalled: () => {
+    set({ isInstalled: true, installPrompt: null });
+  },
+
+  promptInstall: async () => {
+    const { installPrompt } = get();
+    if (!installPrompt) return 'unsupported';
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      set({ installPrompt: null });
+      if (choice.outcome === 'accepted') {
+        set({ isInstalled: true });
+        return 'accepted';
+      }
+      return 'dismissed';
+    } catch {
+      set({ installPrompt: null });
+      return 'unsupported';
+    }
+  },
+
+  checkIsInstalled: () => {
+    const installed = checkIsStandalone();
+    set({ isInstalled: installed });
+    return installed;
   },
 }));
