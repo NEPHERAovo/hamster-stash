@@ -3,6 +3,11 @@ import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
 import { buildOffsetMap, computeEffectiveExpenseAmount } from './balanceCalculator';
 import {
+  computeAmortizedMonthlyAmount,
+  computeAmortizedYearlyAmount,
+  getAmortizeConfig,
+} from './amortization';
+import {
   dayjs,
   getIsoWeekBounds,
   parseLocalDate,
@@ -104,7 +109,10 @@ export function getStatsChartColor(rankIndex: number): string {
 export function computeCategoryDonutStats(
   transactions: Transaction[],
   categories: Category[],
-  allTransactions?: Transaction[]
+  allTransactions?: Transaction[],
+  isAmortizationEnabled: boolean = false,
+  periodKey?: string,
+  mode?: PeriodMode
 ): {
   items: CategoryStatItem[];
   totalExpense: number;
@@ -117,11 +125,27 @@ export function computeCategoryDonutStats(
   let totalExpense = 0;
   const catTotals = new Map<string, number>();
 
-  for (const t of transactions) {
-    if (t.type === 'expense') {
-      const effective = computeEffectiveExpenseAmount(t, offsetMap);
-      totalExpense += effective;
-      catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + effective);
+  if (isAmortizationEnabled && allTransactions && mode === 'month' && periodKey) {
+    for (const t of allTransactions) {
+      if (t.type === 'expense') {
+        const amt = getAmortizeConfig(t)
+          ? computeAmortizedMonthlyAmount(t, periodKey, offsetMap)
+          : t.date.startsWith(periodKey)
+            ? computeEffectiveExpenseAmount(t, offsetMap)
+            : 0;
+        if (amt > 0) {
+          totalExpense += amt;
+          catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);
+        }
+      }
+    }
+  } else {
+    for (const t of transactions) {
+      if (t.type === 'expense') {
+        const effective = computeEffectiveExpenseAmount(t, offsetMap);
+        totalExpense += effective;
+        catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + effective);
+      }
     }
   }
 
@@ -165,7 +189,8 @@ export function computePeriodTrends(
   allTransactions: Transaction[],
   mode: PeriodMode,
   currentKey: string,
-  count: number = mode === 'year' ? 5 : 6
+  count: number = mode === 'year' ? 5 : 6,
+  isAmortizationEnabled: boolean = false
 ): TrendItem[] {
   const trends: TrendItem[] = [];
   const offsetMap = buildOffsetMap(allTransactions);
@@ -176,8 +201,12 @@ export function computePeriodTrends(
       const monthNum = dayjs(`${ym}-01`, 'YYYY-MM-DD', true).month() + 1;
       let expense = 0;
       for (const t of allTransactions) {
-        if (t.type === 'expense' && t.date.startsWith(ym)) {
-          expense += computeEffectiveExpenseAmount(t, offsetMap);
+        if (t.type === 'expense') {
+          if (isAmortizationEnabled && getAmortizeConfig(t)) {
+            expense += computeAmortizedMonthlyAmount(t, ym, offsetMap);
+          } else if (t.date.startsWith(ym)) {
+            expense += computeEffectiveExpenseAmount(t, offsetMap);
+          }
         }
       }
       trends.push({ label: `${monthNum}月`, amount: expense, percentage: 0 });
@@ -188,8 +217,12 @@ export function computePeriodTrends(
       const y = (curY - i).toString();
       let expense = 0;
       for (const t of allTransactions) {
-        if (t.type === 'expense' && t.date.startsWith(y)) {
-          expense += computeEffectiveExpenseAmount(t, offsetMap);
+        if (t.type === 'expense') {
+          if (isAmortizationEnabled && getAmortizeConfig(t)) {
+            expense += computeAmortizedYearlyAmount(t, y, offsetMap);
+          } else if (t.date.startsWith(y)) {
+            expense += computeEffectiveExpenseAmount(t, offsetMap);
+          }
         }
       }
       trends.push({ label: `${y}年`, amount: expense, percentage: 0 });

@@ -109,6 +109,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [relatedLoanId, setRelatedLoanId] = useState<string>('none');
   const [ext, setExt] = useState<Record<string, unknown>>({});
   const isReimbursementEnabled = usePreferenceStore((s) => s.isReimbursementEnabled);
+  const isAmortizationEnabled = usePreferenceStore((s) => s.isAmortizationEnabled);
+  const [amortizeMonths, setAmortizeMonths] = useState<number | null>(null);
+  const [isAmortizeTrayOpen, setIsAmortizeTrayOpen] = useState(false);
 
   const [isDtTrayOpen, setIsDtTrayOpen] = useState(false);
   const [isAcctTrayOpen, setIsAcctTrayOpen] = useState(false);
@@ -225,6 +228,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setIsAcctTrayOpen(false);
       setIsVoucherTrayOpen(false);
       setIsVoucherPreviewOpen(false);
+      setIsAmortizeTrayOpen(false);
 
       if (editingTransaction) {
         const initialType =
@@ -239,6 +243,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setSelectedAcctId(editingTransaction.accountId);
         setDateStr(editingTransaction.date);
         setExt({ ...(editingTransaction.ext || {}) });
+
+        const existingAmortize = editingTransaction.ext?.amortize as { enabled?: boolean; months?: number } | undefined;
+        setAmortizeMonths(existingAmortize?.enabled && existingAmortize.months ? existingAmortize.months : null);
 
         setTimeStr(formatTime(editingTransaction.createdAt) || '12:00');
 
@@ -257,6 +264,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setIsOffsetTrayOpen(false);
         setVoucher(null);
         setRelatedLoanId('none');
+        setAmortizeMonths(null);
         setExt({ ...(initialExt || {}) });
       }
     }
@@ -401,6 +409,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               relatedLoanId: undefined,
             };
 
+      const finalExt: Record<string, unknown> = { ...ext };
+      if (txType === 'expense' && amortizeMonths && amortizeMonths > 1) {
+        finalExt.amortize = {
+          enabled: true,
+          months: amortizeMonths,
+          startMonth: dateStr.slice(0, 7),
+        };
+      } else {
+        delete finalExt.amortize;
+      }
+
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, {
           type: txType,
@@ -413,7 +432,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           offsetTransactionId: txType === 'income' ? offsetTransactionId : undefined,
           voucher: voucher || undefined,
           ...loanPayload,
-          ext: Object.keys(ext).length > 0 ? ext : undefined,
+          ext: Object.keys(finalExt).length > 0 ? finalExt : undefined,
           createdAt: createdAtISO,
         });
 
@@ -433,7 +452,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         offsetTransactionId: txType === 'income' ? offsetTransactionId : undefined,
         voucher: voucher || undefined,
         ...loanPayload,
-        ext: Object.keys(ext).length > 0 ? ext : undefined,
+        ext: Object.keys(finalExt).length > 0 ? finalExt : undefined,
         createdAt: createdAtISO,
       });
 
@@ -888,6 +907,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               onClick={() => {
                 setIsAcctTrayOpen((prev) => !prev);
                 setIsDtTrayOpen(false);
+                setIsAmortizeTrayOpen(false);
+                setIsVoucherTrayOpen(false);
+                setIsOffsetTrayOpen(false);
               }}
               className={cn(
                 'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
@@ -907,6 +929,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               onClick={() => {
                 setIsDtTrayOpen((prev) => !prev);
                 setIsAcctTrayOpen(false);
+                setIsAmortizeTrayOpen(false);
+                setIsVoucherTrayOpen(false);
+                setIsOffsetTrayOpen(false);
               }}
               className={cn(
                 'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
@@ -955,6 +980,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                           setIsVoucherTrayOpen((prev) => !prev);
                           setIsAcctTrayOpen(false);
                           setIsDtTrayOpen(false);
+                          setIsAmortizeTrayOpen(false);
                         } else {
                           fileInputRef.current?.click();
                         }
@@ -967,6 +993,32 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     >
                       <Paperclip className="w-3 h-3 stroke-2" />
                       <span className="shrink-0">{voucher ? '已附凭证' : '凭证'}</span>
+                    </button>
+                  </>
+                )}
+
+                {(isAmortizationEnabled || Boolean(amortizeMonths)) && (
+                  <>
+                    <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAmortizeTrayOpen((prev) => !prev);
+                        setIsAcctTrayOpen(false);
+                        setIsDtTrayOpen(false);
+                        setIsVoucherTrayOpen(false);
+                      }}
+                      className={cn(
+                        'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
+                        amortizeMonths
+                          ? 'bg-(--paper-sunken) text-(--ink-primary) font-semibold shadow-2xs'
+                          : isAmortizeTrayOpen
+                          ? 'text-(--ink-solid) font-semibold'
+                          : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                      )}
+                    >
+                      <span className="shrink-0">{amortizeMonths ? `分期: ${amortizeMonths}期` : '分期'}</span>
+                      <span className="text-[9px] opacity-60">▾</span>
                     </button>
                   </>
                 )}
@@ -1070,6 +1122,45 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {txType === 'expense' && isAmortizeTrayOpen && (
+            <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none font-mono text-xs">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { label: '不分期', months: null },
+                  { label: '3期', months: 3 },
+                  { label: '6期 (半年)', months: 6 },
+                  { label: '12期 (1年)', months: 12 },
+                  { label: '24期 (2年)', months: 24 },
+                ].map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => {
+                      setAmortizeMonths(opt.months);
+                      setIsAmortizeTrayOpen(false);
+                    }}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) transition-all cursor-pointer border',
+                      amortizeMonths === opt.months
+                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
+                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {amortizeMonths && (
+                <div className="text-[11px] font-mono text-(--ink-tertiary) px-0.5 flex items-center justify-between">
+                  <span>平滑分摊至统计与走势</span>
+                  <span>
+                    约 ¥{centsToYuan(Math.floor(yuanToCents(evaluateArithmetic(expr)) / amortizeMonths))}/月
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

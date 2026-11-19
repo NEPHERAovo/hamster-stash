@@ -192,4 +192,30 @@ describe('TransactionGroup component', () => {
     expect(screen.getByText('耶加雪菲手冲咖啡')).toBeInTheDocument();
     expect(screen.getByText('2026年11月12日')).toBeInTheDocument();
   });
+
+  it('renders amortization stamp for installment transactions', () => {
+    const amortizedTx: Transaction = {
+      id: 'tx_amortize',
+      type: 'expense',
+      amount: 60000, // 600.00元
+      categoryId: 'cat_food',
+      accountId: 'acct_1',
+      date: '2026-11-12',
+      ext: { amortize: { enabled: true, months: 6 } },
+      createdAt: '2026-11-12T10:00:00Z',
+      updatedAt: '2026-11-12T10:00:00Z',
+      note: '半年度健身卡',
+    };
+
+    render(
+      <TransactionGroup
+        transactions={[amortizedTx]}
+        categories={mockCategories}
+        accounts={mockAccounts}
+      />
+    );
+
+    expect(screen.getByText('半年度健身卡')).toBeInTheDocument();
+    expect(screen.getByText('分期 6期 · ¥100.00/月')).toBeInTheDocument();
+  });
 });

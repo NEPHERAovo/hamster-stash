@@ -138,4 +138,64 @@ describe('Period Statistics Domain Logic', () => {
     expect(trends[3].label).toBe('9月');
     expect(trends[3].amount).toBe(90000);
   });
+
+  it('平滑分摊支出：启用分期后，大额分期支出在趋势柱状图中按月平滑分布', () => {
+    const rentTx: Transaction = {
+      id: 'tx_rent',
+      type: 'expense',
+      amount: 600000, // 6000元房租
+      categoryId: 'cat_rent',
+      accountId: 'a1',
+      date: '2026-11-01',
+      ext: { amortize: { enabled: true, months: 6 } },
+      createdAt: '2026-11-01T10:00:00Z',
+      updatedAt: '2026-11-01T10:00:00Z',
+    };
+
+    // 未启用分期：11月承担全部 6000元，12月为 0
+    const rawTrends = computePeriodTrends([rentTx], 'month', '2026-12', 2, false);
+    expect(rawTrends[0].amount).toBe(600000); // 11月
+    expect(rawTrends[1].amount).toBe(0);      // 12月
+
+    // 启用分期：11月和12月各自平滑分摊 1000元
+    const amortizedTrends = computePeriodTrends([rentTx], 'month', '2026-12', 2, true);
+    expect(amortizedTrends[0].amount).toBe(100000); // 11月: 1000元
+    expect(amortizedTrends[1].amount).toBe(100000); // 12月: 1000元
+  });
+
+  it('平滑分摊支出：启用分期后，环形图统计准确计算当月分摊额度', () => {
+    const rentCat: Category = {
+      id: 'cat_rent',
+      name: '房租',
+      type: 'expense',
+      icon: 'home',
+      color: '#fff',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const rentTx: Transaction = {
+      id: 'tx_rent',
+      type: 'expense',
+      amount: 600000, // 6000元
+      categoryId: 'cat_rent',
+      accountId: 'a1',
+      date: '2026-11-01',
+      ext: { amortize: { enabled: true, months: 6 } },
+      createdAt: '2026-11-01T10:00:00Z',
+      updatedAt: '2026-11-01T10:00:00Z',
+    };
+
+    const decStats = computeCategoryDonutStats(
+      [],
+      [rentCat],
+      [rentTx],
+      true,
+      '2026-12',
+      'month'
+    );
+
+    expect(decStats.totalExpense).toBe(100000);
+    expect(decStats.items[0].name).toBe('房租');
+    expect(decStats.items[0].amount).toBe(100000);
+  });
 });

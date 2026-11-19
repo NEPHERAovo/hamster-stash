@@ -21,6 +21,7 @@ import { SubPageShell, SubPageBackButton } from '../layout/SubPageShell';
 import { PageHeader } from '../layout/PageHeader';
 import { SegToggle } from '../ui/SegToggle';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
 
 export interface CategoryDrilldownData {
@@ -87,13 +88,22 @@ export const StatsView: React.FC<StatsViewProps> = ({
     setCurrentDate((prev) => prev.add(1, mode));
   };
 
+  const isAmortizationEnabled = usePreferenceStore((s) => s.isAmortizationEnabled);
+
   const periodTransactions = useMemo(() => {
     return filterTransactionsByPeriod(allTransactions, periodInfo.start, periodInfo.end);
   }, [allTransactions, periodInfo]);
 
   const { items: donutItems, totalExpense, circumference } = useMemo(() => {
-    return computeCategoryDonutStats(periodTransactions, categories, allTransactions);
-  }, [periodTransactions, categories, allTransactions]);
+    return computeCategoryDonutStats(
+      periodTransactions,
+      categories,
+      allTransactions,
+      isAmortizationEnabled,
+      periodInfo.key,
+      mode
+    );
+  }, [periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
 
   const [trendOffset, setTrendOffset] = useState<number>(0);
 
@@ -113,8 +123,14 @@ export const StatsView: React.FC<StatsViewProps> = ({
   }, [periodInfo.key, trendOffset, mode]);
 
   const trends = useMemo(() => {
-    return computePeriodTrends(allTransactions, mode, trendTargetKey);
-  }, [allTransactions, mode, trendTargetKey]);
+    return computePeriodTrends(
+      allTransactions,
+      mode,
+      trendTargetKey,
+      mode === 'year' ? 5 : 6,
+      isAmortizationEnabled
+    );
+  }, [allTransactions, mode, trendTargetKey, isAmortizationEnabled]);
 
   const handleStepTrendPrev = () => {
     setTrendOffset((prev) => prev - 1);

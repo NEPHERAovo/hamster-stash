@@ -4,6 +4,7 @@ import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
+import { getAmortizeConfig } from '../../domain/finance/amortization';
 import { CategoryBadge } from '../ui/CategoryBadge';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { PluginOverride } from '../../plugin-sdk/components/PluginOverride';
@@ -51,6 +52,7 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
   const isTransfer = transaction.type === 'transfer';
   const isReconcile = transaction.type === 'reconcile';
   const isLoan = transaction.type === 'loan';
+  const amortizeConfig = getAmortizeConfig(transaction);
 
   const title =
     transaction.note ||
@@ -134,6 +136,11 @@ export const TransactionItemBase: React.FC<TransactionItemProps> = ({
               {offsetAmount >= transaction.amount
                 ? '已全额抵扣'
                 : `实付 ¥${centsToYuan(transaction.amount - offsetAmount)}`}
+            </span>
+          )}
+          {isExpense && amortizeConfig && (
+            <span className="real-stamp text-[9px] px-1 py-0.5 text-(--ink-secondary)">
+              分期 {amortizeConfig.months}期 · ¥{centsToYuan(Math.floor(transaction.amount / amortizeConfig.months))}/月
             </span>
           )}
           {isIncome && transaction.offsetTransactionId && (
