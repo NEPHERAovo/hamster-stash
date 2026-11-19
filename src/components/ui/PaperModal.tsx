@@ -275,8 +275,8 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       <div
         ref={sheetRef}
         className={cn(
-          'relative w-full max-w-full sm:max-w-lg md:max-w-xl max-h-[92vh] flex flex-col overflow-hidden will-change-transform',
-          'bg-(--paper-sheet) paper-card border-t sm:border border-(--rule-hairline) shadow-2xl rounded-t-(--radius-lg) sm:rounded-b-(--radius-lg)',
+          'paper-modal-sheet relative w-full max-w-full sm:max-w-lg md:max-w-xl max-h-[92vh] flex flex-col overflow-hidden will-change-transform',
+          'bg-(--paper-sheet) border-t sm:border border-(--rule-hairline) shadow-2xl rounded-t-(--radius-lg) rounded-b-none sm:rounded-b-(--radius-lg)',
           className
         )}
       >

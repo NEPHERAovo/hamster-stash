@@ -639,8 +639,12 @@ body {
 [data-ui-style="modern"] .keypad-tray { gap: 8px !important; padding: 10px 12px calc(10px + var(--safe-bottom)) !important; background-color: var(--paper-sunken) !important; border-top: none !important; }
 [data-ui-style="modern"] .keypad-tray button { border-radius: var(--keypad-radius) !important; border: none !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
 [data-ui-style="modern"] .keypad-tray .keypad-op-btn { background-color: var(--paper-sheet) !important; border: none !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
-.transaction-sheet { transform: translate3d(0, 100%, 0); border-top-left-radius: 2px; border-top-right-radius: 2px; overflow: visible; }
-[data-ui-style="modern"] .transaction-sheet { border-top-left-radius: 28px !important; border-top-right-radius: 28px !important; overflow: hidden !important; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+.transaction-sheet { transform: translate3d(0, 100%, 0); border-top-left-radius: 2px; border-top-right-radius: 2px; border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; overflow: visible; }
+[data-ui-style="modern"] .transaction-sheet { border-top-left-radius: 28px !important; border-top-right-radius: 28px !important; border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; overflow: hidden !important; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+.paper-modal-sheet { border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg); border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+@media (min-width: 640px) { .paper-modal-sheet { border-bottom-left-radius: var(--radius-lg) !important; border-bottom-right-radius: var(--radius-lg) !important; } }
+[data-ui-style="modern"] .paper-modal-sheet { border-top-left-radius: 28px !important; border-top-right-radius: 28px !important; border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+@media (min-width: 640px) { [data-ui-style="modern"] .paper-modal-sheet { border-bottom-left-radius: 28px !important; border-bottom-right-radius: 28px !important; } }
 [data-ui-style="modern"] .metadata-bar { gap: 8px !important; justify-content: flex-start !important; }
 [data-ui-style="modern"] .main-scroll-content { padding-bottom: 9rem !important; }
 

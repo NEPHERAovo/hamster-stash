@@ -142,7 +142,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[430px] bg-(--paper-sheet) transaction-sheet paper-card rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09)] border-t border-(--rule-hairline) flex flex-col sheet-slide-up relative overflow-visible paper-sawtooth-top"
+        className="w-full max-w-[430px] bg-(--paper-sheet) transaction-sheet rounded-t-[2px] shadow-[0_-6px_22px_rgba(0,0,0,0.09)] border-t border-(--rule-hairline) flex flex-col sheet-slide-up relative overflow-visible paper-sawtooth-top"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
