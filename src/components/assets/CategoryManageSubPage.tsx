@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, ArchiveRestore } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Plus, Trash2, ArchiveRestore, GripVertical } from 'lucide-react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -8,6 +8,12 @@ import { PaperModal } from '../ui/PaperModal';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { cn } from '../../utils/cn';
+import {
+  SPRING_OUT_EASE,
+  VelocityTracker,
+  computeSettleDuration,
+  rubberBand,
+} from '../../utils/gesturePhysics';
 
 const CATEGORY_ICON_CHOICES = [
   'utensils',
@@ -44,8 +50,230 @@ const CATEGORY_ICON_CHOICES = [
   'box',
 ];
 
+const ACTION_WIDTH = 72;
+
+interface SwipeableCategoryRowProps {
+  cat: Category;
+  index: number;
+  isDragging: boolean;
+  onSelect: (cat: Category) => void;
+  onDelete: (cat: Category) => void;
+  onDragStartHtml5: (e: React.DragEvent, index: number) => void;
+  onDragOverHtml5: (e: React.DragEvent) => void;
+  onDragEnterHtml5: (index: number) => void;
+  onDragEndHtml5: () => void;
+  onDropHtml5: (e: React.DragEvent) => void;
+  onTouchHandleStart: (e: React.TouchEvent, index: number) => void;
+}
+
+const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
+  cat,
+  index,
+  isDragging,
+  onSelect,
+  onDelete,
+  onDragStartHtml5,
+  onDragOverHtml5,
+  onDragEnterHtml5,
+  onDragEndHtml5,
+  onDropHtml5,
+  onTouchHandleStart,
+}) => {
+  const IconComp = getCategoryIcon(cat.icon);
+  const [offset, setOffset] = useState<number>(0);
+  const [isSwiping, setIsSwiping] = useState<boolean>(false);
+  const [settleMs, setSettleMs] = useState<number>(240);
+
+  const isDraggingRef = useRef<boolean>(false);
+  const isHorizontalRef = useRef<boolean>(false);
+  const startXRef = useRef<number>(0);
+  const startYRef = useRef<number>(0);
+  const currentOffsetRef = useRef<number>(0);
+  const velocityRef = useRef<VelocityTracker>(new VelocityTracker());
+  const lastTouchTimeRef = useRef<number>(0);
+
+  const handleDragStart = (clientX: number, clientY: number) => {
+    isDraggingRef.current = true;
+    isHorizontalRef.current = false;
+    startXRef.current = clientX;
+    startYRef.current = clientY;
+    velocityRef.current.reset(currentOffsetRef.current, performance.now());
+  };
+
+  const handleDragMove = (
+    clientX: number,
+    clientY: number,
+    preventDefault?: () => void
+  ) => {
+    if (!isDraggingRef.current) return;
+    const rawDx = clientX - startXRef.current + currentOffsetRef.current;
+    const deltaY = Math.abs(clientY - startYRef.current);
+    const deltaX = Math.abs(clientX - (startXRef.current + currentOffsetRef.current));
+
+    if (!isHorizontalRef.current) {
+      if (deltaY > deltaX && deltaY > 6) {
+        isDraggingRef.current = false;
+        return;
+      }
+      if (deltaX > 6) {
+        isHorizontalRef.current = true;
+        setIsSwiping(true);
+      }
+    }
+
+    if (isHorizontalRef.current) {
+      preventDefault?.();
+      let newOffset = rawDx;
+      if (newOffset > 0) {
+        newOffset = rubberBand(newOffset, 48, 0.25);
+      } else if (newOffset < -ACTION_WIDTH) {
+        const overflow = -newOffset - ACTION_WIDTH;
+        newOffset = -ACTION_WIDTH - rubberBand(overflow, 140, 0.48);
+      }
+      currentOffsetRef.current = newOffset;
+      velocityRef.current.push(newOffset, performance.now());
+      setOffset(newOffset);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsSwiping(false);
+    lastTouchTimeRef.current = Date.now();
+
+    const vx = velocityRef.current.getVelocity(performance.now());
+    const shouldOpen =
+      vx < -0.35
+        ? currentOffsetRef.current < -16
+        : vx > 0.35
+          ? false
+          : currentOffsetRef.current < -ACTION_WIDTH / 2;
+
+    const target = shouldOpen ? -ACTION_WIDTH : 0;
+    setSettleMs(computeSettleDuration(target - currentOffsetRef.current, vx, 190, 300));
+    currentOffsetRef.current = target;
+    setOffset(target);
+  };
+
+  const handleRowClick = () => {
+    if (Date.now() - lastTouchTimeRef.current < 400) {
+      return;
+    }
+    if (offset < 0) {
+      currentOffsetRef.current = 0;
+      setOffset(0);
+    } else {
+      onSelect(cat);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    currentOffsetRef.current = 0;
+    setOffset(0);
+    onDelete(cat);
+  };
+
+  const actionTranslate = Math.max(0, ACTION_WIDTH + offset);
+  const actionWidth = Math.max(ACTION_WIDTH, Math.ceil(Math.abs(offset)));
+  const actionOpacity = offset === 0 ? 0 : Math.min(1, Math.abs(offset) / 30);
+
+  return (
+    <div
+      data-category-row="true"
+      data-category-id={cat.id}
+      className={cn(
+        'relative overflow-hidden bg-(--paper-sheet) select-none',
+        isDragging && 'opacity-60 bg-(--paper-sunken)'
+      )}
+    >
+      <div
+        className={cn(
+          'absolute inset-y-0 right-0 bg-(--color-expense) flex items-center justify-center z-0 overflow-hidden select-none',
+          offset === 0 && 'pointer-events-none opacity-0'
+        )}
+        style={{
+          width: `${actionWidth}px`,
+          transform: `translate3d(${actionTranslate}px, 0, 0)`,
+          opacity: actionOpacity,
+          transition: isSwiping
+            ? 'none'
+            : `transform ${settleMs}ms ${SPRING_OUT_EASE}, width ${settleMs}ms ${SPRING_OUT_EASE}, opacity 200ms ease`,
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleDeleteClick}
+          className="w-full h-full flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-0.5 cursor-pointer active:opacity-85"
+          title="删除分类"
+        >
+          <Trash2 className="w-4 h-4 stroke-2" />
+          <span>删除</span>
+        </button>
+      </div>
+
+      <div
+        onClick={handleRowClick}
+        onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+        onTouchMove={(e) =>
+          handleDragMove(e.touches[0].clientX, e.touches[0].clientY, () =>
+            e.cancelable && e.preventDefault()
+          )
+        }
+        onTouchEnd={handleDragEnd}
+        onTouchCancel={handleDragEnd}
+        onMouseDown={(e) => {
+          if (e.button === 0) handleDragStart(e.clientX, e.clientY);
+        }}
+        onMouseMove={(e) => {
+          if (isDraggingRef.current) handleDragMove(e.clientX, e.clientY, () => e.preventDefault());
+        }}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        style={{
+          transform: `translate3d(${offset}px, 0, 0)`,
+          transition: isSwiping ? 'none' : `transform ${settleMs}ms ${SPRING_OUT_EASE}`,
+        }}
+        className="relative z-10 bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken) select-none will-change-transform"
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 pointer-events-none">
+          <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
+            <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
+          </div>
+          <span className="text-[13px] font-medium text-(--ink-primary) truncate">
+            {cat.name}
+          </span>
+        </div>
+
+        <div
+          className="flex items-center gap-1 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <div
+            draggable
+            onDragStart={(e) => onDragStartHtml5(e, index)}
+            onDragOver={onDragOverHtml5}
+            onDragEnter={() => onDragEnterHtml5(index)}
+            onDragEnd={onDragEndHtml5}
+            onDrop={onDropHtml5}
+            onTouchStart={(e) => onTouchHandleStart(e, index)}
+            className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
+            title="拖拽排序"
+          >
+            <GripVertical className="w-4 h-4 stroke-[1.8]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const CategoryManageSubPage: React.FC = () => {
-  const { categories, createCategory, updateCategory, removeCategory } = useCategoryStore();
+  const { categories, createCategory, updateCategory, removeCategory, reorderCategories } =
+    useCategoryStore();
   const [activeType, setActiveType] = useState<'expense' | 'income'>('expense');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
@@ -53,15 +281,127 @@ export const CategoryManageSubPage: React.FC = () => {
   const [iconInput, setIconInput] = useState('shopping-cart');
   const [isSaving, setIsSaving] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
   const activeCategories = useMemo(
-    () => categories.filter((c) => c.type === activeType && !c.isArchived),
+    () =>
+      categories
+        .filter((c) => c.type === activeType && !c.isArchived)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [categories, activeType]
   );
 
   const archivedCategories = useMemo(
-    () => categories.filter((c) => c.type === activeType && c.isArchived),
+    () =>
+      categories
+        .filter((c) => c.type === activeType && c.isArchived)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [categories, activeType]
   );
+
+  const [localCategories, setLocalCategories] = useState<Category[]>(activeCategories);
+  const localCategoriesRef = useRef(localCategories);
+  localCategoriesRef.current = localCategories;
+
+  useEffect(() => {
+    setLocalCategories(activeCategories);
+  }, [activeCategories]);
+
+  const commitReorder = async (newList: Category[]) => {
+    try {
+      await reorderCategories(newList.map((c) => c.id));
+    } catch {
+      toast.error('保存排序失败');
+      setLocalCategories(activeCategories);
+    }
+  };
+
+  const handleTouchHandleStart = (e: React.TouchEvent, startIndex: number) => {
+    e.stopPropagation();
+    setDraggingIndex(startIndex);
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rowElements = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-category-row]')
+    );
+    if (rowElements.length === 0) return;
+
+    const firstRect = rowElements[0].getBoundingClientRect();
+    const rowHeight = firstRect.height || 44;
+    const startTop = firstRect.top;
+    const totalRows = rowElements.length;
+    let currentIdx = startIndex;
+
+    const onTouchMove = (moveEvt: TouchEvent) => {
+      if (moveEvt.cancelable) {
+        moveEvt.preventDefault();
+      }
+      const touchY = moveEvt.touches[0].clientY;
+      const targetIdx = Math.max(
+        0,
+        Math.min(totalRows - 1, Math.floor((touchY - startTop) / rowHeight))
+      );
+
+      if (targetIdx !== currentIdx && targetIdx >= 0 && targetIdx < totalRows) {
+        const next = [...localCategoriesRef.current];
+        const [moved] = next.splice(currentIdx, 1);
+        next.splice(targetIdx, 0, moved);
+        localCategoriesRef.current = next;
+        setLocalCategories(next);
+        currentIdx = targetIdx;
+      }
+    };
+
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
+      setDraggingIndex(null);
+
+      if (currentIdx !== startIndex) {
+        commitReorder(localCategoriesRef.current);
+      }
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchEnd);
+  };
+
+  const handleDragStartHtml5 = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+    setDraggingIndex(index);
+  };
+
+  const handleDragOverHtml5 = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnterHtml5 = (targetIndex: number) => {
+    if (draggingIndex === null || draggingIndex === targetIndex) return;
+    const next = [...localCategoriesRef.current];
+    const [moved] = next.splice(draggingIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    localCategoriesRef.current = next;
+    setLocalCategories(next);
+    setDraggingIndex(targetIndex);
+  };
+
+  const handleDragEndHtml5 = () => {
+    setDraggingIndex(null);
+    commitReorder(localCategoriesRef.current);
+  };
+
+  const handleDropHtml5 = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggingIndex(null);
+    commitReorder(localCategoriesRef.current);
+  };
 
   const openCreateModal = () => {
     setEditingCat(null);
@@ -182,50 +522,33 @@ export const CategoryManageSubPage: React.FC = () => {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
           <span>{activeType === 'expense' ? '支出分类' : '收入分类'}</span>
-          <span>共 {activeCategories.length} 项</span>
+          <span>共 {localCategories.length} 项</span>
         </div>
 
-        <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60">
-          {activeCategories.map((cat) => {
-            const IconComp = getCategoryIcon(cat.icon);
-            return (
-              <div
-                key={cat.id}
-                className="flex items-center justify-between px-3.5 py-2.5"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
-                    <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[13px] font-medium text-(--ink-primary) truncate block">
-                      {cat.name}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(cat)}
-                    className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-pointer"
-                    title="编辑分类"
-                  >
-                    <Pencil className="w-3.5 h-3.5 stroke-[1.8]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(cat)}
-                    className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--color-expense) hover:bg-(--color-expense-bg)/50 transition-colors cursor-pointer"
-                    title="删除分类"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+        <div
+          ref={containerRef}
+          className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60"
+        >
+          {localCategories.map((cat, idx) => (
+            <SwipeableCategoryRow
+              key={cat.id}
+              cat={cat}
+              index={idx}
+              isDragging={draggingIndex === idx}
+              onSelect={openEditModal}
+              onDelete={handleRemove}
+              onDragStartHtml5={handleDragStartHtml5}
+              onDragOverHtml5={handleDragOverHtml5}
+              onDragEnterHtml5={handleDragEnterHtml5}
+              onDragEndHtml5={handleDragEndHtml5}
+              onDropHtml5={handleDropHtml5}
+              onTouchHandleStart={handleTouchHandleStart}
+            />
+          ))}
         </div>
+        <p className="px-1 text-[11px] font-mono text-(--ink-faint) text-right">
+          点击编辑 · 拖拽右侧手柄排序 · 向左侧滑删除
+        </p>
       </div>
 
       {archivedCategories.length > 0 && (
@@ -310,7 +633,7 @@ export const CategoryManageSubPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
+          <div className="flex items-center gap-2 pt-1">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
@@ -326,6 +649,22 @@ export const CategoryManageSubPage: React.FC = () => {
               {isSaving ? '保存中...' : editingCat ? '保存修改' : '确认添加'}
             </button>
           </div>
+
+          {editingCat && (
+            <div className="pt-2 border-t border-(--rule-hairline) pb-(--safe-bottom)">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  handleRemove(editingCat);
+                }}
+                className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--color-expense) hover:bg-(--color-expense-bg)/40 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 stroke-2" />
+                <span>删除分类</span>
+              </button>
+            </div>
+          )}
         </form>
       </PaperModal>
     </div>

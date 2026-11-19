@@ -264,7 +264,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const currentCategories = useMemo(() => {
     if (txType === 'loan') return [];
-    return categories.filter((c) => c.type === txType && !c.isArchived);
+    return categories
+      .filter((c) => c.type === txType && !c.isArchived)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [categories, txType]);
 
   const selectedLoanFlow = useMemo(() => {

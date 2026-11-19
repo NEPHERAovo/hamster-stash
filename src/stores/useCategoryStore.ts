@@ -13,6 +13,7 @@ interface CategoryState {
     patch: Partial<Pick<Category, 'name' | 'icon' | 'isArchived' | 'sortOrder'>>
   ) => Promise<Category>;
   removeCategory: (id: string) => Promise<{ archived: boolean }>;
+  reorderCategories: (orderedIds: string[]) => Promise<void>;
 }
 
 export const useCategoryStore = create<CategoryState>((set, get) => ({
@@ -23,11 +24,14 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     set({ loading: true });
     await core.init();
     const categories = await core.catRepo.findAll();
+    categories.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     set({ categories, loading: false });
   },
 
   getByType: (type: CategoryType) => {
-    return get().categories.filter((c) => c.type === type && !c.isArchived);
+    return get()
+      .categories.filter((c) => c.type === type && !c.isArchived)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   },
 
   createCategory: async (data: Partial<Category> & { name: string }) => {
@@ -98,5 +102,32 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     await core.catRepo.delete(id);
     await get().loadCategories();
     return { archived: false };
+  },
+
+  reorderCategories: async (orderedIds: string[]) => {
+    await core.init();
+    const currentCats = [...get().categories];
+    const orderMap = new Map<string, number>();
+    orderedIds.forEach((id, index) => {
+      orderMap.set(id, index + 1);
+    });
+
+    const updatedCats = currentCats.map((cat) => {
+      const newOrder = orderMap.get(cat.id);
+      if (newOrder !== undefined) {
+        return { ...cat, sortOrder: newOrder };
+      }
+      return cat;
+    });
+
+    updatedCats.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    set({ categories: updatedCats });
+
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        core.catRepo.update(id, { sortOrder: index + 1 })
+      )
+    );
+    await get().loadCategories();
   },
 }));
