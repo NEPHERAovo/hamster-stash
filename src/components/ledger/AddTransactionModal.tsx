@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   X,
   Trash2,
@@ -20,6 +20,7 @@ import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
 import { readVoucherFile } from '../../utils/voucherFile';
 import {
+  GestureSmoother,
   SHEET_SPRING_EASE,
   VelocityTracker,
   computeSettleDuration,
@@ -113,14 +114,42 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
-  const [sheetTransitionMs, setSheetTransitionMs] = useState(300);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const isClosingRef = useRef(false);
   const dragYRef = useRef(0);
+  const smootherRef = useRef<GestureSmoother | null>(null);
   const sheetVelocityRef = useRef(new VelocityTracker(100));
+
+  const closeWithAnimation = useCallback(
+    (duration = 240) => {
+      if (isClosingRef.current) return;
+      isClosingRef.current = true;
+      smootherRef.current?.stop();
+
+      const el = sheetRef.current;
+      const bd = backdropRef.current;
+      if (el) {
+        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
+        el.style.transform = 'translate3d(0, 100%, 0)';
+      }
+      if (bd) {
+        bd.style.transition = `opacity ${duration}ms ease`;
+        bd.style.opacity = '0';
+        bd.style.pointerEvents = 'none';
+      }
+      window.setTimeout(() => {
+        onClose();
+        setShouldRender(false);
+        isClosingRef.current = false;
+        dragYRef.current = 0;
+        smootherRef.current?.reset(0);
+      }, duration);
+    },
+    [onClose]
+  );
 
   const offsetSummaryMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -385,7 +414,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         toast.success('便签流水已更新');
         onSuccess?.(editingTransaction.id);
-        onClose();
+        closeWithAnimation(240);
         return;
       }
 
@@ -416,7 +445,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setVoucher(null);
         setExt({});
       } else {
-        onClose();
+        closeWithAnimation(240);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '保存失败');
@@ -431,7 +460,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       try {
         await deleteTransaction(editingTransaction.id);
         toast.info('流水已撕下删除');
-        onClose();
+        closeWithAnimation(240);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : '删除失败');
       }
@@ -456,33 +485,72 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
-      dragYRef.current = 0;
-      setIsDraggingSheet(false);
-      setSheetTransitionMs(300);
-      let innerFrame = 0;
-      const outerFrame = requestAnimationFrame(() => {
-        innerFrame = requestAnimationFrame(() => {
-          setIsVisible(true);
-        });
-      });
-      return () => {
-        cancelAnimationFrame(outerFrame);
-        cancelAnimationFrame(innerFrame);
-      };
+    } else if (shouldRender && !isClosingRef.current) {
+      closeWithAnimation(240);
     }
+  }, [isOpen, shouldRender, closeWithAnimation]);
 
-    setIsVisible(false);
-    setIsDraggingSheet(false);
-    dragYRef.current = 0;
-    const timer = window.setTimeout(() => {
-      setShouldRender(false);
-    }, sheetTransitionMs);
-    return () => window.clearTimeout(timer);
-  }, [isOpen, sheetTransitionMs]);
+  useEffect(() => {
+    if (!shouldRender || !isOpen) return;
+
+    const el = sheetRef.current;
+    const bd = backdropRef.current;
+    if (!el) return;
+
+    isClosingRef.current = false;
+    el.style.transition = 'none';
+    el.style.transform = 'translate3d(0, 100%, 0)';
+    if (bd) {
+      bd.style.transition = 'none';
+      bd.style.opacity = '0';
+      bd.style.pointerEvents = 'auto';
+    }
+    void el.offsetHeight;
+
+    const animFrame = requestAnimationFrame(() => {
+      el.style.transition = `transform 280ms ${SHEET_SPRING_EASE}`;
+      el.style.transform = 'translate3d(0, 0, 0)';
+      if (bd) {
+        bd.style.transition = 'opacity 280ms ease';
+        bd.style.opacity = '1';
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(animFrame);
+    };
+  }, [shouldRender, isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        closeWithAnimation(240);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, closeWithAnimation]);
 
   useEffect(() => {
     const el = sheetRef.current;
     if (!el || !shouldRender || !isOpen) return;
+
+    const smoother = new GestureSmoother(
+      (smoothedY) => {
+        if (isClosingRef.current) return;
+        const clampedY = Math.max(0, smoothedY);
+        el.style.transform = `translate3d(0, ${clampedY}px, 0)`;
+        const bd = backdropRef.current;
+        if (bd) {
+          const height = el.getBoundingClientRect().height || 500;
+          const progress = Math.max(0, Math.min(1, 1 - clampedY / (height * 1.2)));
+          bd.style.opacity = String(progress);
+        }
+      },
+      0,
+      26
+    );
+    smootherRef.current = smoother;
 
     let tracking = false;
     let dragging = false;
@@ -504,7 +572,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
+      if (isClosingRef.current || e.touches.length !== 1) return;
       if (isInsideScrollable(e.target)) return;
       const touch = e.touches[0];
       startX = touch.clientX;
@@ -512,11 +580,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       tracking = true;
       dragging = false;
       dragYRef.current = 0;
+      smoother.reset(0);
       sheetVelocityRef.current.reset(0, performance.now());
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!tracking || e.touches.length !== 1) return;
+      if (!tracking || e.touches.length !== 1 || isClosingRef.current) return;
       const touch = e.touches[0];
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
@@ -528,7 +597,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         }
         if (deltaY > 8) {
           dragging = true;
-          setIsDraggingSheet(true);
+          el.style.transition = 'none';
+          if (backdropRef.current) backdropRef.current.style.transition = 'none';
         }
       }
 
@@ -537,51 +607,54 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         const mappedY = deltaY >= 0 ? deltaY : rubberBand(deltaY, 72, 0.25);
         dragYRef.current = mappedY;
         sheetVelocityRef.current.push(mappedY, performance.now());
-        el.style.transform = `translate3d(0, ${mappedY}px, 0)`;
-        el.style.transition = 'none';
+        smoother.setTarget(mappedY);
       }
     };
 
     const handleTouchEnd = () => {
       if (!tracking) return;
       tracking = false;
-      if (!dragging) return;
+      if (!dragging || isClosingRef.current) return;
       dragging = false;
-      setIsDraggingSheet(false);
 
+      smoother.stop();
       const height = Math.max(200, el.getBoundingClientRect().height);
       const vy = sheetVelocityRef.current.getVelocity(performance.now());
-      const dist = dragYRef.current;
+      const dist = smoother.getCurrent();
 
       if (shouldDismissGesture(dist, vy, Math.min(110, height * 0.22), 0.45)) {
-        const duration = computeSettleDuration(height - dist, vy, 180, 290);
-        setSheetTransitionMs(duration);
-        el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
-        el.style.transform = 'translate3d(0, 100%, 0)';
-        setIsVisible(false);
-        setTimeout(() => {
-          setShouldRender(false);
-          dragYRef.current = 0;
-          onClose();
-        }, duration);
+        const duration = computeSettleDuration(height - dist, vy, 180, 280);
+        closeWithAnimation(duration);
       } else {
-        const duration = computeSettleDuration(dist, vy, 200, 310);
-        setSheetTransitionMs(duration);
+        const duration = computeSettleDuration(dist, vy, 200, 300);
         el.style.transition = `transform ${duration}ms ${SHEET_SPRING_EASE}`;
         el.style.transform = 'translate3d(0, 0, 0)';
+        const bd = backdropRef.current;
+        if (bd) {
+          bd.style.transition = `opacity ${duration}ms ease`;
+          bd.style.opacity = '1';
+        }
         dragYRef.current = 0;
+        smoother.reset(0);
       }
     };
 
     const handleTouchCancel = () => {
       if (!tracking) return;
       tracking = false;
+      if (!dragging || isClosingRef.current) return;
       dragging = false;
-      setIsDraggingSheet(false);
-      setSheetTransitionMs(240);
+
+      smoother.stop();
       el.style.transition = `transform 240ms ${SHEET_SPRING_EASE}`;
       el.style.transform = 'translate3d(0, 0, 0)';
+      const bd = backdropRef.current;
+      if (bd) {
+        bd.style.transition = `opacity 240ms ease`;
+        bd.style.opacity = '1';
+      }
       dragYRef.current = 0;
+      smoother.reset(0);
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -590,12 +663,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     el.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () => {
+      smoother.stop();
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
       el.removeEventListener('touchcancel', handleTouchCancel);
     };
-  }, [shouldRender, isOpen, onClose]);
+  }, [shouldRender, isOpen, closeWithAnimation]);
 
   if (!shouldRender) return null;
 
@@ -630,20 +704,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     editingTransaction,
   };
 
-  const backdropOpacity = isVisible ? 1 : 0;
-  const sheetTransform = isVisible ? 'translate3d(0, 0, 0)' : 'translate3d(0, 100%, 0)';
-
   return (
     <div
-      className={cn(
-        'fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] select-none',
-        !isVisible && 'pointer-events-none'
-      )}
-      style={{
-        opacity: backdropOpacity,
-        transition: isDraggingSheet ? 'none' : `opacity ${sheetTransitionMs}ms ease`,
-      }}
-      onClick={onClose}
+      ref={backdropRef}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/18 backdrop-blur-[1px] select-none"
+      onClick={() => closeWithAnimation(240)}
     >
       <div
         ref={sheetRef}
@@ -651,10 +716,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           'transaction-sheet w-full max-w-[430px] flex flex-col relative will-change-transform',
           'bg-(--paper-sheet) paper-sawtooth-top border-t border-(--rule-hairline) shadow-2xl'
         )}
-        style={{
-          transform: sheetTransform,
-          transition: isDraggingSheet ? 'none' : `transform ${sheetTransitionMs}ms ${SHEET_SPRING_EASE}`,
-        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
@@ -689,7 +750,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => closeWithAnimation(240)}
               className="text-(--ink-tertiary) hover:text-(--ink-primary) p-1 rounded-xs hover:bg-(--paper-sunken) transition-colors cursor-pointer"
               title="收拢便签"
             >
