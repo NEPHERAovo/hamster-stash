@@ -93,7 +93,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
     }
     setMajorThresholdYuan(Math.round(val));
     setIsMajorModalOpen(false);
-    toast.success(`大额阈值已设为 ¥${Math.round(val)}`);
   };
 
   const enabledPlugins = usePluginUIStore((s) => s.enabledPlugins);
@@ -116,16 +115,10 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   };
 
   const handleInstallClick = async () => {
-    if (isInstalled) {
-      toast.info('当前已在桌面独立应用模式中');
-      return;
-    }
+    if (isInstalled) return;
     if (installPrompt) {
       const outcome = await promptInstall();
-      if (outcome === 'accepted') {
-        toast.success('已加入桌面安装任务');
-        return;
-      }
+      if (outcome === 'accepted') return;
     }
     setIsInstallGuideOpen(true);
   };
@@ -569,7 +562,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         isOpen={isMajorModalOpen}
         onClose={() => setIsMajorModalOpen(false)}
         title="大额阈值"
-        subtitle="账本筛选“大额”时生效"
       >
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -640,7 +632,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         isOpen={isBackupConfirmOpen}
         onClose={() => setIsBackupConfirmOpen(false)}
         title="确认全量备份"
-        subtitle="将导出完整本地账本快照（JSON）"
       >
         <div className="p-4 space-y-4 select-none">
           <div className="p-3 rounded-(--radius-sm) bg-(--paper-sunken)/70 border border-dashed border-(--rule-hairline) text-xs font-mono space-y-1.5">

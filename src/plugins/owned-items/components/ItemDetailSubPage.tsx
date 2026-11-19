@@ -114,7 +114,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       });
 
       await changeStatus(item.id, 'sold', sellDate);
-      toast.success(`物品已售出回血 ¥${priceNum.toFixed(2)}`);
       setIsSellPanelOpen(false);
       setSellPriceYuan('');
       setSellNote('');
@@ -154,7 +153,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         },
       });
 
-      toast.success(`已记录支出 ¥${priceNum.toFixed(2)}`);
       setIsMaintPanelOpen(false);
       setMaintPriceYuan('');
       setMaintNote('');
@@ -180,7 +178,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           await updateTransaction(tx.id, { ext: nextExt });
         }
         await deleteItem(item.id);
-        toast.info('物品已移除');
         onClose();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : '删除失败');

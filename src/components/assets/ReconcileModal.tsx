@@ -52,7 +52,6 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`平账校准 · ${account.name}`}
-      subtitle="对齐实际盘点金额并自动生成平账流水"
     >
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between py-2 px-3 bg-(--paper-sunken) rounded-(--radius-sm) text-xs">

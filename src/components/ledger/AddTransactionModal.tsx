@@ -464,8 +464,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         createdAt: createdAtISO,
       });
 
-      const typeLabel = txType === 'expense' ? '支出' : txType === 'income' ? '收入' : '借贷';
-      toast.success(`${typeLabel}入账成功`);
       onSuccess?.(newTx.id);
 
       if (keepOpen) {
@@ -496,7 +494,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (!confirmed) return;
     try {
       await deleteTransaction(editingTransaction.id);
-      toast.info('流水已撕下删除');
       closeWithAnimation(240);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '删除失败');
@@ -512,7 +509,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       const nextVoucher = await readVoucherFile(file);
       setVoucher(nextVoucher);
       setIsVoucherTrayOpen(false);
-      toast.success('凭证已添加');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '读取凭证失败');
     }

@@ -118,7 +118,6 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
       isOpen={isOpen}
       onClose={onClose}
       title="导出账本（CSV）"
-      subtitle="选择需要导出的时间范围"
     >
       <div className="p-4 space-y-4 select-none">
         <div className="flex flex-wrap gap-1.5">

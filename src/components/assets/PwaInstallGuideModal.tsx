@@ -53,10 +53,7 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
     try {
       const outcome = await promptInstall();
       if (outcome === 'accepted') {
-        toast.success('已加入桌面安装任务');
         onClose();
-      } else if (outcome === 'dismissed') {
-        toast.info('已取消安装');
       }
     } catch {
       toast.error('唤起安装对话框失败');
@@ -164,7 +161,6 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="添加到手机桌面"
-      subtitle="独立应用 · 离线全量可用"
     >
       <div className="p-4 pt-3 pb-[calc(18px+var(--safe-bottom))] space-y-4 select-none">
         {isInstalled ? (

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { useThemeStore, THEME_OPTIONS, type ThemeOption } from '../../stores/useThemeStore';
-import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
 
 export interface ThemeSelectorProps {
@@ -15,10 +14,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
   const darkThemes = THEME_OPTIONS.filter((t) => t.isDark);
 
   const handleSelect = (theme: ThemeOption) => {
-    const result = setTheme(theme.id);
-    if (result === 'saved_only') {
-      toast.info(`自动切换${theme.isDark ? '深色' : '浅色'}时将使用「${theme.name}」`);
-    }
+    setTheme(theme.id);
   };
 
   const renderGroup = (

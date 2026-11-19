@@ -440,14 +440,12 @@ export const CategoryManageSubPage: React.FC = () => {
     try {
       if (editingCat) {
         await updateCategory(editingCat.id, { name: trimmed, icon: iconInput });
-        toast.success(`已更新分类「${trimmed}」`);
       } else {
         await createCategory({
           name: trimmed,
           type: activeType,
           icon: iconInput,
         });
-        toast.success(`已新增分类「${trimmed}」`);
       }
       setIsModalOpen(false);
     } catch (err) {
@@ -488,7 +486,6 @@ export const CategoryManageSubPage: React.FC = () => {
   const handleRestore = async (cat: Category) => {
     try {
       await updateCategory(cat.id, { isArchived: false });
-      toast.success(`已恢复分类「${cat.name}」`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '恢复失败');
     }
@@ -592,7 +589,6 @@ export const CategoryManageSubPage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingCat ? '编辑分类' : activeType === 'expense' ? '新增支出分类' : '新增收入分类'}
-        subtitle="设置分类名称与图标"
       >
         <form onSubmit={handleSave} className="p-4 space-y-4 select-none">
           <div className="space-y-1.5">

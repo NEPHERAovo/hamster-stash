@@ -106,7 +106,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           icon,
           includeInNetWorth,
         });
-        toast.success(`已更新账户「${trimmed}」`);
         resetForm();
         onClose();
         return;
@@ -125,7 +124,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         icon,
         includeInNetWorth,
       });
-      toast.success(`已新增账户「${trimmed}」`);
       resetForm();
       onClose();
     } catch (err) {

@@ -94,7 +94,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           note: note.trim() || undefined,
           status,
         });
-        toast.success('物品信息已更新');
         onClose();
       } else {
         const costNum = parseFloat(costYuan);
@@ -126,7 +125,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           });
         }
 
-        toast.success(`已收录新物品: ${created.name}`);
         onClose();
       }
     } catch (err) {
@@ -152,9 +150,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             <span className="font-serif text-lg font-bold text-(--ink-solid)">
               <span className="paper-title inline">{editingItem ? 'Edit Item' : 'New Item'}</span>
               <span className="modern-title hidden">{editingItem ? '编辑物品' : '新建物品'}</span>
-            </span>
-            <span className="text-xs font-mono text-(--ink-tertiary) paper-title inline">
-              · {editingItem ? '编辑物品' : '新建物品'}
             </span>
           </div>
           <button

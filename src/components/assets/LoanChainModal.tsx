@@ -114,7 +114,6 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="借贷与报销结算"
-      subtitle="往来垫付与借款核销"
     >
       <div className="p-4 space-y-3.5 select-none">
         {allItems.length === 0 ? (
