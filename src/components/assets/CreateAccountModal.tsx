@@ -221,10 +221,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         )}
 
         <div className="flex items-center justify-between py-2.5 px-3 rounded-(--input-radius) bg-(--paper-sunken)/70 border border-(--rule-hairline)">
-          <div>
-            <div className="text-xs font-medium text-(--ink-primary)">计入个人净资产</div>
-            <div className="text-[11px] text-(--ink-tertiary)">关闭后该账户余额不计入总净资产</div>
-          </div>
+          <span className="text-xs font-medium text-(--ink-primary)">计入净资产</span>
           <button
             type="button"
             role="switch"

@@ -76,7 +76,6 @@ export const WebDavSyncSection: React.FC = () => {
     setAutoSyncDaily(next);
     try {
       await syncService.setAutoSyncDaily(next);
-      toast.success(next ? '已开启每日自动同步' : '已关闭每日自动同步');
     } catch {
       setAutoSyncDaily(!next);
       toast.error('保存自动同步设置失败');
@@ -93,7 +92,6 @@ export const WebDavSyncSection: React.FC = () => {
     setSyncAttachments(next);
     try {
       await syncService.setSyncAttachments(next);
-      toast.success(next ? '已开启凭证附件独立备份' : '已关闭凭证附件备份');
     } catch {
       setSyncAttachments(!next);
       toast.error('保存附件备份设置失败');
@@ -212,10 +210,7 @@ export const WebDavSyncSection: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
-          <div>
-            <div className="text-[12px] font-medium text-(--ink-primary)">每日自动同步</div>
-            <div className="text-[10px] text-(--ink-tertiary)">每日首次打开应用自动备份并提示</div>
-          </div>
+          <span className="text-[13px] font-medium text-(--ink-primary)">每日自动同步</span>
           <button
             type="button"
             role="switch"
@@ -239,10 +234,7 @@ export const WebDavSyncSection: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
-          <div>
-            <div className="text-[12px] font-medium text-(--ink-primary)">备份凭证附件</div>
-            <div className="text-[10px] text-(--ink-tertiary)">按需单独上传与查看下载，节省云端流量</div>
-          </div>
+          <span className="text-[13px] font-medium text-(--ink-primary)">备份凭证附件</span>
           <button
             type="button"
             role="switch"
@@ -301,7 +293,7 @@ export const WebDavSyncSection: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-(--ink-tertiary) px-0.5">同步目录 (可选)</label>
+              <label className="text-[11px] font-medium text-(--ink-tertiary) px-0.5">同步目录</label>
               <PaperInput
                 placeholder="默认为 /hamsterstash"
                 value={syncPath}

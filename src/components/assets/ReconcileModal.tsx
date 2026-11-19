@@ -63,7 +63,7 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-(--ink-secondary) block">
-            实际清点金额 (元)
+            实际清点金额
           </label>
           <div className="flex items-center h-12 px-3 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) focus-within:border-(--ink-primary)">
             <span className="text-lg font-bold text-(--ink-secondary) mr-2">¥</span>

@@ -415,7 +415,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-[10px] text-(--ink-tertiary) mb-1">
-                  支出金额 (元)
+                  支出金额
                 </label>
                 <input
                   type="number"
@@ -459,7 +459,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               </div>
 
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">用途备注 (选填)</label>
+                <label className="block text-[10px] text-(--ink-tertiary) mb-1">用途备注</label>
                 <input
                   type="text"
                   value={maintNote}
@@ -500,7 +500,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-[10px] text-(--ink-tertiary) mb-1">
-                  售出回血金额 (元)
+                  售出回血金额
                 </label>
                 <input
                   type="number"
@@ -544,7 +544,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               </div>
 
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">随笔备注 (选填)</label>
+                <label className="block text-[10px] text-(--ink-tertiary) mb-1">随笔备注</label>
                 <input
                   type="text"
                   value={sellNote}

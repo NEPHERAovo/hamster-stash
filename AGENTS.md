@@ -49,6 +49,14 @@ To ensure professional engineering collaboration and seamless user localization:
    - User-facing UI labels, form placeholders, button copy, category names, account types, and toast messages must be concise, natural native Chinese.
    - **Exception**: Top-level serif journal headers (`November 2026`, `Statistics`, `Owned Items`, `Assets`, `Settings`) remain in English to preserve classical literary typography on mobile devices.
    - **Concise Copywriting**: Never use engineering jargon, debugging codes, or explanatory parentheses in user-facing copy.
+3. **UI De-Noising & Notification Guardrails**:
+   - **Silent CRUD & Interaction De-Noising**: Routine lightweight local operations (recording or updating transactions, deleting a ledger record, attaching vouchers, toggling settings switches, selecting categories or accounts, switching themes) provide immediate visual DOM feedback and MUST NEVER trigger toast alerts.
+   - **Toast Allowlist**: Floating toasts (`useToastStore` / `toast.*`) are strictly reserved for:
+     1. Asynchronous network tasks with latency (WebDAV cloud backup/restore completion).
+     2. High-risk bulk data lifecycle mutations (clearing all data, CSV/JSON full import or export completion).
+     3. Blocking form validation failures and fatal operation errors.
+   - **Modal Header De-Noising**: Modal dialogs (`PaperModal`) must avoid redundant instructional subtitles (e.g. teaching users how to fill obvious fields or explaining standard thresholds). Do not artificially append Chinese subtitles beside English journal headers.
+   - **Form & Setting Row Purification**: Toggle rows and input fields must rely on self-explanatory titles and clean placeholders without descriptive sub-labels or parenthetical explanations (such as optional/recommended badges).
 
 ---
 

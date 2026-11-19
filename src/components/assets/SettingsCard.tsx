@@ -547,12 +547,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <div className="w-6 h-6 rounded-(--badge-radius) bg-(--color-expense-bg) flex items-center justify-center text-(--color-expense) shrink-0">
               <Trash2 className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
-            <div>
-              <span className="text-[13px] font-medium text-(--color-expense)">清空所有数据</span>
-              <p className="text-[11px] text-(--ink-tertiary) leading-tight mt-0.5">
-                重置全部本地流水、账户与插件记录
-              </p>
-            </div>
+            <span className="text-[13px] font-medium text-(--color-expense)">清空所有数据</span>
           </div>
           <ChevronRight className="w-3.5 h-3.5 text-(--color-expense)/70" />
         </div>

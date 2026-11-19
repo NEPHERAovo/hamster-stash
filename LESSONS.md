@@ -52,3 +52,9 @@
 - **Why**: Monolithic commits obscure review diffs, break atomic git bisect, and autonomous remote pushing bypasses user review gates and can pollute remote history.
 - **Evidence**: Prompted during development session after bundled commit `e2e4f34`.
 - **Seen**: 1
+
+### 7. UI De-Noising & Subtitle Purging
+- **Rule**: Eliminate high-frequency CRUD toasts and redundant instructional subtitles. Routine actions (saving, updating, deleting records, toggling switches, selecting categories/themes) must remain silent with immediate DOM feedback. Reserve toasts exclusively for network tasks, bulk lifecycle operations, and validation errors. Eliminate parenthetical labels, secondary descriptions on settings switches, and instructional modal subtitles.
+- **Why**: Constant toast popups create visual anxiety, obscure underlying content, and violate the physical quietude of a crafted stationery journal. Redundant subtitles waste vertical mobile viewport space and make the UI feel like an instruction manual rather than an organic notebook.
+- **Evidence**: Purged 18 lightweight toasts and redundant subtitles across modal forms and WebDAV sync in commit `02491c6` and follow-up de-noising pass.
+- **Seen**: 1
