@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { PaperModal } from '../ui/PaperModal';
+import { AmountInput } from '../ui/AmountInput';
 import type { Account, AccountType } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -205,18 +206,14 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         {!isEditing && (
           <div className="space-y-1.5">
             <label className="text-xs font-mono text-(--ink-tertiary)">初始余额</label>
-            <div className="flex items-center gap-2 px-3 h-10 rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
-              <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                value={balanceStr}
-                onChange={(e) => setBalanceStr(e.target.value)}
-                placeholder="0.00"
-                className="flex-1 bg-transparent text-sm font-mono font-semibold text-(--ink-primary) placeholder:text-(--ink-faint) outline-none"
-              />
-            </div>
+            <AmountInput
+              value={balanceStr}
+              onChange={setBalanceStr}
+              placeholder="0.00"
+              size="sm"
+              variant="sunken"
+              aria-label="初始余额"
+            />
           </div>
         )}
 

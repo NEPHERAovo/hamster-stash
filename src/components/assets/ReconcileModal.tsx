@@ -3,6 +3,7 @@ import type { Account } from '../../types/account';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperCard } from '../ui/PaperCard';
 import { PaperButton } from '../ui/PaperButton';
+import { AmountInput } from '../ui/AmountInput';
 import { centsToYuan, yuanToCents } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { cn } from '../../utils/cn';
@@ -65,17 +66,14 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
           <label className="text-xs font-semibold text-(--ink-secondary) block">
             实际清点金额
           </label>
-          <div className="flex items-center h-12 px-3 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) focus-within:border-(--ink-primary)">
-            <span className="text-lg font-bold text-(--ink-secondary) mr-2">¥</span>
-            <input
-              type="number"
-              step="0.01"
-              placeholder={centsToYuan(currentCents)}
-              value={targetYuan}
-              onChange={(e) => setTargetYuan(e.target.value)}
-              className="flex-1 bg-transparent text-xl font-bold tabular-nums outline-none text-(--ink-primary)"
-            />
-          </div>
+          <AmountInput
+            value={targetYuan}
+            onChange={setTargetYuan}
+            placeholder={centsToYuan(currentCents)}
+            variant="surface"
+            size="md"
+            aria-label="实际清点金额"
+          />
         </div>
 
         {targetYuan.trim() !== '' && (

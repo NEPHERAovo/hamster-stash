@@ -2,6 +2,7 @@ export * from './DotGrid';
 export * from './PaperCard';
 export * from './PaperButton';
 export * from './PaperInput';
+export * from './AmountInput';
 export * from './PaperModal';
 export * from './SegToggle';
 export * from './PaperBadge';
