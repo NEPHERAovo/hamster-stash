@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Plus, Settings, Pencil } from 'lucide-react';
+import { Plus, Settings, Pencil, ArrowLeftRight } from 'lucide-react';
 import {
   AppShell,
   PageHeader,
@@ -25,6 +25,7 @@ import { ImportSubPage } from './components/assets/ImportSubPage';
 import { LoanChainModal } from './components/assets/LoanChainModal';
 import { ReconcileModal } from './components/assets/ReconcileModal';
 import { CreateAccountModal } from './components/assets/CreateAccountModal';
+import { TransferModal } from './components/assets/TransferModal';
 import { Toast } from './components/ui/Toast';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { PwaUpdateBanner } from './components/ui/PwaUpdateBanner';
@@ -57,10 +58,27 @@ export function App() {
   const [isCategoryManageOpen, setIsCategoryManageOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [editingTransferTx, setEditingTransferTx] = useState<Transaction | null>(null);
+  const [transferDefaultFromId, setTransferDefaultFromId] = useState<string | undefined>(undefined);
   const [freshTxId, setFreshTxId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [statsMode, setStatsMode] = useState<PeriodMode>('month');
   const [activeCategoryDrilldown, setActiveCategoryDrilldown] = useState<CategoryDrilldownData | null>(null);
+
+  const handleSelectTransaction = (tx: Transaction) => {
+    if (tx.type === 'transfer') {
+      setEditingTransferTx(tx);
+      setTransferDefaultFromId(undefined);
+      setIsTransferOpen(true);
+    } else if (tx.type === 'reconcile') {
+      const acct = accounts.find((a) => a.id === tx.accountId) || null;
+      if (acct) setReconcileAccount(acct);
+    } else {
+      setEditingTx(tx);
+      setIsAddOpen(true);
+    }
+  };
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
@@ -268,6 +286,21 @@ export function App() {
             title={isModern ? '资产' : 'Assets'}
             rightAction={
               <div className="flex items-center gap-1.5">
+                {accounts.length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingTransferTx(null);
+                      setTransferDefaultFromId(undefined);
+                      setIsTransferOpen(true);
+                    }}
+                    className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                    title="资金划转"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.8]" />
+                    <span>划转</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsSettingsOpen(true)}
@@ -313,10 +346,7 @@ export function App() {
                   accounts={accounts}
                   pageSize={15}
                   freshTxId={freshTxId}
-                  onSelectTransaction={(tx) => {
-                    setEditingTx(tx);
-                    setIsAddOpen(true);
-                  }}
+                  onSelectTransaction={handleSelectTransaction}
                 />
               </div>
             </div>
@@ -331,10 +361,7 @@ export function App() {
                 mode={statsMode}
                 onModeChange={setStatsMode}
                 onOpenCategoryDrilldown={setActiveCategoryDrilldown}
-                onSelectTransaction={(tx) => {
-                  setEditingTx(tx);
-                  setIsAddOpen(true);
-                }}
+                onSelectTransaction={handleSelectTransaction}
               />
             </div>
           )}
@@ -400,14 +427,16 @@ export function App() {
             categories={categories}
             accounts={accounts}
             onOpenReconcile={() => setReconcileAccount(currentDetailAccount)}
+            onOpenTransfer={(acct) => {
+              setEditingTransferTx(null);
+              setTransferDefaultFromId(acct.id);
+              setIsTransferOpen(true);
+            }}
             onToggleIncludeInNetWorth={async (acct, nextValue) => {
               await updateAccount(acct.id, { includeInNetWorth: nextValue });
             }}
             onDeleteAccount={handleDeleteAccount}
-            onSelectTransaction={(tx) => {
-              setEditingTx(tx);
-              setIsAddOpen(true);
-            }}
+            onSelectTransaction={handleSelectTransaction}
           />
         )}
       </SubPageShell>
@@ -486,10 +515,7 @@ export function App() {
             data={activeCategoryDrilldown}
             categories={categories}
             accounts={accounts}
-            onSelectTransaction={(tx) => {
-              setEditingTx(tx);
-              setIsAddOpen(true);
-            }}
+            onSelectTransaction={handleSelectTransaction}
           />
         )}
       </SubPageShell>
@@ -536,6 +562,44 @@ export function App() {
         account={reconcileAccount}
         isOpen={Boolean(reconcileAccount)}
         onClose={() => setReconcileAccount(null)}
+      />
+
+      <TransferModal
+        isOpen={isTransferOpen}
+        editingTransaction={editingTransferTx}
+        defaultFromAccountId={transferDefaultFromId}
+        accounts={accounts}
+        onClose={() => {
+          setIsTransferOpen(false);
+          setEditingTransferTx(null);
+          setTransferDefaultFromId(undefined);
+        }}
+        onConfirm={async (input) => {
+          if (editingTransferTx) {
+            await useLedgerStore.getState().updateTransaction(editingTransferTx.id, {
+              type: 'transfer',
+              amount: input.amountCents,
+              accountId: input.fromAccountId,
+              toAccountId: input.toAccountId,
+              date: input.date,
+              note: input.note,
+              categoryId: 'cat_transfer',
+            });
+          } else {
+            await useLedgerStore.getState().recordTransaction({
+              type: 'transfer',
+              amount: input.amountCents,
+              accountId: input.fromAccountId,
+              toAccountId: input.toAccountId,
+              date: input.date,
+              note: input.note,
+              categoryId: 'cat_transfer',
+            });
+          }
+        }}
+        onDelete={async (id) => {
+          await useLedgerStore.getState().deleteTransaction(id);
+        }}
       />
 
       <CreateAccountModal

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Scale, Trash2 } from 'lucide-react';
+import { Scale, Trash2, ArrowLeftRight } from 'lucide-react';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
@@ -19,6 +19,7 @@ export interface AccountDetailSubPageProps {
   categories: Category[];
   accounts: Account[];
   onOpenReconcile?: () => void;
+  onOpenTransfer?: (account: Account) => void;
   onToggleIncludeInNetWorth?: (account: Account, nextValue: boolean) => Promise<void>;
   onDeleteAccount?: (account: Account) => void;
   onSelectTransaction?: (tx: Transaction) => void;
@@ -30,6 +31,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   categories,
   accounts,
   onOpenReconcile,
+  onOpenTransfer,
   onToggleIncludeInNetWorth,
   onDeleteAccount,
   onSelectTransaction,
@@ -234,16 +236,32 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           </div>
         </div>
 
-        {onOpenReconcile && (
-          <button
-            type="button"
-            className="w-full h-9 rounded-(--btn-radius) inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover) active:scale-[0.98] transition-all cursor-pointer border border-(--rule-hairline)"
-            onClick={onOpenReconcile}
-          >
-            <Scale className="w-4 h-4 stroke-[1.85]" />
-            <span>平账校准</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenTransfer && accounts.length >= 2 && (
+            <button
+              type="button"
+              className="flex-1 h-9 rounded-(--btn-radius) inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--btn-primary-bg) text-(--btn-primary-fg) hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+              onClick={() => onOpenTransfer(account)}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.85]" />
+              <span>资金划转</span>
+            </button>
+          )}
+
+          {onOpenReconcile && (
+            <button
+              type="button"
+              className={cn(
+                'h-9 rounded-(--btn-radius) inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover) active:scale-[0.98] transition-all cursor-pointer border border-(--rule-hairline)',
+                onOpenTransfer && accounts.length >= 2 ? 'flex-1' : 'w-full'
+              )}
+              onClick={onOpenReconcile}
+            >
+              <Scale className="w-4 h-4 stroke-[1.85]" />
+              <span>平账校准</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-4 mb-4 text-xs font-mono">
