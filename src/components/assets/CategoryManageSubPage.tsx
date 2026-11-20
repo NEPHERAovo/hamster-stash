@@ -7,13 +7,8 @@ import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
+import { SwipeableRow } from '../ui/SwipeableRow';
 import { cn } from '../../utils/cn';
-import {
-  SPRING_OUT_EASE,
-  VelocityTracker,
-  computeSettleDuration,
-  rubberBand,
-} from '../../utils/gesturePhysics';
 
 const CATEGORY_ICON_CHOICES = [
   'utensils',
@@ -50,8 +45,6 @@ const CATEGORY_ICON_CHOICES = [
   'box',
 ];
 
-const ACTION_WIDTH = 72;
-
 interface SwipeableCategoryRowProps {
   cat: Category;
   index: number;
@@ -80,194 +73,54 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
   onTouchHandleStart,
 }) => {
   const IconComp = getCategoryIcon(cat.icon);
-  const [offset, setOffset] = useState<number>(0);
-  const [isSwiping, setIsSwiping] = useState<boolean>(false);
-  const [settleMs, setSettleMs] = useState<number>(240);
-
-  const isDraggingRef = useRef<boolean>(false);
-  const isHorizontalRef = useRef<boolean>(false);
-  const startXRef = useRef<number>(0);
-  const startYRef = useRef<number>(0);
-  const currentOffsetRef = useRef<number>(0);
-  const velocityRef = useRef<VelocityTracker>(new VelocityTracker());
-  const lastTouchTimeRef = useRef<number>(0);
-
-  const handleDragStart = (clientX: number, clientY: number) => {
-    isDraggingRef.current = true;
-    isHorizontalRef.current = false;
-    startXRef.current = clientX;
-    startYRef.current = clientY;
-    velocityRef.current.reset(currentOffsetRef.current, performance.now());
-  };
-
-  const handleDragMove = (
-    clientX: number,
-    clientY: number,
-    preventDefault?: () => void
-  ) => {
-    if (!isDraggingRef.current) return;
-    const rawDx = clientX - startXRef.current + currentOffsetRef.current;
-    const deltaY = Math.abs(clientY - startYRef.current);
-    const deltaX = Math.abs(clientX - (startXRef.current + currentOffsetRef.current));
-
-    if (!isHorizontalRef.current) {
-      if (deltaY > deltaX && deltaY > 6) {
-        isDraggingRef.current = false;
-        return;
-      }
-      if (deltaX > 6) {
-        isHorizontalRef.current = true;
-        setIsSwiping(true);
-      }
-    }
-
-    if (isHorizontalRef.current) {
-      preventDefault?.();
-      let newOffset = rawDx;
-      if (newOffset > 0) {
-        newOffset = rubberBand(newOffset, 48, 0.25);
-      } else if (newOffset < -ACTION_WIDTH) {
-        const overflow = -newOffset - ACTION_WIDTH;
-        newOffset = -ACTION_WIDTH - rubberBand(overflow, 140, 0.48);
-      }
-      currentOffsetRef.current = newOffset;
-      velocityRef.current.push(newOffset, performance.now());
-      setOffset(newOffset);
-    }
-  };
-
-  const handleDragEnd = () => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    setIsSwiping(false);
-    lastTouchTimeRef.current = Date.now();
-
-    const vx = velocityRef.current.getVelocity(performance.now());
-    const shouldOpen =
-      vx < -0.35
-        ? currentOffsetRef.current < -16
-        : vx > 0.35
-          ? false
-          : currentOffsetRef.current < -ACTION_WIDTH / 2;
-
-    const target = shouldOpen ? -ACTION_WIDTH : 0;
-    setSettleMs(computeSettleDuration(target - currentOffsetRef.current, vx, 190, 300));
-    currentOffsetRef.current = target;
-    setOffset(target);
-  };
-
-  const handleRowClick = () => {
-    if (Date.now() - lastTouchTimeRef.current < 400) {
-      return;
-    }
-    if (offset < 0) {
-      currentOffsetRef.current = 0;
-      setOffset(0);
-    } else {
-      onSelect(cat);
-    }
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    currentOffsetRef.current = 0;
-    setOffset(0);
-    onDelete(cat);
-  };
-
-  const actionTranslate = Math.max(0, ACTION_WIDTH + offset);
-  const actionWidth = Math.max(ACTION_WIDTH, Math.ceil(Math.abs(offset)));
-  const actionOpacity = offset === 0 ? 0 : Math.min(1, Math.abs(offset) / 30);
 
   return (
-    <div
+    <SwipeableRow
       data-category-row="true"
       data-category-id={cat.id}
-      className={cn(
-        'relative overflow-hidden bg-(--paper-sheet) select-none',
+      containerClassName={cn(
+        'bg-(--paper-sheet) select-none',
         isDragging && 'opacity-60 bg-(--paper-sunken)'
       )}
+      className="bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+      action={{
+        label: '删除',
+        title: '删除分类',
+        icon: <Trash2 className="w-4 h-4 stroke-2" />,
+        onClick: () => onDelete(cat),
+      }}
+      onClick={() => onSelect(cat)}
     >
-      <div
-        className={cn(
-          'absolute inset-y-0 right-0 bg-(--color-expense) flex items-center justify-center z-0 overflow-hidden select-none',
-          offset === 0 && 'pointer-events-none opacity-0'
-        )}
-        style={{
-          width: `${actionWidth}px`,
-          transform: `translate3d(${actionTranslate}px, 0, 0)`,
-          opacity: actionOpacity,
-          transition: isSwiping
-            ? 'none'
-            : `transform ${settleMs}ms ${SPRING_OUT_EASE}, width ${settleMs}ms ${SPRING_OUT_EASE}, opacity 200ms ease`,
-        }}
-      >
-        <button
-          type="button"
-          onClick={handleDeleteClick}
-          className="w-full h-full flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-0.5 cursor-pointer active:opacity-85"
-          title="删除分类"
-        >
-          <Trash2 className="w-4 h-4 stroke-2" />
-          <span>删除</span>
-        </button>
+      <div className="flex items-center gap-2.5 min-w-0 flex-1 pointer-events-none">
+        <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
+          <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
+        </div>
+        <span className="text-[13px] font-medium text-(--ink-primary) truncate">
+          {cat.name}
+        </span>
       </div>
 
       <div
-        onClick={handleRowClick}
-        onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
-        onTouchMove={(e) =>
-          handleDragMove(e.touches[0].clientX, e.touches[0].clientY, () =>
-            e.cancelable && e.preventDefault()
-          )
-        }
-        onTouchEnd={handleDragEnd}
-        onTouchCancel={handleDragEnd}
-        onMouseDown={(e) => {
-          if (e.button === 0) handleDragStart(e.clientX, e.clientY);
-        }}
-        onMouseMove={(e) => {
-          if (isDraggingRef.current) handleDragMove(e.clientX, e.clientY, () => e.preventDefault());
-        }}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
-        style={{
-          transform: `translate3d(${offset}px, 0, 0)`,
-          transition: isSwiping ? 'none' : `transform ${settleMs}ms ${SPRING_OUT_EASE}`,
-        }}
-        className="relative z-10 bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken) select-none will-change-transform"
+        className="flex items-center gap-1 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2.5 min-w-0 flex-1 pointer-events-none">
-          <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
-            <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
-          </div>
-          <span className="text-[13px] font-medium text-(--ink-primary) truncate">
-            {cat.name}
-          </span>
-        </div>
-
         <div
-          className="flex items-center gap-1 shrink-0"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
+          draggable
+          onDragStart={(e) => onDragStartHtml5(e, index)}
+          onDragOver={onDragOverHtml5}
+          onDragEnter={() => onDragEnterHtml5(index)}
+          onDragEnd={onDragEndHtml5}
+          onDrop={onDropHtml5}
+          onTouchStart={(e) => onTouchHandleStart(e, index)}
+          className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
+          title="拖拽排序"
         >
-          <div
-            draggable
-            onDragStart={(e) => onDragStartHtml5(e, index)}
-            onDragOver={onDragOverHtml5}
-            onDragEnter={() => onDragEnterHtml5(index)}
-            onDragEnd={onDragEndHtml5}
-            onDrop={onDropHtml5}
-            onTouchStart={(e) => onTouchHandleStart(e, index)}
-            className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
-            title="拖拽排序"
-          >
-            <GripVertical className="w-4 h-4 stroke-[1.8]" />
-          </div>
+          <GripVertical className="w-4 h-4 stroke-[1.8]" />
         </div>
       </div>
-    </div>
+    </SwipeableRow>
   );
 };
 

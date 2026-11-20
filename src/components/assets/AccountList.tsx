@@ -1,17 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import { Trash2 } from 'lucide-react';
 import type { Account } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
+import { SwipeableRow } from '../ui/SwipeableRow';
 import { cn } from '../../utils/cn';
-import {
-  SPRING_OUT_EASE,
-  VelocityTracker,
-  computeSettleDuration,
-  rubberBand,
-} from '../../utils/gesturePhysics';
 
 export interface AccountListProps {
   accounts: Account[];
@@ -44,102 +39,18 @@ const getAccountTypeLabel = (type: string) => {
   }
 };
 
-const ACTION_WIDTH = 76;
-
 const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   account,
   canDelete,
   onSelect,
   onDelete,
 }) => {
-  const [offset, setOffset] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [settleMs, setSettleMs] = useState(260);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const isHorizontalRef = useRef(false);
-  const currentOffsetRef = useRef(0);
-  const velocityRef = useRef(new VelocityTracker(90));
-
   const Icon = getCategoryIcon(account.icon || 'wallet');
   const isNegative = account.balance < 0;
 
-  const handleDragStart = (clientX: number, clientY: number) => {
-    if (!canDelete) return;
-    isDraggingRef.current = true;
-    isHorizontalRef.current = false;
-    startXRef.current = clientX - currentOffsetRef.current;
-    startYRef.current = clientY;
-    velocityRef.current.reset(currentOffsetRef.current, performance.now());
-  };
-
-  const handleDragMove = (clientX: number, clientY: number, preventDefault?: () => void) => {
-    if (!isDraggingRef.current) return;
-    const rawDx = clientX - startXRef.current;
-    const deltaY = Math.abs(clientY - startYRef.current);
-    const deltaX = Math.abs(clientX - (startXRef.current + currentOffsetRef.current));
-
-    if (!isHorizontalRef.current) {
-      if (deltaY > deltaX && deltaY > 6) {
-        isDraggingRef.current = false;
-        return;
-      }
-      if (deltaX > 6) {
-        isHorizontalRef.current = true;
-        setIsSwiping(true);
-      }
-    }
-
-    if (isHorizontalRef.current) {
-      preventDefault?.();
-      let newOffset = rawDx;
-      if (newOffset > 0) {
-        newOffset = rubberBand(newOffset, 48, 0.25);
-      } else if (newOffset < -ACTION_WIDTH) {
-        const overflow = -newOffset - ACTION_WIDTH;
-        newOffset = -ACTION_WIDTH - rubberBand(overflow, 140, 0.48);
-      }
-      currentOffsetRef.current = newOffset;
-      velocityRef.current.push(newOffset, performance.now());
-      setOffset(newOffset);
-    }
-  };
-
-  const handleDragEnd = () => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    setIsSwiping(false);
-
-    const vx = velocityRef.current.getVelocity(performance.now());
-    const shouldOpen =
-      vx < -0.35
-        ? currentOffsetRef.current < -16
-        : vx > 0.35
-          ? false
-          : currentOffsetRef.current < -ACTION_WIDTH / 2;
-
-    const target = shouldOpen ? -ACTION_WIDTH : 0;
-    setSettleMs(computeSettleDuration(target - currentOffsetRef.current, vx, 190, 300));
-    currentOffsetRef.current = target;
-    setOffset(target);
-  };
-
-  const handleRowClick = () => {
-    if (offset < 0) {
-      currentOffsetRef.current = 0;
-      setOffset(0);
-    } else {
-      onSelect();
-    }
-  };
-
-  const handleDeleteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = async () => {
     if (!canDelete) {
       toast.error('系统至少需保留一个资金账户');
-      currentOffsetRef.current = 0;
-      setOffset(0);
       return;
     }
     const confirmed = await confirmAction({
@@ -151,92 +62,49 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
     if (confirmed) {
       onDelete?.();
     }
-    currentOffsetRef.current = 0;
-    setOffset(0);
   };
 
-  const actionTranslate = Math.max(0, ACTION_WIDTH + offset);
-  const actionWidth = Math.max(ACTION_WIDTH, Math.ceil(Math.abs(offset)));
-  const actionOpacity = offset === 0 ? 0 : Math.min(1, Math.abs(offset) / 30);
-
   return (
-    <div className="relative overflow-hidden border-b border-dashed border-(--rule-hairline)/60 last:border-b-0 bg-(--bg-surface)">
-      {canDelete && (
-        <div
-          className={cn(
-            'absolute inset-y-0 right-0 bg-(--color-expense) flex items-center justify-center z-0 overflow-hidden select-none',
-            offset === 0 && 'pointer-events-none opacity-0'
-          )}
-          style={{
-            width: `${actionWidth}px`,
-            transform: `translate3d(${actionTranslate}px, 0, 0)`,
-            opacity: actionOpacity,
-            transition: isSwiping
-              ? 'none'
-              : `transform ${settleMs}ms ${SPRING_OUT_EASE}, width ${settleMs}ms ${SPRING_OUT_EASE}, opacity 200ms ease`,
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            className="w-full h-full flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-0.5 cursor-pointer active:opacity-85"
-            title="删除账户"
-          >
-            <Trash2 className="w-4 h-4 stroke-2" />
-            <span>删除</span>
-          </button>
+    <SwipeableRow
+      enabled={canDelete}
+      action={{
+        label: '删除',
+        title: '删除账户',
+        icon: <Trash2 className="w-4 h-4 stroke-2" />,
+        onClick: handleDelete,
+      }}
+      onClick={onSelect}
+      containerClassName="border-b border-dashed border-(--rule-hairline)/60 last:border-b-0"
+      className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+    >
+      <div className="flex items-center gap-2.5 flex-1 min-w-0 pointer-events-none">
+        <div className="w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0 rounded-(--badge-radius) bg-(--paper-sunken)">
+          <Icon className="w-3.5 h-3.5 stroke-[1.8]" />
         </div>
-      )}
-
-      <div
-        onClick={handleRowClick}
-        onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
-        onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY, () => e.cancelable && e.preventDefault())}
-        onTouchEnd={handleDragEnd}
-        onTouchCancel={handleDragEnd}
-        onMouseDown={(e) => {
-          if (e.button === 0) handleDragStart(e.clientX, e.clientY);
-        }}
-        onMouseMove={(e) => {
-          if (isDraggingRef.current) handleDragMove(e.clientX, e.clientY, () => e.preventDefault());
-        }}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
-        style={{
-          transform: `translate3d(${offset}px, 0, 0)`,
-          transition: isSwiping ? 'none' : `transform ${settleMs}ms ${SPRING_OUT_EASE}`,
-        }}
-        className="relative z-10 bg-(--bg-surface) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken) select-none will-change-transform"
-      >
-        <div className="flex items-center gap-2.5 flex-1 min-w-0 pointer-events-none">
-          <div className="w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0 rounded-(--badge-radius) bg-(--paper-sunken)">
-            <Icon className="w-3.5 h-3.5 stroke-[1.8]" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-(--ink-primary) truncate">
+            {account.name}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-(--ink-primary) truncate">
-              {account.name}
-            </div>
-            <div className="text-[10px] font-mono text-(--ink-tertiary) flex items-center gap-1">
-              <span>{getAccountTypeLabel(account.type)}</span>
-              {account.includeInNetWorth === false && (
-                <span className="text-(--ink-faint)">· 不计净资产</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="shrink-0 text-right ml-2.5 pointer-events-none">
-          <span
-            className={cn(
-              'font-mono text-sm font-semibold tabular-nums',
-              isNegative ? 'text-(--color-expense)' : 'text-(--ink-solid)'
+          <div className="text-[10px] font-mono text-(--ink-tertiary) flex items-center gap-1">
+            <span>{getAccountTypeLabel(account.type)}</span>
+            {account.includeInNetWorth === false && (
+              <span className="text-(--ink-faint)">· 不计净资产</span>
             )}
-          >
-            ¥ {centsToYuan(account.balance)}
-          </span>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="shrink-0 text-right ml-2.5 pointer-events-none">
+        <span
+          className={cn(
+            'font-mono text-sm font-semibold tabular-nums',
+            isNegative ? 'text-(--color-expense)' : 'text-(--ink-solid)'
+          )}
+        >
+          ¥ {centsToYuan(account.balance)}
+        </span>
+      </div>
+    </SwipeableRow>
   );
 };
 
