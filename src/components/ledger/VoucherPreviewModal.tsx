@@ -110,6 +110,76 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [voucher, onClose]);
 
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="py-12 flex flex-col items-center gap-2 text-xs text-(--ink-tertiary)">
+          <RefreshCw className="w-5 h-5 animate-spin stroke-[1.8]" />
+          <span>正在加载凭证...</span>
+        </div>
+      );
+    }
+
+    if (!resolvedUrl) {
+      return (
+        <div className="py-10 px-4 text-center space-y-2">
+          <AlertCircle className="w-7 h-7 mx-auto text-(--ink-tertiary) stroke-[1.6]" />
+          <div className="text-xs font-medium text-(--ink-primary)">
+            本机未找到该凭证文件
+          </div>
+          <div className="text-[11px] text-(--ink-tertiary)">
+            {voucher?.attachmentId
+              ? '如已开启 WebDAV 附件备份，请检查网络或配置后重试'
+              : '请在编辑该笔账单时重新上传图片或 PDF 凭证'}
+          </div>
+        </div>
+      );
+    }
+
+    if (isImage) {
+      return (
+        <img
+          src={resolvedUrl}
+          alt={voucher?.name}
+          className="max-w-full max-h-[70vh] object-contain rounded-(--radius-sm)"
+        />
+      );
+    }
+
+    return (
+      <div className="w-full space-y-3">
+        {pdfBlobUrl && (
+          <iframe
+            src={pdfBlobUrl}
+            title={voucher?.name}
+            className="w-full h-[56vh] rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet)"
+          />
+        )}
+        <div className="flex items-center justify-center gap-2">
+          {pdfBlobUrl && (
+            <a
+              href={pdfBlobUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold inline-flex items-center gap-1.5"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>新窗口打开 PDF</span>
+            </a>
+          )}
+          <a
+            href={pdfBlobUrl || resolvedUrl}
+            download={voucher?.name}
+            className="px-3 py-1.5 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-primary) text-xs font-semibold inline-flex items-center gap-1.5"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>下载文件</span>
+          </a>
+        </div>
+      </div>
+    );
+  };
+
   if (!voucher) return null;
 
   return createPortal(
@@ -159,61 +229,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto p-3 flex items-center justify-center bg-(--paper-sunken)/40">
-          {isLoading ? (
-            <div className="py-12 flex flex-col items-center gap-2 text-xs text-(--ink-tertiary)">
-              <RefreshCw className="w-5 h-5 animate-spin stroke-[1.8]" />
-              <span>正在加载凭证...</span>
-            </div>
-          ) : !resolvedUrl ? (
-            <div className="py-10 px-4 text-center space-y-2">
-              <AlertCircle className="w-7 h-7 mx-auto text-(--ink-tertiary) stroke-[1.6]" />
-              <div className="text-xs font-medium text-(--ink-primary)">
-                本机未找到该凭证文件
-              </div>
-              <div className="text-[11px] text-(--ink-tertiary)">
-                {voucher.attachmentId
-                  ? '如已开启 WebDAV 附件备份，请检查网络或配置后重试'
-                  : '请在编辑该笔账单时重新上传图片或 PDF 凭证'}
-              </div>
-            </div>
-          ) : isImage ? (
-            <img
-              src={resolvedUrl}
-              alt={voucher.name}
-              className="max-w-full max-h-[70vh] object-contain rounded-(--radius-sm)"
-            />
-          ) : (
-            <div className="w-full space-y-3">
-              {pdfBlobUrl && (
-                <iframe
-                  src={pdfBlobUrl}
-                  title={voucher.name}
-                  className="w-full h-[56vh] rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet)"
-                />
-              )}
-              <div className="flex items-center justify-center gap-2">
-                {pdfBlobUrl && (
-                  <a
-                    href={pdfBlobUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold inline-flex items-center gap-1.5"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>新窗口打开 PDF</span>
-                  </a>
-                )}
-                <a
-                  href={pdfBlobUrl || resolvedUrl}
-                  download={voucher.name}
-                  className="px-3 py-1.5 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-primary) text-xs font-semibold inline-flex items-center gap-1.5"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>下载文件</span>
-                </a>
-              </div>
-            </div>
-          )}
+          {renderContent()}
         </div>
       </div>
     </div>,

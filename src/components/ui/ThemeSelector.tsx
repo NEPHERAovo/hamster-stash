@@ -17,6 +17,12 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
     setTheme(theme.id);
   };
 
+  const getGroupBadge = (isActive: boolean, type: 'light' | 'dark') => {
+    if (isActive) return '当前生效';
+    if (colorMode === 'auto') return type === 'light' ? '自动浅色默认' : '自动深色默认';
+    return type === 'light' ? '浅色偏好' : '深色偏好';
+  };
+
   const renderGroup = (
     title: string,
     statusLabel: string,
@@ -34,6 +40,16 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
       <div className="grid grid-cols-5 gap-1">
         {themes.map((t) => {
           const isSelected = selectedId === t.id;
+          let buttonStyle =
+            'border-transparent text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50';
+          if (isSelected && isGroupActive) {
+            buttonStyle =
+              'bg-(--paper-sunken) border-(--rule-hairline) shadow-2xs font-semibold text-(--ink-solid)';
+          } else if (isSelected) {
+            buttonStyle =
+              'bg-(--paper-sunken)/50 border-dashed border-(--rule-hairline) font-medium text-(--ink-primary)';
+          }
+
           return (
             <button
               key={t.id}
@@ -41,11 +57,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
               onClick={() => handleSelect(t)}
               className={cn(
                 'flex flex-col items-center gap-1 py-1.5 px-0.5 rounded-[3px] transition-all cursor-pointer text-center border',
-                isSelected && isGroupActive
-                  ? 'bg-(--paper-sunken) border-(--rule-hairline) shadow-2xs font-semibold text-(--ink-solid)'
-                  : isSelected
-                    ? 'bg-(--paper-sunken)/50 border-dashed border-(--rule-hairline) font-medium text-(--ink-primary)'
-                    : 'border-transparent text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50'
+                buttonStyle
               )}
               title={t.name}
             >
@@ -69,14 +81,14 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
     <div className={cn('space-y-3 select-none', className)}>
       {renderGroup(
         '浅色纸张',
-        !isDark ? '当前生效' : colorMode === 'auto' ? '自动浅色默认' : '浅色偏好',
+        getGroupBadge(!isDark, 'light'),
         lightThemes,
         lightThemeId,
         !isDark
       )}
       {renderGroup(
         '深色纸张',
-        isDark ? '当前生效' : colorMode === 'auto' ? '自动深色默认' : '深色偏好',
+        getGroupBadge(isDark, 'dark'),
         darkThemes,
         darkThemeId,
         isDark

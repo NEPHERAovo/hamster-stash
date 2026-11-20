@@ -60,12 +60,12 @@ export const PaperTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
             ? `+¥${centsToYuan(dayNet)}`
             : `-¥${centsToYuan(Math.abs(dayNet))}`;
 
-        const dayNum = isSearching
-          ? (!d.isValid() ? date : d.format('YYYY.MM.DD'))
-          : dayCode.slice(0, 2);
-        const dayWeek = isSearching
-          ? (!d.isValid() ? '' : dayNames[d.day()])
-          : dayCode.slice(3);
+        let dayNum = dayCode.slice(0, 2);
+        let dayWeek = dayCode.slice(3);
+        if (isSearching) {
+          dayNum = !d.isValid() ? date : d.format('YYYY.MM.DD');
+          dayWeek = !d.isValid() ? '' : dayNames[d.day()];
+        }
 
         return (
           <div

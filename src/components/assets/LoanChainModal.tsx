@@ -76,13 +76,18 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
   const isLoan = activeEntry?.kind === 'loan';
   const totalAmount = currentItem ? currentItem.amount : 0;
   const repaidAmount = currentItem ? (currentItem.repaidAmount || 0) : 0;
-  const remainingAmount = currentItem
-    ? isLoan
-      ? totalAmount - repaidAmount
-      : totalAmount
-    : 0;
+  let remainingAmount = 0;
+  if (currentItem) {
+    remainingAmount = isLoan ? totalAmount - repaidAmount : totalAmount;
+  }
 
   const progressPercent = totalAmount > 0 ? Math.round((repaidAmount / totalAmount) * 100) : 0;
+
+  const getLoanBadgeText = () => {
+    if (!isLoan) return '待报销垫付';
+    if (currentItem?.loanStatus === 'settled') return '已结清';
+    return `还款中 (${progressPercent}%)`;
+  };
 
   const relatedTxs = transactions.filter(
     (t) =>
@@ -160,18 +165,12 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                   <span
                     className={cn(
                       'text-[10px] font-bold font-mono px-2 py-0.5 rounded-full',
-                      isLoan
-                        ? currentItem.loanStatus === 'settled'
-                          ? 'bg-(--color-income-bg) text-(--color-income)'
-                          : 'bg-(--color-accent-bg) text-(--color-accent)'
+                      isLoan && currentItem.loanStatus === 'settled'
+                        ? 'bg-(--color-income-bg) text-(--color-income)'
                         : 'bg-(--color-accent-bg) text-(--color-accent)'
                     )}
                   >
-                    {isLoan
-                      ? currentItem.loanStatus === 'settled'
-                        ? '已结清'
-                        : `还款中 (${progressPercent}%)`
-                      : '待报销垫付'}
+                    {getLoanBadgeText()}
                   </span>
                 </div>
 

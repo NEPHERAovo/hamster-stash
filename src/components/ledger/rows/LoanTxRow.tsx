@@ -31,15 +31,20 @@ export const LoanTxRow: React.FC<LoanTxRowProps> = ({
 }) => {
   const isLend = transaction.loanDirection === 'lend';
   const isRepayment = transaction.loanRole === 'repayment';
-  const title =
-    transaction.note ||
-    (isRepayment
-      ? isLend
-        ? '收回借款'
-        : '归还欠款'
-      : isLend
-        ? '借出资金'
-        : '向人借款');
+  const getDefaultTitle = () => {
+    if (isRepayment) {
+      return isLend ? '收回借款' : '归还欠款';
+    }
+    return isLend ? '借出资金' : '向人借款';
+  };
+  const title = transaction.note || getDefaultTitle();
+
+  const loanStatusLabels: Record<string, string> = {
+    settled: '已结清',
+    partially_repaid: '部分已还',
+  };
+  const statusLabel =
+    (transaction.loanStatus && loanStatusLabels[transaction.loanStatus]) || '未结清';
 
   const formattedAmount = centsToYuan(transaction.amount);
   const dateTimeLabel = formatRowDateTime(transaction.date, transaction.createdAt, showDate);
@@ -73,11 +78,7 @@ export const LoanTxRow: React.FC<LoanTxRowProps> = ({
           )}
           {transaction.loanStatus && (
             <span className="real-stamp text-[9px] px-1 py-0.5 text-(--ink-tertiary)">
-              {transaction.loanStatus === 'settled'
-                ? '已结清'
-                : transaction.loanStatus === 'partially_repaid'
-                  ? '部分已还'
-                  : '未结清'}
+              {statusLabel}
             </span>
           )}
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />

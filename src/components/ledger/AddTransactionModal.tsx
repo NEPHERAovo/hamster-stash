@@ -233,12 +233,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setIsAmortizeTrayOpen(false);
 
       if (editingTransaction) {
-        const initialType =
-          editingTransaction.type === 'loan'
-            ? 'loan'
-            : editingTransaction.type === 'income'
-            ? 'income'
-            : 'expense';
+        let initialType: 'expense' | 'income' | 'loan' = 'expense';
+        if (editingTransaction.type === 'loan') {
+          initialType = 'loan';
+        } else if (editingTransaction.type === 'income') {
+          initialType = 'income';
+        }
         setTxType(initialType);
         setExpr(centsToYuan(editingTransaction.amount));
         setSelectedCatId(editingTransaction.categoryId);
@@ -879,6 +879,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 const row = Math.floor(idx / 4);
                 const hasRightBorder = currentCategories.length <= 8 && col < 3;
                 const hasBottomBorder = currentCategories.length > 4 && currentCategories.length <= 8 && row === 0;
+                let iconColor = 'text-(--ink-secondary)';
+                if (isSelected) {
+                  iconColor = 'text-(--ink-solid)';
+                } else if (txType === 'income') {
+                  iconColor = 'text-(--color-income)';
+                }
 
                 return (
                   <button
@@ -898,11 +904,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       <IconComp
                         className={cn(
                           'w-4 h-4 stroke-[1.8]',
-                          isSelected
-                            ? 'text-(--ink-solid)'
-                            : txType === 'income'
-                              ? 'text-(--color-income)'
-                              : 'text-(--ink-secondary)'
+                          iconColor
                         )}
                       />
                     </div>
@@ -1026,11 +1028,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       }}
                       className={cn(
                         'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
-                        amortizeMonths
-                          ? 'bg-(--paper-sunken) text-(--ink-primary) font-semibold shadow-2xs'
-                          : isAmortizeTrayOpen
-                          ? 'text-(--ink-solid) font-semibold'
-                          : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                        amortizeMonths && 'bg-(--paper-sunken) text-(--ink-primary) font-semibold shadow-2xs',
+                        !amortizeMonths && isAmortizeTrayOpen && 'text-(--ink-solid) font-semibold',
+                        !amortizeMonths && !isAmortizeTrayOpen && 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
                       )}
                     >
                       <span className="shrink-0">{amortizeMonths ? `分期: ${amortizeMonths}期` : '分期'}</span>
@@ -1053,11 +1053,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   }}
                   className={cn(
                     'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
-                    offsetTransactionId
-                      ? 'bg-(--color-income-bg) text-(--color-income) font-semibold shadow-2xs'
-                      : isOffsetTrayOpen
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs'
-                        : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                    offsetTransactionId && 'bg-(--color-income-bg) text-(--color-income) font-semibold shadow-2xs',
+                    !offsetTransactionId && isOffsetTrayOpen && 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs',
+                    !offsetTransactionId && !isOffsetTrayOpen && 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
                   )}
                 >
                   <span className="max-w-[88px] truncate">

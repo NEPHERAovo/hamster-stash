@@ -34,6 +34,12 @@ export const ReconcileTxRow: React.FC<ReconcileTxRowProps> = ({
   const isPositive = diff > 0;
   const isNegative = diff < 0;
   const formattedAmount = centsToYuan(Math.abs(diff));
+  let displayAmountText = formattedAmount;
+  if (isPositive) {
+    displayAmountText = `+${formattedAmount}`;
+  } else if (isNegative) {
+    displayAmountText = `-${formattedAmount}`;
+  }
   const dateTimeLabel = formatRowDateTime(transaction.date, transaction.createdAt, showDate);
 
   return (
@@ -83,7 +89,7 @@ export const ReconcileTxRow: React.FC<ReconcileTxRowProps> = ({
             !isPositive && !isNegative && 'text-(--ink-tertiary)'
           )}
         >
-          {isPositive ? `+${formattedAmount}` : isNegative ? `-${formattedAmount}` : formattedAmount}
+          {displayAmountText}
         </span>
       </div>
     </div>

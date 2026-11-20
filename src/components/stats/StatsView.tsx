@@ -142,8 +142,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
   const canStepTrendNext = trendOffset < 0;
 
-  const trendTitle =
-    mode === 'week' ? '周度支出趋势' : mode === 'month' ? '月度支出趋势' : '年度支出趋势';
+  const trendTitles: Record<string, string> = {
+    week: '周度支出趋势',
+    month: '月度支出趋势',
+    year: '年度支出趋势',
+  };
+  const trendTitle = trendTitles[mode] || '月度支出趋势';
 
   const weekBadge = useMemo(() => {
     if (mode !== 'week') return null;

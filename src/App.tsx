@@ -226,102 +226,127 @@ export function App() {
     return computeMonthSummary(currentMonthTransactions, displayTransactions);
   }, [currentMonthTransactions, displayTransactions]);
 
+  const renderHeader = () => {
+    if (currentTab === 'ledger') {
+      return (
+        <PageHeader
+          title={folioMonthTitle}
+          showMonthStep={true}
+          onPrevMonth={() => stepMonth(-1)}
+          onNextMonth={() => stepMonth(1)}
+          showBackToToday={!isCurrentNaturalMonth}
+          onBackToToday={jumpToCurrentMonth}
+        />
+      );
+    }
+
+    if (currentTab === 'stats') {
+      const modeLabels: Record<'week' | 'month' | 'year', string> = {
+        week: '周',
+        month: '月',
+        year: '年',
+      };
+      return (
+        <PageHeader
+          title={isModern ? '统计' : 'Statistics'}
+          rightAction={
+            <div className="flex items-center gap-1 font-mono text-xs select-none">
+              {(['week', 'month', 'year'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setStatsMode(m)}
+                  className={cn(
+                    'relative px-2 py-1 text-xs transition-colors cursor-pointer',
+                    statsMode === m
+                      ? 'font-bold text-(--ink-solid)'
+                      : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
+                  )}
+                >
+                  <span>{modeLabels[m]}</span>
+                  {statsMode === m && (
+                    <span className="absolute bottom-0 left-1.5 right-1.5 h-0.5 bg-(--ink-solid) rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+          }
+        />
+      );
+    }
+
+    if (activeNavTab) {
+      let pageTitle = activeNavTab.label;
+      if (activeNavTab.id === 'items') {
+        pageTitle = isModern ? '物品' : 'Owned Items';
+      }
+      return (
+        <PageHeader
+          title={pageTitle}
+          rightAction={
+            activeNavTab.id === 'items' ? (
+              <button
+                type="button"
+                onClick={() => usePluginUIStore.getState().openModal('item-form')}
+                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                title="新增物品"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-2" />
+                <span>新建</span>
+              </button>
+            ) : undefined
+          }
+        />
+      );
+    }
+
+    return (
+      <PageHeader
+        title={isModern ? '资产' : 'Assets'}
+        rightAction={
+          <div className="flex items-center gap-1.5">
+            {accounts.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingTransferTx(null);
+                  setTransferDefaultFromId(undefined);
+                  setIsTransferOpen(true);
+                }}
+                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                title="资金划转"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.8]" />
+                <span>划转</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-7 h-7 flex items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
+              title="设置"
+            >
+              <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateNewAccount}
+              className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+              title="新增资金账户"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-2" />
+              <span>新建</span>
+            </button>
+          </div>
+        }
+      />
+    );
+  };
+
   return (
     <AppShell>
       <div key={currentTab} className="tab-header-enter w-full">
-        {currentTab === 'ledger' ? (
-          <PageHeader
-            title={folioMonthTitle}
-            showMonthStep={true}
-            onPrevMonth={() => stepMonth(-1)}
-            onNextMonth={() => stepMonth(1)}
-            showBackToToday={!isCurrentNaturalMonth}
-            onBackToToday={jumpToCurrentMonth}
-          />
-        ) : currentTab === 'stats' ? (
-          <PageHeader
-            title={isModern ? '统计' : 'Statistics'}
-            rightAction={
-              <div className="flex items-center gap-1 font-mono text-xs select-none">
-                {(['week', 'month', 'year'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setStatsMode(m)}
-                    className={cn(
-                      'relative px-2 py-1 text-xs transition-colors cursor-pointer',
-                      statsMode === m
-                        ? 'font-bold text-(--ink-solid)'
-                        : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-                    )}
-                  >
-                    <span>{m === 'week' ? '周' : m === 'month' ? '月' : '年'}</span>
-                    {statsMode === m && (
-                      <span className="absolute bottom-0 left-1.5 right-1.5 h-0.5 bg-(--ink-solid) rounded-full" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            }
-          />
-        ) : activeNavTab ? (
-          <PageHeader
-            title={activeNavTab.id === 'items' ? (isModern ? '物品' : 'Owned Items') : activeNavTab.label}
-            rightAction={
-              activeNavTab.id === 'items' ? (
-                <button
-                  type="button"
-                  onClick={() => usePluginUIStore.getState().openModal('item-form')}
-                  className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                  title="新增物品"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-2" />
-                  <span>新建</span>
-                </button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <PageHeader
-            title={isModern ? '资产' : 'Assets'}
-            rightAction={
-              <div className="flex items-center gap-1.5">
-                {accounts.length >= 2 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingTransferTx(null);
-                      setTransferDefaultFromId(undefined);
-                      setIsTransferOpen(true);
-                    }}
-                    className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                    title="资金划转"
-                  >
-                    <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.8]" />
-                    <span>划转</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="w-7 h-7 flex items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
-                  title="设置"
-                >
-                  <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateNewAccount}
-                  className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                  title="新增资金账户"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-2" />
-                  <span>新建</span>
-                </button>
-              </div>
-            }
-          />
-        )}
+        {renderHeader()}
       </div>
 
       <main

@@ -34,11 +34,19 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
   };
 
   const isActive = isCreateNew || Boolean(selectedItem);
-  const displayText = isCreateNew
-    ? '+ 新物品'
-    : selectedItem
-    ? selectedItem.name
-    : '物品';
+  let displayText = '物品';
+  if (isCreateNew) {
+    displayText = '+ 新物品';
+  } else if (selectedItem) {
+    displayText = selectedItem.name;
+  }
+
+  let badgeTitle = '关联持有物品';
+  if (isCreateNew) {
+    badgeTitle = '将本笔支出记为新物品';
+  } else if (selectedItem) {
+    badgeTitle = `已关联物品: ${selectedItem.name}`;
+  }
 
   return (
     <>
@@ -53,7 +61,7 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
             ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs'
             : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
         )}
-        title={isCreateNew ? '将本笔支出记为新物品' : selectedItem ? `已关联物品: ${selectedItem.name}` : '关联持有物品'}
+        title={badgeTitle}
       >
         <Package className="w-3 h-3 stroke-[1.8] opacity-75 shrink-0" />
         <span className="max-w-[64px] truncate">

@@ -97,12 +97,14 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     lastTouchTimeRef.current = Date.now();
 
     const vx = velocityRef.current.getVelocity(performance.now());
-    const shouldOpen =
-      vx < -0.35
-        ? currentOffsetRef.current < -16
-        : vx > 0.35
-          ? false
-          : currentOffsetRef.current < -actionWidth / 2;
+    let shouldOpen = false;
+    if (vx < -0.35) {
+      shouldOpen = currentOffsetRef.current < -16;
+    } else if (vx > 0.35) {
+      shouldOpen = false;
+    } else {
+      shouldOpen = currentOffsetRef.current < -actionWidth / 2;
+    }
 
     const target = shouldOpen ? -actionWidth : 0;
     setSettleMs(computeSettleDuration(target - currentOffsetRef.current, vx, 190, 300));

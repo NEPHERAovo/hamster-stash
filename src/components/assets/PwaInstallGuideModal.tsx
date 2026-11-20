@@ -156,6 +156,54 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
 
   const steps = renderSteps();
 
+  const renderBanner = () => {
+    if (isInstalled) {
+      return (
+        <div className="p-3 rounded-(--radius-md) bg-(--color-income-bg) border border-(--color-income)/20 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-(--color-income) text-white flex items-center justify-center shrink-0">
+            <Check className="w-4 h-4 stroke-2" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-(--ink-primary)">
+              当前已在桌面独立应用模式中
+            </div>
+            <div className="text-[11px] text-(--ink-secondary)">
+              享受全屏沉浸记账体验，无浏览器地址栏干扰
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (installPrompt) {
+      return (
+        <div className="p-3 rounded-(--radius-md) bg-(--paper-sunken) border border-(--rule-hairline) flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-(--badge-radius) bg-(--color-income-bg) text-(--color-income) flex items-center justify-center shrink-0">
+              <Download className="w-4 h-4 stroke-2" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-(--ink-primary)">
+                检测到当前浏览器支持一键安装
+              </div>
+              <div className="text-[11px] text-(--ink-secondary) truncate">
+                点击按钮即可直接唤起系统安装弹窗
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleDirectInstall}
+            disabled={isPrompting}
+            className="px-3 py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer active:scale-95 transition-all shrink-0 disabled:opacity-50"
+          >
+            {isPrompting ? '唤起中...' : '立即安装'}
+          </button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <PaperModal
       isOpen={isOpen}
@@ -163,45 +211,7 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
       title="添加到手机桌面"
     >
       <div className="p-4 pt-3 pb-[calc(18px+var(--safe-bottom))] space-y-4 select-none">
-        {isInstalled ? (
-          <div className="p-3 rounded-(--radius-md) bg-(--color-income-bg) border border-(--color-income)/20 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-(--color-income) text-white flex items-center justify-center shrink-0">
-              <Check className="w-4 h-4 stroke-2" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-(--ink-primary)">
-                当前已在桌面独立应用模式中
-              </div>
-              <div className="text-[11px] text-(--ink-secondary)">
-                享受全屏沉浸记账体验，无浏览器地址栏干扰
-              </div>
-            </div>
-          </div>
-        ) : installPrompt ? (
-          <div className="p-3 rounded-(--radius-md) bg-(--paper-sunken) border border-(--rule-hairline) flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-(--badge-radius) bg-(--color-income-bg) text-(--color-income) flex items-center justify-center shrink-0">
-                <Download className="w-4 h-4 stroke-2" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-(--ink-primary)">
-                  检测到当前浏览器支持一键安装
-                </div>
-                <div className="text-[11px] text-(--ink-secondary) truncate">
-                  点击按钮即可直接唤起系统安装弹窗
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleDirectInstall}
-              disabled={isPrompting}
-              className="px-3 py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer active:scale-95 transition-all shrink-0 disabled:opacity-50"
-            >
-              {isPrompting ? '唤起中...' : '立即安装'}
-            </button>
-          </div>
-        ) : null}
+        {renderBanner()}
 
         <div>
           <div className="text-[11px] font-medium text-(--ink-tertiary) mb-1.5 px-0.5">

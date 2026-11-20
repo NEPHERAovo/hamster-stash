@@ -165,6 +165,61 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     return () => observer.disconnect();
   }, [hasMore, sortedDates.length, pageSize, scopeKey]);
 
+  const renderEmptyOrLoading = () => {
+    if (effectiveLoading) {
+      return (
+        <div
+          className={cn(
+            contained ? 'mx-0' : 'mx-4',
+            'my-2 bg-(--paper-sheet) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
+          )}
+        >
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/30">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-4 rounded-xs bg-(--paper-sunken)" />
+              <div className="w-10 h-3 rounded-xs bg-(--paper-sunken)/70" />
+              <div className="w-8 h-3 rounded-xs bg-(--paper-sunken)/50" />
+            </div>
+            <div className="w-14 h-3.5 rounded-xs bg-(--paper-sunken)" />
+          </div>
+
+          <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="px-3.5 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6.5 h-6.5 rounded-xs bg-(--paper-sunken)" />
+                  <div className="space-y-1.5">
+                    <div className={cn('h-3.5 rounded-xs bg-(--paper-sunken)', i === 2 ? 'w-24' : 'w-18')} />
+                    <div className="w-28 h-2.5 rounded-xs bg-(--paper-sunken)/60" />
+                  </div>
+                </div>
+                <div className="w-14 h-4 rounded-xs bg-(--paper-sunken)" />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={cn(
+          contained ? 'mx-0' : 'mx-4',
+          'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] text-center select-none'
+        )}
+      >
+        <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
+          <p className="text-xs font-semibold text-(--ink-tertiary)">
+            {searchQuery ? '未找到匹配的记账流水' : '暂无符合条件的记账流水'}
+          </p>
+          <p className="text-[11px] text-(--ink-faint) mt-1 font-mono">
+            {searchQuery ? '请尝试更换关键词' : '本周期暂无流水记录'}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full">
       <div className={cn(contained ? 'px-0 pt-1 pb-1 mt-0' : 'px-4 pt-3 pb-1 mt-2', 'space-y-2 select-none')}>
@@ -203,54 +258,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       </div>
 
       {sortedDates.length === 0 ? (
-        effectiveLoading ? (
-          <div
-            className={cn(
-              contained ? 'mx-0' : 'mx-4',
-              'my-2 bg-(--paper-sheet) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
-            )}
-          >
-            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/30">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-4 rounded-xs bg-(--paper-sunken)" />
-                <div className="w-10 h-3 rounded-xs bg-(--paper-sunken)/70" />
-                <div className="w-8 h-3 rounded-xs bg-(--paper-sunken)/50" />
-              </div>
-              <div className="w-14 h-3.5 rounded-xs bg-(--paper-sunken)" />
-            </div>
-
-            <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="px-3.5 py-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6.5 h-6.5 rounded-xs bg-(--paper-sunken)" />
-                    <div className="space-y-1.5">
-                      <div className={cn('h-3.5 rounded-xs bg-(--paper-sunken)', i === 2 ? 'w-24' : 'w-18')} />
-                      <div className="w-28 h-2.5 rounded-xs bg-(--paper-sunken)/60" />
-                    </div>
-                  </div>
-                  <div className="w-14 h-4 rounded-xs bg-(--paper-sunken)" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div
-            className={cn(
-              contained ? 'mx-0' : 'mx-4',
-              'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] text-center select-none'
-            )}
-          >
-            <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
-              <p className="text-xs font-semibold text-(--ink-tertiary)">
-                {searchQuery ? '未找到匹配的记账流水' : '暂无符合条件的记账流水'}
-              </p>
-              <p className="text-[11px] text-(--ink-faint) mt-1 font-mono">
-                {searchQuery ? '请尝试更换关键词' : '本周期暂无流水记录'}
-              </p>
-            </div>
-          </div>
-        )
+        renderEmptyOrLoading()
       ) : (
         <section className={cn('relative mt-2', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
           {uiStyle === 'modern' ? (

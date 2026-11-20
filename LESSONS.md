@@ -70,3 +70,15 @@
 - **Why**: Bottom sheet drawers slide up rapidly with spring curves (`cubic-bezier(0.32, 0.72, 0, 1)`), reaching near-full displacement within 100ms. If the backdrop is animated with slow `ease` or attached to the sheet's parent container, WebKit defers rasterizing expensive GPU backdrop filters, causing a noticeable delay where the blur pops in a beat after the sheet finishes sliding.
 - **Evidence**: Fixed in commit `458890a`.
 - **Seen**: 1
+
+### 10. Tailwind CSS v4 Linter Configuration Guardrails
+- **Rule**: When using `eslint-plugin-tailwindcss` with Tailwind CSS v4, always explicitly set `settings.tailwindcss.cssConfigPath: 'src/index.css'`, disable `tailwindcss/no-custom-classname: 'off'`, and disable `tailwindcss/enforces-canonical-classname: 'off'`.
+- **Why**: Tailwind v4 loads configuration from CSS stylesheets rather than a JS config file; without `cssConfigPath`, the linter fails with `ENOENT` looking for `src/style.css`. `no-custom-classname` falsely flags dynamic CSS variable tokens (such as `bg-(--paper-sheet)`), and `enforces-canonical-classname` attempts to collapse dynamic radius tokens (like `rounded-(--radius-md)`) into static Tailwind scales, breaking runtime adaptive styling between Paper and Modern skins.
+- **Evidence**: Configured in `eslint.config.js` and verified with `pnpm lint`.
+- **Seen**: 1
+
+### 11. Nested Ternary Elimination & Explicit State Branches
+- **Rule**: Strictly prohibit nested ternary expressions (`no-nested-ternary: 'error'`). Replace nested conditionals in templates and business logic with pure helper functions, early returns, lookup dictionaries, or explicit `if/else` ladders.
+- **Why**: Deeply nested ternary expressions (`a ? b : c ? d : e`) obscure conditional branches, degrade cognitive readability, cause subtle precedence bugs, and hinder automated testing.
+- **Evidence**: Enforced in `eslint.config.js` and refactored across 20+ components (`App.tsx`, `AddTransactionModal.tsx`, etc.).
+- **Seen**: 1

@@ -363,16 +363,18 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           ].map((s) => {
             const isDone = currentStep > s.num;
             const isCur = currentStep === s.num;
+            let stepBadgeClass = 'bg-(--paper-sunken) text-(--ink-tertiary) border border-(--rule-hairline)';
+            if (isDone) {
+              stepBadgeClass = 'bg-(--color-income) text-white';
+            } else if (isCur) {
+              stepBadgeClass = 'bg-(--ink-primary) text-(--paper-sheet)';
+            }
             return (
               <div key={s.num} className="flex flex-col items-center gap-1 relative z-10">
                 <div
                   className={cn(
                     'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                    isDone
-                      ? 'bg-(--color-income) text-white'
-                      : isCur
-                      ? 'bg-(--ink-primary) text-(--paper-sheet)'
-                      : 'bg-(--paper-sunken) text-(--ink-tertiary) border border-(--rule-hairline)'
+                    stepBadgeClass
                   )}
                 >
                   {isDone ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : s.num}

@@ -119,19 +119,19 @@ const getInitialThemeSlots = (): {
   const savedDark = safeGetStorage(DARK_THEME_STORAGE_KEY);
   const savedMode = safeGetStorage(COLOR_MODE_STORAGE_KEY);
 
-  const lightThemeId =
-    savedLight && isLightTheme(savedLight)
-      ? savedLight
-      : savedLegacyTheme && isLightTheme(savedLegacyTheme)
-        ? savedLegacyTheme
-        : 'theme-sage';
+  let lightThemeId = 'theme-sage';
+  if (savedLight && isLightTheme(savedLight)) {
+    lightThemeId = savedLight;
+  } else if (savedLegacyTheme && isLightTheme(savedLegacyTheme)) {
+    lightThemeId = savedLegacyTheme;
+  }
 
-  const darkThemeId =
-    savedDark && isDarkTheme(savedDark)
-      ? savedDark
-      : savedLegacyTheme && isDarkTheme(savedLegacyTheme)
-        ? savedLegacyTheme
-        : 'theme-carbon';
+  let darkThemeId = 'theme-carbon';
+  if (savedDark && isDarkTheme(savedDark)) {
+    darkThemeId = savedDark;
+  } else if (savedLegacyTheme && isDarkTheme(savedLegacyTheme)) {
+    darkThemeId = savedLegacyTheme;
+  }
 
   let colorMode: ColorMode = 'light';
   if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto') {
@@ -287,24 +287,26 @@ export const useThemeStore = create<ThemeState>((set, get) => {
           record.uiStyle === 'paper' || record.uiStyle === 'modern'
             ? record.uiStyle
             : state.uiStyle;
-        const nextLight =
-          record.lightThemeId && isLightTheme(record.lightThemeId)
-            ? record.lightThemeId
-            : record.themeId && isLightTheme(record.themeId)
-              ? record.themeId
-              : state.lightThemeId;
-        const nextDark =
-          record.darkThemeId && isDarkTheme(record.darkThemeId)
-            ? record.darkThemeId
-            : record.themeId && isDarkTheme(record.themeId)
-              ? record.themeId
-              : state.darkThemeId;
-        const nextMode: ColorMode =
-          record.colorMode === 'light' || record.colorMode === 'dark' || record.colorMode === 'auto'
-            ? record.colorMode
-            : record.themeId && isDarkTheme(record.themeId)
-              ? 'dark'
-              : state.colorMode;
+        let nextLight = state.lightThemeId;
+        if (record.lightThemeId && isLightTheme(record.lightThemeId)) {
+          nextLight = record.lightThemeId;
+        } else if (record.themeId && isLightTheme(record.themeId)) {
+          nextLight = record.themeId;
+        }
+
+        let nextDark = state.darkThemeId;
+        if (record.darkThemeId && isDarkTheme(record.darkThemeId)) {
+          nextDark = record.darkThemeId;
+        } else if (record.themeId && isDarkTheme(record.themeId)) {
+          nextDark = record.themeId;
+        }
+
+        let nextMode = state.colorMode;
+        if (record.colorMode === 'light' || record.colorMode === 'dark' || record.colorMode === 'auto') {
+          nextMode = record.colorMode;
+        } else if (record.themeId && isDarkTheme(record.themeId)) {
+          nextMode = 'dark';
+        }
 
         const resolved = resolveEffective(nextMode, nextLight, nextDark);
         applyThemeToDOM(resolved.themeId);

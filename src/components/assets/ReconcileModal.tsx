@@ -86,18 +86,14 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
             <span
               className={cn(
                 'font-bold tabular-nums',
-                diffCents > 0
-                  ? 'text-(--color-income)'
-                  : diffCents < 0
-                  ? 'text-(--color-expense)'
-                  : 'text-(--ink-secondary)'
+                diffCents > 0 && 'text-(--color-income)',
+                diffCents < 0 && 'text-(--color-expense)',
+                diffCents === 0 && 'text-(--ink-secondary)'
               )}
             >
-              {diffCents > 0
-                ? `+ ¥ ${centsToYuan(diffCents)} (调增)`
-                : diffCents < 0
-                ? `- ¥ ${centsToYuan(Math.abs(diffCents))} (调减)`
-                : '无差异'}
+              {diffCents > 0 && `+ ¥ ${centsToYuan(diffCents)} (调增)`}
+              {diffCents < 0 && `- ¥ ${centsToYuan(Math.abs(diffCents))} (调减)`}
+              {diffCents === 0 && '无差异'}
             </span>
           </PaperCard>
         )}

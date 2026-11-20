@@ -378,21 +378,29 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         <div className="flex items-center justify-between px-2 py-1 text-[11px] font-mono text-(--ink-tertiary)">
           <span>快速标记状态:</span>
           <div className="flex items-center gap-1.5">
-            {(['using', 'idle', 'scrapped'] as ItemStatus[]).map((st) => (
-              <button
-                key={st}
-                type="button"
-                onClick={() => changeStatus(item.id, st)}
-                className={cn(
-                  'px-2 py-0.5 rounded-(--btn-radius) transition-colors cursor-pointer',
-                  item.status === st
-                    ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold'
-                    : 'hover:text-(--ink-secondary)'
-                )}
-              >
-                {st === 'using' ? '在用' : st === 'idle' ? '闲置' : '报废'}
-              </button>
-            ))}
+            {(['using', 'idle', 'scrapped'] as ItemStatus[]).map((st) => {
+              const statusLabels: Record<ItemStatus, string> = {
+                using: '在用',
+                idle: '闲置',
+                scrapped: '报废',
+                sold: '已出',
+              };
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => changeStatus(item.id, st)}
+                  className={cn(
+                    'px-2 py-0.5 rounded-(--btn-radius) transition-colors cursor-pointer',
+                    item.status === st
+                      ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold'
+                      : 'hover:text-(--ink-secondary)'
+                  )}
+                >
+                  {statusLabels[st]}
+                </button>
+              );
+            })}
           </div>
         </div>
 

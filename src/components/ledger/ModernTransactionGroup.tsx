@@ -36,11 +36,10 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
         }
 
         const d = parseLocalDate(date);
-        const dayNum = !d.isValid()
-          ? date
-          : isSearching
-            ? d.format('YYYY年M月D日')
-            : `${d.format('DD')}日`;
+        let dayNum = date;
+        if (d.isValid()) {
+          dayNum = isSearching ? d.format('YYYY年M月D日') : `${d.format('DD')}日`;
+        }
         const dayWeek = d.isValid() ? dayNames[d.day()] || '' : '';
 
         const daySumFormatted =

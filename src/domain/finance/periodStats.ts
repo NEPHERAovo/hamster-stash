@@ -128,11 +128,12 @@ export function computeCategoryDonutStats(
   if (isAmortizationEnabled && allTransactions && mode === 'month' && periodKey) {
     for (const t of allTransactions) {
       if (t.type === 'expense') {
-        const amt = getAmortizeConfig(t)
-          ? computeAmortizedMonthlyAmount(t, periodKey, offsetMap)
-          : t.date.startsWith(periodKey)
-            ? computeEffectiveExpenseAmount(t, offsetMap)
-            : 0;
+        let amt = 0;
+        if (getAmortizeConfig(t)) {
+          amt = computeAmortizedMonthlyAmount(t, periodKey, offsetMap);
+        } else if (t.date.startsWith(periodKey)) {
+          amt = computeEffectiveExpenseAmount(t, offsetMap);
+        }
         if (amt > 0) {
           totalExpense += amt;
           catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);

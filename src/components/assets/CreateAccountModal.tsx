@@ -128,11 +128,19 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       resetForm();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : isEditing ? '更新账户失败' : '创建账户失败');
+      const fallbackMsg = isEditing ? '更新账户失败' : '创建账户失败';
+      toast.error(err instanceof Error ? err.message : fallbackMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  let submitLabel = '确认创建';
+  if (isSubmitting) {
+    submitLabel = '保存中...';
+  } else if (isEditing) {
+    submitLabel = '保存修改';
+  }
 
   return (
     <PaperModal
@@ -253,7 +261,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             disabled={isSubmitting}
             className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
           >
-            {isSubmitting ? '保存中...' : isEditing ? '保存修改' : '确认创建'}
+            {submitLabel}
           </button>
         </div>
       </form>

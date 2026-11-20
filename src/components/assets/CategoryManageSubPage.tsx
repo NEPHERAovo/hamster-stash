@@ -344,6 +344,20 @@ export const CategoryManageSubPage: React.FC = () => {
     }
   };
 
+  let finalModalTitle = '新增收入分类';
+  if (editingCat) {
+    finalModalTitle = '编辑分类';
+  } else if (activeType === 'expense') {
+    finalModalTitle = '新增支出分类';
+  }
+
+  let submitLabel = '确认添加';
+  if (isSaving) {
+    submitLabel = '保存中...';
+  } else if (editingCat) {
+    submitLabel = '保存修改';
+  }
+
   return (
     <div className="w-full px-4 pt-2 pb-10 space-y-4 select-none">
       <div className="flex items-center justify-between gap-3">
@@ -441,7 +455,7 @@ export const CategoryManageSubPage: React.FC = () => {
       <PaperModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingCat ? '编辑分类' : activeType === 'expense' ? '新增支出分类' : '新增收入分类'}
+        title={finalModalTitle}
       >
         <form onSubmit={handleSave} className="p-4 space-y-4 select-none">
           <div className="space-y-1.5">
@@ -495,7 +509,7 @@ export const CategoryManageSubPage: React.FC = () => {
               disabled={isSaving}
               className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
             >
-              {isSaving ? '保存中...' : editingCat ? '保存修改' : '确认添加'}
+              {submitLabel}
             </button>
           </div>
 

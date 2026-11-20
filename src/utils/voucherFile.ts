@@ -74,11 +74,12 @@ export async function readVoucherFile(file: File): Promise<VoucherAttachment> {
   const fileUrl = isImage ? await compressImageDataUrl(rawDataUrl) : rawDataUrl;
   const approxBytes = Math.round((fileUrl.length * 3) / 4);
   const size = formatFileSize(isImage ? Math.min(file.size, approxBytes) : file.size);
-  const mimeType = isPdf
-    ? 'application/pdf'
-    : fileUrl.startsWith('data:image/jpeg')
-      ? 'image/jpeg'
-      : file.type || 'image/jpeg';
+  let mimeType = file.type || 'image/jpeg';
+  if (isPdf) {
+    mimeType = 'application/pdf';
+  } else if (fileUrl.startsWith('data:image/jpeg')) {
+    mimeType = 'image/jpeg';
+  }
 
   const saved = await attachmentStore.saveAttachment({
     name: file.name,
