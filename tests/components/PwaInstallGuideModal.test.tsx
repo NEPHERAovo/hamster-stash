@@ -29,6 +29,7 @@ describe('PwaInstallGuideModal', () => {
     const safariTab = screen.getByRole('button', { name: '苹果 Safari' });
     fireEvent.click(safariTab);
     expect(screen.getByText('点击底部分享按钮')).toBeInTheDocument();
+    expect(screen.getByText(/卸载应用或清理浏览器数据将清空账本/)).toBeInTheDocument();
   });
 
   it('renders direct install action when installPrompt is available', async () => {

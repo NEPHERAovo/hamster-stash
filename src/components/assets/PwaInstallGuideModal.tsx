@@ -267,7 +267,7 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
         <div className="pt-2 border-t border-dashed border-(--rule-hairline) text-[11px] text-(--ink-tertiary) flex items-start gap-1.5 px-1 leading-relaxed">
           <Info className="w-3.5 h-3.5 stroke-[1.75] shrink-0 mt-0.5 text-(--ink-tertiary)" />
           <span>
-            仓鼠囤囤采用 Local-First 本地优先架构，安装到桌面后所有账单数据均安全存储于设备本地，断网亦可秒级启动与流畅记账。
+            安装后支持完全离线使用与秒级启动；数据保存在本机，卸载应用或清理浏览器数据将清空账本，请注意定期备份。
           </span>
         </div>
       </div>
