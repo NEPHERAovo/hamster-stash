@@ -70,7 +70,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
   return (
     <div className="pt-1.5 pb-0.5 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none">
       <div className="flex items-center justify-between text-[11px] text-(--ink-tertiary)">
-        <span>关联或新建持有项</span>
+        <span>关联或新建物品</span>
         {hasActiveSelection && (
           <button
             type="button"
@@ -96,7 +96,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
           >
             <div className="flex items-center gap-1 truncate">
               <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
-              <span className="truncate">记为新实体物品</span>
+              <span className="truncate">记为新物品</span>
             </div>
           </button>
 
@@ -112,7 +112,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
           >
             <div className="flex items-center gap-1 truncate">
               <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
-              <span className="truncate">记为新数字订阅</span>
+              <span className="truncate">记为新订阅</span>
             </div>
           </button>
         </div>
@@ -120,7 +120,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
         {subscriptionItems.length > 0 && (
           <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
             <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
-              数字订阅 (记续费)
+              数字订阅
             </div>
             <div className="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto">
               {subscriptionItems.map((it) => {
@@ -149,12 +149,12 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
 
         <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
           <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
-            实体物品 (记配件 / 保养)
+            实体物品
           </div>
           <div className="grid grid-cols-3 gap-1 max-h-28 overflow-y-auto">
             {physicalItems.length === 0 ? (
               <div className="col-span-3 text-[11px] text-(--ink-tertiary) py-1.5 text-center">
-                暂无在用实体物品
+                暂无实体物品
               </div>
             ) : (
               physicalItems.map((it) => {

@@ -204,23 +204,20 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       case 'using':
         return (
           <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
-            <span className="paper-title inline">{isSub ? 'ACTIVE' : 'USING'}</span>
-            <span className="modern-title hidden">{isSub ? '在订' : '在用'}</span>
+            <span>{isSub ? '在订' : '在用'}</span>
           </span>
         );
       case 'idle':
         return (
           <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
-            <span className="paper-title inline">{isSub ? 'PAUSED' : 'IDLE'}</span>
-            <span className="modern-title hidden">{isSub ? '暂停' : '闲置'}</span>
+            <span>{isSub ? '暂停' : '闲置'}</span>
           </span>
         );
       case 'sold':
       case 'scrapped':
         return (
           <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
-            <span className="paper-title inline">{isSub ? 'CANCELED' : 'DISPOSED'}</span>
-            <span className="modern-title hidden">{isSub ? '已退订' : '已处置'}</span>
+            <span>{isSub ? '已退订' : '已售出'}</span>
           </span>
         );
     }
@@ -246,7 +243,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     if (role === 'buy') {
       return (
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-          {isSub ? '首期订阅' : '购入初置'}
+          {isSub ? '首次订阅' : '购入'}
         </span>
       );
     }
@@ -260,7 +257,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     if (role === 'sell') {
       return (
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--color-income-bg) text-(--color-income) font-semibold">
-          售出回血
+          售出
         </span>
       );
     }
@@ -307,7 +304,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--color-income) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
         >
           <DollarSign className="w-3.5 h-3.5 stroke-2" />
-          <span>二手售出回血</span>
+          <span>售出</span>
         </button>
       );
     }
@@ -315,7 +312,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     return (
       <div className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sunken)/40 border border-transparent text-(--ink-tertiary) flex items-center justify-center gap-1.5 select-none">
         <Check className="w-3.5 h-3.5 stroke-2 text-(--color-income)" />
-        <span>已售出结案</span>
+        <span>已售出</span>
       </div>
     );
   };
@@ -374,7 +371,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                     {item.name}
                   </h2>
                   <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
-                    {isSub ? `${item.buyDate} 起订 · 订阅 ${metrics.holdingDays} 天` : `${item.buyDate} 购入 · 已持有 ${metrics.holdingDays} 天`}
+                    {isSub ? `${item.buyDate} 起订 · 订阅 ${metrics.holdingDays} 天` : `${item.buyDate} 购入 · 已使用 ${metrics.holdingDays} 天`}
                     {isSub && item.nextRenewalDate && ` · 下期 ${item.nextRenewalDate}`}
                   </div>
                 </div>
@@ -385,7 +382,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
             <div className="pt-2 border-t border-dashed border-(--rule-hairline)">
               <div className="text-[10px] font-mono text-(--ink-tertiary)">
-                {isSub ? '日均订阅成本' : '日均持有成本'}
+                日均成本
               </div>
               <div className="flex items-baseline gap-1 mt-0.5">
                 <span className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-(--color-income) tabular-nums">
@@ -414,7 +411,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 </div>
               ) : (
                 <div>
-                  <div className="text-[9px] font-mono text-(--ink-tertiary)">售出回血</div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">售出回款</div>
                   <div className="text-xs font-mono font-bold text-(--color-income) mt-0.5 tabular-nums">
                     ¥{centsToYuan(metrics.recoveredAmount)}
                   </div>
@@ -430,7 +427,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 </div>
               ) : (
                 <div>
-                  <div className="text-[9px] font-mono text-(--ink-tertiary)">净持有成本</div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">净支出</div>
                   <div className="text-xs font-mono font-bold text-(--ink-solid) mt-0.5 tabular-nums">
                     ¥{centsToYuan(metrics.netCost)}
                   </div>

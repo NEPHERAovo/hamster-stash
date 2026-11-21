@@ -41,7 +41,7 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
     displayText = selectedItem.name;
   }
 
-  let badgeTitle = '关联持有物品';
+  let badgeTitle = '关联物品';
   if (isCreateNew) {
     badgeTitle = '将本笔支出记为新物品';
   } else if (selectedItem) {

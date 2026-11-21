@@ -67,7 +67,7 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
     const itemsTab = uiState.navTabs.find((t) => t.id === 'items');
     expect(itemsTab).toBeDefined();
-    expect(itemsTab?.label).toBe('持有');
+    expect(itemsTab?.label).toBe('物品');
     expect(itemsTab?.order).toBe(25);
     expect(itemsTab?.icon).toBe('package');
 

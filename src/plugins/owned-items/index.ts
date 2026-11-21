@@ -19,9 +19,9 @@ import { ItemRowBadge, type ItemRowBadgeProps } from './components/ItemRowBadge'
 export class OwnedItemsPlugin extends BasePlugin {
   readonly manifest: PluginManifest = {
     id: 'owned-items',
-    name: '持有',
+    name: '物品与订阅',
     version: '1.0.0',
-    description: '追踪大件资产与数字订阅服务生命周期、续费沉淀与日均持有成本。',
+    description: '记录实体物品与数字订阅服务，计算日均使用成本。',
     icon: 'package',
     defaultEnabled: false,
   };
@@ -33,7 +33,7 @@ export class OwnedItemsPlugin extends BasePlugin {
 
     ctx.ui.registerNavTab({
       id: 'items',
-      label: '持有',
+      label: '物品',
       icon: 'package',
       order: 25,
       component: ItemListSubPage,
@@ -54,7 +54,7 @@ export class OwnedItemsPlugin extends BasePlugin {
 
       if (itemExt?.createNewItem) {
         const cat = getHostCategories().find((c) => c.id === mCtx.payload.input?.categoryId);
-        const itemName = mCtx.payload.input?.note?.trim() || cat?.name || '新持有项';
+        const itemName = mCtx.payload.input?.note?.trim() || cat?.name || '新物品';
         const itemKind = (itemExt.kind as ItemKind) || 'physical';
         const itemIcon = (itemExt.icon as string) || cat?.icon || (itemKind === 'subscription' ? 'credit-card' : 'box');
         const buyDate = mCtx.payload.input?.date || new Date().toISOString().split('T')[0];

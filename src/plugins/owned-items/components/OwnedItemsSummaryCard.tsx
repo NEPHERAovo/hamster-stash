@@ -51,19 +51,15 @@ export const OwnedItemsSummaryCard: React.FC = () => {
             <Package className="w-3.5 h-3.5 stroke-[1.8]" />
           </div>
           <div>
-            <div className="text-[9px] font-mono tracking-wider text-(--ink-tertiary) uppercase leading-none">
-              <span className="paper-title inline">HOLDINGS</span>
-              <span className="modern-title hidden">INVENTORY</span>
-            </div>
-            <div className="text-sm font-semibold text-(--ink-solid) leading-tight mt-0.5">
-              持有
+            <div className="text-sm font-semibold text-(--ink-solid) leading-tight">
+              物品
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-mono px-2 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-            {summary.usingCount} 件在持
+            {summary.usingCount} 件在用
           </span>
           <ChevronRight className="w-3.5 h-3.5 text-(--ink-tertiary)" />
         </div>
@@ -71,14 +67,14 @@ export const OwnedItemsSummaryCard: React.FC = () => {
 
       <div className="grid grid-cols-2 divide-x divide-dashed divide-(--rule-hairline) py-2.5 px-4 bg-(--paper-sunken)/35">
         <div>
-          <div className="text-[10px] font-mono text-(--ink-tertiary)">在持净投入</div>
+          <div className="text-[10px] font-mono text-(--ink-tertiary)">总投入</div>
           <div className="font-mono text-base sm:text-lg font-bold tracking-tight text-(--ink-solid) tabular-nums mt-0.5">
             ¥{centsToYuan(summary.totalUsingNetCost)}
           </div>
         </div>
 
         <div className="pl-4">
-          <div className="text-[10px] font-mono text-(--ink-tertiary)">总日均成本</div>
+          <div className="text-[10px] font-mono text-(--ink-tertiary)">日均成本</div>
           <div className="font-mono text-base sm:text-lg font-bold tracking-tight text-(--color-income) tabular-nums mt-0.5">
             ¥{centsToYuan(summary.totalUsingDailyCost)}
             <span className="text-[10px] font-normal text-(--ink-tertiary) ml-0.5">/天</span>
@@ -121,7 +117,7 @@ export const OwnedItemsSummaryCard: React.FC = () => {
           </div>
         ) : (
           <div className="py-2 text-center text-xs text-(--ink-tertiary) flex items-center justify-center gap-1.5">
-            <span>暂无记录的持有项</span>
+            <span>暂无记录</span>
             <button
               type="button"
               onClick={(e) => {
@@ -131,7 +127,7 @@ export const OwnedItemsSummaryCard: React.FC = () => {
               className="text-(--color-income) hover:underline font-mono inline-flex items-center text-[11px] cursor-pointer"
             >
               <Plus className="w-3 h-3 stroke-2 mr-0.5" />
-              记一件
+              新建
             </button>
           </div>
         )}

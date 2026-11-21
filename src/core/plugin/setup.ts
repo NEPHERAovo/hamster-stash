@@ -4,9 +4,9 @@ export function setupBuiltinPlugins(): void {
   pluginManager.registerLazyPlugin({
     manifest: {
       id: 'owned-items',
-      name: '持有物品',
+      name: '物品与订阅',
       version: '1.0.0',
-      description: '追踪大件与数码物品生命周期、购入沉淀、配件维护与日均持有成本。',
+      description: '记录实体物品与数字订阅服务，计算日均使用成本。',
       icon: 'package',
       defaultEnabled: false,
     },

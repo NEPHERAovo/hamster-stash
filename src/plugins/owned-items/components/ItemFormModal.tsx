@@ -199,8 +199,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
         <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b border-dashed border-(--rule-hairline)">
           <div className="flex items-center gap-1.5">
             <span className="font-serif text-lg font-bold text-(--ink-solid)">
-              <span className="paper-title inline">{editingItem ? 'Edit Holding' : 'New Holding'}</span>
-              <span className="modern-title hidden">{editingItem ? '编辑持有' : '新建持有'}</span>
+              {editingItem ? '编辑' : '新建'}
             </span>
           </div>
           <button
@@ -215,7 +214,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
         <form onSubmit={handleSubmit} className="p-4 space-y-3.5 text-xs">
           <div>
             <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1.5">
-              持有属性
+              类型
             </label>
             <SegToggle
               options={[
@@ -431,7 +430,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               className="px-4 py-1.5 rounded-(--btn-radius) text-xs font-mono font-semibold bg-(--btn-primary-bg) text-(--btn-primary-fg) hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
             >
               <Check className="w-3.5 h-3.5 stroke-2" />
-              <span>保存持有</span>
+              <span>{editingItem ? '保存修改' : '确认添加'}</span>
             </button>
           </div>
         </form>

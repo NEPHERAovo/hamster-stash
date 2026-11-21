@@ -64,23 +64,20 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       case 'using':
         return (
           <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
-            <span className="paper-title inline">{isSub ? 'ACTIVE' : 'USING'}</span>
-            <span className="modern-title hidden">{isSub ? '在订' : '在用'}</span>
+            <span>{isSub ? '在订' : '在用'}</span>
           </span>
         );
       case 'idle':
         return (
           <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
-            <span className="paper-title inline">{isSub ? 'PAUSED' : 'IDLE'}</span>
-            <span className="modern-title hidden">{isSub ? '暂停' : '闲置'}</span>
+            <span>{isSub ? '暂停' : '闲置'}</span>
           </span>
         );
       case 'sold':
       case 'scrapped':
         return (
           <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
-            <span className="paper-title inline">{isSub ? 'CANCELED' : 'DISPOSED'}</span>
-            <span className="modern-title hidden">{isSub ? '已退订' : '已处置'}</span>
+            <span>{isSub ? '已退订' : '已售出'}</span>
           </span>
         );
     }
@@ -116,8 +113,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             </button>
             <div>
               <h1 className="font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) leading-none mt-0.5">
-                <span className="paper-title inline">Holdings</span>
-                <span className="modern-title hidden">持有</span>
+                <span className="paper-title inline">Items</span>
+                <span className="modern-title hidden">物品</span>
               </h1>
             </div>
           </div>
@@ -140,7 +137,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           <div className="p-4 pt-4.5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono font-medium text-(--ink-tertiary)">
-                持有总览
+                总览
               </span>
               <div className="flex items-center gap-2 text-[11px] font-mono text-(--ink-secondary)">
                 <span>实体 {overallSummary.physicalCount || 0}</span>
@@ -151,7 +148,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
             <div className="grid grid-cols-2 divide-x divide-dashed divide-(--rule-hairline) pt-1">
               <div>
-                <div className="text-[10px] font-mono text-(--ink-tertiary)">在持日均成本</div>
+                <div className="text-[10px] font-mono text-(--ink-tertiary)">日均成本</div>
                 <div className="font-mono text-xl sm:text-2xl font-bold text-(--color-income) tabular-nums mt-0.5">
                   ¥{centsToYuan(overallSummary.totalUsingDailyCost)}
                   <span className="text-xs font-normal text-(--ink-tertiary) ml-0.5">/天</span>
@@ -159,7 +156,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               </div>
 
               <div className="pl-4">
-                <div className="text-[10px] font-mono text-(--ink-tertiary)">在持总投入</div>
+                <div className="text-[10px] font-mono text-(--ink-tertiary)">总投入</div>
                 <div className="font-mono text-xl sm:text-2xl font-bold text-(--ink-solid) tabular-nums mt-0.5">
                   ¥{centsToYuan(overallSummary.totalUsingNetCost)}
                 </div>
@@ -197,7 +194,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             {[
               { key: 'using', label: `在用/在订 (${overallSummary.usingCount})` },
               { key: 'idle', label: `闲置/暂停 (${overallSummary.idleCount})` },
-              { key: 'sold', label: `已退/处置 (${overallSummary.soldCount})` },
+              { key: 'sold', label: `已出/已退 (${overallSummary.soldCount})` },
               { key: 'all', label: `全部 (${overallSummary.totalCount})` },
             ].map((tab) => {
               const isActive = activeTab === tab.key;
@@ -264,7 +261,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                             )}
                           </div>
                           <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
-                            {isSub ? `${item.buyDate} 起订 · 订阅 ${metrics.holdingDays} 天` : `${item.buyDate} 购入 · 已持有 ${metrics.holdingDays} 天`}
+                            {isSub ? `${item.buyDate} 起订 · 订阅 ${metrics.holdingDays} 天` : `${item.buyDate} 购入 · 已使用 ${metrics.holdingDays} 天`}
                           </div>
                         </div>
                       </div>
@@ -287,7 +284,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
                       <div className="text-right">
                         <span className="text-[10px] text-(--ink-tertiary)">
-                          {item.status === 'sold' ? '处置回血 ' : '累计投入 '}
+                          {item.status === 'sold' ? '售出回款 ' : '累计投入 '}
                         </span>
                         <span className="font-bold text-(--ink-primary) tabular-nums">
                           ¥{centsToYuan(item.status === 'sold' ? metrics.recoveredAmount : metrics.grossCost)}
@@ -306,14 +303,14 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           ) : (
             <div className="py-12 text-center text-xs text-(--ink-tertiary) space-y-2">
               <Package className="w-8 h-8 stroke-[1.2] mx-auto opacity-40 text-(--ink-tertiary)" />
-              <p>暂无符合条件的持有项</p>
+              <p>暂无记录</p>
               <button
                 type="button"
                 onClick={() => openModal('item-form')}
                 className="text-(--color-accent) hover:underline font-mono inline-flex items-center text-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-2 mr-0.5" />
-                收录一件新持有
+                新建
               </button>
             </div>
           )}

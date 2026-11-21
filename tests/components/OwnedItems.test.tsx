@@ -50,11 +50,11 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
   it('展示正确的持有名称与在持统计', () => {
     render(<OwnedItemsSummaryCard />);
 
-    expect(screen.getByText('持有')).toBeInTheDocument();
-    expect(screen.getByText('1 件在持')).toBeInTheDocument();
+    expect(screen.getByText('物品')).toBeInTheDocument();
+    expect(screen.getByText('1 件在用')).toBeInTheDocument();
     expect(screen.getByText('Nintendo Switch')).toBeInTheDocument();
-    expect(screen.getByText('在持净投入')).toBeInTheDocument();
-    expect(screen.getByText('总日均成本')).toBeInTheDocument();
+    expect(screen.getByText('总投入')).toBeInTheDocument();
+    expect(screen.getByText('日均成本')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button'));
     expect(usePluginUIStore.getState().activeSubPage?.id).toBe('item-list');
@@ -66,10 +66,10 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
 
     render(<OwnedItemsSummaryCard />);
 
-    expect(screen.getByText('暂无记录的持有项')).toBeInTheDocument();
-    expect(screen.getByText('记一件')).toBeInTheDocument();
+    expect(screen.getByText('暂无记录')).toBeInTheDocument();
+    expect(screen.getByText('新建')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('记一件'));
+    fireEvent.click(screen.getByText('新建'));
     expect(usePluginUIStore.getState().activeModal?.id).toBe('item-form');
   });
 });
