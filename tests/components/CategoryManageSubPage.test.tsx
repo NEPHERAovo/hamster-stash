@@ -92,7 +92,7 @@ describe('CategoryManageSubPage', () => {
   it('renders unified category list with active and archived items', () => {
     render(<CategoryManageSubPage />);
 
-    expect(screen.getByText('新增')).toBeDefined();
+    expect(screen.getByTitle('新增分类')).toBeDefined();
     expect(screen.getByText('分类列表')).toBeDefined();
     expect(screen.getByText('共 4 项')).toBeDefined();
 

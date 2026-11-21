@@ -528,7 +528,7 @@ export const CategoryManageSubPage: React.FC = () => {
   const totalCategoryCount = displayActiveCategories.length + archivedCategories.length;
 
   return (
-    <div className="w-full px-4 pt-2 pb-10 space-y-4 select-none">
+    <div className="w-full px-4 pt-2 pb-28 space-y-4 select-none">
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 max-w-[180px]">
           <SegToggle
@@ -541,15 +541,6 @@ export const CategoryManageSubPage: React.FC = () => {
             size="sm"
           />
         </div>
-
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="h-8 px-3 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold flex items-center gap-1 cursor-pointer active:scale-95 transition-all shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-2" />
-          <span>新增</span>
-        </button>
       </div>
 
       <div className="space-y-1.5">
@@ -713,6 +704,18 @@ export const CategoryManageSubPage: React.FC = () => {
           )}
         </form>
       </PaperModal>
+
+      <div className="fixed bottom-6 right-6 z-40">
+        <button
+          type="button"
+          onClick={openCreateModal}
+          title="新增分类"
+          aria-label="新增分类"
+          className="w-12 h-12 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+        >
+          <Plus className="w-5 h-5 stroke-[2.2]" />
+        </button>
+      </div>
     </div>
   );
 };
