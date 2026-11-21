@@ -126,7 +126,7 @@ describe('TransactionGroup component', () => {
 
     const skeleton = container.querySelector('.animate-pulse');
     expect(skeleton).toBeInTheDocument();
-    expect(screen.queryByText('暂无符合条件的记账流水')).toBeNull();
+    expect(screen.queryByText('暂无流水记录')).toBeNull();
   });
 
   it('renders empty state when isLoading is false and transactions are empty', () => {
@@ -139,7 +139,7 @@ describe('TransactionGroup component', () => {
       />
     );
 
-    expect(screen.getByText('暂无符合条件的记账流水')).toBeInTheDocument();
+    expect(screen.getByText('暂无流水记录')).toBeInTheDocument();
   });
 
   it('applies contained styling with mx-0 when contained prop is set', () => {

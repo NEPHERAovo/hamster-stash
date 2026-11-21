@@ -210,10 +210,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       >
         <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
           <p className="text-xs font-semibold text-(--ink-tertiary)">
-            {searchQuery ? '未找到匹配的记账流水' : '暂无符合条件的记账流水'}
-          </p>
-          <p className="text-[11px] text-(--ink-faint) mt-1 font-mono">
-            {searchQuery ? '请尝试更换关键词' : '本周期暂无流水记录'}
+            {searchQuery ? '未找到匹配的流水' : '暂无流水记录'}
           </p>
         </div>
       </div>
