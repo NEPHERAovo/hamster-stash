@@ -94,7 +94,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [txType, setTxType] = useState<'expense' | 'income' | 'loan'>('expense');
   const [expr, setExpr] = useState('0');
   const [selectedCatId, setSelectedCatId] = useState<string>('');
-  const [selectedSubTag, setSelectedSubTag] = useState<string | undefined>(undefined);
   const [selectedAcctId, setSelectedAcctId] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
   const [timeStr, setTimeStr] = useState<string>('12:00');
@@ -252,7 +251,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setTimeStr(formatTime(editingTransaction.createdAt) || '12:00');
 
         setNote(editingTransaction.note || '');
-        setSelectedSubTag(editingTransaction.subTag);
         setIsReimbursable(Boolean(editingTransaction.isReimbursable));
         setOffsetTransactionId(editingTransaction.offsetTransactionId);
         setVoucher(editingTransaction.voucher || null);
@@ -262,7 +260,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setTimeStr(nowTime());
         setExpr('0');
         setNote('');
-        setSelectedSubTag(undefined);
         setIsReimbursable(false);
         setOffsetTransactionId(undefined);
         setIsOffsetTrayOpen(false);
@@ -282,10 +279,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       .filter((c) => c.type === txType && !c.isArchived)
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [categories, txType]);
-
-  const activeCategory = useMemo(() => {
-    return categories.find((c) => c.id === selectedCatId);
-  }, [categories, selectedCatId]);
 
   const selectedLoanFlow = useMemo(() => {
     return LOAN_FLOW_OPTIONS.find((item) => item.id === selectedCatId) || LOAN_FLOW_OPTIONS[0];
@@ -438,7 +431,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           categoryId: selectedCatId,
           date: dateStr,
           note: note.trim() || undefined,
-          subTag: txType === 'expense' ? selectedSubTag : undefined,
           isReimbursable: txType === 'expense' ? isReimbursable : undefined,
           offsetTransactionId: txType === 'income' ? offsetTransactionId : undefined,
           voucher: voucher || undefined,
@@ -459,7 +451,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         categoryId: selectedCatId,
         date: dateStr,
         note: note.trim() || undefined,
-        subTag: txType === 'expense' ? selectedSubTag : undefined,
         isReimbursable: txType === 'expense' ? isReimbursable : undefined,
         offsetTransactionId: txType === 'income' ? offsetTransactionId : undefined,
         voucher: voucher || undefined,
@@ -473,7 +464,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       if (keepOpen) {
         setExpr('0');
         setNote('');
-        setSelectedSubTag(undefined);
         setOffsetTransactionId(undefined);
         setIsOffsetTrayOpen(false);
         setVoucher(null);
@@ -897,9 +887,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     type="button"
                     onClick={() => {
                       setSelectedCatId(cat.id);
-                      if (selectedCatId !== cat.id) {
-                        setSelectedSubTag(undefined);
-                      }
                     }}
                     className={cn(
                       'flex flex-col items-center justify-center py-2 px-1 transition-all cursor-pointer select-none relative',
@@ -921,32 +908,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     <span className="text-[10px] leading-tight truncate w-full text-center">
                       {cat.name}
                     </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {txType === 'expense' && activeCategory?.subTags && activeCategory.subTags.length > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-t border-dotted border-(--rule-hairline)">
-              {activeCategory.subTags.map((subTag) => {
-                const isSelected = selectedSubTag === subTag;
-                return (
-                  <button
-                    key={subTag}
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      setSelectedSubTag(isSelected ? undefined : subTag);
-                    }}
-                    className={cn(
-                      'px-2.5 py-0.5 rounded-full text-xs transition-all shrink-0 cursor-pointer border',
-                      isSelected
-                        ? 'bg-(--toggle-active-bg) text-(--toggle-active-fg) border-(--rule-strong) font-medium shadow-xs'
-                        : 'bg-(--paper-sunken) text-(--ink-secondary) border-transparent hover:text-(--ink-primary)'
-                    )}
-                  >
-                    {subTag}
                   </button>
                 );
               })}

@@ -1,5 +1,5 @@
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'reconcile' | 'loan';
-export type LoanRole = 'origin' | 'repayment'; // origin=初始借款, repayment=归还/回款
+export type LoanRole = 'origin' | 'repayment';
 export type LoanStatus = 'pending' | 'partially_repaid' | 'settled';
 export type ReimburseStatus = 'pending' | 'settled';
 
@@ -16,22 +16,22 @@ export interface VoucherAttachment {
 export interface Transaction {
   id: string;
   type: TransactionType;
-  amount: number;             // 金额（单位：分，非负整数，1元=100分）
-  categoryId: string;         // 关联分类 ID
-  accountId: string;          // 关联账户 ID
-  toAccountId?: string;       // 转账目标账户 ID (转账类型适用)
-  reconcileDiff?: number;     // 平账差额（单位：分，可正可负，平账类型适用）
+  amount: number;
+  categoryId: string;
+  accountId: string;
+  toAccountId?: string;
+  reconcileDiff?: number;
 
-  loanParty?: string;         // 往来对方姓名 (例如 "张三")
-  loanDirection?: 'lend' | 'borrow'; // lend=借出他人, borrow=向人借款
-  loanRole?: LoanRole;        // 角色：初始借贷或还款流水
-  relatedLoanId?: string;     // 关联的原始借贷交易 ID
-  loanStatus?: LoanStatus;    // 借贷状态 (仅 origin 记录维护)
-  repaidAmount?: number;      // 已还/已收金额（单位：分）
+  loanParty?: string;
+  loanDirection?: 'lend' | 'borrow';
+  loanRole?: LoanRole;
+  relatedLoanId?: string;
+  loanStatus?: LoanStatus;
+  repaidAmount?: number;
 
-  isReimbursable?: boolean;   // 是否为待报销垫付
-  reimburseTarget?: string;   // 报销对象（如 "公司财务报销"）
-  reimburseStatus?: ReimburseStatus; // 报销状态 (pending | settled)
+  isReimbursable?: boolean;
+  reimburseTarget?: string;
+  reimburseStatus?: ReimburseStatus;
 
   offsetTransactionId?: string;
 
@@ -41,7 +41,6 @@ export interface Transaction {
 
   date: string;
   note?: string;
-  subTag?: string;
   tags?: string[];
   createdAt: string;
   updatedAt: string;

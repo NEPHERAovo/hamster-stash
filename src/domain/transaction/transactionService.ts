@@ -19,7 +19,6 @@ export interface CreateTransactionInput {
   toAccountId?: string;
   date: string;
   note?: string;
-  subTag?: string;
   tags?: string[];
   createdAt?: string;
 
@@ -175,7 +174,6 @@ export class TransactionService {
       toAccountId: input.toAccountId,
       date: input.date,
       note: input.note?.trim(),
-      subTag: input.subTag?.trim(),
       tags: input.tags,
       loanParty: input.loanParty?.trim(),
       loanDirection,

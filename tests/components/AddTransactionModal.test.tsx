@@ -54,7 +54,6 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
     const amortizeBtn = screen.getByText('分期');
     expect(amortizeBtn).toBeInTheDocument();
 
-    // 点击分期胶囊，打开分期托盘
     fireEvent.click(amortizeBtn);
 
     expect(screen.getByText('3期')).toBeInTheDocument();
@@ -64,19 +63,15 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
     expect(screen.getByText('36期')).toBeInTheDocument();
     expect(screen.getByText('自定义')).toBeInTheDocument();
 
-    // 选择 6期
     fireEvent.click(screen.getByText('6期'));
 
-    // 胶囊文本更新为 "分期: 6期"
     expect(screen.getByText('分期: 6期')).toBeInTheDocument();
 
-    // 输入金额 6000
     fireEvent.click(screen.getByText('6'));
     fireEvent.click(screen.getByText('0'));
     fireEvent.click(screen.getByText('0'));
     fireEvent.click(screen.getByText('0'));
 
-    // 点击完成保存
     const submitBtn = screen.getByText('完成');
     fireEvent.click(submitBtn);
 
@@ -111,7 +106,6 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
 
     expect(screen.getByText('分期: 5期')).toBeInTheDocument();
 
-    // 输入金额 5000
     fireEvent.click(screen.getByText('5'));
     fireEvent.click(screen.getByText('0'));
     fireEvent.click(screen.getByText('0'));
@@ -130,46 +124,6 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
               months: 5,
             }),
           }),
-        })
-      );
-    });
-  });
-
-  it('renders quick-chips and passes subTag when selected', async () => {
-    const categoryWithTags: Category = {
-      id: 'cat_food',
-      name: '餐饮',
-      type: 'expense',
-      icon: 'fork-knife',
-      color: '#fff',
-      subTags: ['三餐', '外卖', '水果'],
-      sortOrder: 1,
-      createdAt: '',
-      updatedAt: '',
-    };
-    useCategoryStore.setState({ categories: [categoryWithTags] });
-
-    const recordSpy = vi.fn().mockResolvedValue({ id: 'tx_with_subtag' });
-    useLedgerStore.setState({ recordTransaction: recordSpy });
-
-    render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
-
-    expect(screen.getByText('三餐')).toBeInTheDocument();
-    expect(screen.getByText('外卖')).toBeInTheDocument();
-    expect(screen.getByText('水果')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('外卖'));
-
-    fireEvent.click(screen.getByText('2'));
-    fireEvent.click(screen.getByText('5'));
-    fireEvent.click(screen.getByText('完成'));
-
-    await waitFor(() => {
-      expect(recordSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'expense',
-          amount: 2500,
-          subTag: '外卖',
         })
       );
     });

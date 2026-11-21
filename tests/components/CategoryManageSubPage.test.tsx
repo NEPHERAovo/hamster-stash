@@ -13,7 +13,6 @@ describe('CategoryManageSubPage', () => {
       type: 'expense',
       icon: 'utensils',
       color: 'var(--cat-food)',
-      subTags: ['三餐', '外卖'],
       sortOrder: 1,
       isSystem: true,
       isArchived: false,
@@ -50,7 +49,6 @@ describe('CategoryManageSubPage', () => {
       type: 'expense',
       icon: 'pet',
       color: 'var(--cat-food)',
-      subTags: ['猫粮', '驱虫'],
       sortOrder: 9,
       isSystem: true,
       isArchived: true,
@@ -91,18 +89,28 @@ describe('CategoryManageSubPage', () => {
     });
   });
 
-  it('renders active categories sorted by sortOrder and includes drag handles', () => {
+  it('renders unified category list with active and archived items', () => {
     render(<CategoryManageSubPage />);
+
+    expect(screen.getByText('新增')).toBeDefined();
+    expect(screen.getByText('分类列表')).toBeDefined();
+    expect(screen.getByText('共 4 项')).toBeDefined();
 
     expect(screen.getByText('餐饮')).toBeDefined();
     expect(screen.getByText('购物')).toBeDefined();
     expect(screen.getByText('交通')).toBeDefined();
+    expect(screen.getByText('宠物')).toBeDefined();
 
-    const dragHandles = screen.getAllByTitle('拖拽排序');
+    const dragHandles = screen.getAllByTitle('排序');
     expect(dragHandles.length).toBe(3);
   });
 
-  it('opens edit modal when clicking category row and displays actions and capsule subtags', async () => {
+  it('opens edit modal when clicking category row and updates category', async () => {
+    const updateSpy = vi.fn();
+    useCategoryStore.setState({
+      updateCategory: updateSpy,
+    });
+
     render(<CategoryManageSubPage />);
 
     const foodRow = screen.getByText('餐饮');
@@ -113,55 +121,20 @@ describe('CategoryManageSubPage', () => {
     });
 
     const nameInput = screen.getByDisplayValue('餐饮');
-    expect(nameInput).toBeDefined();
-
-    expect(screen.getByText('三餐')).toBeDefined();
-    expect(screen.getByText('外卖')).toBeDefined();
-
-    expect(screen.getByText(/彻底删除分类/)).toBeDefined();
-    expect(screen.getByText(/停用此分类/)).toBeDefined();
-  });
-
-  it('allows adding and removing subcategory capsule tags in edit modal', async () => {
-    const updateSpy = vi.fn();
-    useCategoryStore.setState({
-      updateCategory: updateSpy,
-    });
-
-    render(<CategoryManageSubPage />);
-
-    fireEvent.click(screen.getByText('餐饮'));
-
-    await waitFor(() => {
-      expect(screen.getByText('编辑分类')).toBeDefined();
-    });
-
-    const removeButtons = screen.getAllByTitle('删除标签');
-    expect(removeButtons.length).toBe(2);
-    fireEvent.click(removeButtons[0]);
-
-    expect(screen.getAllByTitle('删除标签').length).toBe(1);
-
-    const subTagInput = screen.getByPlaceholderText('输入子分类名称...');
-    fireEvent.change(subTagInput, { target: { value: '夜宵' } });
-    fireEvent.click(screen.getByText('添加'));
-
-    expect(screen.getAllByTitle('删除标签').length).toBe(2);
+    fireEvent.change(nameInput, { target: { value: '美食' } });
 
     const saveButton = screen.getByText('保存修改');
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(updateSpy).toHaveBeenCalledWith(
-        'cat_food',
-        expect.objectContaining({
-          subTags: ['外卖', '夜宵'],
-        })
-      );
+      expect(updateSpy).toHaveBeenCalledWith('cat_food', {
+        name: '美食',
+        icon: 'utensils',
+      });
     });
   });
 
-  it('reorders categories when HTML5 drag and drop occurs', async () => {
+  it('reorders active categories when HTML5 drag and drop occurs', async () => {
     const reorderSpy = vi.fn();
     useCategoryStore.setState({
       reorderCategories: reorderSpy,
@@ -169,7 +142,7 @@ describe('CategoryManageSubPage', () => {
 
     render(<CategoryManageSubPage />);
 
-    const handles = screen.getAllByTitle('拖拽排序');
+    const handles = screen.getAllByTitle('排序');
     expect(handles.length).toBe(3);
 
     const dataTransfer = {
@@ -191,11 +164,11 @@ describe('CategoryManageSubPage', () => {
   it('renders swipe-to-reveal delete button behind category rows', () => {
     render(<CategoryManageSubPage />);
 
-    const deleteButtons = screen.getAllByTitle('删除分类');
+    const deleteButtons = screen.getAllByTitle('删除');
     expect(deleteButtons.length).toBe(4);
   });
 
-  it('renders unarchived and archived sections with switches and toggles category active state', async () => {
+  it('toggles category active state directly using row toggle switches', async () => {
     const updateSpy = vi.fn();
     useCategoryStore.setState({
       updateCategory: updateSpy,
@@ -203,21 +176,17 @@ describe('CategoryManageSubPage', () => {
 
     render(<CategoryManageSubPage />);
 
-    expect(screen.getByText('已启用')).toBeDefined();
-    expect(screen.getByText('未启用')).toBeDefined();
-    expect(screen.getByText('宠物')).toBeDefined();
-
     const switches = screen.getAllByRole('switch');
     expect(switches.length).toBe(4);
 
-    const activeSwitch = screen.getAllByTitle('点击停用')[0];
+    const activeSwitch = screen.getAllByTitle('停用')[0];
     fireEvent.click(activeSwitch);
 
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalledWith('cat_food', { isArchived: true });
     });
 
-    const inactiveSwitch = screen.getByTitle('点击启用');
+    const inactiveSwitch = screen.getByTitle('启用');
     fireEvent.click(inactiveSwitch);
 
     await waitFor(() => {

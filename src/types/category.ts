@@ -11,7 +11,6 @@ export interface Category {
   sortOrder: number;
   isSystem?: boolean;
   isArchived?: boolean;
-  subTags?: string[];
   createdAt: string;
   updatedAt: string;
 }

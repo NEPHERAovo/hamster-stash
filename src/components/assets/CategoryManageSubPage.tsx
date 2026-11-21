@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Trash as Trash2, DotsSixVertical as GripVertical, X } from '@phosphor-icons/react';
+import { Plus, Trash as Trash2, DotsSixVertical as GripVertical } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -45,37 +45,6 @@ const CATEGORY_ICON_CHOICES = [
   'plus-circle',
   'box',
 ];
-
-const CATEGORY_RECOMMENDED_SUBTAGS: Record<string, string[]> = {
-  餐饮: ['三餐', '外卖', '水果', '零食', '买菜', '咖啡', '奶茶', '夜宵', '早餐', '酒水'],
-  超市: ['日用', '生鲜', '零食', '杂货', '粮油', '纸品', '清洁', '调味'],
-  交通: ['地铁', '公交', '打车', '加油', '停车', '火车', '飞机', '骑行'],
-  购物: ['服饰', '数码', '日用', '家居', '美妆', '鞋包', '家电', '配件'],
-  住房: ['房租', '水电', '物业', '维修', '话费', '宽带', '燃气', '家政'],
-  娱乐: ['聚会', '电影', '演出', '游戏', '爱好', 'KTV', '门票', '展览'],
-  医疗: ['门诊', '药品', '体检', '疫苗', '保险', '牙科', '视光', '检查'],
-  其他: ['杂费', '意外', '手续', '临时', '礼金'],
-  宠物: ['猫粮', '狗粮', '医疗', '洗护', '用品', '零食', '玩具', '寄养'],
-  数码: ['手机', '电脑', '外设', '平板', '配件', '维修', '耳机', '软件'],
-  学习: ['书籍', '课程', '考试', '文具', '培训', '资料', '学费', '考证'],
-  人情: ['礼金', '请客', '礼物', '孝敬', '红包', '随礼', '聚餐'],
-  汽车: ['加油', '停车', '保养', '车险', '过路', '洗车', '年检', '维修'],
-  旅行: ['机票', '高铁', '酒店', '门票', '度假', '特产', '租车', '游玩'],
-  美妆: ['护肤', '美发', '美甲', '彩妆', '香水', '防晒', '医美'],
-  育儿: ['奶粉', '尿裤', '童装', '玩具', '早教', '学费', '推车', '疫苗'],
-  运动: ['健身', '装备', '场馆', '私教', '球类', '游泳', '跑步', '户外'],
-  服饰: ['衣服', '鞋子', '包袋', '配饰', '内衣', '运动鞋', '保暖'],
-  通讯: ['话费', '宽带', '流量', '云盘', '副卡', '座机'],
-  烟酒: ['咖啡', '茶饮', '香烟', '酒水', '精酿', '茶叶'],
-  水果: ['鲜果', '果切', '果汁', '应季', '进口'],
-  办公: ['文具', '耗材', '差旅', '快递', '打印', '外设'],
-  彩票: ['福彩', '体彩', '刮奖', '大乐透', '双色球'],
-  维修: ['家电', '管道', '门窗', '锁具', '数码', '家具'],
-  公益: ['捐款', '物资', '志愿', '助学', '筹款'],
-  酒店: ['宾馆', '民宿', '青旅', '短租', '商务'],
-};
-
-const GENERAL_RECOMMENDED_SUBTAGS = ['日常', '必要', '临时', '固定', '弹性', '专项'];
 
 interface SwipeableCategoryRowProps {
   cat: Category;
@@ -124,12 +93,12 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       containerClassName={cn(
         'bg-(--paper-sheet) select-none',
         isDragging && 'opacity-25 bg-(--paper-sunken) border-2 border-dashed border-(--rule-strong)',
-        !isEnabled && 'opacity-75'
+        !isEnabled && 'opacity-60 bg-(--paper-sunken)/30'
       )}
       className="bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       action={{
         label: '删除',
-        title: '删除分类',
+        title: '删除',
         icon: <Trash2 className="w-4 h-4 stroke-2" />,
         onClick: () => onDelete(cat),
       }}
@@ -152,21 +121,14 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
         >
           <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
         </div>
-        <div className="flex flex-col min-w-0 flex-1">
-          <span
-            className={cn(
-              'text-[13px] font-medium truncate',
-              isEnabled ? 'text-(--ink-primary)' : 'text-(--ink-secondary)'
-            )}
-          >
-            {cat.name}
-          </span>
-          {cat.subTags && cat.subTags.length > 0 && (
-            <span className="text-[10px] text-(--ink-tertiary) truncate font-mono">
-              {cat.subTags.slice(0, 4).join(' · ')}
-            </span>
+        <span
+          className={cn(
+            'text-[13px] font-medium truncate',
+            isEnabled ? 'text-(--ink-primary)' : 'text-(--ink-secondary)'
           )}
-        </div>
+        >
+          {cat.name}
+        </span>
       </div>
 
       <div
@@ -184,7 +146,7 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
             'w-8 h-4.5 rounded-full transition-colors relative cursor-pointer shrink-0',
             isEnabled ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
           )}
-          title={isEnabled ? '点击停用' : '点击启用'}
+          title={isEnabled ? '停用' : '启用'}
         >
           <span
             className={cn(
@@ -204,7 +166,7 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
             onDrop={onDropHtml5}
             onTouchStart={onTouchHandleStart ? (e) => onTouchHandleStart(e, index) : undefined}
             className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
-            title="拖拽排序"
+            title="排序"
           >
             <GripVertical className="w-4 h-4 stroke-[1.8]" />
           </div>
@@ -221,8 +183,6 @@ export const CategoryManageSubPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [nameInput, setNameInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState('');
   const [iconInput, setIconInput] = useState('shopping-cart');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -296,7 +256,7 @@ export const CategoryManageSubPage: React.FC = () => {
       const firstRect = rowElements[0].getBoundingClientRect();
       const rowHeight = firstRect.height || 44;
       const startTop = firstRect.top;
-      const totalRows = rowElements.length;
+      const totalActiveRows = localCategoriesRef.current.length;
       let curIdx = startIndex;
 
       const onWindowTouchMove = (moveEvt: TouchEvent) => {
@@ -308,10 +268,10 @@ export const CategoryManageSubPage: React.FC = () => {
 
         const targetIdx = Math.max(
           0,
-          Math.min(totalRows - 1, Math.floor((touch.clientY - startTop) / rowHeight))
+          Math.min(totalActiveRows - 1, Math.floor((touch.clientY - startTop) / rowHeight))
         );
 
-        if (targetIdx !== curIdx && targetIdx >= 0 && targetIdx < totalRows) {
+        if (targetIdx !== curIdx && targetIdx >= 0 && targetIdx < totalActiveRows) {
           const next = [...localCategoriesRef.current];
           const [moved] = next.splice(curIdx, 1);
           next.splice(targetIdx, 0, moved);
@@ -422,6 +382,7 @@ export const CategoryManageSubPage: React.FC = () => {
 
   const handleDragEnterHtml5 = (targetIndex: number) => {
     if (draggingIndex === null || draggingIndex === targetIndex) return;
+    if (targetIndex >= localCategoriesRef.current.length) return;
     const next = [...localCategoriesRef.current];
     const [moved] = next.splice(draggingIndex, 1);
     next.splice(targetIndex, 0, moved);
@@ -457,8 +418,6 @@ export const CategoryManageSubPage: React.FC = () => {
   const openCreateModal = () => {
     setEditingCat(null);
     setNameInput('');
-    setTags([]);
-    setNewTagInput('');
     setIconInput(activeType === 'income' ? 'wallet' : 'shopping-cart');
     setIsModalOpen(true);
   };
@@ -466,29 +425,9 @@ export const CategoryManageSubPage: React.FC = () => {
   const openEditModal = (cat: Category) => {
     setEditingCat(cat);
     setNameInput(cat.name);
-    setTags(cat.subTags ? [...cat.subTags] : []);
-    setNewTagInput('');
     setIconInput(cat.icon || 'shopping-cart');
     setIsModalOpen(true);
   };
-
-  const handleAddTag = (rawTag: string) => {
-    const clean = rawTag.trim();
-    if (!clean) return;
-    if (tags.includes(clean)) return;
-    setTags((prev) => [...prev, clean]);
-    setNewTagInput('');
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags((prev) => prev.filter((t) => t !== tagToRemove));
-  };
-
-  const recommendedTags = useMemo(() => {
-    const key = nameInput.trim();
-    const pool = CATEGORY_RECOMMENDED_SUBTAGS[key] || GENERAL_RECOMMENDED_SUBTAGS;
-    return pool.filter((item) => !tags.includes(item));
-  }, [nameInput, tags]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -509,22 +448,18 @@ export const CategoryManageSubPage: React.FC = () => {
       return;
     }
 
-    const parsedSubTags = activeType === 'expense' && tags.length > 0 ? tags : undefined;
-
     setIsSaving(true);
     try {
       if (editingCat) {
         await updateCategory(editingCat.id, {
           name: trimmed,
           icon: iconInput,
-          subTags: parsedSubTags,
         });
       } else {
         await createCategory({
           name: trimmed,
           type: activeType,
           icon: iconInput,
-          subTags: parsedSubTags,
         });
       }
       setIsModalOpen(false);
@@ -577,13 +512,6 @@ export const CategoryManageSubPage: React.FC = () => {
     }
   };
 
-  let finalModalTitle = '新增收入分类';
-  if (editingCat) {
-    finalModalTitle = '编辑分类';
-  } else if (activeType === 'expense') {
-    finalModalTitle = '新增支出分类';
-  }
-
   let submitLabel = '确认添加';
   if (isSaving) {
     submitLabel = '保存中...';
@@ -593,6 +521,7 @@ export const CategoryManageSubPage: React.FC = () => {
 
   const draggingCat = draggingIndex !== null ? localCategories[draggingIndex] : null;
   const GhostIconComp = draggingCat ? getCategoryIcon(draggingCat.icon) : null;
+  const totalCategoryCount = localCategories.length + archivedCategories.length;
 
   return (
     <div className="w-full px-4 pt-2 pb-10 space-y-4 select-none">
@@ -615,14 +544,14 @@ export const CategoryManageSubPage: React.FC = () => {
           className="h-8 px-3 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold flex items-center gap-1 cursor-pointer active:scale-95 transition-all shrink-0"
         >
           <Plus className="w-3.5 h-3.5 stroke-2" />
-          <span>新增分类</span>
+          <span>新增</span>
         </button>
       </div>
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
-          <span>已启用</span>
-          <span>共 {localCategories.length} 项 (显示在记账键盘)</span>
+          <span>分类列表</span>
+          <span>共 {totalCategoryCount} 项</span>
         </div>
 
         <div
@@ -650,35 +579,21 @@ export const CategoryManageSubPage: React.FC = () => {
               onTouchHandleStart={handleTouchHandleStart}
             />
           ))}
+
+          {archivedCategories.map((cat, idx) => (
+            <SwipeableCategoryRow
+              key={cat.id}
+              cat={cat}
+              index={localCategories.length + idx}
+              isDragging={false}
+              showDragHandle={false}
+              onSelect={openEditModal}
+              onDelete={handleRemove}
+              onToggleActive={handleToggleActive}
+            />
+          ))}
         </div>
-        <p className="px-1 text-[11px] font-mono text-(--ink-faint) text-right">
-          长按或拖拽手柄排序 · 开关启用停用 · 点击编辑子分类 · 侧滑删除
-        </p>
       </div>
-
-      {archivedCategories.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
-            <span>未启用</span>
-            <span>共 {archivedCategories.length} 项</span>
-          </div>
-
-          <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60">
-            {archivedCategories.map((cat, idx) => (
-              <SwipeableCategoryRow
-                key={cat.id}
-                cat={cat}
-                index={idx}
-                isDragging={false}
-                showDragHandle={false}
-                onSelect={openEditModal}
-                onDelete={handleRemove}
-                onToggleActive={handleToggleActive}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {ghostPos && draggingCat && GhostIconComp && typeof document !== 'undefined' &&
         createPortal(
@@ -698,16 +613,9 @@ export const CategoryManageSubPage: React.FC = () => {
               <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-solid) flex items-center justify-center shrink-0">
                 <GhostIconComp className="w-3.5 h-3.5 stroke-[1.8]" />
               </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[13px] font-semibold text-(--ink-primary) truncate">
-                  {draggingCat.name}
-                </span>
-                {draggingCat.subTags && draggingCat.subTags.length > 0 && (
-                  <span className="text-[10px] text-(--ink-tertiary) truncate font-mono">
-                    ({draggingCat.subTags.slice(0, 3).join('/')})
-                  </span>
-                )}
-              </div>
+              <span className="text-[13px] font-semibold text-(--ink-primary) truncate">
+                {draggingCat.name}
+              </span>
             </div>
             <div className="w-7 h-7 flex items-center justify-center text-(--ink-primary) shrink-0">
               <GripVertical className="w-4 h-4 stroke-[1.8]" />
@@ -719,7 +627,7 @@ export const CategoryManageSubPage: React.FC = () => {
       <PaperModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={finalModalTitle}
+        title={editingCat ? '编辑分类' : '新增分类'}
       >
         <form onSubmit={handleSave} className="p-4 space-y-4 select-none">
           <div className="space-y-1.5">
@@ -728,83 +636,12 @@ export const CategoryManageSubPage: React.FC = () => {
               type="text"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
-              placeholder={activeType === 'expense' ? '例如：宠物、零食、运动' : '例如：兼职、礼金'}
+              placeholder={activeType === 'expense' ? '例如：宠物、运动' : '例如：兼职、理财'}
               maxLength={12}
               autoFocus
               className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
             />
           </div>
-
-          {activeType === 'expense' && (
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-(--ink-tertiary)">子分类快捷标签</label>
-
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-xs font-medium text-(--ink-primary) shadow-2xs"
-                    >
-                      <span>{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) cursor-pointer"
-                        title="删除标签"
-                      >
-                        <X className="w-2.5 h-2.5 stroke-2" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag(newTagInput);
-                    }
-                  }}
-                  placeholder="输入子分类名称..."
-                  maxLength={8}
-                  className="flex-1 h-9 px-3 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleAddTag(newTagInput)}
-                  disabled={!newTagInput.trim()}
-                  className="h-9 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-xs font-medium text-(--ink-primary) hover:bg-(--paper-hover) disabled:opacity-40 cursor-pointer shrink-0"
-                >
-                  添加
-                </button>
-              </div>
-
-              {recommendedTags.length > 0 && (
-                <div className="space-y-1 pt-0.5">
-                  <span className="text-[11px] font-mono text-(--ink-tertiary)">常用推荐</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {recommendedTags.slice(0, 8).map((rec) => (
-                      <button
-                        key={rec}
-                        type="button"
-                        onClick={() => handleAddTag(rec)}
-                        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-(--btn-radius) bg-(--paper-sunken) hover:bg-(--paper-hover) text-[11px] text-(--ink-secondary) hover:text-(--ink-primary) border border-(--rule-hairline)/60 cursor-pointer active:scale-95 transition-all"
-                      >
-                        <Plus className="w-2.5 h-2.5 stroke-2" />
-                        <span>{rec}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-mono text-(--ink-tertiary)">选择图标</label>
@@ -855,7 +692,7 @@ export const CategoryManageSubPage: React.FC = () => {
                 onClick={() => handleToggleFromModal(editingCat)}
                 className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--ink-secondary) hover:bg-(--paper-hover) border border-(--rule-hairline) flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>{editingCat.isArchived ? '启用此分类' : '停用此分类'}</span>
+                <span>{editingCat.isArchived ? '启用分类' : '停用分类'}</span>
               </button>
               <button
                 type="button"
@@ -866,7 +703,7 @@ export const CategoryManageSubPage: React.FC = () => {
                 className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--color-expense) hover:bg-(--color-expense-bg)/40 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 stroke-2" />
-                <span>彻底删除分类</span>
+                <span>删除分类</span>
               </button>
             </div>
           )}

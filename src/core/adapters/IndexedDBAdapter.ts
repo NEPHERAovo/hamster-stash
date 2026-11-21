@@ -105,12 +105,10 @@ export class IndexedDBAdapter implements DataAdapter {
           });
         } else if (existing.isSystem) {
           const shouldUpdateName = existing.name !== cat.name && existing.name.length > 2;
-          const shouldUpdateSubTags = cat.subTags && (!existing.subTags || existing.subTags.length === 0);
-          if (shouldUpdateName || shouldUpdateSubTags) {
+          if (shouldUpdateName) {
             await tx.store.put({
               ...existing,
-              name: shouldUpdateName ? cat.name : existing.name,
-              subTags: shouldUpdateSubTags ? cat.subTags : existing.subTags,
+              name: cat.name,
               updatedAt: now,
             });
           }
@@ -151,9 +149,9 @@ export class IndexedDBAdapter implements DataAdapter {
         }
 
         const sampleTransactions: Transaction[] = [
-          { id: 'tx_demo_1', type: 'expense', amount: 3500, accountId: 'acct_wx', categoryId: 'cat_food', date: today, note: '老街馄饨', subTag: '三餐', createdAt: `${today}T12:30:00.000Z`, updatedAt: `${today}T12:30:00.000Z` },
-          { id: 'tx_demo_2', type: 'expense', amount: 700, accountId: 'acct_wx', categoryId: 'cat_transit', date: today, note: '地铁通勤', subTag: '地铁', createdAt: `${today}T08:45:00.000Z`, updatedAt: `${today}T08:45:00.000Z` },
-          { id: 'tx_demo_3', type: 'expense', amount: 6850, accountId: 'acct_bank', categoryId: 'cat_market', date: today, note: '超市生鲜日用品', subTag: '生鲜', createdAt: `${today}T18:20:00.000Z`, updatedAt: `${today}T18:20:00.000Z` },
+          { id: 'tx_demo_1', type: 'expense', amount: 3500, accountId: 'acct_wx', categoryId: 'cat_food', date: today, note: '老街馄饨', createdAt: `${today}T12:30:00.000Z`, updatedAt: `${today}T12:30:00.000Z` },
+          { id: 'tx_demo_2', type: 'expense', amount: 700, accountId: 'acct_wx', categoryId: 'cat_transit', date: today, note: '地铁通勤', createdAt: `${today}T08:45:00.000Z`, updatedAt: `${today}T08:45:00.000Z` },
+          { id: 'tx_demo_3', type: 'expense', amount: 6850, accountId: 'acct_bank', categoryId: 'cat_market', date: today, note: '超市生鲜日用品', createdAt: `${today}T18:20:00.000Z`, updatedAt: `${today}T18:20:00.000Z` },
           { id: 'tx_demo_4', type: 'income', amount: 1680000, accountId: 'acct_bank', categoryId: 'cat_salary', date: today, note: '本月薪酬入账', createdAt: `${today}T10:00:00.000Z`, updatedAt: `${today}T10:00:00.000Z` },
         ];
         for (const t of sampleTransactions) {

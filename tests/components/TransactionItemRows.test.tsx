@@ -66,32 +66,6 @@ describe('TransactionItem Polymorphic Rows', () => {
     expect(screen.getByText('-45.00')).toBeInTheDocument();
   });
 
-  it('renders subTag pill when transaction has subTag', () => {
-    const tx: Transaction = {
-      id: 'tx_exp_subtag',
-      type: 'expense',
-      amount: 3200,
-      categoryId: 'cat_food',
-      accountId: 'acct_1',
-      date: '2026-11-20',
-      note: '肯德基',
-      subTag: '外卖',
-      createdAt: '2026-11-20T12:00:00Z',
-      updatedAt: '2026-11-20T12:00:00Z',
-    };
-
-    render(
-      <TransactionItem
-        transaction={tx}
-        category={mockCategory}
-        account={mockAccountFrom}
-      />
-    );
-
-    expect(screen.getByText('肯德基')).toBeInTheDocument();
-    expect(screen.getByText('外卖')).toBeInTheDocument();
-  });
-
   it('renders transfer row with From -> To account direction and transfer badge', () => {
     const tx: Transaction = {
       id: 'tx_transfer',
