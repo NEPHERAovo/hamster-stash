@@ -1,9 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
-import '@fontsource/geist-sans';
-import '@fontsource/geist-mono';
-import '@fontsource/instrument-serif';
+import '@fontsource/geist-mono/latin-400.css';
+import '@fontsource/geist-mono/latin-700.css';
+import '@fontsource/instrument-serif/latin-400.css';
+import '@fontsource/instrument-serif/latin-400-italic.css';
 import './index.css';
 import './core/plugin/setup';
 import App from './App.tsx';

@@ -32,7 +32,7 @@
 | State | Zustand | ^5.1.0 | Sliced reactive stores |
 | Local Storage | idb | ^8.0.4 | Lightweight IndexedDB promise wrapper |
 | Offline / PWA | vite-plugin-pwa + workbox | ^1.1.0 / ^7.4.0 | Service Worker precaching & offline runtime |
-| Routing | react-router-dom | ^7.18.5 | Tab navigation and subpage transitions |
+| Navigation | Custom State Routing | native | Tab navigation and subpage transitions |
 | Package Manager | pnpm | ^11.x (or 9.x+) | Strict lockfile enforcement |
 | Linter | ESLint + typescript-eslint | ^9.x | Zero errors, zero warnings standard |
 
