@@ -75,10 +75,10 @@ export class IndexedDBAdapter implements DataAdapter {
   private async seedDefaultsIfEmpty(): Promise<void> {
     if (!this.db) return;
 
+    const now = new Date().toISOString();
     const catCount = await this.db.count(STORES.CATEGORIES);
     if (catCount === 0) {
       const tx = this.db.transaction(STORES.CATEGORIES, 'readwrite');
-      const now = new Date().toISOString();
       for (const cat of DEFAULT_CATEGORIES) {
         await tx.store.put({
           ...cat,
@@ -87,12 +87,31 @@ export class IndexedDBAdapter implements DataAdapter {
         });
       }
       await tx.done;
+    } else {
+      const tx = this.db.transaction(STORES.CATEGORIES, 'readwrite');
+      for (const cat of DEFAULT_CATEGORIES) {
+        const existing = await tx.store.get(cat.id);
+        if (!existing) {
+          await tx.store.put({
+            ...cat,
+            isArchived: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+        } else if (cat.subTags && (!existing.subTags || existing.subTags.length === 0)) {
+          await tx.store.put({
+            ...existing,
+            subTags: cat.subTags,
+            updatedAt: now,
+          });
+        }
+      }
+      await tx.done;
     }
 
     const acctCount = await this.db.count(STORES.ACCOUNTS);
     if (acctCount === 0) {
       const tx = this.db.transaction(STORES.ACCOUNTS, 'readwrite');
-      const now = new Date().toISOString();
       for (const acct of DEFAULT_ACCOUNTS) {
         await tx.store.put({
           ...acct,

@@ -39,9 +39,10 @@ export interface Transaction {
 
   ext?: Record<string, unknown>;
 
-  date: string;               // ISO 格式 'YYYY-MM-DD'
-  note?: string;              // 备注
-  tags?: string[];            // 标签列表
-  createdAt: string;          // ISO 8601
-  updatedAt: string;          // ISO 8601
+  date: string;
+  note?: string;
+  subTag?: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
 }
