@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { CategoryManageSubPage } from '../../src/components/assets/CategoryManageSubPage';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
 import type { Category } from '../../src/types/category';
@@ -192,5 +192,31 @@ describe('CategoryManageSubPage', () => {
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalledWith('cat_archived_pet', { isArchived: false });
     });
+  });
+
+  it('updates active and archived rows atomically without duplicating rows when store state changes', () => {
+    const { rerender } = render(<CategoryManageSubPage />);
+
+    expect(screen.getAllByRole('switch').length).toBe(4);
+    expect(screen.getAllByTitle('停用').length).toBe(3);
+    expect(screen.getAllByTitle('启用').length).toBe(1);
+
+    act(() => {
+      useCategoryStore.setState({
+        categories: [
+          { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', isArchived: true, sortOrder: 1, createdAt: '', updatedAt: '' },
+          { id: 'cat_transport', name: '交通', type: 'expense', icon: 'train-front', isArchived: false, sortOrder: 2, createdAt: '', updatedAt: '' },
+          { id: 'cat_shopping', name: '购物', type: 'expense', icon: 'shopping-cart', isArchived: false, sortOrder: 3, createdAt: '', updatedAt: '' },
+          { id: 'cat_archived_pet', name: '宠物', type: 'expense', icon: 'package', isArchived: true, sortOrder: 4, createdAt: '', updatedAt: '' },
+        ],
+      });
+    });
+
+    rerender(<CategoryManageSubPage />);
+
+    expect(screen.getAllByRole('switch').length).toBe(4);
+    expect(screen.getAllByTitle('停用').length).toBe(2);
+    expect(screen.getAllByTitle('启用').length).toBe(2);
+    expect(screen.getAllByText('餐饮').length).toBe(1);
   });
 });

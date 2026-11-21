@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Trash as Trash2, DotsSixVertical as GripVertical } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
@@ -210,13 +210,11 @@ export const CategoryManageSubPage: React.FC = () => {
     [categories, activeType]
   );
 
-  const [localCategories, setLocalCategories] = useState<Category[]>(activeCategories);
-  const localCategoriesRef = useRef(localCategories);
-  localCategoriesRef.current = localCategories;
+  const [dragList, setDragList] = useState<Category[] | null>(null);
+  const dragListRef = useRef<Category[] | null>(null);
+  dragListRef.current = dragList;
 
-  useEffect(() => {
-    setLocalCategories(activeCategories);
-  }, [activeCategories]);
+  const displayActiveCategories = dragList ?? activeCategories;
 
   const commitReorder = useCallback(
     async (newList: Category[]) => {
@@ -224,10 +222,9 @@ export const CategoryManageSubPage: React.FC = () => {
         await reorderCategories(newList.map((c) => c.id));
       } catch {
         toast.error('保存排序失败');
-        setLocalCategories(activeCategories);
       }
     },
-    [reorderCategories, activeCategories]
+    [reorderCategories]
   );
 
   const startDragOperation = useCallback(
@@ -236,6 +233,9 @@ export const CategoryManageSubPage: React.FC = () => {
       activeDragIndexRef.current = startIndex;
       setDraggingIndex(startIndex);
       setGhostPos({ x: clientX, y: clientY });
+      const initialList = [...activeCategories];
+      dragListRef.current = initialList;
+      setDragList(initialList);
 
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
@@ -256,7 +256,7 @@ export const CategoryManageSubPage: React.FC = () => {
       const firstRect = rowElements[0].getBoundingClientRect();
       const rowHeight = firstRect.height || 44;
       const startTop = firstRect.top;
-      const totalActiveRows = localCategoriesRef.current.length;
+      const totalActiveRows = initialList.length;
       let curIdx = startIndex;
 
       const onWindowTouchMove = (moveEvt: TouchEvent) => {
@@ -272,11 +272,12 @@ export const CategoryManageSubPage: React.FC = () => {
         );
 
         if (targetIdx !== curIdx && targetIdx >= 0 && targetIdx < totalActiveRows) {
-          const next = [...localCategoriesRef.current];
+          const currentList = dragListRef.current ?? [...activeCategories];
+          const next = [...currentList];
           const [moved] = next.splice(curIdx, 1);
           next.splice(targetIdx, 0, moved);
-          localCategoriesRef.current = next;
-          setLocalCategories(next);
+          dragListRef.current = next;
+          setDragList(next);
           curIdx = targetIdx;
           activeDragIndexRef.current = targetIdx;
           setDraggingIndex(targetIdx);
@@ -301,8 +302,11 @@ export const CategoryManageSubPage: React.FC = () => {
         setGhostPos(null);
         activeDragIndexRef.current = null;
 
-        if (curIdx !== startIndex) {
-          commitReorder(localCategoriesRef.current);
+        const finalList = dragListRef.current;
+        setDragList(null);
+
+        if (finalList && curIdx !== startIndex) {
+          commitReorder(finalList);
         }
 
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -318,7 +322,7 @@ export const CategoryManageSubPage: React.FC = () => {
       window.addEventListener('touchend', onWindowTouchEnd);
       window.addEventListener('touchcancel', onWindowTouchEnd);
     },
-    [commitReorder]
+    [activeCategories, commitReorder]
   );
 
   const handleRowTouchStart = useCallback(
@@ -372,6 +376,9 @@ export const CategoryManageSubPage: React.FC = () => {
   const handleDragStartHtml5 = (e: React.DragEvent, index: number) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', String(index));
+    const initialList = [...activeCategories];
+    dragListRef.current = initialList;
+    setDragList(initialList);
     setDraggingIndex(index);
   };
 
@@ -382,24 +389,33 @@ export const CategoryManageSubPage: React.FC = () => {
 
   const handleDragEnterHtml5 = (targetIndex: number) => {
     if (draggingIndex === null || draggingIndex === targetIndex) return;
-    if (targetIndex >= localCategoriesRef.current.length) return;
-    const next = [...localCategoriesRef.current];
+    const currentList = dragListRef.current ?? [...activeCategories];
+    if (targetIndex >= currentList.length) return;
+    const next = [...currentList];
     const [moved] = next.splice(draggingIndex, 1);
     next.splice(targetIndex, 0, moved);
-    localCategoriesRef.current = next;
-    setLocalCategories(next);
+    dragListRef.current = next;
+    setDragList(next);
     setDraggingIndex(targetIndex);
   };
 
   const handleDragEndHtml5 = () => {
+    const finalList = dragListRef.current;
     setDraggingIndex(null);
-    commitReorder(localCategoriesRef.current);
+    setDragList(null);
+    if (finalList) {
+      commitReorder(finalList);
+    }
   };
 
   const handleDropHtml5 = (e: React.DragEvent) => {
     e.preventDefault();
+    const finalList = dragListRef.current;
     setDraggingIndex(null);
-    commitReorder(localCategoriesRef.current);
+    setDragList(null);
+    if (finalList) {
+      commitReorder(finalList);
+    }
   };
 
   const handleToggleActive = async (cat: Category) => {
@@ -519,9 +535,9 @@ export const CategoryManageSubPage: React.FC = () => {
     submitLabel = '保存修改';
   }
 
-  const draggingCat = draggingIndex !== null ? localCategories[draggingIndex] : null;
+  const draggingCat = draggingIndex !== null ? displayActiveCategories[draggingIndex] : null;
   const GhostIconComp = draggingCat ? getCategoryIcon(draggingCat.icon) : null;
-  const totalCategoryCount = localCategories.length + archivedCategories.length;
+  const totalCategoryCount = displayActiveCategories.length + archivedCategories.length;
 
   return (
     <div className="w-full px-4 pt-2 pb-10 space-y-4 select-none">
@@ -558,7 +574,7 @@ export const CategoryManageSubPage: React.FC = () => {
           ref={containerRef}
           className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60"
         >
-          {localCategories.map((cat, idx) => (
+          {displayActiveCategories.map((cat, idx) => (
             <SwipeableCategoryRow
               key={cat.id}
               cat={cat}
@@ -584,7 +600,7 @@ export const CategoryManageSubPage: React.FC = () => {
             <SwipeableCategoryRow
               key={cat.id}
               cat={cat}
-              index={localCategories.length + idx}
+              index={displayActiveCategories.length + idx}
               isDragging={false}
               showDragHandle={false}
               onSelect={openEditModal}

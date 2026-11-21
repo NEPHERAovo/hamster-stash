@@ -55,11 +55,16 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   const smootherRef = useRef<GestureSmoother | null>(null);
   const velocityRef = useRef(new VelocityTracker(100));
 
+  if (isOpen && !shouldRender) {
+    setShouldRender(true);
+  }
+
   const requestClose = useCallback(() => {
     const el = containerRef.current;
     if (!el || isClosingRef.current) return;
     isClosingRef.current = true;
     smootherRef.current?.stop();
+    el.classList.remove('subpage-slide-in');
     el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
     el.style.transform = 'translate3d(100%, 0, 0)';
     el.style.boxShadow = 'none';
@@ -71,15 +76,14 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   }, [onClose]);
 
   useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-    } else if (shouldRender && !isClosingRef.current) {
+    if (!isOpen && shouldRender && !isClosingRef.current) {
       const el = containerRef.current;
       if (!el) {
         setShouldRender(false);
         return;
       }
       isClosingRef.current = true;
+      el.classList.remove('subpage-slide-in');
       el.style.transition = `transform 240ms ${SPRING_OUT_EASE}, box-shadow 240ms ease`;
       el.style.transform = 'translate3d(100%, 0, 0)';
       el.style.boxShadow = 'none';
@@ -90,28 +94,6 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       return () => clearTimeout(timer);
     }
   }, [isOpen, shouldRender]);
-
-  useEffect(() => {
-    if (!shouldRender || !isOpen) return;
-
-    const el = containerRef.current;
-    if (!el) return;
-
-    isClosingRef.current = false;
-    el.style.transition = 'none';
-    el.style.transform = 'translate3d(100%, 0, 0)';
-    el.style.boxShadow = '-8px 0 28px rgba(0,0,0,0.12)';
-    void el.offsetHeight;
-
-    const animFrame = requestAnimationFrame(() => {
-      el.style.transition = `transform 280ms ${SPRING_OUT_EASE}, box-shadow 280ms ease`;
-      el.style.transform = 'translate3d(0, 0, 0)';
-    });
-
-    return () => {
-      cancelAnimationFrame(animFrame);
-    };
-  }, [shouldRender, isOpen]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -152,6 +134,9 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       const relativeX = touch.clientX - rect.left;
 
       if (relativeX <= edgeThreshold) {
+        if (el.classList.contains('subpage-slide-in')) {
+          el.classList.remove('subpage-slide-in');
+        }
         const currentX = getCurrentTranslateX();
         el.style.transition = 'none';
         el.style.transform = `translate3d(${currentX}px, 0, 0)`;
@@ -260,8 +245,14 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
     <SubPageContext.Provider value={{ requestClose }}>
       <div
         ref={containerRef}
+        onAnimationEnd={(e) => {
+          if (e.animationName === 'subpageSlideIn' && containerRef.current) {
+            containerRef.current.classList.remove('subpage-slide-in');
+            containerRef.current.style.transform = 'translate3d(0, 0, 0)';
+          }
+        }}
         className={cn(
-          'absolute inset-0 z-40 bg-(--paper-base) flex flex-col overflow-hidden will-change-transform touch-pan-y',
+          'absolute inset-0 z-40 bg-(--paper-base) flex flex-col overflow-hidden will-change-transform touch-pan-y subpage-slide-in',
           'shadow-[-8px_0_28px_rgba(0,0,0,0.12)]',
           className
         )}

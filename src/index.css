@@ -468,44 +468,26 @@ body {
 
 /* 新入账水墨微渗透动效 */
 @keyframes freshInk {
-  0%   { background-color: rgba(63, 130, 86, 0.24); }
-  60%  { background-color: rgba(63, 130, 86, 0.08); }
+  0% { background-color: rgba(63, 130, 86, 0.24); }
+  60% { background-color: rgba(63, 130, 86, 0.08); }
   100% { background-color: transparent; }
 }
 
-.fresh-entry {
-  animation: freshInk 2.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-}
+.fresh-entry { animation: freshInk 2.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.page-slide-in { animation: pageSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.page-slide-out { animation: pageSlideOut 0.2s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+.subpage-slide-in { animation: subpageSlideIn 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
-/* 原生移动端滑入子页动效 */
-.page-slide-in {
-  animation: pageSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+@keyframes subpageSlideIn { from { transform: translate3d(100%, 0, 0); } to { transform: translate3d(0, 0, 0); } }
+@keyframes pageSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pageSlideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(24px); } }
 
-.page-slide-out {
-  animation: pageSlideOut 0.2s cubic-bezier(0.7, 0, 0.84, 0) forwards;
-}
-
-@keyframes pageSlideIn {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes pageSlideOut {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(24px); }
-}
-
-/* 抽屉弹出动效 */
 .sheet-slide-up {
   animation: sheetSlideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   will-change: transform;
 }
 
-@keyframes sheetSlideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
+@keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
 .modal-backdrop-fade {
   animation: modalBackdropFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
