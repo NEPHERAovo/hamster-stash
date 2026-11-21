@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { CategoryManageSubPage } from '../../src/components/assets/CategoryManageSubPage';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
 import type { Category } from '../../src/types/category';
+import { getCategoryIcon } from '../../src/utils/categoryIcons';
 
 describe('CategoryManageSubPage', () => {
   const mockCategories: Category[] = [
@@ -218,5 +219,13 @@ describe('CategoryManageSubPage', () => {
     expect(screen.getAllByTitle('停用').length).toBe(2);
     expect(screen.getAllByTitle('启用').length).toBe(2);
     expect(screen.getAllByText('餐饮').length).toBe(1);
+  });
+
+  it('provides rich category icons for specialized categories and incomes', () => {
+    const icons = ['spray-bottle', 'wine', 'orange-slice', 'hand-heart', 'bed', 'trophy', 'percent'];
+    icons.forEach((iconName) => {
+      const Icon = getCategoryIcon(iconName);
+      expect(Icon).toBeDefined();
+    });
   });
 });
