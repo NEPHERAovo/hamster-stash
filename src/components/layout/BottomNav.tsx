@@ -12,6 +12,7 @@ export interface BottomNavProps {
   onAddClick?: () => void;
   showAddButton?: boolean;
   isAddOpen?: boolean;
+  addButtonTitle?: string;
   className?: string;
   tabs?: DockTabItem[];
 }

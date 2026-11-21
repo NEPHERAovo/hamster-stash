@@ -60,16 +60,13 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
     expect(usePluginUIStore.getState().activeSubPage?.id).toBe('item-list');
   });
 
-  it('空列表时展示手帐风占位文案与记一件入口', () => {
+  it('空列表时展示手帐风占位文案且不显示冗余新建按钮', () => {
     usePluginItemStore.setState({ items: [], loading: false });
     useLedgerStore.setState({ transactions: [], allTransactions: [] });
 
     render(<OwnedItemsSummaryCard />);
 
     expect(screen.getByText('暂无记录')).toBeInTheDocument();
-    expect(screen.getByText('新建')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('新建'));
-    expect(usePluginUIStore.getState().activeModal?.id).toBe('item-form');
+    expect(screen.queryByText('新建')).not.toBeInTheDocument();
   });
 });

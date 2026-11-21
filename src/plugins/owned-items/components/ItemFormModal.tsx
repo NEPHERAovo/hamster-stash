@@ -106,11 +106,11 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error(kind === 'subscription' ? '请输入订阅服务名称' : '请输入物品名称');
+      toast.error(kind === 'subscription' ? '请输入服务名称' : '请输入物品名称');
       return;
     }
     if (!buyDate) {
-      toast.error(kind === 'subscription' ? '请选择订阅起始日期' : '请选择购入日期');
+      toast.error(kind === 'subscription' ? '请选择起始日期' : '请选择购入日期');
       return;
     }
 
@@ -218,8 +218,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             </label>
             <SegToggle
               options={[
-                { value: 'physical', label: '实体物品' },
-                { value: 'subscription', label: '数字订阅' },
+                { value: 'physical', label: '物品' },
+                { value: 'subscription', label: '订阅' },
               ]}
               value={kind}
               onChange={(nextKind) => {
@@ -234,7 +234,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
           <div>
             <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-              {kind === 'subscription' ? '订阅服务名称' : '物品名称'}
+              {kind === 'subscription' ? '服务名称' : '物品名称'}
             </label>
             <input
               type="text"
@@ -248,7 +248,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
           <div>
             <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1.5">
-              图标标识
+              图标
             </label>
             <div className="grid grid-cols-6 gap-1.5">
               {currentIconChoices.map((ic) => {
@@ -273,34 +273,16 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                {kind === 'subscription' ? '订阅起始日' : '购入日期'}
-              </label>
-              <input
-                type="date"
-                value={buyDate}
-                onChange={(e) => setBuyDate(e.target.value)}
-                className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                {kind === 'subscription' ? '订阅状态' : '物品状态'}
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as ItemStatus)}
-                className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-solid) outline-none cursor-pointer"
-              >
-                <option value="using">{kind === 'subscription' ? '在订' : '在用'}</option>
-                <option value="idle">{kind === 'subscription' ? '暂停' : '闲置'}</option>
-                <option value="sold">{kind === 'subscription' ? '已退订' : '已售出'}</option>
-                {kind === 'physical' && <option value="scrapped">已报废</option>}
-              </select>
-            </div>
+          <div>
+            <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
+              {kind === 'subscription' ? '起始日期' : '购入日期'}
+            </label>
+            <input
+              type="date"
+              value={buyDate}
+              onChange={(e) => setBuyDate(e.target.value)}
+              className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none"
+            />
           </div>
 
           {kind === 'subscription' && (
@@ -315,16 +297,16 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                     onChange={(e) => setBillingCycle(e.target.value as SubscriptionCycle)}
                     className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-solid) outline-none cursor-pointer"
                   >
-                    <option value="monthly">按月 (Monthly)</option>
-                    <option value="yearly">按年 (Yearly)</option>
-                    <option value="quarterly">按季 (Quarterly)</option>
-                    <option value="weekly">按周 (Weekly)</option>
+                    <option value="monthly">按月</option>
+                    <option value="yearly">按年</option>
+                    <option value="quarterly">按季</option>
+                    <option value="weekly">按周</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                    单期续费 (元)
+                    续费金额
                   </label>
                   <input
                     type="number"
@@ -332,7 +314,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                     min="0"
                     value={renewalAmountYuan}
                     onChange={(e) => setRenewalAmountYuan(e.target.value)}
-                    placeholder="例如 140.00"
+                    placeholder="0.00"
                     className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none"
                   />
                 </div>
@@ -340,7 +322,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
               <div>
                 <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                  下次续费日 (可选)
+                  下次续费日
                 </label>
                 <input
                   type="date"
@@ -357,7 +339,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-mono text-(--ink-tertiary) mb-1">
-                    {kind === 'subscription' ? '首期支出金额' : '购入金额'}
+                    {kind === 'subscription' ? '首次支出' : '购入金额'}
                   </label>
                   <input
                     type="number"

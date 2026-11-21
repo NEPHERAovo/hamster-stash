@@ -98,7 +98,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         accountId: sellAccountId,
         categoryId: 'cat_shop',
         date: sellDate,
-        note: sellNote.trim() || `二手售出回血: ${item.name}`,
+        note: sellNote.trim() || `二手售出: ${item.name}`,
         ext: {
           'owned-items': {
             itemId: item.id,
@@ -177,8 +177,8 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const handleCancelSubscription = async () => {
     const today = new Date().toISOString().split('T')[0];
     const confirmed = await confirmAction({
-      title: '取消/退订服务',
-      message: `确定将「${item.name}」标记为已退订吗？`,
+      title: '退订服务',
+      message: `确定将「${item.name}」标记为已退吗？`,
       confirmText: '确认退订',
       isDestructive: false,
     });
@@ -200,27 +200,18 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   };
 
   const getStatusStamp = (status: ItemStatus) => {
-    switch (status) {
-      case 'using':
-        return (
-          <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
-            <span>{isSub ? '在订' : '在用'}</span>
-          </span>
-        );
-      case 'idle':
-        return (
-          <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
-            <span>{isSub ? '暂停' : '闲置'}</span>
-          </span>
-        );
-      case 'sold':
-      case 'scrapped':
-        return (
-          <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
-            <span>{isSub ? '已退订' : '已售出'}</span>
-          </span>
-        );
+    if (status === 'sold' || status === 'scrapped') {
+      return (
+        <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
+          <span>{isSub ? '已退' : '已出'}</span>
+        </span>
+      );
     }
+    return (
+      <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
+        <span>{isSub ? '在订' : '在用'}</span>
+      </span>
+    );
   };
 
   const formatCycle = (cycle?: string) => {
@@ -312,7 +303,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     return (
       <div className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sunken)/40 border border-transparent text-(--ink-tertiary) flex items-center justify-center gap-1.5 select-none">
         <Check className="w-3.5 h-3.5 stroke-2 text-(--color-income)" />
-        <span>已售出</span>
+        <span>已出</span>
       </div>
     );
   };
@@ -420,7 +411,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
               {isSub ? (
                 <div>
-                  <div className="text-[9px] font-mono text-(--ink-tertiary)">单期金额</div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">续费金额</div>
                   <div className="text-xs font-mono font-bold text-(--ink-solid) mt-0.5 tabular-nums">
                     {item.renewalAmountCents ? `¥${centsToYuan(item.renewalAmountCents)}` : '-'}
                   </div>
@@ -484,13 +475,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             className="p-3.5 bg-(--paper-sheet) paper-card border border-(--rule-strong) rounded-(--radius-md) shadow-xs space-y-3"
           >
             <div className="text-xs font-semibold text-(--ink-solid)">
-              {isSub ? '记录续费支出' : '记录配件/维护支出'}
+              {isSub ? '记录续费支出' : '记录配件维护支出'}
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
-                  支出金额 (元)
+                  支出金额
                 </label>
                 <input
                   type="number"
@@ -573,12 +564,12 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             onSubmit={handleConfirmSell}
             className="p-3.5 bg-(--paper-sheet) paper-card border border-(--rule-strong) rounded-(--radius-md) shadow-xs space-y-3"
           >
-            <div className="text-xs font-semibold text-(--ink-solid)">二手售出回血</div>
+            <div className="text-xs font-semibold text-(--ink-solid)">售出记录</div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
-                  售出回血金额 (元)
+                  售出金额
                 </label>
                 <input
                   type="number"
@@ -594,7 +585,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
               <div>
                 <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
-                  回血入账账户
+                  入账账户
                 </label>
                 <select
                   value={sellAccountId}

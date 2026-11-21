@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Plus, Gear as Settings, PencilSimple as Pencil, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
+import { Gear as Settings, PencilSimple as Pencil, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
 import {
   AppShell,
   PageHeader,
@@ -284,19 +284,6 @@ export function App() {
       return (
         <PageHeader
           title={pageTitle}
-          rightAction={
-            activeNavTab.id === 'items' ? (
-              <button
-                type="button"
-                onClick={() => usePluginUIStore.getState().openModal('item-form')}
-                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-                title="新建"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-2" />
-                <span>新建</span>
-              </button>
-            ) : undefined
-          }
         />
       );
     }
@@ -328,15 +315,6 @@ export function App() {
               title="设置"
             >
               <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
-            </button>
-            <button
-              type="button"
-              onClick={handleCreateNewAccount}
-              className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
-              title="新增资金账户"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-2" />
-              <span>新建</span>
             </button>
           </div>
         }
@@ -573,7 +551,7 @@ export function App() {
       {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !activeDetailAccount && !activeCategoryDrilldown && (
         <BottomNav
           currentTab={currentTab}
-          showAddButton={currentTab === 'ledger'}
+          showAddButton={currentTab === 'ledger' || currentTab === 'items' || currentTab === 'assets'}
           isAddOpen={isAddOpen || Boolean(editingTx)}
           onTabChange={(tab) => {
             if (tab === currentTab) {
@@ -584,8 +562,14 @@ export function App() {
             }
           }}
           onAddClick={() => {
-            setEditingTx(null);
-            setIsAddOpen((prev) => !prev);
+            if (currentTab === 'ledger') {
+              setEditingTx(null);
+              setIsAddOpen((prev) => !prev);
+            } else if (currentTab === 'items') {
+              usePluginUIStore.getState().openModal('item-form');
+            } else if (currentTab === 'assets') {
+              handleCreateNewAccount();
+            }
           }}
         />
       )}

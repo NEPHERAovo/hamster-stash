@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Package, CaretRight as ChevronRight, Plus } from '@phosphor-icons/react';
+import { Package, CaretRight as ChevronRight } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   usePluginNavigation,
@@ -16,7 +16,7 @@ import {
 export const OwnedItemsSummaryCard: React.FC = () => {
   const items = usePluginItemStore((s) => s.items);
   const transactions = useHostTransactions();
-  const { openSubPage, openModal } = usePluginNavigation();
+  const { openSubPage } = usePluginNavigation();
 
   const summary = useMemo(() => {
     return computeOverallItemMetrics(items, transactions);
@@ -116,19 +116,8 @@ export const OwnedItemsSummaryCard: React.FC = () => {
             })}
           </div>
         ) : (
-          <div className="py-2 text-center text-xs text-(--ink-tertiary) flex items-center justify-center gap-1.5">
+          <div className="py-2 text-center text-xs text-(--ink-tertiary)">
             <span>暂无记录</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openModal('item-form');
-              }}
-              className="text-(--color-income) hover:underline font-mono inline-flex items-center text-[11px] cursor-pointer"
-            >
-              <Plus className="w-3 h-3 stroke-2 mr-0.5" />
-              新建
-            </button>
           </div>
         )}
       </div>

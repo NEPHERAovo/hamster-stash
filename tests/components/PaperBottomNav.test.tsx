@@ -27,4 +27,37 @@ describe('PaperBottomNav component', () => {
     fireEvent.click(screen.getByText('统计'));
     expect(handleTabChange).toHaveBeenCalledWith('stats');
   });
+
+  it('renders add button with dynamic title based on currentTab', () => {
+    const handleAdd = vi.fn();
+    const { rerender } = render(
+      <PaperBottomNav
+        currentTab="ledger"
+        onTabChange={vi.fn()}
+        showAddButton={true}
+        onAddClick={handleAdd}
+      />
+    );
+    expect(screen.getByTitle('记账')).toBeInTheDocument();
+
+    rerender(
+      <PaperBottomNav
+        currentTab="items"
+        onTabChange={vi.fn()}
+        showAddButton={true}
+        onAddClick={handleAdd}
+      />
+    );
+    expect(screen.getByTitle('新建物品')).toBeInTheDocument();
+
+    rerender(
+      <PaperBottomNav
+        currentTab="assets"
+        onTabChange={vi.fn()}
+        showAddButton={true}
+        onAddClick={handleAdd}
+      />
+    );
+    expect(screen.getByTitle('新建账户')).toBeInTheDocument();
+  });
 });

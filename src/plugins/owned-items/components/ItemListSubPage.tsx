@@ -19,7 +19,7 @@ export interface ItemListSubPageProps {
   params?: Record<string, unknown>;
 }
 
-type FilterTab = 'using' | 'idle' | 'sold' | 'all';
+type FilterTab = 'using' | 'sold' | 'all';
 type KindTab = 'all' | 'physical' | 'subscription';
 
 export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => {
@@ -31,13 +31,11 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   const [kindFilter, setKindFilter] = useState<KindTab>('all');
 
   const overallSummary = useMemo(() => {
-    const idleItems = items.filter((i) => i.status === 'idle');
     const soldItems = items.filter((i) => i.status === 'sold' || i.status === 'scrapped');
 
     const m = computeOverallItemMetrics(items, transactions);
     return {
       ...m,
-      idleCount: idleItems.length,
       soldCount: soldItems.length,
       totalCount: items.length,
     };
@@ -54,33 +52,24 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
       if (activeTab === 'all') return true;
       if (activeTab === 'sold') return i.status === 'sold' || i.status === 'scrapped';
-      return i.status === activeTab;
+      return i.status !== 'sold' && i.status !== 'scrapped';
     });
   }, [items, activeTab, kindFilter]);
 
   const getStatusStamp = (item: Item) => {
     const isSub = item.kind === 'subscription';
-    switch (item.status) {
-      case 'using':
-        return (
-          <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
-            <span>{isSub ? '在订' : '在用'}</span>
-          </span>
-        );
-      case 'idle':
-        return (
-          <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
-            <span>{isSub ? '暂停' : '闲置'}</span>
-          </span>
-        );
-      case 'sold':
-      case 'scrapped':
-        return (
-          <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
-            <span>{isSub ? '已退订' : '已售出'}</span>
-          </span>
-        );
+    if (item.status === 'sold' || item.status === 'scrapped') {
+      return (
+        <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
+          <span>{isSub ? '已退' : '已出'}</span>
+        </span>
+      );
     }
+    return (
+      <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
+        <span>{isSub ? '在订' : '在用'}</span>
+      </span>
+    );
   };
 
   const formatCycle = (cycle?: string) => {
@@ -118,15 +107,6 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               </h1>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => openModal('item-form')}
-            className="h-7 px-2.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-mono font-medium flex items-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-2" />
-            <span>新建</span>
-          </button>
         </div>
       )}
 
@@ -140,7 +120,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                 总览
               </span>
               <div className="flex items-center gap-2 text-[11px] font-mono text-(--ink-secondary)">
-                <span>实体 {overallSummary.physicalCount || 0}</span>
+                <span>物品 {overallSummary.physicalCount || 0}</span>
                 <span>·</span>
                 <span>订阅 {overallSummary.subscriptionCount || 0}</span>
               </div>
@@ -170,8 +150,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             <div className="flex items-center gap-1.5">
               {[
                 { key: 'all', label: '全部' },
-                { key: 'physical', label: '实体物品' },
-                { key: 'subscription', label: '数字订阅' },
+                { key: 'physical', label: '物品' },
+                { key: 'subscription', label: '订阅' },
               ].map((k) => (
                 <button
                   key={k.key}
@@ -192,9 +172,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
           <div className="flex items-center gap-5 px-1 border-b border-(--rule-hairline) font-mono text-xs">
             {[
-              { key: 'using', label: `在用/在订 (${overallSummary.usingCount})` },
-              { key: 'idle', label: `闲置/暂停 (${overallSummary.idleCount})` },
-              { key: 'sold', label: `已出/已退 (${overallSummary.soldCount})` },
+              { key: 'using', label: `在用 (${overallSummary.usingCount})` },
+              { key: 'sold', label: `已出 (${overallSummary.soldCount})` },
               { key: 'all', label: `全部 (${overallSummary.totalCount})` },
             ].map((tab) => {
               const isActive = activeTab === tab.key;
@@ -304,18 +283,24 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             <div className="py-12 text-center text-xs text-(--ink-tertiary) space-y-2">
               <Package className="w-8 h-8 stroke-[1.2] mx-auto opacity-40 text-(--ink-tertiary)" />
               <p>暂无记录</p>
-              <button
-                type="button"
-                onClick={() => openModal('item-form')}
-                className="text-(--color-accent) hover:underline font-mono inline-flex items-center text-xs cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-2 mr-0.5" />
-                新建
-              </button>
             </div>
           )}
         </div>
       </div>
+
+      {onClose && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            type="button"
+            onClick={() => openModal('item-form')}
+            title="新建物品"
+            aria-label="新建物品"
+            className="w-12 h-12 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="w-5 h-5 stroke-[2.2]" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ export interface PaperBottomNavProps {
   onAddClick?: () => void;
   showAddButton?: boolean;
   isAddOpen?: boolean;
+  addButtonTitle?: string;
   className?: string;
   tabs?: Array<{ id?: string; label?: string; order?: number }>;
 }
@@ -20,9 +21,18 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
   onAddClick,
   showAddButton = false,
   isAddOpen = false,
+  addButtonTitle,
   className,
 }) => {
   const pluginTabs = usePluginUIStore((s) => s.navTabs);
+
+  const getDefaultTitle = () => {
+    if (isAddOpen) return '收起便签';
+    if (currentTab === 'items') return '新建物品';
+    if (currentTab === 'assets') return '新建账户';
+    return '记账';
+  };
+  const resolvedAddTitle = addButtonTitle || getDefaultTitle();
 
   const allTabs = useMemo(() => {
     const builtinTabs = [
@@ -53,8 +63,8 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
           <button
             type="button"
             onClick={onAddClick}
-            title={isAddOpen ? '收起便签' : '提笔入账'}
-            aria-label={isAddOpen ? '收起便签' : '提笔入账'}
+            title={resolvedAddTitle}
+            aria-label={resolvedAddTitle}
             className="pointer-events-auto absolute right-4.5 bottom-0 w-[46px] h-[46px] rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
           >
             <Plus

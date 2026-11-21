@@ -11,6 +11,7 @@ export interface ModernBottomNavProps {
   onAddClick?: () => void;
   showAddButton?: boolean;
   isAddOpen?: boolean;
+  addButtonTitle?: string;
   className?: string;
   tabs?: DockTabItem[];
 }
@@ -21,10 +22,19 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
   onAddClick,
   showAddButton = false,
   isAddOpen = false,
+  addButtonTitle,
   className,
   tabs,
 }) => {
   const pluginTabs = usePluginUIStore((s) => s.navTabs);
+
+  const getDefaultTitle = () => {
+    if (isAddOpen) return '收起便签';
+    if (currentTab === 'items') return '新建物品';
+    if (currentTab === 'assets') return '新建账户';
+    return '记账';
+  };
+  const resolvedAddTitle = addButtonTitle || getDefaultTitle();
 
   const allTabs: DockTabItem[] = useMemo(() => {
     if (tabs && tabs.length > 0) {
@@ -54,8 +64,8 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
           <button
             type="button"
             onClick={onAddClick}
-            title={isAddOpen ? '收起便签' : '记一笔'}
-            aria-label={isAddOpen ? '收起便签' : '记一笔'}
+            title={resolvedAddTitle}
+            aria-label={resolvedAddTitle}
             className="pointer-events-auto absolute right-4 bottom-0 w-14 h-14 rounded-full bg-(--btn-primary-bg) text-(--btn-primary-fg) flex items-center justify-center shadow-[0_4px_12px_-2px_var(--color-accent-bg)] active:scale-90 transition-all cursor-pointer"
           >
             <Plus
