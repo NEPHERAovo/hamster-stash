@@ -200,43 +200,6 @@ export class SyncService {
     }
   }
 
-  private async migrateLegacyInlineVouchers(data: ExportData): Promise<ExportData> {
-    let migratedAny = false;
-    const nextTxs: Transaction[] = [];
-
-    for (const tx of data.transactions) {
-      if (tx.voucher?.fileUrl) {
-        const mimeMatch = tx.voucher.fileUrl.match(/^data:([^;]+);/);
-        const mimeType =
-          tx.voucher.mimeType ||
-          mimeMatch?.[1] ||
-          (tx.voucher.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-        const saved = await attachmentStore.saveAttachment({
-          id: tx.voucher.attachmentId,
-          name: tx.voucher.name,
-          mimeType,
-          size: tx.voucher.size,
-          dataUrl: tx.voucher.fileUrl,
-        });
-        const cleanVoucher = {
-          attachmentId: saved.id,
-          name: tx.voucher.name,
-          size: tx.voucher.size,
-          mimeType,
-          title: tx.voucher.title,
-          itemName: tx.voucher.itemName,
-        };
-        await core.txRepo.update(tx.id, { voucher: cleanVoucher });
-        nextTxs.push({ ...tx, voucher: cleanVoucher });
-        migratedAny = true;
-      } else {
-        nextTxs.push(tx);
-      }
-    }
-
-    return migratedAny ? { ...data, transactions: nextTxs } : data;
-  }
-
   private async backupMissingAttachments(
     config: WebDavConfig,
     transactions: Transaction[],
@@ -326,8 +289,7 @@ export class SyncService {
     const shouldBackupAttachments = options?.syncAttachments ?? stored.syncAttachments;
 
     const rawLocalData = await core.adapter.export();
-    const migratedLocalData = await this.migrateLegacyInlineVouchers(rawLocalData);
-    const localData = stripInlineVoucherPayloads(migratedLocalData);
+    const localData = stripInlineVoucherPayloads(rawLocalData);
 
     const remoteContent = await webdavClient.fetchFile(config, 'hamster_sync_vault.json');
     const now = new Date().toISOString();

@@ -81,6 +81,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
             {account.name}
           </div>
           <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-(--ink-tertiary)">
+            {account.note && <span>{account.note}</span>}
             {isCredit && account.repaymentDay && (
               <span className="font-semibold text-(--color-accent)">
                 每月{account.repaymentDay}日还款

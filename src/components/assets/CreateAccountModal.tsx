@@ -19,6 +19,7 @@ export interface CreateAccountModalProps {
   accounts?: Account[];
   onSubmit: (input: {
     name: string;
+    note?: string;
     type: AccountType;
     initialBalance: number;
     icon: string;
@@ -54,6 +55,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const isEditing = Boolean(editingAccount);
   const [type, setType] = useState<AccountType>('savings');
   const [name, setName] = useState('');
+  const [note, setNote] = useState('');
   const [icon, setIcon] = useState('landmark');
   const [balanceStr, setBalanceStr] = useState('');
   const [creditLimitStr, setCreditLimitStr] = useState('');
@@ -75,6 +77,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     setActiveDayPicker(null);
     setType('savings');
     setName('');
+    setNote('');
     setIcon('landmark');
     setBalanceStr('');
     setCreditLimitStr('');
@@ -91,6 +94,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       const isCreditAcct = isCreditAccount(editingAccount);
       setType(isCreditAcct ? 'credit' : 'savings');
       setName(editingAccount.name);
+      setNote(editingAccount.note || '');
       setIcon(editingAccount.icon || (isCreditAcct ? 'credit-card' : 'wallet'));
       setIncludeInNetWorth(editingAccount.includeInNetWorth !== false);
       setCreditLimitStr(
@@ -136,6 +140,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       if (editingAccount && onUpdate) {
         await onUpdate(editingAccount.id, {
           name: trimmed,
+          note: note.trim() || undefined,
           type,
           icon,
           includeInNetWorth,
@@ -163,6 +168,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
       await onSubmit({
         name: trimmed,
+        note: note.trim() || undefined,
         type,
         initialBalance: initialCents,
         icon,
@@ -223,6 +229,18 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             }
             maxLength={24}
             autoFocus
+            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="font-mono text-xs text-(--ink-tertiary)">账户备注</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="添加备注"
+            maxLength={30}
             className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
           />
         </div>

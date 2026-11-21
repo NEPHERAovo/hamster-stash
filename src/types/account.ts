@@ -1,9 +1,9 @@
 export type AccountType = 'savings' | 'credit';
-export type AccountCategory = AccountType;
 
 export interface Account {
   id: string;
   name: string;
+  note?: string;
   type: AccountType;
   balance: number;
   currency: string;

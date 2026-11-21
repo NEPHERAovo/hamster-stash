@@ -22,6 +22,7 @@ describe('Credit Account Features', () => {
   const mockCreditAccount: Account = {
     id: 'acct-credit',
     name: '招行经典白金卡',
+    note: '海淘专用',
     type: 'credit',
     balance: -280000,
     currency: 'CNY',
@@ -59,6 +60,9 @@ describe('Credit Account Features', () => {
     const nameInput = screen.getByPlaceholderText('输入信用账户名称');
     fireEvent.change(nameInput, { target: { value: '广发信用卡' } });
 
+    const noteInput = screen.getByPlaceholderText('添加备注');
+    fireEvent.change(noteInput, { target: { value: '出差专用卡' } });
+
     const repaymentDayBtn = screen.getByText('每月还款日').closest('div')!.querySelector('button')!;
     fireEvent.click(repaymentDayBtn);
     fireEvent.click(screen.getByRole('button', { name: '18' }));
@@ -79,6 +83,7 @@ describe('Credit Account Features', () => {
       expect(handleSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
           name: '广发信用卡',
+          note: '出差专用卡',
           type: 'credit',
           repaymentDay: 18,
           billDay: 2,
@@ -103,6 +108,7 @@ describe('Credit Account Features', () => {
 
     expect(screen.getByText('当前欠款')).toBeInTheDocument();
     expect(screen.getByText('-¥2800.00')).toBeInTheDocument();
+    expect(screen.getByText('信用账户 · 海淘专用')).toBeInTheDocument();
     expect(screen.getByText('额度 ¥50000.00 · 剩余可用 ¥47200.00')).toBeInTheDocument();
     expect(screen.getByText('每月 25 日')).toBeInTheDocument();
     expect(screen.getByText('每月 7 日')).toBeInTheDocument();

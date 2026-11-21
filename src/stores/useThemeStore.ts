@@ -36,7 +36,6 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'theme-pine', name: '幽林松柏', subName: 'Forest Pine', isDark: true, colorDot: '#529E6C' },
 ];
 
-const THEME_STORAGE_KEY = 'hamsterstash_theme_v4';
 const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
 const COLOR_MODE_STORAGE_KEY = 'hamsterstash_color_mode_v1';
 const LIGHT_THEME_STORAGE_KEY = 'hamsterstash_light_theme_v1';
@@ -114,31 +113,14 @@ const getInitialThemeSlots = (): {
   lightThemeId: string;
   darkThemeId: string;
 } => {
-  const savedLegacyTheme = safeGetStorage(THEME_STORAGE_KEY);
   const savedLight = safeGetStorage(LIGHT_THEME_STORAGE_KEY);
   const savedDark = safeGetStorage(DARK_THEME_STORAGE_KEY);
   const savedMode = safeGetStorage(COLOR_MODE_STORAGE_KEY);
 
-  let lightThemeId = 'theme-sage';
-  if (savedLight && isLightTheme(savedLight)) {
-    lightThemeId = savedLight;
-  } else if (savedLegacyTheme && isLightTheme(savedLegacyTheme)) {
-    lightThemeId = savedLegacyTheme;
-  }
-
-  let darkThemeId = 'theme-carbon';
-  if (savedDark && isDarkTheme(savedDark)) {
-    darkThemeId = savedDark;
-  } else if (savedLegacyTheme && isDarkTheme(savedLegacyTheme)) {
-    darkThemeId = savedLegacyTheme;
-  }
-
-  let colorMode: ColorMode = 'light';
-  if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto') {
-    colorMode = savedMode;
-  } else if (savedLegacyTheme && isDarkTheme(savedLegacyTheme)) {
-    colorMode = 'dark';
-  }
+  const lightThemeId = savedLight && isLightTheme(savedLight) ? savedLight : 'theme-sage';
+  const darkThemeId = savedDark && isDarkTheme(savedDark) ? savedDark : 'theme-carbon';
+  const colorMode: ColorMode =
+    savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto' ? savedMode : 'light';
 
   return { colorMode, lightThemeId, darkThemeId };
 };
@@ -224,7 +206,6 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       const next = resolveEffective('auto', state.lightThemeId, state.darkThemeId);
       applyThemeToDOM(next.themeId);
       syncSplashChrome();
-      safeSetStorage(THEME_STORAGE_KEY, next.themeId);
       set({
         currentThemeId: next.themeId,
         isDark: next.isDark,
@@ -244,7 +225,6 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     applyUiStyleToDOM(next.uiStyle);
     syncSplashChrome();
 
-    safeSetStorage(THEME_STORAGE_KEY, resolved.themeId);
     safeSetStorage(UI_STYLE_STORAGE_KEY, next.uiStyle);
     safeSetStorage(COLOR_MODE_STORAGE_KEY, next.colorMode);
     safeSetStorage(LIGHT_THEME_STORAGE_KEY, next.lightThemeId);
@@ -313,7 +293,6 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         applyUiStyleToDOM(nextUiStyle);
         syncSplashChrome();
 
-        safeSetStorage(THEME_STORAGE_KEY, resolved.themeId);
         safeSetStorage(UI_STYLE_STORAGE_KEY, nextUiStyle);
         safeSetStorage(COLOR_MODE_STORAGE_KEY, nextMode);
         safeSetStorage(LIGHT_THEME_STORAGE_KEY, nextLight);

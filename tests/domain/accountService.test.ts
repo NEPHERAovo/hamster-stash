@@ -106,6 +106,26 @@ describe('AccountService', () => {
     ).rejects.toThrow('账户名称不能为空');
   });
 
+  it('creates and updates account with optional note', async () => {
+    const acct = await acctService.createAccount({
+      name: '招商银行',
+      note: '工资卡',
+      type: 'savings',
+      initialBalance: 50000,
+    });
+    expect(acct.note).toBe('工资卡');
+
+    const updated = await acctService.updateAccount(acct.id, {
+      note: '主要生活消费',
+    });
+    expect(updated.note).toBe('主要生活消费');
+
+    const cleared = await acctService.updateAccount(acct.id, {
+      note: '   ',
+    });
+    expect(cleared.note).toBeUndefined();
+  });
+
   it('prevents deleting the last remaining account', async () => {
     const acct = await acctService.createAccount({
       name: '默认账户',

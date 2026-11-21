@@ -5,6 +5,7 @@ import { pluginManager } from '../../core/plugin/PluginManager';
 
 export interface CreateAccountInput {
   name: string;
+  note?: string;
   type: AccountType;
   initialBalance?: number;
   currency?: string;
@@ -20,6 +21,7 @@ export interface CreateAccountInput {
 
 export interface UpdateAccountInput {
   name?: string;
+  note?: string;
   type?: AccountType;
   icon?: string;
   color?: string;
@@ -53,6 +55,7 @@ export class AccountService {
 
     return this.acctRepo.create({
       name: input.name.trim(),
+      note: input.note?.trim() || undefined,
       type: input.type,
       balance: input.initialBalance || 0,
       currency: input.currency || 'CNY',
@@ -82,6 +85,7 @@ export class AccountService {
       }
       updates.name = trimmed;
     }
+    if (patch.note !== undefined) updates.note = patch.note.trim() || undefined;
     if (patch.type !== undefined) updates.type = patch.type;
     if (patch.icon !== undefined) updates.icon = patch.icon;
     if (patch.color !== undefined) updates.color = patch.color;

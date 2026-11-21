@@ -222,6 +222,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
             <div className="text-sm font-bold text-(--ink-primary)">{account.name}</div>
             <div className="font-mono text-[11px] text-(--ink-tertiary)">
               {isCredit ? '信用账户' : '储蓄账户'}
+              {account.note ? ` · ${account.note}` : ''}
             </div>
           </div>
         </div>
@@ -302,6 +303,12 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               {isCredit ? '信用账户' : '储蓄账户'}
             </span>
           </div>
+          {account.note && (
+            <div className="flex justify-between py-2">
+              <span className="text-(--ink-tertiary)">账户备注</span>
+              <span className="font-medium text-(--ink-primary)">{account.note}</span>
+            </div>
+          )}
 
           {isCredit && (
             <>

@@ -175,11 +175,11 @@ HamsterStash features an extensible micro-kernel architecture where feature modu
   - Browser/platform bug workarounds.
   - TypeScript triple-slash directives (`/// <reference ... />`).
 
-### 7.2 TypeScript & Linting Discipline
+### 7.2 TypeScript, Linting & Architecture Discipline
 - TypeScript strict mode enabled: zero `any` allowed (use `unknown` or specific generics).
 - ESLint: Zero errors, zero warnings. Run `pnpm lint` and resolve every report.
 - Tailwind CSS: Always use canonical class names (e.g., `stroke-2` instead of `stroke-[2]`).
-- Zero backward-compatibility shims inside domain or UI components. Version upgrades must use standalone migration modules under `src/core/db/`.
+- Zero backward-compatibility shims inside domain or UI components. The product is in active pre-release development: runtime code must never maintain backward-compatibility branches, legacy aliases, fallback storage keys, or obsolete schema shims. When schemas evolve, transform data directly without carrying historical compatibility baggage in runtime code. Version upgrades must use standalone migration modules under `src/core/db/`.
 
 ---
 

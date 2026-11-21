@@ -20,6 +20,7 @@ const mockAccounts: Account[] = [
   {
     id: 'acct-2',
     name: '招商银行',
+    note: '日常工资卡',
     type: 'savings',
     balance: 200000,
     currency: 'CNY',
@@ -57,6 +58,7 @@ describe('AccountList Component', () => {
     expect(screen.getByText('信用账户')).toBeInTheDocument();
     expect(screen.getByText('微信钱包')).toBeInTheDocument();
     expect(screen.getByText('招商银行')).toBeInTheDocument();
+    expect(screen.getByText('日常工资卡')).toBeInTheDocument();
     expect(screen.getByText('招行信用卡')).toBeInTheDocument();
     expect(screen.getByText('每月23日还款')).toBeInTheDocument();
     expect(screen.getByText('剩余可用 ¥18500.00')).toBeInTheDocument();
