@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Scales as Scale, Trash as Trash2, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
+import { isCreditAccount } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
@@ -36,7 +37,8 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   onDeleteAccount,
   onSelectTransaction,
 }) => {
-  const Icon = getCategoryIcon(account.icon || 'wallet');
+  const isCredit = isCreditAccount(account);
+  const Icon = getCategoryIcon(account.icon || (isCredit ? 'credit-card' : 'wallet'));
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -187,6 +189,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
 
   const isNetPositive = netFlow >= 0;
   const isIncludedInNetWorth = account.includeInNetWorth !== false;
+  const isNegative = account.balance < 0;
 
   const handleToggleNetWorth = async () => {
     if (!onToggleIncludeInNetWorth) return;
@@ -197,6 +200,15 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     }
   };
 
+  const linkedRepaymentAccount = account.repaymentAccountId
+    ? acctMap.get(account.repaymentAccountId)
+    : undefined;
+
+  let balanceLabel = '当前余额';
+  if (isCredit && isNegative) {
+    balanceLabel = '当前欠款';
+  }
+
   return (
     <div className="w-full pb-6 pt-1 px-4">
       <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) shadow-xs p-4 mb-4">
@@ -206,17 +218,31 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           </div>
           <div>
             <div className="font-bold text-sm text-(--ink-primary)">{account.name}</div>
-            <div className="text-[11px] font-mono text-(--ink-tertiary)">{getAccountTypeName(account.type)}</div>
+            <div className="text-[11px] font-mono text-(--ink-tertiary)">
+              {isCredit ? '信用账户 · ' : '储蓄账户 · '}
+              {getAccountTypeName(account.type)}
+            </div>
           </div>
         </div>
 
         <div className="mb-3.5">
           <div className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider mb-0.5 font-mono">
-            余额
+            {balanceLabel}
           </div>
-          <div className="text-3xl font-bold tracking-tight text-(--ink-primary) tabular-nums font-mono">
-            ¥{centsToYuan(account.balance)}
+          <div
+            className={cn(
+              'text-3xl font-bold tracking-tight tabular-nums font-mono',
+              isNegative ? 'text-(--color-expense)' : 'text-(--ink-primary)'
+            )}
+          >
+            {isNegative ? `-¥${centsToYuan(Math.abs(account.balance))}` : `¥${centsToYuan(account.balance)}`}
           </div>
+          {isCredit && account.creditLimit && (
+            <div className="text-[11px] font-mono text-(--ink-tertiary) mt-1">
+              额度 ¥{centsToYuan(account.creditLimit)} · 剩余可用 ¥
+              {centsToYuan(Math.max(0, account.creditLimit + account.balance))}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-3 text-center py-3 border-y border-dashed border-(--rule-hairline) mb-3.5">
@@ -244,7 +270,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               onClick={() => onOpenTransfer(account)}
             >
               <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.85]" />
-              <span>资金划转</span>
+              <span>{isCredit ? '账户还款' : '资金划转'}</span>
             </button>
           )}
 
@@ -270,9 +296,58 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         </div>
         <div className="divide-y divide-(--rule-hairline)">
           <div className="flex justify-between py-2">
+            <span className="text-(--ink-tertiary)">账户分类</span>
+            <span className="text-(--ink-primary) font-medium">
+              {isCredit ? '信用账户' : '储蓄账户'}
+            </span>
+          </div>
+          <div className="flex justify-between py-2">
             <span className="text-(--ink-tertiary)">账户类型</span>
             <span className="text-(--ink-primary) font-medium">{getAccountTypeName(account.type)}</span>
           </div>
+
+          {isCredit && (
+            <>
+              <div className="flex justify-between py-2">
+                <span className="text-(--ink-tertiary)">每月还款日</span>
+                <span className="text-(--ink-primary) font-medium">
+                  {account.repaymentDay ? `每月 ${account.repaymentDay} 日` : '未设置'}
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-(--ink-tertiary)">每月账单日</span>
+                <span className="text-(--ink-primary) font-medium">
+                  {account.billDay ? `每月 ${account.billDay} 日` : '未设置'}
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-(--ink-tertiary)">关联还款账户</span>
+                <span className="text-(--ink-primary) font-medium">
+                  {linkedRepaymentAccount ? linkedRepaymentAccount.name : '未关联'}
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-(--ink-tertiary)">自动还款</span>
+                <span
+                  className={cn(
+                    'font-medium',
+                    account.autoRepay ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
+                  )}
+                >
+                  {account.autoRepay ? '已开启' : '未开启'}
+                </span>
+              </div>
+              {account.creditLimit !== undefined && (
+                <div className="flex justify-between py-2">
+                  <span className="text-(--ink-tertiary)">信用额度</span>
+                  <span className="text-(--ink-primary) font-medium">
+                    ¥{centsToYuan(account.creditLimit)}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
           <div className="flex items-center justify-between py-2">
             <span className="text-(--ink-tertiary)">计入净资产</span>
             {onToggleIncludeInNetWorth ? (

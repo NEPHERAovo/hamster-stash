@@ -147,4 +147,41 @@ describe('AccountService', () => {
     const remainingTxs = await txRepo.findByAccount(acct1.id);
     expect(remainingTxs.length).toBe(0);
   });
+
+  it('creates and updates credit accounts with repayment day, autoRepay, and linked repayment account', async () => {
+    const debit = await acctService.createAccount({
+      name: '招商银行储蓄卡',
+      type: 'bank',
+      initialBalance: 500000,
+    });
+
+    const credit = await acctService.createAccount({
+      name: '招商信用卡',
+      type: 'credit',
+      accountCategory: 'credit',
+      initialBalance: -150000,
+      creditLimit: 2000000,
+      billDay: 5,
+      repaymentDay: 23,
+      repaymentAccountId: debit.id,
+      autoRepay: true,
+    });
+
+    expect(credit.accountCategory).toBe('credit');
+    expect(credit.creditLimit).toBe(2000000);
+    expect(credit.billDay).toBe(5);
+    expect(credit.repaymentDay).toBe(23);
+    expect(credit.repaymentAccountId).toBe(debit.id);
+    expect(credit.autoRepay).toBe(true);
+
+    const updated = await acctService.updateAccount(credit.id, {
+      repaymentDay: 25,
+      autoRepay: false,
+      creditLimit: 3000000,
+    });
+
+    expect(updated.repaymentDay).toBe(25);
+    expect(updated.autoRepay).toBe(false);
+    expect(updated.creditLimit).toBe(3000000);
+  });
 });

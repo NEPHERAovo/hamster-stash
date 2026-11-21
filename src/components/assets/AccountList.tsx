@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Trash as Trash2 } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
+import { isCreditAccount } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
@@ -45,7 +46,8 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   onSelect,
   onDelete,
 }) => {
-  const Icon = getCategoryIcon(account.icon || 'wallet');
+  const isCredit = isCreditAccount(account);
+  const Icon = getCategoryIcon(account.icon || (isCredit ? 'credit-card' : 'wallet'));
   const isNegative = account.balance < 0;
 
   const handleDelete = async () => {
@@ -77,7 +79,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
       containerClassName="border-b border-dashed border-(--rule-hairline)/60 last:border-b-0"
       className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
     >
-      <div className="flex items-center gap-2.5 flex-1 min-w-0 pointer-events-none">
+      <div className="flex items-center gap-2.5 flex-1 min-w-0 pointer-events-none mr-2">
         <div className="w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0 rounded-(--badge-radius) bg-(--paper-sunken)">
           <Icon className="w-3.5 h-3.5 stroke-[1.8]" />
         </div>
@@ -85,8 +87,18 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
           <div className="text-[13px] font-semibold text-(--ink-primary) truncate">
             {account.name}
           </div>
-          <div className="text-[10px] font-mono text-(--ink-tertiary) flex items-center gap-1">
+          <div className="text-[10px] font-mono text-(--ink-tertiary) flex items-center gap-1.5 flex-wrap">
             <span>{getAccountTypeLabel(account.type)}</span>
+            {isCredit && account.repaymentDay && (
+              <span className="text-(--color-accent) font-semibold">
+                每月{account.repaymentDay}日还款
+              </span>
+            )}
+            {isCredit && account.autoRepay && (
+              <span className="px-1 py-0.5 rounded bg-(--color-income)/10 text-(--color-income) text-[9px] font-medium">
+                自动还款
+              </span>
+            )}
             {account.includeInNetWorth === false && (
               <span className="text-(--ink-faint)">· 不计净资产</span>
             )}
@@ -94,14 +106,14 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 text-right ml-2.5 pointer-events-none">
+      <div className="shrink-0 text-right pointer-events-none">
         <span
           className={cn(
             'font-mono text-sm font-semibold tabular-nums',
             isNegative ? 'text-(--color-expense)' : 'text-(--ink-solid)'
           )}
         >
-          ¥ {centsToYuan(account.balance)}
+          {isNegative ? `-¥ ${centsToYuan(Math.abs(account.balance))}` : `¥ ${centsToYuan(account.balance)}`}
         </span>
       </div>
     </SwipeableRow>
@@ -115,28 +127,80 @@ export const AccountList: React.FC<AccountListProps> = ({
 }) => {
   const canDelete = accounts.length > 1;
 
+  const savingsAccounts = useMemo(
+    () => accounts.filter((a) => !isCreditAccount(a)),
+    [accounts]
+  );
+  const creditAccounts = useMemo(
+    () => accounts.filter((a) => isCreditAccount(a)),
+    [accounts]
+  );
+
+  const savingsTotal = useMemo(
+    () => savingsAccounts.reduce((sum, a) => sum + (a.includeInNetWorth === false ? 0 : a.balance), 0),
+    [savingsAccounts]
+  );
+
+  const creditDebtTotal = useMemo(
+    () => creditAccounts.reduce((sum, a) => sum + (a.includeInNetWorth === false ? 0 : Math.min(0, a.balance)), 0),
+    [creditAccounts]
+  );
+
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between px-1 pb-1.5 select-none">
-        <span className="text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider">
-          账户资产
-        </span>
-        <span className="text-[11px] font-mono text-(--ink-faint)">
-          共 {accounts.length} 笔
-        </span>
+    <div className="w-full space-y-4">
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between px-1 select-none">
+          <span className="text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider">
+            储蓄账户
+          </span>
+          <span className="text-[11px] font-mono text-(--ink-faint)">
+            共 {savingsAccounts.length} 项 · 合计 ¥{centsToYuan(savingsTotal)}
+          </span>
+        </div>
+
+        <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) overflow-hidden shadow-xs">
+          {savingsAccounts.length === 0 ? (
+            <div className="py-6 text-center text-xs text-(--ink-tertiary)">
+              暂无储蓄账户
+            </div>
+          ) : (
+            savingsAccounts.map((acct) => (
+              <SwipeableAccountRow
+                key={acct.id}
+                account={acct}
+                canDelete={canDelete}
+                onSelect={() => onSelectAccount(acct)}
+                onDelete={() => onDeleteAccount?.(acct)}
+              />
+            ))
+          )}
+        </div>
       </div>
 
-      <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) overflow-hidden shadow-xs">
-        {accounts.map((acct) => (
-          <SwipeableAccountRow
-            key={acct.id}
-            account={acct}
-            canDelete={canDelete}
-            onSelect={() => onSelectAccount(acct)}
-            onDelete={() => onDeleteAccount?.(acct)}
-          />
-        ))}
-      </div>
+      {creditAccounts.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-1 select-none">
+            <span className="text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider">
+              信用账户
+            </span>
+            <span className="text-[11px] font-mono text-(--ink-faint)">
+              共 {creditAccounts.length} 项 · 欠款 ¥{centsToYuan(Math.abs(creditDebtTotal))}
+            </span>
+          </div>
+
+          <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) overflow-hidden shadow-xs">
+            {creditAccounts.map((acct) => (
+              <SwipeableAccountRow
+                key={acct.id}
+                account={acct}
+                canDelete={canDelete}
+                onSelect={() => onSelectAccount(acct)}
+                onDelete={() => onDeleteAccount?.(acct)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

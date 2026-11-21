@@ -141,9 +141,10 @@ export class IndexedDBAdapter implements DataAdapter {
         const txStore = tx.objectStore(STORES.TRANSACTIONS);
 
         const sampleAccounts: Account[] = [
-          { id: 'acct_cash', name: '日常活钱', type: 'cash', balance: 125000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: now, updatedAt: now },
-          { id: 'acct_bank', name: '招商银行', type: 'bank', balance: 5860000, currency: 'CNY', icon: 'landmark', sortOrder: 2, createdAt: now, updatedAt: now },
-          { id: 'acct_wx', name: '微信钱包', type: 'ewallet', balance: 64200, currency: 'CNY', icon: 'credit-card', sortOrder: 3, createdAt: now, updatedAt: now },
+          { id: 'acct_cash', name: '日常活钱', type: 'cash', accountCategory: 'savings', balance: 125000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: now, updatedAt: now },
+          { id: 'acct_bank', name: '招商银行', type: 'bank', accountCategory: 'savings', balance: 5860000, currency: 'CNY', icon: 'landmark', sortOrder: 2, createdAt: now, updatedAt: now },
+          { id: 'acct_wx', name: '微信钱包', type: 'ewallet', accountCategory: 'savings', balance: 64200, currency: 'CNY', icon: 'credit-card', sortOrder: 3, createdAt: now, updatedAt: now },
+          { id: 'acct_credit', name: '招商信用卡', type: 'credit', accountCategory: 'credit', balance: -150000, creditLimit: 2000000, billDay: 5, repaymentDay: 23, repaymentAccountId: 'acct_bank', autoRepay: true, currency: 'CNY', icon: 'credit-card', sortOrder: 4, createdAt: now, updatedAt: now },
         ];
         for (const acct of sampleAccounts) {
           await acctStore.put(acct);

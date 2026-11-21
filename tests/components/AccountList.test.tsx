@@ -9,32 +9,61 @@ const mockAccounts: Account[] = [
     id: 'acct-1',
     name: '微信钱包',
     type: 'ewallet',
+    accountCategory: 'savings',
     balance: 50000,
+    currency: 'CNY',
+    sortOrder: 1,
     icon: 'wallet',
     includeInNetWorth: true,
-    createdAt: 1000,
-    updatedAt: 1000,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
   },
   {
     id: 'acct-2',
     name: '招商银行',
     type: 'bank',
+    accountCategory: 'savings',
     balance: 200000,
+    currency: 'CNY',
+    sortOrder: 2,
+    icon: 'landmark',
+    includeInNetWorth: true,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'acct-3',
+    name: '招行信用卡',
+    type: 'credit',
+    accountCategory: 'credit',
+    balance: -150000,
+    currency: 'CNY',
+    sortOrder: 3,
     icon: 'credit-card',
     includeInNetWorth: true,
-    createdAt: 1000,
-    updatedAt: 1000,
+    creditLimit: 2000000,
+    billDay: 5,
+    repaymentDay: 23,
+    repaymentAccountId: 'acct-2',
+    autoRepay: true,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
   },
 ];
 
 describe('AccountList Component', () => {
-  it('renders account rows and account count', () => {
+  it('renders savings and credit accounts with repayment day and auto repay badge', () => {
     const handleSelect = vi.fn();
     render(<AccountList accounts={mockAccounts} onSelectAccount={handleSelect} />);
 
-    expect(screen.getByText('共 2 笔')).toBeInTheDocument();
+    expect(screen.getByText('储蓄账户')).toBeInTheDocument();
+    expect(screen.getByText('信用账户')).toBeInTheDocument();
     expect(screen.getByText('微信钱包')).toBeInTheDocument();
     expect(screen.getByText('招商银行')).toBeInTheDocument();
+    expect(screen.getByText('招行信用卡')).toBeInTheDocument();
+    expect(screen.getByText('每月23日还款')).toBeInTheDocument();
+    expect(screen.getByText('自动还款')).toBeInTheDocument();
+    expect(screen.getByText('-¥ 1500.00')).toBeInTheDocument();
   });
 
   it('triggers onSelectAccount when account row is clicked in multi-account state', () => {
@@ -42,8 +71,6 @@ describe('AccountList Component', () => {
     render(<AccountList accounts={mockAccounts} onSelectAccount={handleSelect} />);
 
     const accountRow = screen.getByText('微信钱包');
-    fireEvent.mouseDown(accountRow, { button: 0, clientX: 100, clientY: 100 });
-    fireEvent.mouseUp(accountRow);
     fireEvent.click(accountRow);
 
     expect(handleSelect).toHaveBeenCalledTimes(1);

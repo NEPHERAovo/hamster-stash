@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { PaperModal } from '../ui/PaperModal';
 import { AmountInput } from '../ui/AmountInput';
-import type { Account, AccountType } from '../../types/account';
+import { SegToggle } from '../ui/SegToggle';
+import type { Account, AccountType, AccountCategory } from '../../types/account';
+import { isCreditAccount } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
 import { getCategoryIcon } from '../../utils/categoryIcons';
+import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { toast } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
 
@@ -11,23 +14,34 @@ export interface CreateAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   editingAccount?: Account | null;
+  accounts?: Account[];
   onSubmit: (input: {
     name: string;
     type: AccountType;
+    accountCategory?: AccountCategory;
     initialBalance: number;
     icon: string;
     includeInNetWorth: boolean;
+    creditLimit?: number;
+    billDay?: number;
+    repaymentDay?: number;
+    repaymentAccountId?: string;
+    autoRepay?: boolean;
   }) => Promise<void>;
   onUpdate?: (id: string, patch: UpdateAccountInput) => Promise<void>;
 }
 
-const ACCOUNT_TYPES: { value: AccountType; label: string; defaultIcon: string }[] = [
+const SAVINGS_ACCOUNT_TYPES: { value: AccountType; label: string; defaultIcon: string }[] = [
   { value: 'bank', label: '储蓄卡', defaultIcon: 'landmark' },
   { value: 'ewallet', label: '电子钱包', defaultIcon: 'wallet' },
-  { value: 'credit', label: '信用卡', defaultIcon: 'credit-card' },
   { value: 'cash', label: '现金', defaultIcon: 'banknote' },
   { value: 'investment', label: '投资理财', defaultIcon: 'trending-up' },
   { value: 'other', label: '其他', defaultIcon: 'coins' },
+];
+
+const CREDIT_ACCOUNT_TYPES: { value: AccountType; label: string; defaultIcon: string }[] = [
+  { value: 'credit', label: '信用卡', defaultIcon: 'credit-card' },
+  { value: 'other', label: '信用消费', defaultIcon: 'credit-card' },
 ];
 
 const ACCOUNT_ICONS = [
@@ -45,32 +59,58 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   isOpen,
   onClose,
   editingAccount,
+  accounts = [],
   onSubmit,
   onUpdate,
 }) => {
   const isEditing = Boolean(editingAccount);
+  const [accountCategory, setAccountCategory] = useState<AccountCategory>('savings');
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('bank');
   const [icon, setIcon] = useState('landmark');
   const [balanceStr, setBalanceStr] = useState('');
+  const [creditLimitStr, setCreditLimitStr] = useState('');
+  const [billDay, setBillDay] = useState<number | undefined>(undefined);
+  const [repaymentDay, setRepaymentDay] = useState<number | undefined>(undefined);
+  const [repaymentAccountId, setRepaymentAccountId] = useState<string | undefined>(undefined);
+  const [autoRepay, setAutoRepay] = useState(false);
   const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const availableSavingsAccounts = useMemo(() => {
+    return accounts.filter((a) => !isCreditAccount(a) && a.id !== editingAccount?.id);
+  }, [accounts, editingAccount?.id]);
+
   const resetForm = () => {
+    setAccountCategory('savings');
     setName('');
     setType('bank');
     setIcon('landmark');
     setBalanceStr('');
+    setCreditLimitStr('');
+    setBillDay(undefined);
+    setRepaymentDay(undefined);
+    setRepaymentAccountId(undefined);
+    setAutoRepay(false);
     setIncludeInNetWorth(true);
   };
 
   useEffect(() => {
     if (!isOpen) return;
     if (editingAccount) {
+      const isCredit = isCreditAccount(editingAccount);
+      setAccountCategory(isCredit ? 'credit' : 'savings');
       setName(editingAccount.name);
       setType(editingAccount.type);
-      setIcon(editingAccount.icon || 'wallet');
+      setIcon(editingAccount.icon || (isCredit ? 'credit-card' : 'wallet'));
       setIncludeInNetWorth(editingAccount.includeInNetWorth !== false);
+      setCreditLimitStr(
+        editingAccount.creditLimit ? centsToYuan(editingAccount.creditLimit) : ''
+      );
+      setBillDay(editingAccount.billDay);
+      setRepaymentDay(editingAccount.repaymentDay);
+      setRepaymentAccountId(editingAccount.repaymentAccountId);
+      setAutoRepay(Boolean(editingAccount.autoRepay));
       setBalanceStr('');
     } else {
       resetForm();
@@ -82,9 +122,22 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     onClose();
   };
 
+  const handleCategoryChange = (nextCategory: AccountCategory) => {
+    setAccountCategory(nextCategory);
+    if (nextCategory === 'credit') {
+      setType('credit');
+      setIcon('credit-card');
+    } else {
+      setType('bank');
+      setIcon('landmark');
+    }
+  };
+
   const handleSelectType = (nextType: AccountType) => {
     setType(nextType);
-    const matched = ACCOUNT_TYPES.find((item) => item.value === nextType);
+    const activeList =
+      accountCategory === 'credit' ? CREDIT_ACCOUNT_TYPES : SAVINGS_ACCOUNT_TYPES;
+    const matched = activeList.find((item) => item.value === nextType);
     if (matched) {
       setIcon(matched.defaultIcon);
     }
@@ -98,14 +151,23 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       return;
     }
 
+    const parsedCreditLimit =
+      creditLimitStr.trim() === '' ? undefined : Math.round(Number(creditLimitStr.trim()) * 100);
+
     setIsSubmitting(true);
     try {
       if (editingAccount && onUpdate) {
         await onUpdate(editingAccount.id, {
           name: trimmed,
           type,
+          accountCategory,
           icon,
           includeInNetWorth,
+          creditLimit: parsedCreditLimit,
+          billDay,
+          repaymentDay,
+          repaymentAccountId,
+          autoRepay,
         });
         resetForm();
         onClose();
@@ -114,16 +176,27 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
       const parsedBalance = balanceStr.trim() === '' ? 0 : Number(balanceStr.trim());
       if (!Number.isFinite(parsedBalance)) {
-        toast.error('请输入有效的初始余额');
+        toast.error('请输入有效的金额');
         return;
       }
+
+      const initialCents =
+        accountCategory === 'credit'
+          ? -Math.round(Math.abs(parsedBalance) * 100)
+          : Math.round(parsedBalance * 100);
 
       await onSubmit({
         name: trimmed,
         type,
-        initialBalance: Math.round(parsedBalance * 100),
+        accountCategory,
+        initialBalance: initialCents,
         icon,
         includeInNetWorth,
+        creditLimit: parsedCreditLimit,
+        billDay,
+        repaymentDay,
+        repaymentAccountId,
+        autoRepay,
       });
       resetForm();
       onClose();
@@ -142,6 +215,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     submitLabel = '保存修改';
   }
 
+  const typeOptions =
+    accountCategory === 'credit' ? CREDIT_ACCOUNT_TYPES : SAVINGS_ACCOUNT_TYPES;
+
   return (
     <PaperModal
       isOpen={isOpen}
@@ -150,12 +226,29 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     >
       <form onSubmit={handleConfirm} className="p-4 space-y-4 select-none">
         <div className="space-y-1.5">
+          <label className="text-xs font-mono text-(--ink-tertiary)">账户类型分类</label>
+          <SegToggle
+            options={[
+              { value: 'savings', label: '储蓄账户' },
+              { value: 'credit', label: '信用账户' },
+            ]}
+            value={accountCategory}
+            onChange={handleCategoryChange}
+            size="sm"
+          />
+        </div>
+
+        <div className="space-y-1.5">
           <label className="text-xs font-mono text-(--ink-tertiary)">账户名称</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="请输入账户名称"
+            placeholder={
+              accountCategory === 'credit'
+                ? '例如：招行信用卡、花呗'
+                : '例如：微信零钱、工行卡、日常活钱'
+            }
             maxLength={24}
             autoFocus
             className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary) transition-colors"
@@ -163,9 +256,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">账户类型</label>
+          <label className="text-xs font-mono text-(--ink-tertiary)">子类型</label>
           <div className="flex flex-wrap gap-1.5">
-            {ACCOUNT_TYPES.map((item) => {
+            {typeOptions.map((item) => {
               const isSelected = type === item.value;
               return (
                 <button
@@ -211,16 +304,111 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
         </div>
 
+        {accountCategory === 'credit' && (
+          <div className="space-y-3 p-3 rounded-(--radius-md) bg-(--paper-sunken)/40 border border-(--rule-hairline)">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-(--ink-tertiary)">每月还款日</label>
+                <select
+                  value={repaymentDay ?? ''}
+                  onChange={(e) =>
+                    setRepaymentDay(e.target.value ? Number(e.target.value) : undefined)
+                  }
+                  className="w-full h-9 px-2.5 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                >
+                  <option value="">未设置</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      每月 {d} 日
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-mono text-(--ink-tertiary)">每月账单日</label>
+                <select
+                  value={billDay ?? ''}
+                  onChange={(e) =>
+                    setBillDay(e.target.value ? Number(e.target.value) : undefined)
+                  }
+                  className="w-full h-9 px-2.5 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                >
+                  <option value="">未设置</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      每月 {d} 日
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-mono text-(--ink-tertiary)">关联还款账户</label>
+              <select
+                value={repaymentAccountId ?? ''}
+                onChange={(e) => setRepaymentAccountId(e.target.value || undefined)}
+                className="w-full h-9 px-2.5 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+              >
+                <option value="">未关联还款账户</option>
+                {availableSavingsAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} (余额: ¥{centsToYuan(a.balance)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between py-1">
+              <span className="text-xs font-medium text-(--ink-primary)">配置自动还款</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoRepay}
+                onClick={() => setAutoRepay((prev) => !prev)}
+                className={cn(
+                  'w-9 h-5 rounded-full border transition-colors relative cursor-pointer shrink-0',
+                  autoRepay
+                    ? 'bg-(--color-income) border-(--color-income)'
+                    : 'bg-(--paper-sheet) border-(--rule-hairline)'
+                )}
+              >
+                <span
+                  className={cn(
+                    'block w-3.5 h-3.5 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
+                    autoRepay ? 'left-4.5' : 'left-0.5 bg-(--ink-tertiary)'
+                  )}
+                />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-mono text-(--ink-tertiary)">信用额度 (元)</label>
+              <AmountInput
+                value={creditLimitStr}
+                onChange={setCreditLimitStr}
+                placeholder="0.00"
+                size="sm"
+                variant="sunken"
+                aria-label="信用额度"
+              />
+            </div>
+          </div>
+        )}
+
         {!isEditing && (
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">初始余额</label>
+            <label className="text-xs font-mono text-(--ink-tertiary)">
+              {accountCategory === 'credit' ? '当前欠款 (元)' : '初始余额 (元)'}
+            </label>
             <AmountInput
               value={balanceStr}
               onChange={setBalanceStr}
               placeholder="0.00"
               size="sm"
               variant="sunken"
-              aria-label="初始余额"
+              aria-label={accountCategory === 'credit' ? '初始欠款' : '初始余额'}
             />
           </div>
         )}

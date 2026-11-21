@@ -655,6 +655,7 @@ export function App() {
       <CreateAccountModal
         isOpen={isCreateAccountOpen || Boolean(editingAccount)}
         editingAccount={editingAccount}
+        accounts={accounts}
         onClose={() => {
           setIsCreateAccountOpen(false);
           setEditingAccount(null);

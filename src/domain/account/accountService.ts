@@ -1,4 +1,4 @@
-import type { Account, AccountType } from '../../types/account';
+import type { Account, AccountType, AccountCategory } from '../../types/account';
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { TransactionRepository } from '../../core/repositories/TransactionRepository';
 import { pluginManager } from '../../core/plugin/PluginManager';
@@ -6,19 +6,31 @@ import { pluginManager } from '../../core/plugin/PluginManager';
 export interface CreateAccountInput {
   name: string;
   type: AccountType;
+  accountCategory?: AccountCategory;
   initialBalance?: number;
   currency?: string;
   icon?: string;
   color?: string;
   includeInNetWorth?: boolean;
+  creditLimit?: number;
+  billDay?: number;
+  repaymentDay?: number;
+  repaymentAccountId?: string;
+  autoRepay?: boolean;
 }
 
 export interface UpdateAccountInput {
   name?: string;
   type?: AccountType;
+  accountCategory?: AccountCategory;
   icon?: string;
   color?: string;
   includeInNetWorth?: boolean;
+  creditLimit?: number;
+  billDay?: number;
+  repaymentDay?: number;
+  repaymentAccountId?: string;
+  autoRepay?: boolean;
 }
 
 export class AccountService {
@@ -33,9 +45,6 @@ export class AccountService {
     this.txRepo = txRepo;
   }
 
-  /**
-   * 创建账户
-   */
   async createAccount(input: CreateAccountInput): Promise<Account> {
     if (!input.name || !input.name.trim()) {
       throw new Error('账户名称不能为空');
@@ -43,15 +52,23 @@ export class AccountService {
 
     const all = await this.acctRepo.findAll();
     const sortOrder = all.length > 0 ? Math.max(...all.map((a) => a.sortOrder)) + 1 : 1;
+    const resolvedCategory: AccountCategory =
+      input.accountCategory || (input.type === 'credit' ? 'credit' : 'savings');
 
     return this.acctRepo.create({
       name: input.name.trim(),
       type: input.type,
+      accountCategory: resolvedCategory,
       balance: input.initialBalance || 0,
       currency: input.currency || 'CNY',
-      icon: input.icon || 'wallet',
+      icon: input.icon || (resolvedCategory === 'credit' ? 'credit-card' : 'wallet'),
       color: input.color,
       includeInNetWorth: input.includeInNetWorth ?? true,
+      creditLimit: input.creditLimit,
+      billDay: input.billDay,
+      repaymentDay: input.repaymentDay,
+      repaymentAccountId: input.repaymentAccountId,
+      autoRepay: input.autoRepay,
       sortOrder,
     });
   }
@@ -71,9 +88,15 @@ export class AccountService {
       updates.name = trimmed;
     }
     if (patch.type !== undefined) updates.type = patch.type;
+    if (patch.accountCategory !== undefined) updates.accountCategory = patch.accountCategory;
     if (patch.icon !== undefined) updates.icon = patch.icon;
     if (patch.color !== undefined) updates.color = patch.color;
     if (patch.includeInNetWorth !== undefined) updates.includeInNetWorth = patch.includeInNetWorth;
+    if (patch.creditLimit !== undefined) updates.creditLimit = patch.creditLimit;
+    if (patch.billDay !== undefined) updates.billDay = patch.billDay;
+    if (patch.repaymentDay !== undefined) updates.repaymentDay = patch.repaymentDay;
+    if (patch.repaymentAccountId !== undefined) updates.repaymentAccountId = patch.repaymentAccountId;
+    if (patch.autoRepay !== undefined) updates.autoRepay = patch.autoRepay;
 
     return this.acctRepo.update(id, updates);
   }
@@ -94,9 +117,6 @@ export class AccountService {
     );
   }
 
-  /**
-   * 删除账户（安全检查：有流水则阻止直接物理删除）
-   */
   async deleteAccount(id: string, force: boolean = false): Promise<void> {
     const all = await this.acctRepo.findAll();
     if (all.length <= 1) {
