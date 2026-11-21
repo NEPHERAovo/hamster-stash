@@ -67,7 +67,7 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
     const itemsTab = uiState.navTabs.find((t) => t.id === 'items');
     expect(itemsTab).toBeDefined();
-    expect(itemsTab?.label).toBe('物品');
+    expect(itemsTab?.label).toBe('持有');
     expect(itemsTab?.order).toBe(25);
     expect(itemsTab?.icon).toBe('package');
 
@@ -249,5 +249,59 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
     const { container } = render(React.createElement(ItemRowBadge, { context: { transaction: tx } }));
     expect(container.firstChild).toBeNull();
+  });
+
+  it('computes metrics and daily cost accurately for digital subscriptions', () => {
+    const subItem: Item = {
+      id: 'sub_chatgpt',
+      name: 'ChatGPT Plus',
+      icon: 'sparkles',
+      kind: 'subscription',
+      status: 'using',
+      buyDate: '2026-01-01',
+      billingCycle: 'monthly',
+      renewalAmountCents: 14000,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const transactions: Transaction[] = [
+      {
+        id: 'tx_sub_1',
+        type: 'expense',
+        amount: 14000,
+        accountId: 'acct_1',
+        categoryId: 'cat_digital',
+        date: '2026-01-01',
+        ext: { 'owned-items': { itemId: 'sub_chatgpt', itemRole: 'buy', kind: 'subscription' } },
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'tx_sub_2',
+        type: 'expense',
+        amount: 14000,
+        accountId: 'acct_1',
+        categoryId: 'cat_digital',
+        date: '2026-02-01',
+        ext: { 'owned-items': { itemId: 'sub_chatgpt', itemRole: 'maintenance', kind: 'subscription' } },
+        createdAt: '2026-02-01T00:00:00.000Z',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+      },
+    ];
+
+    const metrics = computeItemMetrics(subItem, transactions);
+
+    expect(metrics.grossCost).toBe(28000);
+    expect(metrics.recoveredAmount).toBe(0);
+    expect(metrics.netCost).toBe(28000);
+    expect(metrics.retentionRate).toBeNull();
+    expect(metrics.dailyCost).toBeGreaterThan(0);
+
+    const overall = computeOverallItemMetrics([subItem], transactions);
+    expect(overall.usingCount).toBe(1);
+    expect(overall.subscriptionCount).toBe(1);
+    expect(overall.physicalCount).toBe(0);
+    expect(overall.totalUsingNetCost).toBe(28000);
   });
 });

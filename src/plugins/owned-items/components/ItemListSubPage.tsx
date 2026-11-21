@@ -7,7 +7,7 @@ import {
   getCategoryIcon,
   cn,
 } from '../../../plugin-sdk';
-import type { ItemStatus } from '../types';
+import type { Item } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import {
   computeItemMetrics,
@@ -20,6 +20,7 @@ export interface ItemListSubPageProps {
 }
 
 type FilterTab = 'using' | 'idle' | 'sold' | 'all';
+type KindTab = 'all' | 'physical' | 'subscription';
 
 export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => {
   const items = usePluginItemStore((s) => s.items);
@@ -27,10 +28,11 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   const { openSubPage, openModal } = usePluginNavigation();
 
   const [activeTab, setActiveTab] = useState<FilterTab>('using');
+  const [kindFilter, setKindFilter] = useState<KindTab>('all');
 
   const overallSummary = useMemo(() => {
     const idleItems = items.filter((i) => i.status === 'idle');
-    const soldItems = items.filter((i) => i.status === 'sold');
+    const soldItems = items.filter((i) => i.status === 'sold' || i.status === 'scrapped');
 
     const m = computeOverallItemMetrics(items, transactions);
     return {
@@ -42,40 +44,60 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   }, [items, transactions]);
 
   const filteredItems = useMemo(() => {
-    if (activeTab === 'all') return items;
-    return items.filter((i) => i.status === activeTab);
-  }, [items, activeTab]);
+    return items.filter((i) => {
+      const matchKind =
+        kindFilter === 'all' ||
+        (kindFilter === 'physical' && (!i.kind || i.kind === 'physical')) ||
+        (kindFilter === 'subscription' && i.kind === 'subscription');
 
-  const getStatusStamp = (status: ItemStatus) => {
-    switch (status) {
+      if (!matchKind) return false;
+
+      if (activeTab === 'all') return true;
+      if (activeTab === 'sold') return i.status === 'sold' || i.status === 'scrapped';
+      return i.status === activeTab;
+    });
+  }, [items, activeTab, kindFilter]);
+
+  const getStatusStamp = (item: Item) => {
+    const isSub = item.kind === 'subscription';
+    switch (item.status) {
       case 'using':
         return (
           <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
-            <span className="paper-title inline">USING</span>
-            <span className="modern-title hidden">在用</span>
+            <span className="paper-title inline">{isSub ? 'ACTIVE' : 'USING'}</span>
+            <span className="modern-title hidden">{isSub ? '在订' : '在用'}</span>
           </span>
         );
       case 'idle':
         return (
           <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
-            <span className="paper-title inline">IDLE</span>
-            <span className="modern-title hidden">闲置</span>
+            <span className="paper-title inline">{isSub ? 'PAUSED' : 'IDLE'}</span>
+            <span className="modern-title hidden">{isSub ? '暂停' : '闲置'}</span>
           </span>
         );
       case 'sold':
-        return (
-          <span className="real-stamp text-(--color-expense) -rotate-3 select-none text-[9px]">
-            <span className="paper-title inline">SOLD</span>
-            <span className="modern-title hidden">已售出</span>
-          </span>
-        );
       case 'scrapped':
         return (
           <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
-            <span className="paper-title inline">SCRAP</span>
-            <span className="modern-title hidden">报废</span>
+            <span className="paper-title inline">{isSub ? 'CANCELED' : 'DISPOSED'}</span>
+            <span className="modern-title hidden">{isSub ? '已退订' : '已处置'}</span>
           </span>
         );
+    }
+  };
+
+  const formatCycle = (cycle?: string) => {
+    switch (cycle) {
+      case 'monthly':
+        return '按月';
+      case 'yearly':
+        return '按年';
+      case 'quarterly':
+        return '按季';
+      case 'weekly':
+        return '按周';
+      default:
+        return '';
     }
   };
 
@@ -94,8 +116,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
             </button>
             <div>
               <h1 className="font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) leading-none mt-0.5">
-                <span className="paper-title inline">Owned Items</span>
-                <span className="modern-title hidden">物品</span>
+                <span className="paper-title inline">Holdings</span>
+                <span className="modern-title hidden">持有</span>
               </h1>
             </div>
           </div>
@@ -118,16 +140,18 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           <div className="p-4 pt-4.5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono font-medium text-(--ink-tertiary)">
-                物品总览
+                持有总览
               </span>
-              <span className="text-[11px] font-mono text-(--ink-secondary)">
-                共 {items.length} 件
-              </span>
+              <div className="flex items-center gap-2 text-[11px] font-mono text-(--ink-secondary)">
+                <span>实体 {overallSummary.physicalCount || 0}</span>
+                <span>·</span>
+                <span>订阅 {overallSummary.subscriptionCount || 0}</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 divide-x divide-dashed divide-(--rule-hairline) pt-1">
               <div>
-                <div className="text-[10px] font-mono text-(--ink-tertiary)">在用日均成本</div>
+                <div className="text-[10px] font-mono text-(--ink-tertiary)">在持日均成本</div>
                 <div className="font-mono text-xl sm:text-2xl font-bold text-(--color-income) tabular-nums mt-0.5">
                   ¥{centsToYuan(overallSummary.totalUsingDailyCost)}
                   <span className="text-xs font-normal text-(--ink-tertiary) ml-0.5">/天</span>
@@ -135,7 +159,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               </div>
 
               <div className="pl-4">
-                <div className="text-[10px] font-mono text-(--ink-tertiary)">在用净投入</div>
+                <div className="text-[10px] font-mono text-(--ink-tertiary)">在持总投入</div>
                 <div className="font-mono text-xl sm:text-2xl font-bold text-(--ink-solid) tabular-nums mt-0.5">
                   ¥{centsToYuan(overallSummary.totalUsingNetCost)}
                 </div>
@@ -144,123 +168,155 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           </div>
         </div>
 
-        <div className="tab-stagger-2 w-full space-y-3.5">
-          <div className="flex items-center gap-6 px-1 pt-1 border-b border-(--rule-hairline) font-mono text-xs">
-          {[
-            { key: 'using', label: `在用 (${overallSummary.usingCount})` },
-            { key: 'idle', label: `闲置 (${overallSummary.idleCount})` },
-            { key: 'sold', label: `已售出 (${overallSummary.soldCount})` },
-            { key: 'all', label: `全部 (${overallSummary.totalCount})` },
-          ].map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key as FilterTab)}
-                className={cn(
-                  'pb-2 transition-all relative cursor-pointer select-none',
-                  isActive
-                    ? 'text-(--ink-solid) font-bold'
-                    : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                )}
-              >
-                <span>{tab.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--color-accent) rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {filteredItems.length > 0 ? (
-          <div className="space-y-2.5">
-            {filteredItems.map((item) => {
-              const metrics = computeItemMetrics(item, transactions);
-              const IconComp = getCategoryIcon(item.icon);
-
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => openSubPage('item-detail', { itemId: item.id })}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      openSubPage('item-detail', { itemId: item.id });
-                    }
-                  }}
+        <div className="tab-stagger-2 w-full space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              {[
+                { key: 'all', label: '全部' },
+                { key: 'physical', label: '实体物品' },
+                { key: 'subscription', label: '数字订阅' },
+              ].map((k) => (
+                <button
+                  key={k.key}
+                  type="button"
+                  onClick={() => setKindFilter(k.key as KindTab)}
                   className={cn(
-                    'w-full bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline)',
-                    'shadow-xs p-3.5 cursor-pointer transition-all',
-                    'hover:border-(--rule-strong) active:scale-[0.995] relative'
+                    'px-2 py-0.5 rounded-full text-[11px] font-mono transition-all cursor-pointer border',
+                    kindFilter === k.key
+                      ? 'bg-(--toggle-active-bg) text-(--toggle-active-fg) border-(--rule-strong) font-medium shadow-xs'
+                      : 'bg-(--paper-sunken) text-(--ink-tertiary) border-transparent hover:text-(--ink-secondary)'
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6.5 h-6.5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
-                        <IconComp className="w-4 h-4 stroke-[1.8]" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-(--ink-solid) truncate leading-snug">
-                          {item.name}
-                        </div>
-                        <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
-                          {item.buyDate} 购入 · 已持有 {metrics.holdingDays} 天
-                        </div>
-                      </div>
-                    </div>
+                  {k.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-                    <div className="shrink-0 pt-0.5">
-                      {getStatusStamp(item.status)}
-                    </div>
-                  </div>
-
-                  <div className="my-2.5 border-t border-dashed border-(--rule-hairline)" />
-
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <div>
-                      <span className="text-[10px] text-(--ink-tertiary)">日均成本 </span>
-                      <span className="font-bold text-sm text-(--color-income) tabular-nums">
-                        ¥{centsToYuan(metrics.dailyCost)}
-                      </span>
-                      <span className="text-[10px] text-(--ink-tertiary)">/天</span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-[10px] text-(--ink-tertiary)">
-                        {item.status === 'sold' ? '售出回血 ' : '累计投入 '}
-                      </span>
-                      <span className="font-bold text-(--ink-primary) tabular-nums">
-                        ¥{centsToYuan(item.status === 'sold' ? metrics.recoveredAmount : metrics.grossCost)}
-                      </span>
-                      {item.status === 'sold' && metrics.retentionRate !== null && metrics.retentionRate > 0 && (
-                        <span className="text-[10px] text-(--color-income) ml-1 font-semibold">
-                          ({metrics.retentionRate}%)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+          <div className="flex items-center gap-5 px-1 border-b border-(--rule-hairline) font-mono text-xs">
+            {[
+              { key: 'using', label: `在用/在订 (${overallSummary.usingCount})` },
+              { key: 'idle', label: `闲置/暂停 (${overallSummary.idleCount})` },
+              { key: 'sold', label: `已退/处置 (${overallSummary.soldCount})` },
+              { key: 'all', label: `全部 (${overallSummary.totalCount})` },
+            ].map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key as FilterTab)}
+                  className={cn(
+                    'pb-2 transition-all relative cursor-pointer select-none',
+                    isActive
+                      ? 'text-(--ink-solid) font-bold'
+                      : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                  )}
+                >
+                  <span>{tab.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--color-accent) rounded-full" />
+                  )}
+                </button>
               );
             })}
           </div>
-        ) : (
-          <div className="py-12 text-center text-xs text-(--ink-tertiary) space-y-2">
-            <Package className="w-8 h-8 stroke-[1.2] mx-auto opacity-40 text-(--ink-tertiary)" />
-            <p>该分类下暂无物品</p>
-            <button
-              type="button"
-              onClick={() => openModal('item-form')}
-              className="text-(--color-accent) hover:underline font-mono inline-flex items-center text-xs cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-2 mr-0.5" />
-              收录一件新物品
-            </button>
-          </div>
-        )}
+
+          {filteredItems.length > 0 ? (
+            <div className="space-y-2.5">
+              {filteredItems.map((item) => {
+                const metrics = computeItemMetrics(item, transactions);
+                const IconComp = getCategoryIcon(item.icon);
+                const isSub = item.kind === 'subscription';
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => openSubPage('item-detail', { itemId: item.id })}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openSubPage('item-detail', { itemId: item.id });
+                      }
+                    }}
+                    className={cn(
+                      'w-full bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline)',
+                      'shadow-xs p-3.5 cursor-pointer transition-all',
+                      'hover:border-(--rule-strong) active:scale-[0.995] relative'
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-6.5 h-6.5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
+                          <IconComp className="w-4 h-4 stroke-[1.8]" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="text-sm font-semibold text-(--ink-solid) truncate leading-snug">
+                              {item.name}
+                            </span>
+                            {isSub && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-(--paper-sunken) text-(--ink-tertiary) border border-(--rule-hairline) font-mono">
+                                {formatCycle(item.billingCycle) || '订阅'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
+                            {isSub ? `${item.buyDate} 起订 · 订阅 ${metrics.holdingDays} 天` : `${item.buyDate} 购入 · 已持有 ${metrics.holdingDays} 天`}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 pt-0.5">
+                        {getStatusStamp(item)}
+                      </div>
+                    </div>
+
+                    <div className="my-2.5 border-t border-dashed border-(--rule-hairline)" />
+
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <div>
+                        <span className="text-[10px] text-(--ink-tertiary)">日均成本 </span>
+                        <span className="font-bold text-sm text-(--color-income) tabular-nums">
+                          ¥{centsToYuan(metrics.dailyCost)}
+                        </span>
+                        <span className="text-[10px] text-(--ink-tertiary)">/天</span>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] text-(--ink-tertiary)">
+                          {item.status === 'sold' ? '处置回血 ' : '累计投入 '}
+                        </span>
+                        <span className="font-bold text-(--ink-primary) tabular-nums">
+                          ¥{centsToYuan(item.status === 'sold' ? metrics.recoveredAmount : metrics.grossCost)}
+                        </span>
+                        {item.status === 'sold' && metrics.retentionRate !== null && metrics.retentionRate > 0 && (
+                          <span className="text-[10px] text-(--color-income) ml-1 font-semibold">
+                            ({metrics.retentionRate}%)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-xs text-(--ink-tertiary) space-y-2">
+              <Package className="w-8 h-8 stroke-[1.2] mx-auto opacity-40 text-(--ink-tertiary)" />
+              <p>暂无符合条件的持有项</p>
+              <button
+                type="button"
+                onClick={() => openModal('item-form')}
+                className="text-(--color-accent) hover:underline font-mono inline-flex items-center text-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-2 mr-0.5" />
+                收录一件新持有
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

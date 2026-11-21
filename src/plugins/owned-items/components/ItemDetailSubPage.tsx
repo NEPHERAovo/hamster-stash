@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CaretLeft as ChevronLeft, Plus, Trash as Trash2, PencilSimple as Edit2, Coins as DollarSign, ArrowsLeftRight as ArrowRightLeft, Check } from '@phosphor-icons/react';
+import { CaretLeft as ChevronLeft, Plus, Trash as Trash2, PencilSimple as Edit2, Coins as DollarSign, Check, ArrowCounterClockwise as RotateCcw } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   useHostAccounts,
@@ -30,7 +30,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const { deleteItem, changeStatus } = usePluginItemStore();
   const transactions = useHostTransactions();
   const accounts = useHostAccounts();
-  const { recordTransaction, updateTransaction } = useHostTransactionActions();
+  const { recordTransaction } = useHostTransactionActions();
   const { openModal } = usePluginNavigation();
 
   const [isSellPanelOpen, setIsSellPanelOpen] = useState(false);
@@ -47,6 +47,8 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const [maintNote, setMaintNote] = useState('');
   const [isSubmittingMaint, setIsSubmittingMaint] = useState(false);
 
+  const isSub = item?.kind === 'subscription';
+
   const itemTransactions = useMemo(() => {
     if (!item) return [];
     return transactions
@@ -62,7 +64,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   if (!item || !metrics) {
     return (
       <div className="p-8 text-center text-xs text-(--ink-tertiary) space-y-3">
-        <p>未找到该物品信息</p>
+        <p>未找到该项信息</p>
         <button
           type="button"
           onClick={onClose}
@@ -80,11 +82,11 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     e.preventDefault();
     const priceNum = parseFloat(sellPriceYuan);
     if (isNaN(priceNum) || priceNum < 0) {
-      toast.error('请输入有效的售出金额');
+      toast.error('请输入有效的金额');
       return;
     }
     if (!sellAccountId) {
-      toast.error('请选择回血入账账户');
+      toast.error('请选择入账账户');
       return;
     }
 
@@ -108,9 +110,8 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       await changeStatus(item.id, 'sold', sellDate);
       setIsSellPanelOpen(false);
       setSellPriceYuan('');
-      setSellNote('');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '售出失败');
+      toast.error(err instanceof Error ? err.message : '记录失败');
     } finally {
       setIsSubmittingSell(false);
     }
@@ -120,11 +121,11 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     e.preventDefault();
     const priceNum = parseFloat(maintPriceYuan);
     if (isNaN(priceNum) || priceNum <= 0) {
-      toast.error('请输入有效的支出金额');
+      toast.error('请输入有效的金额');
       return;
     }
     if (!maintAccountId) {
-      toast.error('请选择扣款账户');
+      toast.error('请选择支出账户');
       return;
     }
 
@@ -134,13 +135,14 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         type: 'expense',
         amount: yuanToCents(priceNum),
         accountId: maintAccountId,
-        categoryId: 'cat_shop',
+        categoryId: isSub ? 'cat_digital' : 'cat_shop',
         date: maintDate,
-        note: maintNote.trim() || `配件保养: ${item.name}`,
+        note: maintNote.trim() || (isSub ? `订阅续费: ${item.name}` : `配件/保养: ${item.name}`),
         ext: {
           'owned-items': {
             itemId: item.id,
             itemRole: 'maintenance',
+            kind: item.kind,
           },
         },
       });
@@ -149,7 +151,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       setMaintPriceYuan('');
       setMaintNote('');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '记录失败');
+      toast.error(err instanceof Error ? err.message : '记录支出失败');
     } finally {
       setIsSubmittingMaint(false);
     }
@@ -157,52 +159,101 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
   const handleDelete = async () => {
     const confirmed = await confirmAction({
-      title: '移除物品',
-      message: `确定要从手帐中移除物品「${item.name}」吗？（关联的历史流水不会被删除，仅解除物品关联）`,
+      title: isSub ? '移除订阅记录' : '移除物品记录',
+      message: `确定移除「${item.name}」吗？已关联合并的历史记账不会被删除。`,
       confirmText: '确认移除',
       isDestructive: true,
     });
-    if (confirmed) {
-      try {
-        for (const tx of itemTransactions) {
-          const nextExt = { ...(tx.ext || {}) };
-          delete nextExt['owned-items'];
-          await updateTransaction(tx.id, { ext: nextExt });
-        }
-        await deleteItem(item.id);
-        onClose();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : '删除失败');
-      }
+    if (!confirmed) return;
+
+    try {
+      await deleteItem(item.id);
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '移除失败');
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const confirmed = await confirmAction({
+      title: '取消/退订服务',
+      message: `确定将「${item.name}」标记为已退订吗？`,
+      confirmText: '确认退订',
+      isDestructive: false,
+    });
+    if (!confirmed) return;
+
+    try {
+      await changeStatus(item.id, 'sold', today);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '退订失败');
+    }
+  };
+
+  const handleResumeSubscription = async () => {
+    try {
+      await changeStatus(item.id, 'using', undefined);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '恢复失败');
     }
   };
 
   const getStatusStamp = (status: ItemStatus) => {
     switch (status) {
       case 'using':
-        return <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[10px]">USING · 在用</span>;
+        return (
+          <span className="real-stamp text-(--color-income) -rotate-2 select-none text-[9px]">
+            <span className="paper-title inline">{isSub ? 'ACTIVE' : 'USING'}</span>
+            <span className="modern-title hidden">{isSub ? '在订' : '在用'}</span>
+          </span>
+        );
       case 'idle':
-        return <span className="real-stamp text-(--ink-tertiary) rotate-1 select-none text-[10px]">IDLE · 闲置</span>;
+        return (
+          <span className="real-stamp text-(--color-accent) rotate-1 select-none text-[9px]">
+            <span className="paper-title inline">{isSub ? 'PAUSED' : 'IDLE'}</span>
+            <span className="modern-title hidden">{isSub ? '暂停' : '闲置'}</span>
+          </span>
+        );
       case 'sold':
-        return <span className="real-stamp text-(--color-expense) -rotate-3 select-none text-[10px]">SOLD · 已售出</span>;
       case 'scrapped':
-        return <span className="real-stamp text-(--ink-primary) rotate-2 select-none text-[10px]">SCRAP · 已报废</span>;
+        return (
+          <span className="real-stamp text-(--ink-tertiary) rotate-2 select-none text-[9px]">
+            <span className="paper-title inline">{isSub ? 'CANCELED' : 'DISPOSED'}</span>
+            <span className="modern-title hidden">{isSub ? '已退订' : '已处置'}</span>
+          </span>
+        );
     }
   };
 
-  const getItemRoleBadge = (tx: Transaction) => {
+  const formatCycle = (cycle?: string) => {
+    switch (cycle) {
+      case 'monthly':
+        return '按月';
+      case 'yearly':
+        return '按年';
+      case 'quarterly':
+        return '按季';
+      case 'weekly':
+        return '按周';
+      default:
+        return '';
+    }
+  };
+
+  const getRoleTag = (tx: Transaction) => {
     const role = getOwnedItemExt(tx.ext)?.itemRole;
     if (role === 'buy') {
       return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--color-expense-bg) text-(--color-expense) font-semibold">
-          首次购入
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+          {isSub ? '首期订阅' : '购入初置'}
         </span>
       );
     }
     if (role === 'maintenance') {
       return (
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-          配件保养
+          {isSub ? '续费支出' : '配件保养'}
         </span>
       );
     }
@@ -220,8 +271,57 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     );
   };
 
+  const renderSecondaryActionButton = () => {
+    if (isSub) {
+      if (item.status === 'using') {
+        return (
+          <button
+            type="button"
+            onClick={handleCancelSubscription}
+            className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-tertiary) hover:text-(--color-expense) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
+          >
+            <span>退订服务</span>
+          </button>
+        );
+      }
+      return (
+        <button
+          type="button"
+          onClick={handleResumeSubscription}
+          className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--color-income) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
+        >
+          <RotateCcw className="w-3.5 h-3.5 stroke-2" />
+          <span>恢复在订</span>
+        </button>
+      );
+    }
+
+    if (item.status !== 'sold') {
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            setIsSellPanelOpen((prev) => !prev);
+            setIsMaintPanelOpen(false);
+          }}
+          className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--color-income) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
+        >
+          <DollarSign className="w-3.5 h-3.5 stroke-2" />
+          <span>二手售出回血</span>
+        </button>
+      );
+    }
+
+    return (
+      <div className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sunken)/40 border border-transparent text-(--ink-tertiary) flex items-center justify-center gap-1.5 select-none">
+        <Check className="w-3.5 h-3.5 stroke-2 text-(--color-income)" />
+        <span>已售出结案</span>
+      </div>
+    );
+  };
+
   return (
-    <div className="w-full pb-20 animate-fade-in select-none">
+    <div className="w-full pb-20 select-none">
       <div className="sticky top-0 z-30 px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 bg-(--paper-base) border-b border-(--rule-hairline) flex items-center justify-between min-h-[calc(3rem+var(--safe-top))] box-border">
         <div className="flex items-center gap-2 min-w-0">
           <button
@@ -244,7 +344,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             type="button"
             onClick={() => openModal('item-form', { item })}
             className="w-7 h-7 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-solid) active:scale-95 transition-all cursor-pointer shadow-xs"
-            title="编辑物品信息"
+            title="编辑信息"
           >
             <Edit2 className="w-3.5 h-3.5 stroke-[1.8]" />
           </button>
@@ -252,7 +352,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             type="button"
             onClick={handleDelete}
             className="w-7 h-7 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center text-(--ink-tertiary) hover:text-(--color-expense) active:scale-95 transition-all cursor-pointer shadow-xs"
-            title="移除物品"
+            title="移除"
           >
             <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
           </button>
@@ -274,7 +374,8 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                     {item.name}
                   </h2>
                   <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
-                    {item.buyDate} 购入 · 已持有 {metrics.holdingDays} 天
+                    {isSub ? `${item.buyDate} 起订 · 订阅 ${metrics.holdingDays} 天` : `${item.buyDate} 购入 · 已持有 ${metrics.holdingDays} 天`}
+                    {isSub && item.nextRenewalDate && ` · 下期 ${item.nextRenewalDate}`}
                   </div>
                 </div>
               </div>
@@ -283,7 +384,9 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
             </div>
 
             <div className="pt-2 border-t border-dashed border-(--rule-hairline)">
-              <div className="text-[10px] font-mono text-(--ink-tertiary)">日均持有成本</div>
+              <div className="text-[10px] font-mono text-(--ink-tertiary)">
+                {isSub ? '日均订阅成本' : '日均持有成本'}
+              </div>
               <div className="flex items-baseline gap-1 mt-0.5">
                 <span className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-(--color-income) tabular-nums">
                   ¥{centsToYuan(metrics.dailyCost)}
@@ -294,32 +397,61 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
             <div className="grid grid-cols-4 gap-2 pt-2 border-t border-dashed border-(--rule-hairline) text-center">
               <div>
-                <div className="text-[9px] font-mono text-(--ink-tertiary)">累计投入</div>
+                <div className="text-[9px] font-mono text-(--ink-tertiary)">
+                  {isSub ? '累计支出' : '累计投入'}
+                </div>
                 <div className="text-xs font-mono font-bold text-(--ink-solid) mt-0.5 tabular-nums">
                   ¥{centsToYuan(metrics.grossCost)}
                 </div>
               </div>
 
-              <div>
-                <div className="text-[9px] font-mono text-(--ink-tertiary)">售出回血</div>
-                <div className="text-xs font-mono font-bold text-(--color-income) mt-0.5 tabular-nums">
-                  ¥{centsToYuan(metrics.recoveredAmount)}
+              {isSub ? (
+                <div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">续费周期</div>
+                  <div className="text-xs font-mono font-bold text-(--ink-primary) mt-0.5">
+                    {formatCycle(item.billingCycle) || '按月'}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">售出回血</div>
+                  <div className="text-xs font-mono font-bold text-(--color-income) mt-0.5 tabular-nums">
+                    ¥{centsToYuan(metrics.recoveredAmount)}
+                  </div>
+                </div>
+              )}
 
-              <div>
-                <div className="text-[9px] font-mono text-(--ink-tertiary)">净持有成本</div>
-                <div className="text-xs font-mono font-bold text-(--ink-solid) mt-0.5 tabular-nums">
-                  ¥{centsToYuan(metrics.netCost)}
+              {isSub ? (
+                <div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">单期金额</div>
+                  <div className="text-xs font-mono font-bold text-(--ink-solid) mt-0.5 tabular-nums">
+                    {item.renewalAmountCents ? `¥${centsToYuan(item.renewalAmountCents)}` : '-'}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">净持有成本</div>
+                  <div className="text-xs font-mono font-bold text-(--ink-solid) mt-0.5 tabular-nums">
+                    ¥{centsToYuan(metrics.netCost)}
+                  </div>
+                </div>
+              )}
 
-              <div>
-                <div className="text-[9px] font-mono text-(--ink-tertiary)">保值率</div>
-                <div className="text-xs font-mono font-bold text-(--color-income) mt-0.5 tabular-nums">
-                  {metrics.recoveredAmount > 0 && metrics.retentionRate !== null ? `${metrics.retentionRate}%` : '-'}
+              {isSub ? (
+                <div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">扣费笔数</div>
+                  <div className="text-xs font-mono font-bold text-(--color-income) mt-0.5 tabular-nums">
+                    {itemTransactions.length}笔
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <div className="text-[9px] font-mono text-(--ink-tertiary)">保值率</div>
+                  <div className="text-xs font-mono font-bold text-(--color-income) mt-0.5 tabular-nums">
+                    {metrics.recoveredAmount > 0 && metrics.retentionRate !== null ? `${metrics.retentionRate}%` : '-'}
+                  </div>
+                </div>
+              )}
             </div>
 
             {item.note && (
@@ -334,104 +466,50 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           <button
             type="button"
             onClick={() => {
+              if (isSub && item.renewalAmountCents && !maintPriceYuan) {
+                setMaintPriceYuan(centsToYuan(item.renewalAmountCents));
+              }
               setIsMaintPanelOpen((prev) => !prev);
               setIsSellPanelOpen(false);
             }}
             className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-solid) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 stroke-2 text-(--color-expense)" />
-            <span>记关联支出</span>
+            <span>{isSub ? '记续费支出' : '记关联支出'}</span>
           </button>
 
-          {item.status !== 'sold' ? (
-            <button
-              type="button"
-              onClick={() => {
-                setIsSellPanelOpen((prev) => !prev);
-                setIsMaintPanelOpen(false);
-              }}
-              className="py-2 px-3 rounded-(--btn-radius) bg-(--color-accent-bg) border border-(--color-accent)/30 text-(--color-accent) font-semibold flex items-center justify-center gap-1.5 shadow-xs hover:border-(--color-accent) active:scale-95 transition-all cursor-pointer"
-            >
-              <DollarSign className="w-3.5 h-3.5 stroke-2" />
-              <span>二手售出回血</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => changeStatus(item.id, 'using')}
-              className="py-2 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-secondary) flex items-center justify-center gap-1.5 shadow-xs hover:border-(--rule-strong) active:scale-95 transition-all cursor-pointer"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5 stroke-2" />
-              <span>重新设为在用</span>
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between px-2 py-1 text-[11px] font-mono text-(--ink-tertiary)">
-          <span>快速标记状态:</span>
-          <div className="flex items-center gap-1.5">
-            {(['using', 'idle', 'scrapped'] as ItemStatus[]).map((st) => {
-              const statusLabels: Record<ItemStatus, string> = {
-                using: '在用',
-                idle: '闲置',
-                scrapped: '报废',
-                sold: '已出',
-              };
-              return (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => changeStatus(item.id, st)}
-                  className={cn(
-                    'px-2 py-0.5 rounded-(--btn-radius) transition-colors cursor-pointer',
-                    item.status === st
-                      ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold'
-                      : 'hover:text-(--ink-secondary)'
-                  )}
-                >
-                  {statusLabels[st]}
-                </button>
-              );
-            })}
-          </div>
+          {renderSecondaryActionButton()}
         </div>
 
         {isMaintPanelOpen && (
           <form
             onSubmit={handleConfirmMaint}
-            className="p-3.5 bg-(--paper-sheet) paper-card rounded-(--radius-md) border border-(--rule-hairline) shadow-xs space-y-3 animate-fade-in text-xs font-mono"
+            className="p-3.5 bg-(--paper-sheet) paper-card border border-(--rule-strong) rounded-(--radius-md) shadow-xs space-y-3"
           >
-            <div className="flex items-center justify-between pb-1.5 border-b border-dashed border-(--rule-hairline)">
-              <span className="font-semibold text-(--ink-solid)">记关联支出 / 配件保养</span>
-              <button
-                type="button"
-                onClick={() => setIsMaintPanelOpen(false)}
-                className="text-[10px] text-(--ink-tertiary) hover:text-(--ink-primary) cursor-pointer"
-              >
-                收起
-              </button>
+            <div className="text-xs font-semibold text-(--ink-solid)">
+              {isSub ? '记录续费支出' : '记录配件/维护支出'}
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">
-                  支出金额
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  支出金额 (元)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
+                  min="0.01"
                   value={maintPriceYuan}
                   onChange={(e) => setMaintPriceYuan(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none font-bold"
                   autoFocus
+                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-sm font-semibold text-(--ink-solid) outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">
-                  扣款账户
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  支付账户
                 </label>
                 <select
                   value={maintAccountId}
@@ -447,60 +525,63 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">支出日期</label>
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  记账日期
+                </label>
                 <input
                   type="date"
                   value={maintDate}
                   onChange={(e) => setMaintDate(e.target.value)}
-                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-solid) outline-none"
+                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">用途备注</label>
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  支出备注
+                </label>
                 <input
                   type="text"
                   value={maintNote}
                   onChange={(e) => setMaintNote(e.target.value)}
-                  placeholder="如: 官方磁吸壳、贴膜"
-                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-solid) outline-none"
+                  placeholder={isSub ? '例如：月度续费、会员升级' : '例如：保护壳、贴膜、换电池'}
+                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-secondary) outline-none"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmittingMaint}
-              className="w-full py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer shadow-xs"
-            >
-              <Check className="w-3.5 h-3.5 stroke-2" />
-              <span>确认记入支出</span>
-            </button>
+            <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setIsMaintPanelOpen(false)}
+                className="px-3 py-1 text-(--ink-tertiary) hover:text-(--ink-primary) cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingMaint}
+                className="px-3.5 py-1 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                确认记录
+              </button>
+            </div>
           </form>
         )}
 
         {isSellPanelOpen && (
           <form
             onSubmit={handleConfirmSell}
-            className="p-3.5 bg-(--paper-sheet) paper-card rounded-(--radius-md) border border-(--rule-hairline) shadow-xs space-y-3 animate-fade-in text-xs font-mono"
+            className="p-3.5 bg-(--paper-sheet) paper-card border border-(--rule-strong) rounded-(--radius-md) shadow-xs space-y-3"
           >
-            <div className="flex items-center justify-between pb-1.5 border-b border-dashed border-(--rule-hairline)">
-              <span className="font-semibold text-(--ink-solid)">二手售出回血入账</span>
-              <button
-                type="button"
-                onClick={() => setIsSellPanelOpen(false)}
-                className="text-[10px] text-(--ink-tertiary) hover:text-(--ink-primary) cursor-pointer"
-              >
-                收起
-              </button>
-            </div>
+            <div className="text-xs font-semibold text-(--ink-solid)">二手售出回血</div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">
-                  售出回血金额
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  售出回血金额 (元)
                 </label>
                 <input
                   type="number"
@@ -509,13 +590,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   value={sellPriceYuan}
                   onChange={(e) => setSellPriceYuan(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none font-bold"
                   autoFocus
+                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-sm font-semibold text-(--color-income) outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
                   回血入账账户
                 </label>
                 <select
@@ -532,81 +613,98 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">售出日期</label>
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  售出日期
+                </label>
                 <input
                   type="date"
                   value={sellDate}
                   onChange={(e) => setSellDate(e.target.value)}
-                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-solid) outline-none"
+                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 font-mono text-xs text-(--ink-solid) outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-(--ink-tertiary) mb-1">随笔备注</label>
+                <label className="block text-[10px] font-mono text-(--ink-tertiary) mb-1">
+                  售出备注
+                </label>
                 <input
                   type="text"
                   value={sellNote}
                   onChange={(e) => setSellNote(e.target.value)}
-                  placeholder="如: 闲鱼同城自提"
-                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-solid) outline-none"
+                  placeholder="例如：海鲜市场售出、出给朋友"
+                  className="w-full bg-transparent border-b border-dashed border-(--rule-hairline) py-1 text-xs text-(--ink-secondary) outline-none"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmittingSell}
-              className="w-full py-1.5 rounded-(--btn-radius) bg-(--color-accent) text-white font-semibold flex items-center justify-center gap-1 active:scale-98 transition-all cursor-pointer shadow-xs"
-            >
-              <Check className="w-3.5 h-3.5 stroke-2" />
-              <span>确认回血并标记售出</span>
-            </button>
+            <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setIsSellPanelOpen(false)}
+                className="px-3 py-1 text-(--ink-tertiary) hover:text-(--ink-primary) cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingSell}
+                className="px-3.5 py-1 rounded-(--btn-radius) bg-(--color-income) text-white font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                确认结案
+              </button>
+            </div>
           </form>
         )}
 
-        <div className="bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline) shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-dashed border-(--rule-hairline) flex items-center justify-between">
-            <span className="text-xs font-semibold text-(--ink-solid)">关联账单</span>
-            <span className="text-[10px] font-mono text-(--ink-tertiary)">
-              共 {itemTransactions.length} 笔关联
-            </span>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
+            <span>{isSub ? '扣费流水明细' : '关联流水'}</span>
+            <span>共 {itemTransactions.length} 笔</span>
           </div>
 
           {itemTransactions.length > 0 ? (
-            <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
-              {itemTransactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="px-4 py-2.5 flex items-center justify-between text-xs select-none"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div>{getItemRoleBadge(tx)}</div>
-                    <div className="min-w-0">
-                      <div className="truncate font-medium text-(--ink-primary)">
-                        {tx.note || (tx.type === 'income' ? '二手回血' : '配件/支出')}
-                      </div>
-                      <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
-                        {tx.date}
+            <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-md) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60">
+              {itemTransactions.map((tx) => {
+                const isIncome = tx.type === 'income';
+                return (
+                  <div
+                    key={tx.id}
+                    className="p-3 flex items-center justify-between hover:bg-(--paper-hover)/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-(--ink-solid) truncate">
+                            {tx.note || (isIncome ? '售出收入' : '支出')}
+                          </span>
+                          {getRoleTag(tx)}
+                        </div>
+                        <div className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">
+                          {tx.date}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div
-                    className={cn(
-                      'font-mono font-bold tabular-nums text-sm shrink-0 ml-2',
-                      tx.type === 'income' ? 'text-(--color-income)' : 'text-(--ink-solid)'
-                    )}
-                  >
-                    {tx.type === 'income' ? '+' : '-'}¥{centsToYuan(tx.amount)}
+                    <div className="text-right shrink-0">
+                      <span
+                        className={cn(
+                          'font-mono text-xs font-bold tabular-nums',
+                          isIncome ? 'text-(--color-income)' : 'text-(--ink-solid)'
+                        )}
+                      >
+                        {isIncome ? `+¥${centsToYuan(tx.amount)}` : `-¥${centsToYuan(tx.amount)}`}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div className="py-8 text-center text-xs text-(--ink-tertiary)">
-              暂无关联记录，点击上方「记关联支出」开始记录
+            <div className="py-6 text-center text-xs font-mono text-(--ink-tertiary) bg-(--paper-sheet) paper-card border border-dashed border-(--rule-hairline) rounded-(--radius-md)">
+              暂无关联记账流水
             </div>
           )}
         </div>

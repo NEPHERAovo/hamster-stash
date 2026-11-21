@@ -21,8 +21,12 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
   const isCreateNew = Boolean(itemExt?.createNewItem);
   const isTrayOpen = Boolean(itemExt?.isTrayOpen);
 
-  const availableItems = useMemo(() => {
-    return items.filter((i) => i.status === 'using' || i.status === 'idle');
+  const physicalItems = useMemo(() => {
+    return items.filter((i) => (!i.kind || i.kind === 'physical') && (i.status === 'using' || i.status === 'idle'));
+  }, [items]);
+
+  const subscriptionItems = useMemo(() => {
+    return items.filter((i) => i.kind === 'subscription' && (i.status === 'using' || i.status === 'idle'));
   }, [items]);
 
   if (!isTrayOpen || context.txType !== 'expense') return null;
@@ -33,27 +37,30 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
       createNewItem: false,
       itemId: undefined,
       itemRole: undefined,
+      kind: undefined,
       isTrayOpen: false,
     });
   };
 
-  const handleToggleCreateNew = () => {
-    const nextCreateNew = !isCreateNew;
+  const handleToggleCreateNew = (kind: 'physical' | 'subscription' = 'physical') => {
+    const nextCreateNew = !isCreateNew || itemExt?.kind !== kind;
     context.setExtKey('owned-items', {
       ...(itemExt || {}),
       createNewItem: nextCreateNew,
       itemId: undefined,
       itemRole: nextCreateNew ? 'buy' : undefined,
+      kind: nextCreateNew ? kind : undefined,
       isTrayOpen: false,
     });
   };
 
-  const handleSelectExistingItem = (itemId: string) => {
+  const handleSelectExistingItem = (itemId: string, kind: 'physical' | 'subscription' = 'physical') => {
     context.setExtKey('owned-items', {
       ...(itemExt || {}),
       createNewItem: false,
       itemId,
       itemRole: 'maintenance',
+      kind,
       isTrayOpen: false,
     });
   };
@@ -63,7 +70,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
   return (
     <div className="pt-1.5 pb-0.5 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none">
       <div className="flex items-center justify-between text-[11px] text-(--ink-tertiary)">
-        <span>关联或新建持有物品</span>
+        <span>关联或新建持有项</span>
         {hasActiveSelection && (
           <button
             type="button"
@@ -76,43 +83,88 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
       </div>
 
       <div className="space-y-1.5">
-        <button
-          type="button"
-          onClick={handleToggleCreateNew}
-          className={cn(
-            'w-full py-1.5 px-2.5 rounded-(--btn-radius) text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
-            isCreateNew
-              ? 'bg-(--color-income-bg) text-(--color-income) border-(--color-income) font-semibold shadow-2xs'
-              : 'bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) border-(--rule-hairline)'
-          )}
-        >
-          <div className="flex items-center gap-1.5 truncate">
-            <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
-            <span className="font-semibold">+ 将本笔支出记为新物品</span>
-          </div>
-          <span className="text-[10px] text-(--ink-tertiary)">
-            {isCreateNew ? '已激活 ✓' : '保存时自动生成'}
-          </span>
-        </button>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => handleToggleCreateNew('physical')}
+            className={cn(
+              'py-1.5 px-2 rounded-(--btn-radius) text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
+              isCreateNew && (!itemExt?.kind || itemExt?.kind === 'physical')
+                ? 'bg-(--color-income-bg) text-(--color-income) border-(--color-income) font-semibold shadow-2xs'
+                : 'bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) border-(--rule-hairline)'
+            )}
+          >
+            <div className="flex items-center gap-1 truncate">
+              <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
+              <span className="truncate">记为新实体物品</span>
+            </div>
+          </button>
 
-        <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
-          <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
-            关联已有物品 (配件 / 保养)
-          </div>
-          <div className="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto">
-            {availableItems.length === 0 ? (
-              <div className="col-span-3 text-[11px] text-(--ink-tertiary) py-2 text-center">
-                暂无在用或闲置物品
-              </div>
-            ) : (
-              availableItems.map((it) => {
+          <button
+            type="button"
+            onClick={() => handleToggleCreateNew('subscription')}
+            className={cn(
+              'py-1.5 px-2 rounded-(--btn-radius) text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
+              isCreateNew && itemExt?.kind === 'subscription'
+                ? 'bg-(--color-income-bg) text-(--color-income) border-(--color-income) font-semibold shadow-2xs'
+                : 'bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) border-(--rule-hairline)'
+            )}
+          >
+            <div className="flex items-center gap-1 truncate">
+              <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
+              <span className="truncate">记为新数字订阅</span>
+            </div>
+          </button>
+        </div>
+
+        {subscriptionItems.length > 0 && (
+          <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
+            <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
+              数字订阅 (记续费)
+            </div>
+            <div className="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto">
+              {subscriptionItems.map((it) => {
                 const ItemIcon = getCategoryIcon(it.icon);
                 const isSelected = selectedItemId === it.id && !isCreateNew;
                 return (
                   <button
                     key={it.id}
                     type="button"
-                    onClick={() => handleSelectExistingItem(it.id)}
+                    onClick={() => handleSelectExistingItem(it.id, 'subscription')}
+                    className={cn(
+                      'px-2 py-1 text-xs font-mono rounded-(--radius-sm) flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
+                      isSelected
+                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-hairline) -rotate-1'
+                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50 border-transparent'
+                    )}
+                  >
+                    <ItemIcon className="w-3 h-3 shrink-0 opacity-70" />
+                    <span className="truncate">{it.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
+          <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
+            实体物品 (记配件 / 保养)
+          </div>
+          <div className="grid grid-cols-3 gap-1 max-h-28 overflow-y-auto">
+            {physicalItems.length === 0 ? (
+              <div className="col-span-3 text-[11px] text-(--ink-tertiary) py-1.5 text-center">
+                暂无在用实体物品
+              </div>
+            ) : (
+              physicalItems.map((it) => {
+                const ItemIcon = getCategoryIcon(it.icon);
+                const isSelected = selectedItemId === it.id && !isCreateNew;
+                return (
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={() => handleSelectExistingItem(it.id, 'physical')}
                     className={cn(
                       'px-2 py-1 text-xs font-mono rounded-(--radius-sm) flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
                       isSelected

@@ -7,7 +7,7 @@ import {
   type CreateTransactionInput,
   getHostCategories,
 } from '../../plugin-sdk';
-import type { Item } from './types';
+import type { Item, ItemKind } from './types';
 import { usePluginItemStore } from './store/usePluginItemStore';
 import { ItemListSubPage } from './components/ItemListSubPage';
 import { ItemDetailSubPage } from './components/ItemDetailSubPage';
@@ -19,9 +19,9 @@ import { ItemRowBadge, type ItemRowBadgeProps } from './components/ItemRowBadge'
 export class OwnedItemsPlugin extends BasePlugin {
   readonly manifest: PluginManifest = {
     id: 'owned-items',
-    name: '持有物品',
+    name: '持有',
     version: '1.0.0',
-    description: '追踪大件与数码物品生命周期、购入沉淀、配件维护与日均持有成本。',
+    description: '追踪大件资产与数字订阅服务生命周期、续费沉淀与日均持有成本。',
     icon: 'package',
     defaultEnabled: false,
   };
@@ -33,7 +33,7 @@ export class OwnedItemsPlugin extends BasePlugin {
 
     ctx.ui.registerNavTab({
       id: 'items',
-      label: '物品',
+      label: '持有',
       icon: 'package',
       order: 25,
       component: ItemListSubPage,
@@ -54,13 +54,15 @@ export class OwnedItemsPlugin extends BasePlugin {
 
       if (itemExt?.createNewItem) {
         const cat = getHostCategories().find((c) => c.id === mCtx.payload.input?.categoryId);
-        const itemName = mCtx.payload.input?.note?.trim() || cat?.name || '新物品';
-        const itemIcon = cat?.icon || 'box';
+        const itemName = mCtx.payload.input?.note?.trim() || cat?.name || '新持有项';
+        const itemKind = (itemExt.kind as ItemKind) || 'physical';
+        const itemIcon = (itemExt.icon as string) || cat?.icon || (itemKind === 'subscription' ? 'credit-card' : 'box');
         const buyDate = mCtx.payload.input?.date || new Date().toISOString().split('T')[0];
 
         const created = await usePluginItemStore.getState().createItem({
           name: itemName,
           icon: itemIcon,
+          kind: itemKind,
           status: 'using',
           buyDate,
         });
@@ -71,6 +73,7 @@ export class OwnedItemsPlugin extends BasePlugin {
         mCtx.payload.input.ext['owned-items'] = {
           itemId: created.id,
           itemRole: 'buy',
+          kind: itemKind,
         };
       }
 

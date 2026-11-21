@@ -8,7 +8,7 @@ import { useLedgerStore } from '../../src/stores/useLedgerStore';
 import type { Item } from '../../src/plugins/owned-items/types';
 import type { Transaction } from '../../src/plugin-sdk';
 
-describe('OwnedItemsSummaryCard (持有物品插件总览卡片)', () => {
+describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
   const dummyItem: Item = {
     id: 'item_switch',
     name: 'Nintendo Switch',
@@ -22,7 +22,7 @@ describe('OwnedItemsSummaryCard (持有物品插件总览卡片)', () => {
   const dummyTx: Transaction = {
     id: 'tx_switch_buy',
     type: 'expense',
-    amount: 200000, // 2000 元
+    amount: 200000,
     accountId: 'acct_1',
     categoryId: 'cat_shop',
     date: '2026-01-01',
@@ -47,26 +47,26 @@ describe('OwnedItemsSummaryCard (持有物品插件总览卡片)', () => {
     });
   });
 
-  it('展示正确的持有物品名称与在用统计', () => {
+  it('展示正确的持有名称与在持统计', () => {
     render(<OwnedItemsSummaryCard />);
 
-    expect(screen.getByText('持有物品')).toBeInTheDocument();
-    expect(screen.getByText('1 件在用')).toBeInTheDocument();
+    expect(screen.getByText('持有')).toBeInTheDocument();
+    expect(screen.getByText('1 件在持')).toBeInTheDocument();
     expect(screen.getByText('Nintendo Switch')).toBeInTheDocument();
-    expect(screen.getByText('在用净投入')).toBeInTheDocument();
+    expect(screen.getByText('在持净投入')).toBeInTheDocument();
     expect(screen.getByText('总日均成本')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button'));
     expect(usePluginUIStore.getState().activeSubPage?.id).toBe('item-list');
   });
 
-  it('空物品列表时展示手帐风占位文案与记一件入口', () => {
+  it('空列表时展示手帐风占位文案与记一件入口', () => {
     usePluginItemStore.setState({ items: [], loading: false });
     useLedgerStore.setState({ transactions: [], allTransactions: [] });
 
     render(<OwnedItemsSummaryCard />);
 
-    expect(screen.getByText('暂无记录的持有物品')).toBeInTheDocument();
+    expect(screen.getByText('暂无记录的持有项')).toBeInTheDocument();
     expect(screen.getByText('记一件')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('记一件'));
