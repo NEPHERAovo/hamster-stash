@@ -52,7 +52,7 @@ export const PaperBadge: React.FC<PaperBadgeProps> = ({
   return (
     <span
       className={cn(
-        'paper-badge inline-flex items-center font-medium select-none shrink-0 whitespace-nowrap transition-colors',
+        'paper-badge inline-flex shrink-0 items-center font-medium whitespace-nowrap transition-colors select-none',
         variantStyles[variant],
         sizeStyles[size],
         interactive && 'cursor-pointer hover:opacity-85 active:scale-95',
@@ -61,7 +61,7 @@ export const PaperBadge: React.FC<PaperBadgeProps> = ({
       onClick={onClick}
       {...props}
     >
-      {icon && <span className="inline-flex items-center shrink-0">{icon}</span>}
+      {icon && <span className="inline-flex shrink-0 items-center">{icon}</span>}
       <span>{children}</span>
     </span>
   );

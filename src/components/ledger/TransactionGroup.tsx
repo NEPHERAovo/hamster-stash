@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { MagnifyingGlass as Search, X } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon as Search, XIcon as X } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
@@ -171,29 +171,29 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
         <div
           className={cn(
             contained ? 'mx-0' : 'mx-4',
-            'my-2 bg-(--paper-sheet) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] border border-(--rule-hairline) overflow-hidden select-none animate-pulse'
+            'my-2 animate-pulse overflow-hidden rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)]'
           )}
         >
-          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/30">
+          <div className="flex items-center justify-between border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/30 px-3.5 py-2.5">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-4 rounded-xs bg-(--paper-sunken)" />
-              <div className="w-10 h-3 rounded-xs bg-(--paper-sunken)/70" />
-              <div className="w-8 h-3 rounded-xs bg-(--paper-sunken)/50" />
+              <div className="h-4 w-7 rounded-xs bg-(--paper-sunken)" />
+              <div className="h-3 w-10 rounded-xs bg-(--paper-sunken)/70" />
+              <div className="h-3 w-8 rounded-xs bg-(--paper-sunken)/50" />
             </div>
-            <div className="w-14 h-3.5 rounded-xs bg-(--paper-sunken)" />
+            <div className="h-3.5 w-14 rounded-xs bg-(--paper-sunken)" />
           </div>
 
           <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="px-3.5 py-2.5 flex items-center justify-between">
+              <div key={i} className="flex items-center justify-between px-3.5 py-2.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6.5 h-6.5 rounded-xs bg-(--paper-sunken)" />
+                  <div className="size-6.5 rounded-xs bg-(--paper-sunken)" />
                   <div className="space-y-1.5">
                     <div className={cn('h-3.5 rounded-xs bg-(--paper-sunken)', i === 2 ? 'w-24' : 'w-18')} />
-                    <div className="w-28 h-2.5 rounded-xs bg-(--paper-sunken)/60" />
+                    <div className="h-2.5 w-28 rounded-xs bg-(--paper-sunken)/60" />
                   </div>
                 </div>
-                <div className="w-14 h-4 rounded-xs bg-(--paper-sunken)" />
+                <div className="h-4 w-14 rounded-xs bg-(--paper-sunken)" />
               </div>
             ))}
           </div>
@@ -205,10 +205,10 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       <div
         className={cn(
           contained ? 'mx-0' : 'mx-4',
-          'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] text-center select-none'
+          'my-4 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)]'
         )}
       >
-        <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
+        <div className="rounded-xs border border-dashed border-(--rule-hairline) px-4 py-8">
           <p className="text-xs font-semibold text-(--ink-tertiary)">
             {searchQuery ? '未找到匹配的流水' : '暂无流水记录'}
           </p>
@@ -219,25 +219,25 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 
   return (
     <div className="w-full">
-      <div className={cn(contained ? 'px-0 pt-1 pb-1 mt-0' : 'px-4 pt-3 pb-1 mt-2', 'space-y-2 select-none')}>
+      <div className={cn(contained ? 'mt-0 px-0 py-1' : 'mt-2 px-4 pt-3 pb-1', 'space-y-2 select-none')}>
         <div className="flex items-center gap-2">
-          <div className="relative flex-1 min-w-0">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-(--ink-tertiary)" />
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-(--ink-tertiary)" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索备注、分类、账户..."
-              className="w-full h-7.5 pl-7 pr-7 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken)/70 text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:bg-(--paper-sunken) transition-colors border-none"
+              className="h-7.5 w-full rounded-(--input-radius) border-none bg-(--paper-sunken)/70 px-7 font-mono text-xs text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:bg-(--paper-sunken)"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-(--ink-tertiary) hover:text-(--ink-primary) p-0.5 cursor-pointer"
+                className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer p-0.5 text-(--ink-tertiary) hover:text-(--ink-primary)"
                 title="清空搜索"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             )}
           </div>
@@ -257,7 +257,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       {sortedDates.length === 0 ? (
         renderEmptyOrLoading()
       ) : (
-        <section key={effectiveFilter} className={cn('relative mt-2 filter-fade-enter', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
+        <section key={effectiveFilter} className={cn('filter-fade-enter relative mt-2', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
           {uiStyle === 'modern' ? (
             <ModernTransactionGroup
               visibleDates={visibleDates}
@@ -286,14 +286,14 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
             />
           )}
 
-          <div ref={sentinelRef} className="h-6 flex items-center justify-center mt-2">
+          <div ref={sentinelRef} className="mt-2 flex h-6 items-center justify-center">
             {hasMore ? (
               <span className="text-[11px] text-(--ink-faint) opacity-60">
                 正在加载更多流水...
               </span>
             ) : (
               sortedDates.length > 0 && (
-                <span className="text-[10px] text-(--ink-tertiary)/40 font-mono tracking-widest uppercase">
+                <span className="font-mono text-[10px] tracking-widest text-(--ink-tertiary)/40 uppercase">
                   END OF JOURNAL
                 </span>
               )

@@ -65,13 +65,13 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         'flex items-center border transition-all duration-150 select-none',
         sizeContainerStyles[size],
         variantStyles[variant],
-        disabled && 'opacity-50 cursor-not-allowed',
+        disabled && 'cursor-not-allowed opacity-50',
         className
       )}
     >
       <span
         className={cn(
-          'font-mono select-none text-(--ink-tertiary) shrink-0 transition-colors',
+          'shrink-0 font-mono text-(--ink-tertiary) transition-colors select-none',
           sizeSymbolStyles[size]
         )}
       >
@@ -88,7 +88,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={cn(
-          'flex-1 w-full bg-transparent font-mono tabular-nums outline-none text-(--ink-primary) placeholder:text-(--ink-faint)',
+          'w-full flex-1 bg-transparent font-mono text-(--ink-primary) tabular-nums outline-none placeholder:text-(--ink-faint)',
           sizeInputStyles[size]
         )}
       />

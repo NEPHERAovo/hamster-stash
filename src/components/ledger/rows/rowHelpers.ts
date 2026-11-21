@@ -12,7 +12,7 @@ export function formatRowDateTime(dateStr?: string, createdAt?: string, showDate
 
 export function getBaseRowClass(isFresh = false, isLastInGroup = false, className?: string): string {
   return cn(
-    'entry-row flex items-center justify-between px-3.5 py-2 relative cursor-pointer select-none transition-all duration-150',
+    'entry-row relative flex cursor-pointer items-center justify-between px-3.5 py-2 transition-all duration-150 select-none',
     'border-b border-dashed border-(--rule-hairline)/60 hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40',
     isFresh && 'fresh-entry',
     isLastInGroup && '!border-b-0',

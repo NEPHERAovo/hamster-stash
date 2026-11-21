@@ -1,5 +1,5 @@
 import React from 'react';
-import { CaretRight as ChevronRight } from '@phosphor-icons/react';
+import { CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { CategoryStatItem } from '../../domain/finance/periodStats';
 import { cn } from '../../utils/cn';
@@ -27,23 +27,23 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
           key={item.categoryId}
           type="button"
           onClick={() => onSelectCategory?.(item.categoryId)}
-          className="w-full flex items-center py-2 px-1 rounded-(--radius-sm) hover:bg-(--paper-sunken)/60 active:scale-[0.99] transition-all cursor-pointer text-[13px] border-b border-dashed border-(--rule-hairline)/60 last:border-b-0 group text-left"
+          className="group active:scale-0.99 flex w-full cursor-pointer items-center rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] transition-all last:border-b-0 hover:bg-(--paper-sunken)/60"
           title={`查看「${item.name}」支出明细`}
         >
           <div
-            className="w-2.5 h-2.5 mr-2.5 shrink-0 rounded-(--badge-radius)"
+            className="mr-2.5 size-2.5 shrink-0 rounded-(--badge-radius)"
             style={{ backgroundColor: item.color }}
           />
-          <span className="flex-1 text-(--ink-primary) font-medium truncate">
+          <span className="flex-1 truncate font-medium text-(--ink-primary)">
             {item.name}
           </span>
-          <span className="font-mono font-semibold text-(--ink-primary) tabular-nums mr-2">
+          <span className="mr-2 font-mono font-semibold text-(--ink-primary) tabular-nums">
             ¥{centsToYuan(item.amount)}
           </span>
-          <span className="font-mono text-[11px] text-(--ink-tertiary) tabular-nums min-w-[34px] text-right mr-1.5">
+          <span className="mr-1.5 min-w-[34px] text-right font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
             {item.percentage}%
           </span>
-          <ChevronRight className="w-3.5 h-3.5 text-(--ink-faint) group-hover:text-(--ink-secondary) transition-colors shrink-0" />
+          <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
         </button>
       ))}
     </div>

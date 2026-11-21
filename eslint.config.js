@@ -24,15 +24,12 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Complexity and code smell prevention
       'no-nested-ternary': 'error',
-
-      // Tailwind CSS rules tailored for Tailwind v4 and clean styling
       'tailwindcss/no-contradicting-classname': 'error',
-      'tailwindcss/enforces-shorthand': 'warn',
-      'tailwindcss/enforces-canonical-classname': 'off', // Preserves dynamic theme tokens like rounded-(--radius-md)
-      'tailwindcss/no-unnecessary-arbitrary-value': 'warn',
-      'tailwindcss/classnames-order': 'warn',
+      'tailwindcss/enforces-shorthand': 'error',
+      'tailwindcss/enforces-canonical-classname': 'off',
+      'tailwindcss/no-unnecessary-arbitrary-value': 'error',
+      'tailwindcss/classnames-order': 'error',
       'tailwindcss/no-custom-classname': 'off',
     },
     settings: {

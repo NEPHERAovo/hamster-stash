@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BookBookmark as NotebookText, ChartBar as BarChart3, Wallet, Plus, type Icon as LucideIcon } from '@phosphor-icons/react';
+import { BookBookmarkIcon as NotebookText, ChartBarIcon as BarChart3, WalletIcon as Wallet, PlusIcon as Plus, type Icon as LucideIcon } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { cn } from '../../utils/cn';
@@ -54,22 +54,22 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
   return (
     <>
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] h-[calc(62px+var(--dock-bottom))] pointer-events-none z-30 border-t border-(--rule-hairline)/60 bg-gradient-to-t from-(--paper-base)/85 via-(--paper-base)/40 to-transparent backdrop-blur-[2px]"
+        className="pointer-events-none fixed bottom-0 left-1/2 z-30 h-[calc(62px+var(--dock-bottom))] w-full max-w-[430px] -translate-x-1/2 border-t border-(--rule-hairline)/60 bg-gradient-to-t from-(--paper-base)/85 via-(--paper-base)/40 to-transparent backdrop-blur-[2px]"
         aria-hidden="true"
       />
 
       {showAddButton && onAddClick && (
-        <div className="fixed bottom-[calc(68px+var(--dock-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-40">
+        <div className="pointer-events-none fixed bottom-[calc(68px+var(--dock-bottom))] left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2">
           <button
             type="button"
             onClick={onAddClick}
             title={resolvedAddTitle}
             aria-label={resolvedAddTitle}
-            className="pointer-events-auto absolute right-4.5 bottom-0 w-[46px] h-[46px] rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+            className="pointer-events-auto absolute right-4.5 bottom-0 flex size-[46px] cursor-pointer items-center justify-center rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 active:scale-95 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
           >
             <Plus
               className={cn(
-                'w-5 h-5 stroke-[2.2] transition-transform duration-200',
+                'stroke-2.2 size-5 transition-transform duration-200',
                 isAddOpen && 'rotate-45'
               )}
             />
@@ -77,10 +77,10 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
         </div>
       )}
 
-      <nav className={cn('fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--dock-bottom) px-4 pointer-events-none select-none', className)}>
+      <nav className={cn('pointer-events-none fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 px-4 pb-(--dock-bottom) select-none', className)}>
         <div className="pointer-events-auto relative pt-[3px]">
           <div
-            className="absolute inset-x-0 bottom-0 h-13 rounded-[5px] bg-(--paper-sunken) border border-(--rule-hairline) shadow-[0_2px_6px_rgba(0,0,0,0.04)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
+            className="absolute inset-x-0 bottom-0 h-13 rounded-[5px] border border-(--rule-hairline) bg-(--paper-sunken) shadow-[0_2px_6px_rgba(0,0,0,0.04)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
             aria-hidden="true"
           />
           <div className="relative z-10 flex items-end gap-1 px-1 pb-1">
@@ -91,7 +91,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                 <React.Fragment key={tab.id}>
                   {idx > 0 && (
                     <div
-                      className="w-0 h-4.5 border-r border-dashed border-(--rule-hairline)/80 self-center mb-0.5 shrink-0 pointer-events-none"
+                      className="pointer-events-none mb-0.5 h-4.5 w-0 shrink-0 self-center border-r border-dashed border-(--rule-hairline)/80"
                       aria-hidden="true"
                     />
                   )}
@@ -99,15 +99,15 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                     type="button"
                     onClick={() => onTabChange(tab.id)}
                     className={cn(
-                      'flex-1 flex flex-col items-center justify-center border border-b-0 rounded-t-[3.5px] rounded-b-[2px] overflow-hidden transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] cursor-pointer select-none gap-1 min-w-0',
+                      'flex min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-t-[3.5px] rounded-b-[2px] border border-b-0 transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] select-none',
                       isActive
-                        ? 'relative z-10 h-[51px] pt-[3px] bg-(--paper-sheet) border-(--rule-hairline) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
-                        : 'relative z-1 h-11 bg-transparent border-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                        ? 'relative z-10 h-[51px] border-(--rule-hairline) bg-(--paper-sheet) pt-[3px] text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
+                        : 'relative z-1 h-11 border-transparent bg-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
                     )}
                   >
                     {isActive && (
                       <span
-                        className="absolute top-0 inset-x-0 h-[3px] bg-(--color-accent)"
+                        className="absolute inset-x-0 top-0 h-[3px] bg-(--color-accent)"
                         aria-hidden="true"
                       />
                     )}
@@ -116,7 +116,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                       strokeWidth={isActive ? 2.1 : 1.75}
                       className="shrink-0"
                     />
-                    <span className="text-[10px] font-semibold leading-none font-sans truncate px-0.5">
+                    <span className="truncate px-0.5 font-sans text-[10px] leading-none font-semibold">
                       {tab.label}
                     </span>
                   </button>
@@ -125,7 +125,7 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
             })}
           </div>
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-[5px] rounded-b-[5px] z-20 bg-(--paper-sunken) border-t border-(--rule-hairline)/90"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-[5px] rounded-b-[5px] border-t border-(--rule-hairline)/90 bg-(--paper-sunken)"
             aria-hidden="true"
           />
         </div>

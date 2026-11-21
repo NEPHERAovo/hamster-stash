@@ -63,7 +63,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
               </div>
               <span
                 className={cn(
-                  'font-mono text-xs tabular-nums font-semibold shrink-0',
+                  'shrink-0 font-mono text-xs font-semibold tabular-nums',
                   dayNet >= 0 ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
                 )}
               >
@@ -71,7 +71,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
               </span>
             </div>
 
-            <div className="bg-(--paper-sheet) rounded-[22px] backdrop-blur-xl shadow-sm overflow-hidden border-none">
+            <div className="overflow-hidden rounded-[22px] border-none bg-(--paper-sheet) shadow-sm backdrop-blur-xl">
               {txList.map((tx, idx) => (
                 <TransactionItem
                   key={tx.id}

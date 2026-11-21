@@ -175,7 +175,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
       {canSwipe && action && (
         <div
           className={cn(
-            'absolute inset-y-0 right-0 flex items-center justify-center z-0 overflow-hidden select-none',
+            'absolute inset-y-0 right-0 z-0 flex items-center justify-center overflow-hidden select-none',
             action.className || 'bg-(--color-expense)',
             offset === 0 && 'pointer-events-none opacity-0'
           )}
@@ -192,7 +192,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
             type="button"
             onClick={handleActionClick}
             title={action.title || action.label}
-            className="w-full h-full flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-0.5 cursor-pointer active:opacity-85"
+            className="flex size-full cursor-pointer flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-white active:opacity-85"
           >
             {action.icon}
             <span>{action.label}</span>
@@ -218,7 +218,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
           transform: `translate3d(${offset}px, 0, 0)`,
           transition: isSwiping ? 'none' : `transform ${settleMs}ms ${SPRING_OUT_EASE}`,
         }}
-        className={cn('relative z-10 select-none will-change-transform bg-(--bg-surface)', className)}
+        className={cn('relative z-10 bg-(--bg-surface) will-change-transform select-none', className)}
       >
         {children}
       </div>

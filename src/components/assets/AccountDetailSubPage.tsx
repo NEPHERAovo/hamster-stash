@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Scales as Scale, Trash as Trash2, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
+import { ScalesIcon as Scale, TrashIcon as Trash2, ArrowsLeftRightIcon as ArrowLeftRight } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
@@ -211,15 +211,15 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   }
 
   return (
-    <div className="w-full pb-6 pt-1 px-4">
-      <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) shadow-xs p-4 mb-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income) flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 stroke-[1.85]" />
+    <div className="w-full px-4 pt-1 pb-6">
+      <div className="mb-4 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-4 shadow-xs">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income)">
+            <Icon className="stroke-1.85 size-5" />
           </div>
           <div>
-            <div className="font-bold text-sm text-(--ink-primary)">{account.name}</div>
-            <div className="text-[11px] font-mono text-(--ink-tertiary)">
+            <div className="text-sm font-bold text-(--ink-primary)">{account.name}</div>
+            <div className="font-mono text-[11px] text-(--ink-tertiary)">
               {isCredit ? '信用账户 · ' : '储蓄账户 · '}
               {getAccountTypeName(account.type)}
             </div>
@@ -227,37 +227,37 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         </div>
 
         <div className="mb-3.5">
-          <div className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider mb-0.5 font-mono">
+          <div className="mb-0.5 font-mono text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
             {balanceLabel}
           </div>
           <div
             className={cn(
-              'text-3xl font-bold tracking-tight tabular-nums font-mono',
+              'font-mono text-3xl font-bold tracking-tight tabular-nums',
               isNegative ? 'text-(--color-expense)' : 'text-(--ink-primary)'
             )}
           >
             {isNegative ? `-¥${centsToYuan(Math.abs(account.balance))}` : `¥${centsToYuan(account.balance)}`}
           </div>
           {isCredit && account.creditLimit && (
-            <div className="text-[11px] font-mono text-(--ink-tertiary) mt-1">
+            <div className="mt-1 font-mono text-[11px] text-(--ink-tertiary)">
               额度 ¥{centsToYuan(account.creditLimit)} · 剩余可用 ¥
               {centsToYuan(Math.max(0, account.creditLimit + account.balance))}
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-3 text-center py-3 border-y border-dashed border-(--rule-hairline) mb-3.5">
+        <div className="mb-3.5 grid grid-cols-3 border-y border-dashed border-(--rule-hairline) py-3 text-center">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">收入</span>
-            <span className="text-[13px] font-bold font-mono tabular-nums text-(--color-income)">+¥{centsToYuan(monthIn)}</span>
+            <span className="text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">收入</span>
+            <span className="font-mono text-[13px] font-bold text-(--color-income) tabular-nums">+¥{centsToYuan(monthIn)}</span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">支出</span>
-            <span className="text-[13px] font-bold font-mono tabular-nums text-(--color-expense)">-¥{centsToYuan(monthOut)}</span>
+            <span className="text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">支出</span>
+            <span className="font-mono text-[13px] font-bold text-(--color-expense) tabular-nums">-¥{centsToYuan(monthOut)}</span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-(--ink-tertiary) uppercase tracking-wider">结余</span>
-            <span className={cn('text-[13px] font-bold font-mono tabular-nums', isNetPositive ? 'text-(--color-income)' : 'text-(--color-expense)')}>
+            <span className="text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">结余</span>
+            <span className={cn('font-mono text-[13px] font-bold tabular-nums', isNetPositive ? 'text-(--color-income)' : 'text-(--color-expense)')}>
               {isNetPositive ? `+¥${centsToYuan(netFlow)}` : `-¥${centsToYuan(Math.abs(netFlow))}`}
             </span>
           </div>
@@ -267,10 +267,10 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           {onOpenTransfer && accounts.length >= 2 && (
             <button
               type="button"
-              className="flex-1 h-9 rounded-(--btn-radius) inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--btn-primary-bg) text-(--btn-primary-fg) hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+              className="active:scale-0.98 inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) shadow-2xs transition-all hover:opacity-90"
               onClick={() => onOpenTransfer(account)}
             >
-              <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.85]" />
+              <ArrowLeftRight className="stroke-1.85 size-3.5" />
               <span>{isCredit ? '账户还款' : '资金划转'}</span>
             </button>
           )}
@@ -279,51 +279,51 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
             <button
               type="button"
               className={cn(
-                'h-9 rounded-(--btn-radius) inline-flex items-center justify-center gap-1.5 text-xs font-semibold bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover) active:scale-[0.98] transition-all cursor-pointer border border-(--rule-hairline)',
+                'active:scale-0.98 inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) transition-all hover:bg-(--paper-hover) hover:text-(--ink-primary)',
                 onOpenTransfer && accounts.length >= 2 ? 'flex-1' : 'w-full'
               )}
               onClick={onOpenReconcile}
             >
-              <Scale className="w-4 h-4 stroke-[1.85]" />
+              <Scale className="stroke-1.85 size-4" />
               <span>平账校准</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-4 mb-4 text-xs font-mono">
-        <div className="text-[10px] text-(--ink-tertiary) uppercase tracking-wider mb-2 font-semibold">
+      <div className="mb-4 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-4 font-mono text-xs">
+        <div className="mb-2 text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
           账户属性信息
         </div>
         <div className="divide-y divide-(--rule-hairline)">
           <div className="flex justify-between py-2">
             <span className="text-(--ink-tertiary)">账户分类</span>
-            <span className="text-(--ink-primary) font-medium">
+            <span className="font-medium text-(--ink-primary)">
               {isCredit ? '信用账户' : '储蓄账户'}
             </span>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-(--ink-tertiary)">账户类型</span>
-            <span className="text-(--ink-primary) font-medium">{getAccountTypeName(account.type)}</span>
+            <span className="font-medium text-(--ink-primary)">{getAccountTypeName(account.type)}</span>
           </div>
 
           {isCredit && (
             <>
               <div className="flex justify-between py-2">
                 <span className="text-(--ink-tertiary)">每月还款日</span>
-                <span className="text-(--ink-primary) font-medium">
+                <span className="font-medium text-(--ink-primary)">
                   {account.repaymentDay ? `每月 ${account.repaymentDay} 日` : '未设置'}
                 </span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-(--ink-tertiary)">每月账单日</span>
-                <span className="text-(--ink-primary) font-medium">
+                <span className="font-medium text-(--ink-primary)">
                   {account.billDay ? `每月 ${account.billDay} 日` : '未设置'}
                 </span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-(--ink-tertiary)">关联还款账户</span>
-                <span className="text-(--ink-primary) font-medium">
+                <span className="font-medium text-(--ink-primary)">
                   {linkedRepaymentAccount ? linkedRepaymentAccount.name : '未关联'}
                 </span>
               </div>
@@ -341,7 +341,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               {account.creditLimit !== undefined && (
                 <div className="flex justify-between py-2">
                   <span className="text-(--ink-tertiary)">信用额度</span>
-                  <span className="text-(--ink-primary) font-medium">
+                  <span className="font-medium text-(--ink-primary)">
                     ¥{centsToYuan(account.creditLimit)}
                   </span>
                 </div>
@@ -381,13 +381,13 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         className="mb-4"
       />
 
-      <div className="space-y-2 mb-4">
+      <div className="mb-4 space-y-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-semibold text-(--ink-secondary)">账户流水</span>
-          <span className="text-[11px] font-mono text-(--ink-tertiary)">共 {accountTxs.length} 笔</span>
+          <span className="font-mono text-[11px] text-(--ink-tertiary)">共 {accountTxs.length} 笔</span>
         </div>
 
-        <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) overflow-hidden">
+        <div className="overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet)">
           {accountTxs.length === 0 ? (
             <div className="py-8 text-center text-xs text-(--ink-tertiary)">
               此账户暂无收支明细
@@ -397,7 +397,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
               <div key={group.monthKey}>
                 <div
                   className={cn(
-                    'flex items-center justify-between px-3.5 py-1.5 bg-(--paper-sunken)/45 border-b border-dashed border-(--rule-hairline) text-[11px] font-mono text-(--ink-tertiary) select-none',
+                    'flex items-center justify-between border-b border-dashed border-(--rule-hairline) bg-(--paper-sunken)/45 px-3.5 py-1.5 font-mono text-[11px] text-(--ink-tertiary) select-none',
                     groupIdx > 0 && 'border-t'
                   )}
                 >
@@ -423,13 +423,13 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         </div>
 
         {accountTxs.length > 0 && (
-          <div ref={sentinelRef} className="h-6 flex items-center justify-center pt-1">
+          <div ref={sentinelRef} className="flex h-6 items-center justify-center pt-1">
             {hasMore ? (
               <span className="text-[11px] text-(--ink-faint) opacity-70">
                 正在加载更多流水...
               </span>
             ) : (
-              <span className="text-[10px] text-(--ink-tertiary)/50 font-mono tracking-wider">
+              <span className="font-mono text-[10px] tracking-wider text-(--ink-tertiary)/50">
                 已加载全部 {accountTxs.length} 笔流水
               </span>
             )}
@@ -438,13 +438,13 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
       </div>
 
       {onDeleteAccount && (
-        <div className="pt-2 pb-6 flex justify-center">
+        <div className="flex justify-center pt-2 pb-6">
           <button
             type="button"
             onClick={handleDeleteClick}
-            className="text-xs text-(--color-expense) hover:underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5 py-1.5 px-3 rounded-(--btn-radius) hover:bg-(--color-expense-bg)/40"
+            className="flex cursor-pointer items-center gap-1.5 rounded-(--btn-radius) px-3 py-1.5 text-xs text-(--color-expense) opacity-80 transition-opacity hover:bg-(--color-expense-bg)/40 hover:underline hover:opacity-100"
           >
-            <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
+            <Trash2 className="stroke-1.8 size-3.5" />
             <span>删除此账户</span>
           </button>
         </div>

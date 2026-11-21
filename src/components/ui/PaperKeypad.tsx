@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Backspace as Delete, Trash as Trash2 } from '@phosphor-icons/react';
+import { BackspaceIcon as Delete, TrashIcon as Trash2 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
 export interface PaperKeypadProps {
@@ -68,20 +68,20 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
   };
 
   const digitBtnClass = cn(
-    'h-11 font-mono text-base font-semibold flex items-center justify-center transition-all cursor-pointer',
-    'rounded-(--keypad-radius) border border-(--keypad-digit-border) bg-(--keypad-digit-bg) text-(--ink-primary) shadow-2xs hover:opacity-90 active:scale-[0.96]'
+    'flex h-11 cursor-pointer items-center justify-center font-mono text-base font-semibold transition-all',
+    'active:scale-0.96 rounded-(--keypad-radius) border border-(--keypad-digit-border) bg-(--keypad-digit-bg) text-(--ink-primary) shadow-2xs hover:opacity-90'
   );
 
   const opBtnClass = cn(
-    'h-11 font-mono text-sm font-semibold flex items-center justify-center transition-all cursor-pointer',
-    'rounded-(--keypad-radius) border border-(--keypad-op-border) bg-(--keypad-op-bg) text-(--ink-secondary) hover:text-(--ink-primary) active:scale-[0.96]'
+    'flex h-11 cursor-pointer items-center justify-center font-mono text-sm font-semibold transition-all',
+    'active:scale-0.96 rounded-(--keypad-radius) border border-(--keypad-op-border) bg-(--keypad-op-bg) text-(--ink-secondary) hover:text-(--ink-primary)'
   );
 
   return (
     <div
       className={cn(
-        'grid grid-cols-4 gap-1.5 p-2 pb-[calc(10px+var(--safe-bottom))] select-none transition-colors duration-200',
-        'bg-(--paper-sheet) paper-glass-blur border-t border-(--rule-hairline)',
+        'grid grid-cols-4 gap-1.5 p-2 pb-[calc(10px+var(--safe-bottom))] transition-colors duration-200 select-none',
+        'paper-glass-blur border-t border-(--rule-hairline) bg-(--paper-sheet)',
         className
       )}
     >
@@ -174,8 +174,8 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
             onSaveAnother?.();
           }}
           className={cn(
-            'h-11 text-xs font-semibold flex items-center justify-center transition-all cursor-pointer',
-            'rounded-(--keypad-radius) border border-(--keypad-digit-border) bg-(--keypad-digit-bg) text-(--ink-primary) active:scale-[0.96]'
+            'flex h-11 cursor-pointer items-center justify-center text-xs font-semibold transition-all',
+            'active:scale-0.96 rounded-(--keypad-radius) border border-(--keypad-digit-border) bg-(--keypad-digit-bg) text-(--ink-primary)'
           )}
         >
           再记一笔
@@ -188,11 +188,11 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
             onDelete?.();
           }}
           className={cn(
-            'h-11 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer',
-            'rounded-(--keypad-radius) border border-(--color-expense)/25 bg-(--color-expense-bg) text-(--color-expense) active:scale-[0.96]'
+            'flex h-11 cursor-pointer items-center justify-center gap-1 text-xs font-semibold transition-all',
+            'active:scale-0.96 rounded-(--keypad-radius) border border-(--color-expense)/25 bg-(--color-expense-bg) text-(--color-expense)'
           )}
         >
-          <Trash2 className="w-3.5 h-3.5 stroke-2" />
+          <Trash2 className="size-3.5 stroke-2" />
           <span>删除</span>
         </button>
       )}
@@ -217,15 +217,15 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
         title="退格"
         className={cn(digitBtnClass, 'text-base')}
       >
-        <Delete className="w-4.5 h-4.5 stroke-[1.8]" />
+        <Delete className="stroke-1.8 size-4.5" />
       </button>
       <button
         type="button"
         onClick={handleFinishPress}
         disabled={!canFinish}
         className={cn(
-          'h-11 text-xs font-mono font-semibold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
-          'rounded-(--keypad-radius) bg-(--keypad-action-bg) text-(--keypad-action-fg) active:scale-[0.96]'
+          'flex h-11 cursor-pointer items-center justify-center font-mono text-xs font-semibold tracking-wider uppercase transition-all disabled:cursor-not-allowed disabled:opacity-40',
+          'active:scale-0.96 rounded-(--keypad-radius) bg-(--keypad-action-bg) text-(--keypad-action-fg)'
         )}
       >
         {mode === 'create' ? 'OK' : 'SAVE'}

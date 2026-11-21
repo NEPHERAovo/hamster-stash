@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus } from '@phosphor-icons/react';
+import { PlusIcon as Plus } from '@phosphor-icons/react';
 import { getCategoryIcon, cn } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';
@@ -68,14 +68,14 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
   const hasActiveSelection = isCreateNew || Boolean(selectedItemId);
 
   return (
-    <div className="pt-1.5 pb-0.5 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none">
+    <div className="space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-1.5 pb-0.5 select-none">
       <div className="flex items-center justify-between text-[11px] text-(--ink-tertiary)">
         <span>关联或新建物品</span>
         {hasActiveSelection && (
           <button
             type="button"
             onClick={handleClearAssociation}
-            className="hover:text-(--color-expense) transition-colors cursor-pointer text-[11px]"
+            className="cursor-pointer text-[11px] transition-colors hover:text-(--color-expense)"
           >
             解除关联
           </button>
@@ -88,14 +88,14 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
             type="button"
             onClick={() => handleToggleCreateNew('physical')}
             className={cn(
-              'py-1.5 px-2 rounded-(--btn-radius) text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
+              'flex cursor-pointer items-center justify-between rounded-(--btn-radius) border px-2 py-1.5 font-mono text-xs transition-all',
               isCreateNew && (!itemExt?.kind || itemExt?.kind === 'physical')
-                ? 'bg-(--color-income-bg) text-(--color-income) border-(--color-income) font-semibold shadow-2xs'
-                : 'bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) border-(--rule-hairline)'
+                ? 'border-(--color-income) bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs'
+                : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
             )}
           >
             <div className="flex items-center gap-1 truncate">
-              <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
+              <Plus className="size-3.5 shrink-0 stroke-2" />
               <span className="truncate">记为新物品</span>
             </div>
           </button>
@@ -104,25 +104,25 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
             type="button"
             onClick={() => handleToggleCreateNew('subscription')}
             className={cn(
-              'py-1.5 px-2 rounded-(--btn-radius) text-xs font-mono flex items-center justify-between transition-all cursor-pointer border',
+              'flex cursor-pointer items-center justify-between rounded-(--btn-radius) border px-2 py-1.5 font-mono text-xs transition-all',
               isCreateNew && itemExt?.kind === 'subscription'
-                ? 'bg-(--color-income-bg) text-(--color-income) border-(--color-income) font-semibold shadow-2xs'
-                : 'bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) border-(--rule-hairline)'
+                ? 'border-(--color-income) bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs'
+                : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
             )}
           >
             <div className="flex items-center gap-1 truncate">
-              <Plus className="w-3.5 h-3.5 stroke-2 shrink-0" />
+              <Plus className="size-3.5 shrink-0 stroke-2" />
               <span className="truncate">记为新订阅</span>
             </div>
           </button>
         </div>
 
         {subscriptionItems.length > 0 && (
-          <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
-            <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
+          <div className="border-t border-dotted border-(--rule-hairline)/60 pt-1">
+            <div className="mb-1 font-mono text-[10px] text-(--ink-tertiary)">
               订阅
             </div>
-            <div className="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto">
+            <div className="grid max-h-24 grid-cols-3 gap-1 overflow-y-auto">
               {subscriptionItems.map((it) => {
                 const ItemIcon = getCategoryIcon(it.icon);
                 const isSelected = selectedItemId === it.id && !isCreateNew;
@@ -132,13 +132,13 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                     type="button"
                     onClick={() => handleSelectExistingItem(it.id, 'subscription')}
                     className={cn(
-                      'px-2 py-1 text-xs font-mono rounded-(--radius-sm) flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
+                      'flex cursor-pointer items-center gap-1.5 truncate rounded-(--radius-sm) border px-2 py-1 text-left font-mono text-xs transition-all',
                       isSelected
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-hairline) -rotate-1'
-                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50 border-transparent'
+                        ? '-rotate-1 border-(--rule-hairline) bg-(--paper-sunken) font-bold text-(--ink-solid) shadow-2xs'
+                        : 'border-transparent text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
                     )}
                   >
-                    <ItemIcon className="w-3 h-3 shrink-0 opacity-70" />
+                    <ItemIcon className="size-3 shrink-0 opacity-70" />
                     <span className="truncate">{it.name}</span>
                   </button>
                 );
@@ -147,13 +147,13 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
           </div>
         )}
 
-        <div className="pt-1 border-t border-dotted border-(--rule-hairline)/60">
-          <div className="text-[10px] font-mono text-(--ink-tertiary) mb-1">
+        <div className="border-t border-dotted border-(--rule-hairline)/60 pt-1">
+          <div className="mb-1 font-mono text-[10px] text-(--ink-tertiary)">
             物品
           </div>
-          <div className="grid grid-cols-3 gap-1 max-h-28 overflow-y-auto">
+          <div className="grid max-h-28 grid-cols-3 gap-1 overflow-y-auto">
             {physicalItems.length === 0 ? (
-              <div className="col-span-3 text-[11px] text-(--ink-tertiary) py-1.5 text-center">
+              <div className="col-span-3 py-1.5 text-center text-[11px] text-(--ink-tertiary)">
                 暂无物品
               </div>
             ) : (
@@ -166,13 +166,13 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                     type="button"
                     onClick={() => handleSelectExistingItem(it.id, 'physical')}
                     className={cn(
-                      'px-2 py-1 text-xs font-mono rounded-(--radius-sm) flex items-center gap-1.5 text-left truncate transition-all cursor-pointer border',
+                      'flex cursor-pointer items-center gap-1.5 truncate rounded-(--radius-sm) border px-2 py-1 text-left font-mono text-xs transition-all',
                       isSelected
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-bold shadow-2xs border-(--rule-hairline) -rotate-1'
-                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50 border-transparent'
+                        ? '-rotate-1 border-(--rule-hairline) bg-(--paper-sunken) font-bold text-(--ink-solid) shadow-2xs'
+                        : 'border-transparent text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
                     )}
                   >
-                    <ItemIcon className="w-3 h-3 shrink-0 opacity-70" />
+                    <ItemIcon className="size-3 shrink-0 opacity-70" />
                     <span className="truncate">{it.name}</span>
                   </button>
                 );

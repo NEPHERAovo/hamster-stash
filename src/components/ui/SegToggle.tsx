@@ -32,7 +32,7 @@ export function SegToggle<T extends string | number>({
   return (
     <div
       className={cn(
-        'inline-flex items-center p-1 select-none transition-colors duration-200 bg-(--toggle-bg) rounded-(--toggle-radius) border border-(--rule-hairline)',
+        'inline-flex items-center rounded-(--toggle-radius) border border-(--rule-hairline) bg-(--toggle-bg) p-1 transition-colors duration-200 select-none',
         fullWidth && 'w-full',
         className
       )}
@@ -45,15 +45,15 @@ export function SegToggle<T extends string | number>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex-1 inline-flex items-center justify-center gap-1.5 font-medium transition-all duration-150 cursor-pointer rounded-(--toggle-item-radius) whitespace-nowrap',
+              'inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--toggle-item-radius) font-medium whitespace-nowrap transition-all duration-150',
               sizeStyles[size],
               isSelected
-                ? 'bg-(--toggle-active-bg) text-(--toggle-active-fg) shadow-xs font-semibold'
+                ? 'bg-(--toggle-active-bg) font-semibold text-(--toggle-active-fg) shadow-xs'
                 : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
             )}
           >
             {option.icon && (
-              <span className="shrink-0 flex items-center">{option.icon}</span>
+              <span className="flex shrink-0 items-center">{option.icon}</span>
             )}
             <span>{option.label}</span>
           </button>

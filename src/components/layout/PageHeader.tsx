@@ -1,5 +1,5 @@
 import React from 'react';
-import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from '@phosphor-icons/react';
+import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {
@@ -34,30 +34,30 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 flex items-center justify-between min-h-[calc(3rem+var(--safe-top))] box-border select-none transition-colors duration-200',
-        'bg-(--paper-base) border-b border-(--rule-hairline) page-header-bar',
+        'sticky top-0 z-40 box-border flex min-h-[calc(3rem+var(--safe-top))] items-center justify-between px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 transition-colors duration-200 select-none',
+        'page-header-bar border-b border-(--rule-hairline) bg-(--paper-base)',
         className
       )}
     >
       {centerTitle ? (
         <>
-          <div className="flex items-center min-w-[36px] justify-start">
+          <div className="flex min-w-9 items-center justify-start">
             {leftAction}
           </div>
-          <div className="text-center flex-1 px-2">
+          <div className="flex-1 px-2 text-center">
             {metaPill && (
-              <div className="text-[9px] font-mono tracking-wider text-(--ink-tertiary) uppercase justify-center mb-0.5">
+              <div className="mb-0.5 justify-center font-mono text-[9px] tracking-wider text-(--ink-tertiary) uppercase">
                 <span>{metaPill}</span>
               </div>
             )}
-            <h1 className="text-lg sm:text-xl truncate text-(--ink-solid) font-semibold">
+            <h1 className="truncate text-lg font-semibold text-(--ink-solid) sm:text-xl">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">{subtitle}</p>
+              <p className="mt-0.5 font-mono text-[10px] text-(--ink-tertiary)">{subtitle}</p>
             )}
           </div>
-          <div className="flex items-center min-w-[36px] justify-end text-(--ink-secondary)">
+          <div className="flex min-w-9 items-center justify-end text-(--ink-secondary)">
             {rightAction}
           </div>
         </>
@@ -67,15 +67,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             {leftAction}
             <div>
               {metaPill && (
-                <div className="text-[9px] font-mono tracking-wider text-(--ink-tertiary) uppercase mb-0.5">
+                <div className="mb-0.5 font-mono text-[9px] tracking-wider text-(--ink-tertiary) uppercase">
                   <span>{metaPill}</span>
                 </div>
               )}
-              <h1 className="leading-none font-serif not-italic text-2xl sm:text-[28px] text-(--ink-solid) tracking-tight">
+              <h1 className="font-serif text-2xl leading-none tracking-tight text-(--ink-solid) not-italic sm:text-[28px]">
                 {title}
               </h1>
               {subtitle && (
-                <p className="text-[10px] font-mono text-(--ink-tertiary) mt-0.5">{subtitle}</p>
+                <p className="mt-0.5 font-mono text-[10px] text-(--ink-tertiary)">{subtitle}</p>
               )}
             </div>
           </div>
@@ -87,7 +87,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                   <button
                     type="button"
                     onClick={onBackToToday}
-                    className="h-7 px-2 flex items-center justify-center border border-(--rule-hairline) text-(--color-accent) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs text-[11px] font-medium"
+                    className="flex h-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-2 text-[11px] font-medium text-(--color-accent) shadow-xs transition-all hover:bg-(--paper-sunken) active:scale-95"
                     title="回到本月"
                   >
                     本月
@@ -96,20 +96,20 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 <button
                   type="button"
                   onClick={onPrevMonth}
-                  className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95 transition-all cursor-pointer rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
+                  className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                   title="上个月"
                   aria-label="上个月"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5 stroke-2" />
+                  <ChevronLeft className="size-3.5 stroke-2" />
                 </button>
                 <button
                   type="button"
                   onClick={onNextMonth}
-                  className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95 transition-all cursor-pointer rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
+                  className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                   title="下个月"
                   aria-label="下个月"
                 >
-                  <ChevronRight className="w-3.5 h-3.5 stroke-2" />
+                  <ChevronRight className="size-3.5 stroke-2" />
                 </button>
               </>
             )}

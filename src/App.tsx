@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Gear as Settings, PencilSimple as Pencil, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
+import { GearIcon as Settings, PencilSimpleIcon as Pencil, ArrowsLeftRightIcon as ArrowLeftRight } from '@phosphor-icons/react';
 import {
   AppShell,
   PageHeader,
@@ -260,7 +260,7 @@ export function App() {
                   type="button"
                   onClick={() => setStatsMode(m)}
                   className={cn(
-                    'relative px-2 py-1 text-xs transition-colors cursor-pointer',
+                    'relative cursor-pointer px-2 py-1 text-xs transition-colors',
                     statsMode === m
                       ? 'font-bold text-(--ink-solid)'
                       : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
@@ -268,7 +268,7 @@ export function App() {
                 >
                   <span>{modeLabels[m]}</span>
                   {statsMode === m && (
-                    <span className="absolute bottom-0 left-1.5 right-1.5 h-0.5 bg-(--ink-solid) rounded-full" />
+                    <span className="absolute inset-x-1.5 bottom-0 h-0.5 rounded-full bg-(--ink-solid)" />
                   )}
                 </button>
               ))}
@@ -303,20 +303,20 @@ export function App() {
                   setTransferDefaultFromId(undefined);
                   setIsTransferOpen(true);
                 }}
-                className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                className="flex h-7 cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) px-2.5 font-mono text-xs text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                 title="资金划转"
               >
-                <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.8]" />
+                <ArrowLeftRight className="stroke-1.8 size-3.5" />
                 <span>划转</span>
               </button>
             )}
             <button
               type="button"
               onClick={() => setIsSettingsOpen(true)}
-              className="w-7 h-7 flex items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
               title="设置"
             >
-              <Settings className="w-3.5 h-3.5 stroke-[1.8]" />
+              <Settings className="stroke-1.8 size-3.5" />
             </button>
           </div>
         }
@@ -327,23 +327,23 @@ export function App() {
   return (
     <AppShell>
       {isSandboxModeActive() && (
-        <div className="w-full bg-(--color-accent)/10 border-b border-(--color-accent)/30 px-3.5 py-1.5 flex items-center justify-between text-xs font-mono text-(--ink-primary) select-none">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-(--color-accent) animate-pulse shrink-0" />
-            <span className="font-medium truncate">测试沙盒 (与真实数据隔离)</span>
+        <div className="flex w-full items-center justify-between border-b border-(--color-accent)/30 bg-(--color-accent)/10 px-3.5 py-1.5 font-mono text-xs text-(--ink-primary) select-none">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="size-2 shrink-0 animate-pulse rounded-full bg-(--color-accent)" />
+            <span className="truncate font-medium">测试沙盒 (与真实数据隔离)</span>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => void resetSandboxData()}
-              className="px-2 py-0.5 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-[11px] hover:bg-(--paper-hover) cursor-pointer"
+              className="cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-0.5 text-[11px] hover:bg-(--paper-hover)"
             >
               重置
             </button>
             <button
               type="button"
               onClick={() => setSandboxMode(false)}
-              className="px-2 py-0.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-[11px] font-semibold cursor-pointer"
+              className="cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-2 py-0.5 text-[11px] font-semibold text-(--btn-primary-fg)"
             >
               退出测试
             </button>
@@ -356,7 +356,7 @@ export function App() {
 
       <main
         ref={mainScrollRef}
-        className="flex-1 w-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain px-0 py-0 pb-[calc(76px+var(--dock-bottom))] main-scroll-content"
+        className="main-scroll-content min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-0 pb-[calc(76px+var(--dock-bottom))]"
       >
         <div key={currentTab} className="tab-page-enter w-full">
           {currentTab === 'ledger' && (
@@ -439,10 +439,10 @@ export function App() {
                 <button
                   type="button"
                   onClick={() => setEditingAccount(currentDetailAccount)}
-                  className="h-7 px-2.5 flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all text-xs font-mono cursor-pointer"
+                  className="flex h-7 cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) px-2.5 font-mono text-xs text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                   title="编辑账户"
                 >
-                  <Pencil className="w-3.5 h-3.5 stroke-[1.8]" />
+                  <Pencil className="stroke-1.8 size-3.5" />
                   <span>编辑</span>
                 </button>
               ) : undefined

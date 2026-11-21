@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, DownloadSimple as Download, ArrowSquareOut as ExternalLink, FileText, WarningCircle as AlertCircle, ArrowsClockwise as RefreshCw } from '@phosphor-icons/react';
+import { XIcon as X, DownloadSimpleIcon as Download, ArrowSquareOutIcon as ExternalLink, FileTextIcon as FileText, WarningCircleIcon as AlertCircle, ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react';
 import type { VoucherAttachment } from '../../types/transaction';
 import { attachmentStore } from '../../core/attachments/attachmentStore';
 import { syncService } from '../../domain/sync/syncService';
@@ -113,8 +113,8 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="py-12 flex flex-col items-center gap-2 text-xs text-(--ink-tertiary)">
-          <RefreshCw className="w-5 h-5 animate-spin stroke-[1.8]" />
+        <div className="flex flex-col items-center gap-2 py-12 text-xs text-(--ink-tertiary)">
+          <RefreshCw className="stroke-1.8 size-5 animate-spin" />
           <span>正在加载凭证...</span>
         </div>
       );
@@ -122,8 +122,8 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
 
     if (!resolvedUrl) {
       return (
-        <div className="py-10 px-4 text-center space-y-2">
-          <AlertCircle className="w-7 h-7 mx-auto text-(--ink-tertiary) stroke-[1.6]" />
+        <div className="space-y-2 px-4 py-10 text-center">
+          <AlertCircle className="stroke-1.6 mx-auto size-7 text-(--ink-tertiary)" />
           <div className="text-xs font-medium text-(--ink-primary)">
             本机未找到该凭证文件
           </div>
@@ -141,7 +141,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
         <img
           src={resolvedUrl}
           alt={voucher?.name}
-          className="max-w-full max-h-[70vh] object-contain rounded-(--radius-sm)"
+          className="max-h-[70vh] max-w-full rounded-(--radius-sm) object-contain"
         />
       );
     }
@@ -152,7 +152,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
           <iframe
             src={pdfBlobUrl}
             title={voucher?.name}
-            className="w-full h-[56vh] rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet)"
+            className="h-[56vh] w-full rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet)"
           />
         )}
         <div className="flex items-center justify-center gap-2">
@@ -161,18 +161,18 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
               href={pdfBlobUrl}
               target="_blank"
               rel="noreferrer"
-              className="px-3 py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold inline-flex items-center gap-1.5"
+              className="inline-flex items-center gap-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) px-3 py-1.5 text-xs font-semibold text-(--btn-primary-fg)"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="size-3.5" />
               <span>新窗口打开 PDF</span>
             </a>
           )}
           <a
             href={pdfBlobUrl || resolvedUrl}
             download={voucher?.name}
-            className="px-3 py-1.5 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-(--ink-primary) text-xs font-semibold inline-flex items-center gap-1.5"
+            className="inline-flex items-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-3 py-1.5 text-xs font-semibold text-(--ink-primary)"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="size-3.5" />
             <span>下载文件</span>
           </a>
         </div>
@@ -184,7 +184,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-70 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 select-none"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs select-none"
       onClick={(e) => {
         e.stopPropagation();
         onClose();
@@ -193,42 +193,42 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
       aria-modal="true"
     >
       <div
-        className="w-full max-w-[430px] max-h-[88vh] bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-lg) shadow-2xl overflow-hidden flex flex-col"
+        className="flex max-h-[88vh] w-full max-w-[430px] flex-col overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 border-b border-(--rule-hairline)">
+        <div className="flex items-center justify-between gap-2 border-b border-(--rule-hairline) px-3.5 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-(--ink-primary) truncate">
+            <div className="truncate text-xs font-semibold text-(--ink-primary)">
               {voucher.name}
             </div>
-            <div className="text-[10px] font-mono text-(--ink-tertiary)">
+            <div className="font-mono text-[10px] text-(--ink-tertiary)">
               {voucher.size}
             </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
             {resolvedUrl && (
               <a
                 href={pdfBlobUrl || resolvedUrl}
                 download={voucher.name}
-                className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors"
+                className="flex size-7 items-center justify-center rounded-(--btn-radius) text-(--ink-secondary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
                 title="下载凭证"
               >
-                <Download className="w-4 h-4 stroke-[1.8]" />
+                <Download className="stroke-1.8 size-4" />
               </a>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-pointer"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) text-(--ink-secondary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
               title="关闭预览"
             >
-              <X className="w-4 h-4 stroke-2" />
+              <X className="size-4 stroke-2" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-auto p-3 flex items-center justify-center bg-(--paper-sunken)/40">
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-(--paper-sunken)/40 p-3">
           {renderContent()}
         </div>
       </div>

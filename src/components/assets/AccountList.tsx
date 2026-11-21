@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Trash as Trash2 } from '@phosphor-icons/react';
+import { TrashIcon as Trash2 } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
@@ -78,30 +78,30 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
       action={{
         label: '删除',
         title: '删除账户',
-        icon: <Trash2 className="w-4 h-4 stroke-2" />,
+        icon: <Trash2 className="size-4 stroke-2" />,
         onClick: handleDelete,
       }}
       onClick={onSelect}
       containerClassName="border-b border-dashed border-(--rule-hairline)/60 last:border-b-0"
-      className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+      className="flex cursor-pointer items-center justify-between px-3.5 py-2.5 hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
     >
-      <div className="flex items-center gap-2.5 flex-1 min-w-0 pointer-events-none mr-2">
-        <div className="w-7 h-7 flex items-center justify-center text-(--ink-secondary) shrink-0 rounded-(--badge-radius) bg-(--paper-sunken)">
-          <Icon className="w-3.5 h-3.5 stroke-[1.8]" />
+      <div className="pointer-events-none mr-2 flex min-w-0 flex-1 items-center gap-2.5">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+          <Icon className="stroke-1.8 size-3.5" />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold text-(--ink-primary) truncate">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-semibold text-(--ink-primary)">
             {account.name}
           </div>
-          <div className="text-[10px] font-mono text-(--ink-tertiary) flex items-center gap-1.5 flex-wrap">
+          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-(--ink-tertiary)">
             <span>{getAccountTypeLabel(account.type)}</span>
             {isCredit && account.repaymentDay && (
-              <span className="text-(--color-accent) font-semibold">
+              <span className="font-semibold text-(--color-accent)">
                 每月{account.repaymentDay}日还款
               </span>
             )}
             {isCredit && account.autoRepay && (
-              <span className="px-1 py-0.5 rounded bg-(--color-income)/10 text-(--color-income) text-[9px] font-medium">
+              <span className="rounded bg-(--color-income)/10 px-1 py-0.5 text-[9px] font-medium text-(--color-income)">
                 自动还款
               </span>
             )}
@@ -112,7 +112,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 text-right pointer-events-none">
+      <div className="pointer-events-none shrink-0 text-right">
         <span
           className={cn(
             'font-mono text-sm font-semibold tabular-nums',
@@ -164,15 +164,15 @@ export const AccountList: React.FC<AccountListProps> = ({
     <div className="w-full space-y-4">
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1 select-none">
-          <span className="text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider">
+          <span className="font-mono text-xs tracking-wider text-(--ink-tertiary) uppercase">
             储蓄账户
           </span>
-          <span className="text-[11px] font-mono text-(--ink-faint)">
+          <span className="font-mono text-[11px] text-(--ink-faint)">
             共 {savingsAccounts.length} 项 · 合计 ¥{centsToYuan(savingsTotal)}
           </span>
         </div>
 
-        <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) overflow-hidden shadow-xs">
+        <div className="paper-card overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs transition-all duration-200 select-none">
           {savingsAccounts.length === 0 ? (
             <div className="py-6 text-center text-xs text-(--ink-tertiary)">
               暂无储蓄账户
@@ -196,15 +196,15 @@ export const AccountList: React.FC<AccountListProps> = ({
       {creditAccounts.length > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-1 select-none">
-            <span className="text-xs font-mono text-(--ink-tertiary) uppercase tracking-wider">
+            <span className="font-mono text-xs tracking-wider text-(--ink-tertiary) uppercase">
               信用账户
             </span>
-            <span className="text-[11px] font-mono text-(--ink-faint)">
+            <span className="font-mono text-[11px] text-(--ink-faint)">
               共 {creditAccounts.length} 项 · 欠款 ¥{centsToYuan(Math.abs(creditDebtTotal))}
             </span>
           </div>
 
-          <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) overflow-hidden shadow-xs">
+          <div className="paper-card overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs transition-all duration-200 select-none">
             {creditAccounts.map((acct) => (
               <SwipeableAccountRow
                 key={acct.id}

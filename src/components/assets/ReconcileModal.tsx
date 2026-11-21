@@ -54,8 +54,8 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
       onClose={onClose}
       title={`平账校准 · ${account.name}`}
     >
-      <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between py-2 px-3 bg-(--paper-sunken) rounded-(--radius-sm) text-xs">
+      <div className="space-y-4 p-4">
+        <div className="flex items-center justify-between rounded-(--radius-sm) bg-(--paper-sunken) px-3 py-2 text-xs">
           <span className="text-(--ink-tertiary)">当前余额:</span>
           <span className="font-bold text-(--ink-primary) tabular-nums">
             ¥ {centsToYuan(currentCents)}
@@ -63,7 +63,7 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-(--ink-secondary) block">
+          <label className="block text-xs font-semibold text-(--ink-secondary)">
             实际清点金额
           </label>
           <AmountInput
@@ -98,7 +98,7 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
           </PaperCard>
         )}
 
-        <div className="pt-2 flex gap-2">
+        <div className="flex gap-2 pt-2">
           <PaperButton variant="ghost" fullWidth onClick={onClose}>
             取消
           </PaperButton>

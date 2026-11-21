@@ -49,28 +49,28 @@ export const TransferTxRow: React.FC<TransferTxRowProps> = ({
         />
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[13px] font-medium text-(--ink-primary) leading-tight truncate">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="truncate text-[13px] leading-tight font-medium text-(--ink-primary)">
             {title}
           </span>
-          <span className="real-stamp text-[9px] px-1 py-0.5 text-(--cat-transit)">
+          <span className="real-stamp px-1 py-0.5 text-[9px] text-(--cat-transit)">
             划转
           </span>
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] text-(--ink-tertiary) font-mono">
+        <div className="flex items-center gap-1 font-mono text-[11px] text-(--ink-tertiary)">
           <span>{dateTimeLabel}</span>
           <span>·</span>
           <span>{fromName}</span>
           <span>→</span>
-          <span className="text-(--ink-secondary) font-medium">{toName}</span>
+          <span className="font-medium text-(--ink-secondary)">{toName}</span>
         </div>
       </div>
 
-      <div className="shrink-0 text-right ml-2.5">
-        <span className="font-mono text-sm font-semibold tabular-nums tracking-tight text-(--cat-transit)">
+      <div className="ml-2.5 shrink-0 text-right">
+        <span className="font-mono text-sm font-semibold tracking-tight text-(--cat-transit) tabular-nums">
           ⇄ {formattedAmount}
         </span>
       </div>

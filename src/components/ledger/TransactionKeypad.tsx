@@ -1,5 +1,5 @@
 import React from 'react';
-import { Backspace as Delete } from '@phosphor-icons/react';
+import { BackspaceIcon as Delete } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
 export interface TransactionKeypadProps {
@@ -32,28 +32,28 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
       <button
         type="button"
         onClick={() => onDigit('7')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         7
       </button>
       <button
         type="button"
         onClick={() => onDigit('8')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         8
       </button>
       <button
         type="button"
         onClick={() => onDigit('9')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         9
       </button>
       <button
         type="button"
         onClick={() => onOperator('+')}
-        className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
+        className="keypad-op-btn flex h-11 cursor-pointer items-center justify-center bg-(--paper-sunken) font-mono text-base font-bold text-(--ink-secondary) transition-colors hover:bg-(--paper-hover)"
         title="加法运算"
       >
         +
@@ -62,28 +62,28 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
       <button
         type="button"
         onClick={() => onDigit('4')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         4
       </button>
       <button
         type="button"
         onClick={() => onDigit('5')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         5
       </button>
       <button
         type="button"
         onClick={() => onDigit('6')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         6
       </button>
       <button
         type="button"
         onClick={() => onOperator('-')}
-        className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
+        className="keypad-op-btn flex h-11 cursor-pointer items-center justify-center bg-(--paper-sunken) font-mono text-base font-bold text-(--ink-secondary) transition-colors hover:bg-(--paper-hover)"
         title="减法运算"
       >
         −
@@ -92,44 +92,44 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
       <button
         type="button"
         onClick={() => onDigit('1')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         1
       </button>
       <button
         type="button"
         onClick={() => onDigit('2')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         2
       </button>
       <button
         type="button"
         onClick={() => onDigit('3')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         3
       </button>
       <button
         type="button"
         onClick={onBackspace}
-        className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) flex items-center justify-center transition-colors cursor-pointer"
+        className="keypad-op-btn flex h-11 cursor-pointer items-center justify-center bg-(--paper-sunken) text-(--ink-secondary) transition-colors hover:bg-(--paper-hover)"
         title="退格"
       >
-        <Delete className="w-4 h-4 stroke-[1.8]" />
+        <Delete className="stroke-1.8 size-4" />
       </button>
 
       <button
         type="button"
         onClick={() => onDigit('.')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-lg font-bold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         .
       </button>
       <button
         type="button"
         onClick={() => onDigit('0')}
-        className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
+        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       >
         0
       </button>
@@ -139,7 +139,7 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
           type="button"
           onClick={() => onSubmit(true)}
           disabled={isSubmitting}
-          className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
+          className="keypad-op-btn flex h-11 cursor-pointer items-center justify-center bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) transition-colors hover:bg-(--paper-hover)"
           title="保存并继续记录下一笔"
         >
           再记一笔
@@ -148,7 +148,7 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
         <button
           type="button"
           onClick={onClear}
-          className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-tertiary) font-mono text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
+          className="keypad-op-btn flex h-11 cursor-pointer items-center justify-center bg-(--paper-sunken) font-mono text-xs font-semibold text-(--ink-tertiary) transition-colors hover:bg-(--paper-hover)"
           title="清空重置"
         >
           C
@@ -159,7 +159,7 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
         <button
           type="button"
           onClick={onEqual}
-          className="h-11 bg-(--color-accent-bg) hover:opacity-90 active:scale-[0.98] text-(--color-accent) font-mono text-lg font-bold flex items-center justify-center transition-all cursor-pointer"
+          className="active:scale-0.98 flex h-11 cursor-pointer items-center justify-center bg-(--color-accent-bg) font-mono text-lg font-bold text-(--color-accent) transition-all hover:opacity-90"
           title="计算结果"
         >
           =
@@ -169,7 +169,7 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
           type="button"
           onClick={() => onSubmit(false)}
           disabled={isSubmitting}
-          className="h-11 bg-(--btn-primary-bg) hover:opacity-95 active:scale-[0.98] text-(--btn-primary-fg) font-mono text-xs font-bold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer shadow-xs"
+          className="active:scale-0.98 flex h-11 cursor-pointer items-center justify-center bg-(--btn-primary-bg) font-mono text-xs font-bold tracking-wider text-(--btn-primary-fg) uppercase shadow-xs transition-all hover:opacity-95"
         >
           {isEditing ? '保存' : '完成'}
         </button>

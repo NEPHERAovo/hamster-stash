@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from '@phosphor-icons/react';
+import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
 
@@ -92,13 +92,13 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   return (
     <div
       className={cn(
-        'w-full p-3.5 sm:p-4 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs',
+        'paper-card w-full rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-4',
         className
       )}
     >
-      <div className="flex items-center justify-between mb-2 select-none">
+      <div className="mb-2 flex items-center justify-between select-none">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold text-(--ink-primary) tracking-tight">
+          <span className="text-[13px] font-semibold tracking-tight text-(--ink-primary)">
             {title}
           </span>
           {(onStepPrev || onStepNext) && (
@@ -106,26 +106,26 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
               <button
                 type="button"
                 onClick={onStepPrev}
-                className="w-5.5 h-5.5 flex items-center justify-center border border-(--rule-hairline) rounded-(--btn-radius) bg-(--paper-base) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono shadow-2xs"
+                className="flex size-5.5 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) font-mono text-(--ink-secondary) shadow-2xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                 title="上个月"
                 aria-label="上个月"
               >
-                <ChevronLeft className="w-3 h-3 stroke-2" />
+                <ChevronLeft className="size-3 stroke-2" />
               </button>
               <button
                 type="button"
                 onClick={onStepNext}
                 disabled={!canStepNext}
                 className={cn(
-                  'w-5.5 h-5.5 flex items-center justify-center border border-(--rule-hairline) rounded-(--btn-radius) bg-(--paper-base) text-(--ink-secondary) font-mono shadow-2xs transition-all',
+                  'flex size-5.5 items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) font-mono text-(--ink-secondary) shadow-2xs transition-all',
                   canStepNext
-                    ? 'hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 cursor-pointer'
-                    : 'opacity-35 cursor-not-allowed pointer-events-none'
+                    ? 'cursor-pointer hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95'
+                    : 'pointer-events-none cursor-not-allowed opacity-35'
                 )}
                 title="下个月"
                 aria-label="下个月"
               >
-                <ChevronRight className="w-3 h-3 stroke-2" />
+                <ChevronRight className="size-3 stroke-2" />
               </button>
             </div>
           )}
@@ -133,13 +133,13 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
       </div>
 
       <div
-        className="w-full relative touch-pan-y"
+        className="relative w-full touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-auto overflow-visible select-none"
+          className="h-auto w-full overflow-visible select-none"
         >
           {/* Reference baseline and gridlines */}
           <line
@@ -230,7 +230,7 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
                   y={Math.max(12, p.cy - 6)}
                   textAnchor="middle"
                   className={cn(
-                    'text-[9px] font-mono tabular-nums transition-colors',
+                    'font-mono text-[9px] tabular-nums transition-colors',
                     isSelected ? 'fill-(--ink-solid) font-bold' : 'fill-(--ink-tertiary) font-normal'
                   )}
                 >
@@ -241,7 +241,7 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
                   y={svgHeight - 8}
                   textAnchor="middle"
                   className={cn(
-                    'text-[11px] font-mono transition-colors',
+                    'font-mono text-[11px] transition-colors',
                     isSelected ? 'fill-(--ink-solid) font-bold' : 'fill-(--ink-tertiary) font-normal'
                   )}
                 >

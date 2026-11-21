@@ -220,7 +220,7 @@ describe('TransactionGroup component', () => {
   });
 
   it('keeps empty state stable without replaying entrance animation when switching filter tabs', () => {
-    const { container } = render(
+    render(
       <TransactionGroup
         transactions={[]}
         categories={mockCategories}

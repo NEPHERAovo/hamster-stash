@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowsLeftRight as ArrowLeftRight, Trash as Trash2 } from '@phosphor-icons/react';
+import { ArrowsLeftRightIcon as ArrowLeftRight, TrashIcon as Trash2 } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
 import { AmountInput } from '../ui/AmountInput';
@@ -78,7 +78,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     setToAccountId(fromAccountId);
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     if (!fromAccountId || !toAccountId) {
       toast.error('请选择转出与转入账户');
@@ -140,16 +140,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       onClose={onClose}
       title={isEditing ? '编辑资金划转' : '资金划转'}
     >
-      <form onSubmit={handleSubmit} className="p-4 space-y-4 select-none">
-        <div className="p-3 bg-(--paper-sunken) rounded-(--radius-md) border border-(--rule-hairline) flex items-center justify-between gap-2.5">
-          <div className="flex-1 min-w-0">
-            <label className="text-[10px] font-mono text-(--ink-tertiary) uppercase tracking-wider block mb-1">
+      <form onSubmit={handleSubmit} className="space-y-4 p-4 select-none">
+        <div className="flex items-center justify-between gap-2.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken) p-3">
+          <div className="min-w-0 flex-1">
+            <label className="mb-1 block font-mono text-[10px] tracking-wider text-(--ink-tertiary) uppercase">
               转出账户
             </label>
             <select
               value={fromAccountId}
               onChange={(e) => setFromAccountId(e.target.value)}
-              className="w-full bg-(--paper-sheet) text-xs font-semibold text-(--ink-primary) py-1.5 px-2 rounded-(--radius-xs) border border-(--rule-hairline) outline-none cursor-pointer"
+              className="w-full cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-1.5 text-xs font-semibold text-(--ink-primary) outline-none"
             >
               {activeAccounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -162,20 +162,20 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           <button
             type="button"
             onClick={handleSwapAccounts}
-            className="w-8 h-8 mt-4.5 rounded-full bg-(--paper-sheet) border border-(--rule-hairline) flex items-center justify-center shrink-0 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover) active:scale-90 transition-all cursor-pointer shadow-2xs"
+            className="mt-4.5 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-2xs transition-all hover:bg-(--paper-hover) hover:text-(--ink-primary) active:scale-90"
             title="互换转出与转入账户"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5 stroke-[1.8]" />
+            <ArrowLeftRight className="stroke-1.8 size-3.5" />
           </button>
 
-          <div className="flex-1 min-w-0">
-            <label className="text-[10px] font-mono text-(--ink-tertiary) uppercase tracking-wider block mb-1">
+          <div className="min-w-0 flex-1">
+            <label className="mb-1 block font-mono text-[10px] tracking-wider text-(--ink-tertiary) uppercase">
               转入账户
             </label>
             <select
               value={toAccountId}
               onChange={(e) => setToAccountId(e.target.value)}
-              className="w-full bg-(--paper-sheet) text-xs font-semibold text-(--ink-primary) py-1.5 px-2 rounded-(--radius-xs) border border-(--rule-hairline) outline-none cursor-pointer"
+              className="w-full cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-1.5 text-xs font-semibold text-(--ink-primary) outline-none"
             >
               {activeAccounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -187,7 +187,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">划转金额</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">划转金额</label>
           <AmountInput
             value={amountYuan}
             onChange={setAmountYuan}
@@ -200,37 +200,37 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">划转日期</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">划转日期</label>
           <input
             type="date"
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
-            className="w-full h-10 px-3 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none"
+            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 font-mono text-xs text-(--ink-primary) outline-none"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">划转备注</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">划转备注</label>
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="添加备注"
             maxLength={30}
-            className="w-full h-10 px-3 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none"
+            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-xs text-(--ink-primary) outline-none placeholder:text-(--ink-faint)"
           />
         </div>
 
-        <div className="pt-2 flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-2">
           {isEditing && onDelete && (
             <button
               type="button"
               onClick={handleDelete}
               disabled={isSubmitting}
-              className="h-10 px-3 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--color-expense-bg) text-(--color-expense) hover:opacity-90 active:scale-95 transition-all text-xs font-mono cursor-pointer flex items-center justify-center shrink-0"
+              className="flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--color-expense-bg) px-3 font-mono text-xs text-(--color-expense) transition-all hover:opacity-90 active:scale-95"
               title="删除此笔划转"
             >
-              <Trash2 className="w-4 h-4 stroke-[1.8]" />
+              <Trash2 className="stroke-1.8 size-4" />
             </button>
           )}
 

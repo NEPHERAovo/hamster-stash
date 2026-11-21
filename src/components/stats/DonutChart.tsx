@@ -19,8 +19,8 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   periodKey,
 }) => {
   return (
-    <div className={cn('relative w-[130px] h-[130px] shrink-0', className)}>
-      <svg key={periodKey} viewBox="0 0 130 130" className="w-full h-full -rotate-90 donut-ring-spin">
+    <div className={cn('relative size-[130px] shrink-0', className)}>
+      <svg key={periodKey} viewBox="0 0 130 130" className="donut-ring-spin size-full -rotate-90">
         {items.map((item) => {
           const visibleDash = items.length > 1 ? Math.max(0.8, item.dashLength - 1.8) : item.dashLength;
           return (
@@ -38,11 +38,11 @@ export const DonutChart: React.FC<DonutChartProps> = ({
           );
         })}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center select-none pointer-events-none">
-        <span className="text-[10px] text-(--ink-tertiary) font-medium">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center select-none">
+        <span className="text-[10px] font-medium text-(--ink-tertiary)">
           总支出
         </span>
-        <span className="text-[15px] font-bold text-(--ink-primary) tracking-tight font-mono tabular-nums">
+        <span className="font-mono text-[15px] font-bold tracking-tight text-(--ink-primary) tabular-nums">
           ¥{centsToYuan(totalExpense)}
         </span>
       </div>

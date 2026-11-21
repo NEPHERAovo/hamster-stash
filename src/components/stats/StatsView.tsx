@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { CaretLeft as ChevronLeft, CaretRight as ChevronRight, ChartPie as PieChart } from '@phosphor-icons/react';
+import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ChartPieIcon as PieChart } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
@@ -203,9 +203,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
   };
 
   return (
-    <div className="py-2 space-y-3.5 pb-6">
+    <div className="space-y-3.5 py-2 pb-6">
       {!controlledMode && (
-        <div className="mx-auto max-w-[200px]">
+        <div className="mx-auto max-w-50">
           <SegToggle
             options={[
               { value: 'week', label: '周' },
@@ -221,12 +221,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
       <div className="tab-stagger-1 space-y-2">
         <div className="flex items-center justify-between px-1 select-none">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg sm:text-xl text-(--ink-solid) font-serif not-italic tracking-tight truncate">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-serif text-lg tracking-tight text-(--ink-solid) not-italic sm:text-xl">
               {formattedPeriodTitle}
             </span>
             {weekBadge && (
-              <span className="px-1.5 py-0.5 text-[10px] font-mono rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) shrink-0">
+              <span className="shrink-0 rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[10px] text-(--ink-secondary)">
                 {weekBadge}
               </span>
             )}
@@ -235,33 +235,33 @@ export const StatsView: React.FC<StatsViewProps> = ({
             <button
               type="button"
               onClick={handlePrevPeriod}
-              className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) font-mono text-(--ink-secondary) shadow-xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
               title="上个周期"
               aria-label="上个周期"
             >
-              <ChevronLeft className="w-3.5 h-3.5 stroke-2" />
+              <ChevronLeft className="size-3.5 stroke-2" />
             </button>
             <button
               type="button"
               onClick={handleNextPeriod}
-              className="w-7 h-7 flex items-center justify-center border border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) active:scale-95 transition-all cursor-pointer font-mono rounded-(--btn-radius) bg-(--paper-sheet) shadow-xs"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) font-mono text-(--ink-secondary) shadow-xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
               title="下个周期"
               aria-label="下个周期"
             >
-              <ChevronRight className="w-3.5 h-3.5 stroke-2" />
+              <ChevronRight className="size-3.5 stroke-2" />
             </button>
           </div>
         </div>
 
         {totalExpense === 0 ? (
-          <div className="w-full p-6 bg-(--paper-sheet) paper-card border border-(--rule-hairline) text-center text-xs text-(--ink-tertiary) flex flex-col items-center gap-1.5 select-none transition-all duration-200 rounded-(--radius-md) shadow-xs">
-            <PieChart className="w-6 h-6 stroke-[1.5] text-(--ink-faint)" />
+          <div className="paper-card flex w-full flex-col items-center gap-1.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center text-xs text-(--ink-tertiary) shadow-xs transition-all duration-200 select-none">
+            <PieChart className="stroke-1.5 size-6 text-(--ink-faint)" />
             <span>本周期暂无支出记录</span>
           </div>
         ) : (
-          <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs space-y-3.5">
+          <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-serif text-(--ink-secondary)">
+              <span className="font-serif text-sm text-(--ink-secondary)">
                 支出构成
               </span>
               <span className="font-mono text-xs text-(--ink-tertiary)">
@@ -304,7 +304,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           <span className="text-xs font-semibold text-(--ink-secondary)">
             周期账单
           </span>
-          <span className="text-[11px] font-mono text-(--ink-tertiary)">
+          <span className="font-mono text-[11px] text-(--ink-tertiary)">
             共 {periodTransactions.length} 笔
           </span>
         </div>

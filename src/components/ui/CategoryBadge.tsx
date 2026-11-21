@@ -39,7 +39,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   return (
     <div
       className={cn(
-        'category-badge flex items-center justify-center shrink-0 border transition-all duration-150 rounded-(--badge-radius)',
+        'category-badge flex shrink-0 items-center justify-center rounded-(--badge-radius) border transition-all duration-150',
         sizeClasses,
         colorClasses,
         className

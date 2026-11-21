@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { CaretLeft as ChevronLeft } from '@phosphor-icons/react';
+import { CaretLeftIcon as ChevronLeft } from '@phosphor-icons/react';
 import { SubPageContext, useSubPage } from './SubPageContext';
 import { cn } from '../../utils/cn';
 import {
@@ -17,9 +17,9 @@ export const SubPageBackButton: React.FC<{ label?: string }> = ({ label = 'è¿”å›
     <button
       type="button"
       onClick={() => subPage?.requestClose()}
-      className="flex items-center text-sm font-semibold text-(--ink-secondary) hover:text-(--ink-primary) cursor-pointer"
+      className="flex cursor-pointer items-center text-sm font-semibold text-(--ink-secondary) hover:text-(--ink-primary)"
     >
-      <ChevronLeft className="w-5 h-5 stroke-2" />
+      <ChevronLeft className="size-5 stroke-2" />
       <span>{label}</span>
     </button>
   );
@@ -252,14 +252,14 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
           }
         }}
         className={cn(
-          'absolute inset-0 z-40 bg-(--paper-base) flex flex-col overflow-hidden will-change-transform touch-pan-y subpage-slide-in',
+          'subpage-slide-in absolute inset-0 z-40 flex touch-pan-y flex-col overflow-hidden bg-(--paper-base) will-change-transform',
           'shadow-[-8px_0_28px_rgba(0,0,0,0.12)]',
           className
         )}
       >
         <div className="grid-layer absolute! inset-0 z-0" aria-hidden="true" />
         {header && <div className="relative z-1 shrink-0">{header}</div>}
-        <div className="relative z-1 flex-1 w-full min-h-0 overflow-y-auto overscroll-contain">
+        <div className="relative z-1 min-h-0 w-full flex-1 overflow-y-auto overscroll-contain">
           {children}
         </div>
       </div>

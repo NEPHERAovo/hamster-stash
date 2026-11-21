@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from '@phosphor-icons/react';
+import { XIcon as X } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
 export interface PaperInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -36,14 +36,14 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
     return (
       <div
         className={cn(
-          'relative flex items-center h-10 px-3 border transition-all duration-200 rounded-(--input-radius)',
+          'relative flex h-10 items-center rounded-(--input-radius) border px-3 transition-all duration-200',
           variantStyles[variant],
-          disabled && 'opacity-50 cursor-not-allowed',
+          disabled && 'cursor-not-allowed opacity-50',
           className
         )}
       >
         {leftIcon && (
-          <span className="shrink-0 mr-2 text-(--ink-tertiary) flex items-center">
+          <span className="mr-2 flex shrink-0 items-center text-(--ink-tertiary)">
             {leftIcon}
           </span>
         )}
@@ -52,7 +52,7 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
           ref={ref}
           value={value}
           disabled={disabled}
-          className="flex-1 w-full bg-transparent border-none outline-none text-sm text-(--ink-primary) placeholder:text-(--ink-faint)"
+          className="w-full flex-1 border-none bg-transparent text-sm text-(--ink-primary) outline-none placeholder:text-(--ink-faint)"
           {...props}
         />
 
@@ -60,14 +60,14 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
           <button
             type="button"
             onClick={onClear}
-            className="shrink-0 ml-1 p-0.5 rounded-full text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) cursor-pointer transition-colors"
+            className="ml-1 shrink-0 cursor-pointer rounded-full p-0.5 text-(--ink-tertiary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
           >
-            <X className="w-3.5 h-3.5 stroke-2" />
+            <X className="size-3.5 stroke-2" />
           </button>
         )}
 
         {rightIcon && (
-          <span className="shrink-0 ml-2 text-(--ink-tertiary) flex items-center">
+          <span className="ml-2 flex shrink-0 items-center text-(--ink-tertiary)">
             {rightIcon}
           </span>
         )}

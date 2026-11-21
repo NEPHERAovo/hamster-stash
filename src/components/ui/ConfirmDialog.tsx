@@ -55,14 +55,14 @@ export const ConfirmDialog: React.FC = () => {
       {/* Dialog box */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-[340px] p-5 shadow-2xl transition-all duration-200 scale-100',
-          'bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg)'
+          'relative z-10 w-full max-w-85 scale-100 p-5 shadow-2xl transition-all duration-200',
+          'paper-card rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet)'
         )}
       >
         {/* Paper mode washi tape decoration */}
         {isPaper && (
           <div
-            className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-4.5 pointer-events-none"
+            className="washi-tape pointer-events-none absolute -top-3 left-1/2 h-4.5 w-20 -translate-x-1/2"
             aria-hidden="true"
           />
         )}
@@ -70,23 +70,23 @@ export const ConfirmDialog: React.FC = () => {
         <div className="space-y-2 pt-1">
           <h3
             id="confirm-dialog-title"
-            className="text-base font-bold text-(--ink-solid) tracking-tight"
+            className="text-base font-bold tracking-tight text-(--ink-solid)"
           >
             {options.title || '操作确认'}
           </h3>
           <p
             id="confirm-dialog-message"
-            className="text-[13px] text-(--ink-secondary) leading-relaxed"
+            className="text-[13px] leading-relaxed text-(--ink-secondary)"
           >
             {options.message}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 pt-4 mt-1 border-t border-dashed border-(--rule-hairline)/60">
+        <div className="mt-1 flex items-center gap-2.5 border-t border-dashed border-(--rule-hairline)/60 pt-4">
           <button
             type="button"
             onClick={() => handleResolve(false)}
-            className="flex-1 h-9 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken)/80 active:scale-95 transition-all text-xs font-semibold cursor-pointer"
+            className="h-9 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) transition-all hover:bg-(--paper-sunken)/80 hover:text-(--ink-primary) active:scale-95"
           >
             {options.cancelText || '取消'}
           </button>
@@ -94,7 +94,7 @@ export const ConfirmDialog: React.FC = () => {
             type="button"
             onClick={() => handleResolve(true)}
             className={cn(
-              'flex-1 h-9 rounded-(--btn-radius) text-xs font-semibold active:scale-95 transition-all shadow-xs cursor-pointer',
+              'h-9 flex-1 cursor-pointer rounded-(--btn-radius) text-xs font-semibold shadow-xs transition-all active:scale-95',
               options.isDestructive
                 ? 'bg-(--color-expense) text-(--paper-sheet) hover:opacity-90'
                 : 'bg-(--btn-primary-bg) text-(--btn-primary-fg)'

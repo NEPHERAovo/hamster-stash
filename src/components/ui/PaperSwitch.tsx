@@ -36,17 +36,17 @@ export const PaperSwitch: React.FC<PaperSwitchProps> = ({
         }
       }}
       className={cn(
-        'relative inline-flex items-center w-9 h-5 rounded-full border transition-colors cursor-pointer shrink-0 select-none',
+        'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border transition-colors select-none',
         checked
-          ? 'bg-(--color-income) border-(--color-income)'
-          : 'bg-(--paper-sunken) border-(--rule-hairline)',
-        disabled && 'opacity-40 cursor-not-allowed',
+          ? 'border-(--color-income) bg-(--color-income)'
+          : 'border-(--rule-hairline) bg-(--paper-sunken)',
+        disabled && 'cursor-not-allowed opacity-40',
         className
       )}
     >
       <span
         className={cn(
-          'block w-3.5 h-3.5 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-1/2 -translate-y-1/2 transition-all duration-200 pointer-events-none',
+          'pointer-events-none absolute top-1/2 block size-3.5 -translate-y-1/2 rounded-full bg-(--paper-sheet) shadow-2xs transition-all duration-200',
           checked ? 'left-[18px]' : 'left-0.5'
         )}
       />

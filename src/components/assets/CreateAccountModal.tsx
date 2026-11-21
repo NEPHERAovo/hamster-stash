@@ -144,7 +144,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     }
   };
 
-  const handleConfirm = async (e: React.FormEvent) => {
+  const handleConfirm = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
@@ -225,9 +225,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       onClose={handleClose}
       title={isEditing ? '编辑账户' : '新建账户'}
     >
-      <form onSubmit={handleConfirm} className="p-4 space-y-4 select-none">
+      <form onSubmit={handleConfirm} className="space-y-4 p-4 select-none">
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">账户类型</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">账户类型</label>
           <SegToggle
             options={[
               { value: 'savings', label: '储蓄账户' },
@@ -240,7 +240,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">账户名称</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">账户名称</label>
           <input
             type="text"
             value={name}
@@ -252,12 +252,12 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             }
             maxLength={24}
             autoFocus
-            className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary) transition-colors"
+            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">账户标签</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">账户标签</label>
           <div className="flex flex-wrap gap-1.5">
             {typeOptions.map((item) => {
               const isSelected = type === item.value;
@@ -267,10 +267,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   type="button"
                   onClick={() => handleSelectType(item.value)}
                   className={cn(
-                    'px-3 py-1.5 text-xs rounded-(--btn-radius) border transition-all cursor-pointer',
+                    'cursor-pointer rounded-(--btn-radius) border px-3 py-1.5 text-xs transition-all',
                     isSelected
-                      ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) border-transparent font-semibold'
-                      : 'bg-(--paper-sunken) text-(--ink-secondary) border-(--rule-hairline) hover:text-(--ink-primary)'
+                      ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                      : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
                   )}
                 >
                   {item.label}
@@ -281,7 +281,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">账户图标</label>
+          <label className="font-mono text-xs text-(--ink-tertiary)">账户图标</label>
           <div className="grid grid-cols-8 gap-1.5">
             {ACCOUNT_ICONS.map((iconName) => {
               const IconComp = getCategoryIcon(iconName);
@@ -292,13 +292,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   type="button"
                   onClick={() => setIcon(iconName)}
                   className={cn(
-                    'h-9 rounded-(--badge-radius) border flex items-center justify-center transition-all cursor-pointer',
+                    'flex h-9 cursor-pointer items-center justify-center rounded-(--badge-radius) border transition-all',
                     isSelected
-                      ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) border-transparent'
-                      : 'bg-(--paper-sunken) text-(--ink-secondary) border-(--rule-hairline) hover:text-(--ink-primary)'
+                      ? 'border-transparent bg-(--btn-primary-bg) text-(--btn-primary-fg)'
+                      : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
                   )}
                 >
-                  <IconComp className="w-4 h-4 stroke-[1.8]" />
+                  <IconComp className="stroke-1.8 size-4" />
                 </button>
               );
             })}
@@ -306,16 +306,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         {accountCategory === 'credit' && (
-          <div className="space-y-3 p-3 rounded-(--radius-md) bg-(--paper-sunken)/40 border border-(--rule-hairline)">
+          <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs font-mono text-(--ink-tertiary)">每月还款日</label>
+                <label className="font-mono text-xs text-(--ink-tertiary)">每月还款日</label>
                 <select
                   value={repaymentDay ?? ''}
                   onChange={(e) =>
                     setRepaymentDay(e.target.value ? Number(e.target.value) : undefined)
                   }
-                  className="w-full h-9 px-2.5 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                  className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
                 >
                   <option value="">未设置</option>
                   {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
@@ -327,13 +327,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-mono text-(--ink-tertiary)">每月账单日</label>
+                <label className="font-mono text-xs text-(--ink-tertiary)">每月账单日</label>
                 <select
                   value={billDay ?? ''}
                   onChange={(e) =>
                     setBillDay(e.target.value ? Number(e.target.value) : undefined)
                   }
-                  className="w-full h-9 px-2.5 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                  className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
                 >
                   <option value="">未设置</option>
                   {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
@@ -346,11 +346,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-mono text-(--ink-tertiary)">关联还款账户</label>
+              <label className="font-mono text-xs text-(--ink-tertiary)">关联还款账户</label>
               <select
                 value={repaymentAccountId ?? ''}
                 onChange={(e) => setRepaymentAccountId(e.target.value || undefined)}
-                className="w-full h-9 px-2.5 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
               >
                 <option value="">未关联还款账户</option>
                 {availableSavingsAccounts.map((a) => (
@@ -371,7 +371,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-mono text-(--ink-tertiary)">信用额度 (元)</label>
+              <label className="font-mono text-xs text-(--ink-tertiary)">信用额度 (元)</label>
               <AmountInput
                 value={creditLimitStr}
                 onChange={setCreditLimitStr}
@@ -386,7 +386,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
         {!isEditing && (
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">
+            <label className="font-mono text-xs text-(--ink-tertiary)">
               {accountCategory === 'credit' ? '当前欠款 (元)' : '初始余额 (元)'}
             </label>
             <AmountInput
@@ -400,7 +400,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
         )}
 
-        <div className="flex items-center justify-between py-2.5 px-3 rounded-(--input-radius) bg-(--paper-sunken)/70 border border-(--rule-hairline)">
+        <div className="flex items-center justify-between rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken)/70 px-3 py-2.5">
           <span className="text-xs font-medium text-(--ink-primary)">计入净资产</span>
           <PaperSwitch
             checked={includeInNetWorth}
@@ -413,14 +413,14 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
+            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
           >
             取消
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
+            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-50"
           >
             {submitLabel}
           </button>

@@ -1,10 +1,5 @@
 import React, { useRef, useState } from 'react';
-import {
-  FileCsv as FileSpreadsheet,
-  UploadSimple,
-  DownloadSimple,
-  CaretRight as ChevronRight,
-} from '@phosphor-icons/react';
+import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { core } from '../../core';
 import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -103,42 +98,42 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
   };
 
   return (
-    <div className="w-full pb-12 space-y-4 select-none px-4 pt-2">
+    <div className="w-full space-y-4 px-4 pt-2 pb-12 select-none">
       <WebDavSyncSection />
 
       <div className="space-y-1.5">
-        <div className="px-1 text-xs font-mono text-(--ink-tertiary) tracking-wider pt-1">
+        <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary)">
           <span>完整备份与恢复</span>
         </div>
 
-        <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5">
+        <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 shadow-xs">
           <div
-            className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
             onClick={() => setIsBackupConfirmOpen(true)}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-                <DownloadSimple className="w-3.5 h-3.5 stroke-[1.75]" />
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                <DownloadSimple className="stroke-1.75 size-3.5" />
               </div>
               <span className="text-[13px] font-medium text-(--ink-primary)">导出完整备份 (JSON)</span>
             </div>
-            <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
+              <ChevronRight className="size-3.5" />
             </div>
           </div>
 
           <div
-            className="flex items-center justify-between py-2.5 last:border-b-0 cursor-pointer select-none"
+            className="flex cursor-pointer items-center justify-between py-2.5 select-none last:border-b-0"
             onClick={() => jsonFileInputRef.current?.click()}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-                <UploadSimple className="w-3.5 h-3.5 stroke-[1.75]" />
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                <UploadSimple className="stroke-1.75 size-3.5" />
               </div>
               <span className="text-[13px] font-medium text-(--ink-primary)">恢复完整备份 (JSON)</span>
             </div>
-            <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
+              <ChevronRight className="size-3.5" />
             </div>
           </div>
 
@@ -153,38 +148,38 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
       </div>
 
       <div className="space-y-1.5">
-        <div className="px-1 text-xs font-mono text-(--ink-tertiary) tracking-wider pt-1">
+        <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary)">
           <span>账目导入与导出</span>
         </div>
 
-        <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5">
+        <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 shadow-xs">
           <div
-            className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
+            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
             onClick={onOpenImport}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-                <UploadSimple className="w-3.5 h-3.5 stroke-[1.75]" />
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                <UploadSimple className="stroke-1.75 size-3.5" />
               </div>
               <span className="text-[13px] font-medium text-(--ink-primary)">导入账本 (向导)</span>
             </div>
-            <div className="text-xs text-(--ink-tertiary) flex items-center gap-1">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
+              <ChevronRight className="size-3.5" />
             </div>
           </div>
 
           <div
-            className="flex items-center justify-between py-2.5 last:border-b-0 cursor-pointer select-none"
+            className="flex cursor-pointer items-center justify-between py-2.5 select-none last:border-b-0"
             onClick={() => setIsExportCsvOpen(true)}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-                <FileSpreadsheet className="w-3.5 h-3.5 stroke-[1.75]" />
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                <FileSpreadsheet className="stroke-1.75 size-3.5" />
               </div>
               <span className="text-[13px] font-medium text-(--ink-primary)">导出账本 (CSV)</span>
             </div>
-            <div className="text-xs text-(--ink-tertiary) flex items-center gap-1">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
+              <ChevronRight className="size-3.5" />
             </div>
           </div>
         </div>
@@ -195,11 +190,11 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
         onClose={() => setIsBackupConfirmOpen(false)}
         title="导出完整备份"
       >
-        <div className="p-4 space-y-4">
-          <p className="text-xs text-(--ink-secondary) leading-relaxed">
+        <div className="space-y-4 p-4">
+          <p className="text-xs leading-relaxed text-(--ink-secondary)">
             将导出包含所有账户、流水、分类和系统设置的 JSON 备份文件。
           </p>
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-dashed border-(--rule-hairline)">
+          <div className="flex items-center justify-end gap-2 border-t border-dashed border-(--rule-hairline) pt-2">
             <PaperButton
               variant="ghost"
               size="sm"
@@ -225,11 +220,11 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
         onClose={() => setPendingRestore(null)}
         title="确认恢复备份"
       >
-        <div className="p-4 space-y-4">
-          <p className="text-xs text-(--ink-secondary) leading-relaxed">
+        <div className="space-y-4 p-4">
+          <p className="text-xs leading-relaxed text-(--ink-secondary)">
             确认从文件「{pendingRestore?.fileName}」恢复数据吗？恢复将覆盖当前账本中的所有流水与账户数据，此操作不可撤销。
           </p>
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-dashed border-(--rule-hairline)">
+          <div className="flex items-center justify-end gap-2 border-t border-dashed border-(--rule-hairline) pt-2">
             <PaperButton
               variant="ghost"
               size="sm"

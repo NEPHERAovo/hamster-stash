@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from '@phosphor-icons/react';
+import { CheckIcon as Check } from '@phosphor-icons/react';
 import { useThemeStore, THEME_OPTIONS, type ThemeOption } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
@@ -31,9 +31,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
     isGroupActive: boolean
   ) => (
     <div>
-      <div className="flex items-center justify-between text-[10px] font-mono text-(--ink-tertiary) tracking-wider mb-1.5">
+      <div className="mb-1.5 flex items-center justify-between font-mono text-[10px] tracking-wider text-(--ink-tertiary)">
         <span>{title}</span>
-        <span className={cn(isGroupActive ? 'text-(--color-accent) font-semibold' : 'text-(--ink-faint)')}>
+        <span className={cn(isGroupActive ? 'font-semibold text-(--color-accent)' : 'text-(--ink-faint)')}>
           {statusLabel}
         </span>
       </div>
@@ -56,18 +56,18 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
               type="button"
               onClick={() => handleSelect(t)}
               className={cn(
-                'flex flex-col items-center gap-1 py-1.5 px-0.5 rounded-[3px] transition-all cursor-pointer text-center border',
+                'flex cursor-pointer flex-col items-center gap-1 rounded-[3px] border px-0.5 py-1.5 text-center transition-all',
                 buttonStyle
               )}
               title={t.name}
             >
               <span
-                className="w-5 h-5 rounded-full border border-(--rule-hairline) shrink-0 flex items-center justify-center shadow-2xs"
+                className="flex size-5 shrink-0 items-center justify-center rounded-full border border-(--rule-hairline) shadow-2xs"
                 style={{ backgroundColor: t.colorDot }}
               >
-                {isSelected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                {isSelected && <Check className="size-2.5 stroke-3 text-white" />}
               </span>
-              <span className="text-[10px] leading-tight truncate w-full">
+              <span className="w-full truncate text-[10px] leading-tight">
                 {t.name}
               </span>
             </button>

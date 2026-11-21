@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Package, CaretRight as ChevronRight } from '@phosphor-icons/react';
+import { PackageIcon as Package, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   usePluginNavigation,
@@ -40,49 +40,49 @@ export const OwnedItemsSummaryCard: React.FC = () => {
         }
       }}
       className={cn(
-        'w-full bg-(--paper-sheet) paper-card text-(--ink-solid) rounded-(--radius-md) border border-(--rule-hairline)',
-        'shadow-[0_2px_8px_rgba(0,0,0,0.03)] cursor-pointer select-none transition-all',
-        'hover:border-(--rule-strong) active:scale-[0.995]'
+        'paper-card w-full rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-solid)',
+        'cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all select-none',
+        'active:scale-0.995 hover:border-(--rule-strong)'
       )}
     >
-      <div className="px-4 py-2.5 flex items-center justify-between border-b border-dashed border-(--rule-hairline)">
+      <div className="flex items-center justify-between border-b border-dashed border-(--rule-hairline) px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary)">
-            <Package className="w-3.5 h-3.5 stroke-[1.8]" />
+          <div className="flex size-5 items-center justify-center rounded-(--radius-sm) bg-(--paper-sunken) text-(--ink-secondary)">
+            <Package className="stroke-1.8 size-3.5" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-(--ink-solid) leading-tight">
+            <div className="text-sm leading-tight font-semibold text-(--ink-solid)">
               物品
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+          <span className="rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-0.5 font-mono text-[11px] text-(--ink-secondary)">
             {summary.usingCount} 件在用
           </span>
-          <ChevronRight className="w-3.5 h-3.5 text-(--ink-tertiary)" />
+          <ChevronRight className="size-3.5 text-(--ink-tertiary)" />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 divide-x divide-dashed divide-(--rule-hairline) py-2.5 px-4 bg-(--paper-sunken)/35">
+      <div className="grid grid-cols-2 divide-x divide-dashed divide-(--rule-hairline) bg-(--paper-sunken)/35 px-4 py-2.5">
         <div>
-          <div className="text-[10px] font-mono text-(--ink-tertiary)">总投入</div>
-          <div className="font-mono text-base sm:text-lg font-bold tracking-tight text-(--ink-solid) tabular-nums mt-0.5">
+          <div className="font-mono text-[10px] text-(--ink-tertiary)">总投入</div>
+          <div className="mt-0.5 font-mono text-base font-bold tracking-tight text-(--ink-solid) tabular-nums sm:text-lg">
             ¥{centsToYuan(summary.totalUsingNetCost)}
           </div>
         </div>
 
         <div className="pl-4">
-          <div className="text-[10px] font-mono text-(--ink-tertiary)">日均成本</div>
-          <div className="font-mono text-base sm:text-lg font-bold tracking-tight text-(--color-income) tabular-nums mt-0.5">
+          <div className="font-mono text-[10px] text-(--ink-tertiary)">日均成本</div>
+          <div className="mt-0.5 font-mono text-base font-bold tracking-tight text-(--color-income) tabular-nums sm:text-lg">
             ¥{centsToYuan(summary.totalUsingDailyCost)}
-            <span className="text-[10px] font-normal text-(--ink-tertiary) ml-0.5">/天</span>
+            <span className="ml-0.5 text-[10px] font-normal text-(--ink-tertiary)">/天</span>
           </div>
         </div>
       </div>
 
-      <div className="px-4 py-2 border-t border-dashed border-(--rule-hairline)">
+      <div className="border-t border-dashed border-(--rule-hairline) px-4 py-2">
         {recentItems.length > 0 ? (
           <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
             {recentItems.map((item) => {
@@ -92,23 +92,23 @@ export const OwnedItemsSummaryCard: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className="py-1.5 flex items-center justify-between text-xs"
+                  className="flex items-center justify-between py-1.5 text-xs"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-5 h-5 rounded-(--radius-sm) bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary)">
-                      <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="flex size-5 shrink-0 items-center justify-center rounded-(--radius-sm) bg-(--paper-sunken) text-(--ink-secondary)">
+                      <IconComp className="stroke-1.8 size-3.5" />
                     </div>
                     <div className="truncate">
-                      <span className="font-medium text-(--ink-primary) truncate">
+                      <span className="truncate font-medium text-(--ink-primary)">
                         {item.name}
                       </span>
-                      <span className="text-[10px] font-mono text-(--ink-tertiary) ml-2">
+                      <span className="ml-2 font-mono text-[10px] text-(--ink-tertiary)">
                         {metrics.holdingDays}天
                       </span>
                     </div>
                   </div>
 
-                  <div className="font-mono text-[11px] font-semibold text-(--ink-secondary) tabular-nums shrink-0 ml-2">
+                  <div className="ml-2 shrink-0 font-mono text-[11px] font-semibold text-(--ink-secondary) tabular-nums">
                     ¥{centsToYuan(metrics.dailyCost)}/天
                   </div>
                 </div>

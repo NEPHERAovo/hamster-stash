@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from '@phosphor-icons/react';
+import { XIcon as X } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import {
   GestureSmoother,
@@ -275,31 +275,31 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       <div
         ref={sheetRef}
         className={cn(
-          'paper-modal-sheet relative w-full max-w-full sm:max-w-lg md:max-w-xl max-h-[92vh] flex flex-col overflow-hidden will-change-transform',
-          'bg-(--paper-sheet) border-t sm:border border-(--rule-hairline) shadow-2xl rounded-t-(--radius-lg) rounded-b-none sm:rounded-b-(--radius-lg)',
+          'paper-modal-sheet relative flex max-h-[92vh] w-full max-w-full flex-col overflow-hidden will-change-transform sm:max-w-lg md:max-w-xl',
+          'rounded-t-(--radius-lg) rounded-b-none border-t border-(--rule-hairline) bg-(--paper-sheet) shadow-2xl sm:rounded-b-(--radius-lg) sm:border',
           className
         )}
       >
         {showHandle && (
           <div
-            className="py-2.5 flex items-center justify-center cursor-pointer select-none"
+            className="flex cursor-pointer items-center justify-center py-2.5 select-none"
             onClick={() => closeWithAnimation(240)}
             title="关闭"
           >
-            <div className="w-9 h-1 rounded-full bg-(--ink-tertiary)/30" />
+            <div className="h-1 w-9 rounded-full bg-(--ink-tertiary)/30" />
           </div>
         )}
 
         {(title || subtitle || headerExtra) && (
-          <div className="px-4 pt-3.5 pb-2.5 flex items-start justify-between shrink-0 border-b border-(--rule-hairline)/60">
+          <div className="flex shrink-0 items-start justify-between border-b border-(--rule-hairline)/60 px-4 pt-3.5 pb-2.5">
             <div>
               {title && (
-                <h3 className="text-base text-(--ink-primary) font-semibold">
+                <h3 className="text-base font-semibold text-(--ink-primary)">
                   {title}
                 </h3>
               )}
               {subtitle && (
-                <p className="text-xs text-(--ink-tertiary) mt-0.5 font-mono">
+                <p className="mt-0.5 font-mono text-xs text-(--ink-tertiary)">
                   {subtitle}
                 </p>
               )}
@@ -310,16 +310,16 @@ export const PaperModal: React.FC<PaperModalProps> = ({
               <button
                 type="button"
                 onClick={() => closeWithAnimation(240)}
-                className="p-1 rounded-full text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-pointer"
+                className="cursor-pointer rounded-full p-1 text-(--ink-tertiary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
                 title="关闭"
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
               </button>
             </div>
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
           {children}
         </div>
       </div>

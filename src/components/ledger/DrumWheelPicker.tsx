@@ -121,11 +121,11 @@ const WheelColumn: React.FC<WheelColumnProps> = ({
       ref={containerRef}
       onScroll={handleScroll}
       className={cn(
-        'h-24 overflow-y-auto snap-y snap-mandatory select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
+        'h-24 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
         className
       )}
     >
-      <div className="h-8 shrink-0 pointer-events-none" />
+      <div className="pointer-events-none h-8 shrink-0" />
 
       {items.map((it, idx) => {
         const isSelected = it.value === selectedValue;
@@ -134,9 +134,9 @@ const WheelColumn: React.FC<WheelColumnProps> = ({
             key={it.value}
             onClick={() => handleClickItem(it.value, idx)}
             className={cn(
-              'h-8 snap-center flex items-center justify-center cursor-pointer transition-all duration-150',
+              'flex h-8 cursor-pointer snap-center items-center justify-center transition-all duration-150',
               isSelected
-                ? 'font-mono font-bold text-xs text-(--ink-solid)'
+                ? 'font-mono text-xs font-bold text-(--ink-solid)'
                 : 'font-mono text-[11px] text-(--ink-tertiary)/70 hover:text-(--ink-secondary)'
             )}
           >
@@ -145,7 +145,7 @@ const WheelColumn: React.FC<WheelColumnProps> = ({
         );
       })}
 
-      <div className="h-8 shrink-0 pointer-events-none" />
+      <div className="pointer-events-none h-8 shrink-0" />
     </div>
   );
 };
@@ -172,9 +172,9 @@ export const DrumWheelPicker: React.FC<DrumWheelPickerProps> = ({
   };
 
   return (
-    <div data-drum-wheel="true" className="relative w-full h-24 my-1 select-none overflow-hidden">
+    <div data-drum-wheel="true" className="relative my-1 h-24 w-full overflow-hidden select-none">
       <div
-        className="w-full h-full flex"
+        className="flex size-full"
         style={{
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
@@ -205,10 +205,10 @@ export const DrumWheelPicker: React.FC<DrumWheelPickerProps> = ({
         </div>
       </div>
 
-      <div className="absolute top-8 left-0 right-0 h-8 pointer-events-none border-t border-b border-dashed border-(--rule-hairline) flex items-center">
+      <div className="pointer-events-none absolute inset-x-0 top-8 flex h-8 items-center border-y border-dashed border-(--rule-hairline)">
         <div className="w-1/2" />
-        <div className="w-1/4 relative flex items-center justify-end">
-          <span className="font-mono font-bold text-xs text-(--ink-tertiary) absolute -right-0.5 leading-none">
+        <div className="relative flex w-1/4 items-center justify-end">
+          <span className="absolute -right-0.5 font-mono text-xs leading-none font-bold text-(--ink-tertiary)">
             :
           </span>
         </div>

@@ -49,8 +49,8 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center font-medium transition-all duration-150 select-none cursor-pointer',
-          'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
+          'inline-flex cursor-pointer items-center justify-center font-medium transition-all duration-150 select-none',
+          'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40',
           variantStyles[variant],
           sizeStyles[size],
           fullWidth && 'w-full',
@@ -59,7 +59,7 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
         {...props}
       >
         {loading ? (
-          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
         ) : (
           <>
             {leftIcon && <span className="inline-flex shrink-0 items-center">{leftIcon}</span>}

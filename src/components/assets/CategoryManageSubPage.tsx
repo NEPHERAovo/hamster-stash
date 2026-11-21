@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Trash as Trash2, DotsSixVertical as GripVertical } from '@phosphor-icons/react';
+import { PlusIcon as Plus, TrashIcon as Trash2, DotsSixVerticalIcon as GripVertical } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -125,20 +125,20 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       data-category-id={cat.id}
       containerClassName={cn(
         'bg-(--paper-sheet) select-none',
-        isDragging && 'opacity-25 bg-(--paper-sunken) border-2 border-dashed border-(--rule-strong)',
-        !isEnabled && 'opacity-60 bg-(--paper-sunken)/30'
+        isDragging && 'border-2 border-dashed border-(--rule-strong) bg-(--paper-sunken) opacity-25',
+        !isEnabled && 'bg-(--paper-sunken)/30 opacity-60'
       )}
-      className="bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+      className="flex cursor-pointer items-center justify-between bg-(--paper-sheet) px-3.5 py-2.5 hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       action={{
         label: '删除',
         title: '删除',
-        icon: <Trash2 className="w-4 h-4 stroke-2" />,
+        icon: <Trash2 className="size-4 stroke-2" />,
         onClick: () => onDelete(cat),
       }}
       onClick={() => onSelect(cat)}
     >
       <div
-        className="flex items-center gap-2.5 min-w-0 flex-1 touch-manipulation mr-2"
+        className="mr-2 flex min-w-0 flex-1 touch-manipulation items-center gap-2.5"
         onTouchStart={onTouchRowStart ? (e) => onTouchRowStart(e, index) : undefined}
         onTouchMove={onTouchRowMove}
         onTouchEnd={onTouchRowEnd}
@@ -146,17 +146,17 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       >
         <div
           className={cn(
-            'w-7 h-7 rounded-(--badge-radius) flex items-center justify-center shrink-0',
+            'flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius)',
             isEnabled
               ? 'bg-(--paper-sunken) text-(--ink-secondary)'
               : 'bg-(--paper-sunken) text-(--ink-tertiary)'
           )}
         >
-          <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
+          <IconComp className="stroke-1.8 size-3.5" />
         </div>
         <span
           className={cn(
-            'text-[13px] font-medium truncate',
+            'truncate text-[13px] font-medium',
             isEnabled ? 'text-(--ink-primary)' : 'text-(--ink-secondary)'
           )}
         >
@@ -165,7 +165,7 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       </div>
 
       <div
-        className="flex items-center gap-2 shrink-0"
+        className="flex shrink-0 items-center gap-2"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
@@ -185,10 +185,10 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
             onDragEnd={onDragEndHtml5}
             onDrop={onDropHtml5}
             onTouchStart={onTouchHandleStart ? (e) => onTouchHandleStart(e, index) : undefined}
-            className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
+            className="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-(--btn-radius) text-(--ink-tertiary) transition-colors select-none hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:cursor-grabbing"
             title="排序"
           >
-            <GripVertical className="w-4 h-4 stroke-[1.8]" />
+            <GripVertical className="stroke-1.8 size-4" />
           </div>
         )}
       </div>
@@ -465,7 +465,7 @@ export const CategoryManageSubPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const trimmed = nameInput.trim();
     if (!trimmed) {
@@ -560,9 +560,9 @@ export const CategoryManageSubPage: React.FC = () => {
   const totalCategoryCount = displayActiveCategories.length + archivedCategories.length;
 
   return (
-    <div className="w-full px-4 pt-2 pb-28 space-y-4 select-none">
+    <div className="w-full space-y-4 px-4 pt-2 pb-28 select-none">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 max-w-[180px]">
+        <div className="max-w-45 flex-1">
           <SegToggle
             options={[
               { value: 'expense', label: '支出' },
@@ -576,14 +576,14 @@ export const CategoryManageSubPage: React.FC = () => {
       </div>
 
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
+        <div className="flex items-center justify-between px-1 font-mono text-xs text-(--ink-tertiary)">
           <span>分类列表</span>
           <span>共 {totalCategoryCount} 项</span>
         </div>
 
         <div
           ref={containerRef}
-          className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60"
+          className="paper-card divide-y divide-dashed divide-(--rule-hairline)/60 overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs"
         >
           {displayActiveCategories.map((cat, idx) => (
             <SwipeableCategoryRow
@@ -634,18 +634,18 @@ export const CategoryManageSubPage: React.FC = () => {
               maxWidth: '92vw',
               zIndex: 9999,
             }}
-            className="pointer-events-none rounded-(--radius-lg) bg-(--paper-sheet) shadow-2xl border border-(--rule-strong) px-3.5 py-2.5 flex items-center justify-between opacity-95 transition-transform duration-75 select-none"
+            className="pointer-events-none flex items-center justify-between rounded-(--radius-lg) border border-(--rule-strong) bg-(--paper-sheet) px-3.5 py-2.5 opacity-95 shadow-2xl transition-transform duration-75 select-none"
           >
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-solid) flex items-center justify-center shrink-0">
-                <GhostIconComp className="w-3.5 h-3.5 stroke-[1.8]" />
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-solid)">
+                <GhostIconComp className="stroke-1.8 size-3.5" />
               </div>
-              <span className="text-[13px] font-semibold text-(--ink-primary) truncate">
+              <span className="truncate text-[13px] font-semibold text-(--ink-primary)">
                 {draggingCat.name}
               </span>
             </div>
-            <div className="w-7 h-7 flex items-center justify-center text-(--ink-primary) shrink-0">
-              <GripVertical className="w-4 h-4 stroke-[1.8]" />
+            <div className="flex size-7 shrink-0 items-center justify-center text-(--ink-primary)">
+              <GripVertical className="stroke-1.8 size-4" />
             </div>
           </div>,
           document.body
@@ -656,9 +656,9 @@ export const CategoryManageSubPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         title={editingCat ? '编辑分类' : '新增分类'}
       >
-        <form onSubmit={handleSave} className="p-4 space-y-4 select-none">
+        <form onSubmit={handleSave} className="space-y-4 p-4 select-none">
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">分类名称</label>
+            <label className="font-mono text-xs text-(--ink-tertiary)">分类名称</label>
             <input
               type="text"
               value={nameInput}
@@ -666,12 +666,12 @@ export const CategoryManageSubPage: React.FC = () => {
               placeholder={activeType === 'expense' ? '例如：宠物、运动' : '例如：兼职、理财'}
               maxLength={12}
               autoFocus
-              className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
+              className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">选择图标</label>
+            <label className="font-mono text-xs text-(--ink-tertiary)">选择图标</label>
             <div className="grid grid-cols-8 gap-1.5">
               {CATEGORY_ICON_CHOICES.map((iconName) => {
                 const IconComp = getCategoryIcon(iconName);
@@ -682,13 +682,13 @@ export const CategoryManageSubPage: React.FC = () => {
                     type="button"
                     onClick={() => setIconInput(iconName)}
                     className={cn(
-                      'h-9 rounded-(--badge-radius) border flex items-center justify-center transition-all cursor-pointer',
+                      'flex h-9 cursor-pointer items-center justify-center rounded-(--badge-radius) border transition-all',
                       isSelected
-                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) border-transparent'
-                        : 'bg-(--paper-sunken) text-(--ink-secondary) border-(--rule-hairline) hover:text-(--ink-primary)'
+                        ? 'border-transparent bg-(--btn-primary-bg) text-(--btn-primary-fg)'
+                        : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
                     )}
                   >
-                    <IconComp className="w-4 h-4 stroke-[1.8]" />
+                    <IconComp className="stroke-1.8 size-4" />
                   </button>
                 );
               })}
@@ -699,25 +699,25 @@ export const CategoryManageSubPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
+              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
             >
               取消
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
+              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-50"
             >
               {submitLabel}
             </button>
           </div>
 
           {editingCat && (
-            <div className="pt-2 border-t border-(--rule-hairline) space-y-2 pb-(--safe-bottom)">
+            <div className="space-y-2 border-t border-(--rule-hairline) pt-2 pb-(--safe-bottom)">
               <button
                 type="button"
                 onClick={() => handleToggleFromModal(editingCat)}
-                className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--ink-secondary) hover:bg-(--paper-hover) border border-(--rule-hairline) flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) text-xs font-semibold text-(--ink-secondary) transition-colors hover:bg-(--paper-hover)"
               >
                 <span>{editingCat.isArchived ? '启用分类' : '停用分类'}</span>
               </button>
@@ -727,9 +727,9 @@ export const CategoryManageSubPage: React.FC = () => {
                   setIsModalOpen(false);
                   handleRemove(editingCat);
                 }}
-                className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--color-expense) hover:bg-(--color-expense-bg)/40 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) text-xs font-semibold text-(--color-expense) transition-colors hover:bg-(--color-expense-bg)/40"
               >
-                <Trash2 className="w-3.5 h-3.5 stroke-2" />
+                <Trash2 className="size-3.5 stroke-2" />
                 <span>删除分类</span>
               </button>
             </div>
@@ -737,15 +737,15 @@ export const CategoryManageSubPage: React.FC = () => {
         </form>
       </PaperModal>
 
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed right-6 bottom-6 z-40">
         <button
           type="button"
           onClick={openCreateModal}
           title="新增分类"
           aria-label="新增分类"
-          className="w-12 h-12 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+          className="flex size-12 cursor-pointer items-center justify-center rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-[0_4px_14px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 active:scale-95"
         >
-          <Plus className="w-5 h-5 stroke-[2.2]" />
+          <Plus className="stroke-2.2 size-5" />
         </button>
       </div>
     </div>

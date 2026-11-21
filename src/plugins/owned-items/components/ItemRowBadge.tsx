@@ -23,24 +23,24 @@ export const ItemRowBadge: React.FC<ItemRowBadgeProps> = ({ context }) => {
   if (!item) return null;
 
   return (
-    <div className="flex items-center gap-1 shrink-0">
+    <div className="flex shrink-0 items-center gap-1">
       {itemRole === 'buy' && (
-        <span className="text-[9px] font-mono px-1 py-0.5 rounded-xs bg-(--color-expense-bg) text-(--color-expense) font-semibold leading-none">
+        <span className="rounded-xs bg-(--color-expense-bg) px-1 py-0.5 font-mono text-[9px] leading-none font-semibold text-(--color-expense)">
           购入
         </span>
       )}
       {itemRole === 'maintenance' && (
-        <span className="text-[9px] font-mono px-1 py-0.5 rounded-xs bg-(--paper-sunken) text-(--ink-secondary) leading-none">
+        <span className="rounded-xs bg-(--paper-sunken) px-1 py-0.5 font-mono text-[9px] leading-none text-(--ink-secondary)">
           保养
         </span>
       )}
       {itemRole === 'sell' && (
-        <span className="text-[9px] font-mono px-1 py-0.5 rounded-xs bg-(--color-income-bg) text-(--color-income) font-semibold leading-none">
+        <span className="rounded-xs bg-(--color-income-bg) px-1 py-0.5 font-mono text-[9px] leading-none font-semibold text-(--color-income)">
           回血
         </span>
       )}
       {item && (
-        <span className="text-[9px] font-mono text-(--ink-tertiary) leading-none max-w-[60px] truncate">
+        <span className="max-w-15 truncate font-mono text-[9px] leading-none text-(--ink-tertiary)">
           {item.name}
         </span>
       )}

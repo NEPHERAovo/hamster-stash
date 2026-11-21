@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Paperclip } from '@phosphor-icons/react';
+import { PaperclipIcon as Paperclip } from '@phosphor-icons/react';
 import type { Transaction } from '../../../types/transaction';
 import type { Category } from '../../../types/category';
 import type { Account } from '../../../types/account';
@@ -60,13 +60,13 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
         />
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[13px] font-medium text-(--ink-primary) leading-tight truncate">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="truncate text-[13px] leading-tight font-medium text-(--ink-primary)">
             {title}
           </span>
           {transaction.isReimbursable && (
-            <span className="real-stamp text-[9px] px-1 py-0.5">
+            <span className="real-stamp px-1 py-0.5 text-[9px]">
               {transaction.reimburseStatus === 'settled' ? '已报销' : '待报销'}
             </span>
           )}
@@ -77,17 +77,17 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
                 e.stopPropagation();
                 setIsVoucherPreviewOpen(true);
               }}
-              className="real-stamp stamp-voucher text-[9px] px-1 py-0.5 inline-flex items-center gap-0.5 cursor-pointer hover:opacity-100 active:scale-95 transition-transform"
+              className="real-stamp stamp-voucher inline-flex cursor-pointer items-center gap-0.5 px-1 py-0.5 text-[9px] transition-transform hover:opacity-100 active:scale-95"
               title="查看凭证"
             >
-              <Paperclip className="w-2.5 h-2.5 shrink-0" />
+              <Paperclip className="size-2.5 shrink-0" />
               <span>凭证</span>
             </button>
           )}
           {isExpense && offsetAmount !== undefined && offsetAmount > 0 && (
             <span
               className={cn(
-                'real-stamp text-[9px] px-1 py-0.5',
+                'real-stamp px-1 py-0.5 text-[9px]',
                 offsetAmount >= transaction.amount ? 'text-(--color-income)' : 'text-(--color-expense)'
               )}
             >
@@ -97,19 +97,19 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
             </span>
           )}
           {isExpense && amortizeConfig && (
-            <span className="real-stamp text-[9px] px-1 py-0.5 text-(--ink-secondary)">
+            <span className="real-stamp px-1 py-0.5 text-[9px] text-(--ink-secondary)">
               分期 {amortizeConfig.months}期 · ¥{centsToYuan(Math.floor(transaction.amount / amortizeConfig.months))}/月
             </span>
           )}
           {isIncome && transaction.offsetTransactionId && (
-            <span className="real-stamp text-[9px] px-1 py-0.5 text-(--color-income)">
+            <span className="real-stamp px-1 py-0.5 text-[9px] text-(--color-income)">
               AA抵扣{offsetTargetNote ? ` · ${offsetTargetNote}` : ''}
             </span>
           )}
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] text-(--ink-tertiary) font-mono">
+        <div className="flex items-center gap-1 font-mono text-[11px] text-(--ink-tertiary)">
           <span>{dateTimeLabel}</span>
           <span>·</span>
           <span>{category?.name || (isIncome ? '收入' : '支出')}</span>
@@ -122,10 +122,10 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 text-right ml-2.5">
+      <div className="ml-2.5 shrink-0 text-right">
         <span
           className={cn(
-            'font-mono text-sm font-semibold tabular-nums tracking-tight',
+            'font-mono text-sm font-semibold tracking-tight tabular-nums',
             isIncome ? 'text-(--color-income)' : 'text-(--color-expense)'
           )}
         >

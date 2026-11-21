@@ -446,7 +446,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerCancel}
       className={cn(
-        'relative h-[58px] rounded-[27.5px] select-none cursor-pointer overflow-visible bg-transparent border-0 shadow-none backdrop-blur-md',
+        'relative h-[58px] cursor-pointer overflow-visible rounded-[27.5px] border-0 bg-transparent shadow-none backdrop-blur-md select-none',
         className
       )}
       style={{ touchAction: 'none' }}
@@ -454,10 +454,10 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="absolute -left-[18px] -right-[18px] -top-[20px] -bottom-[20px] w-[calc(100%+36px)] h-[calc(100%+40px)] pointer-events-none z-10"
+        className="pointer-events-none absolute -inset-x-[18px] -inset-y-5 z-10 h-[calc(100%+40px)] w-[calc(100%+36px)]"
       />
 
-      <div className="absolute inset-0 flex items-stretch z-20 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-stretch">
         {tabs.map((tab, idx) => {
           const tabId = tab.id || tab.path || '';
           const active = isTabActive(tab, activeTab);
@@ -471,7 +471,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
               tabIndex={-1}
               title={label}
               aria-label={label}
-              className="flex-1 opacity-0 pointer-events-none outline-none focus:outline-none focus:ring-0"
+              className="pointer-events-none flex-1 opacity-0 outline-none focus:ring-0 focus:outline-none"
             >
               {label}
             </button>

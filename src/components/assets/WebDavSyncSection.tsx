@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cloud, ArrowsClockwise as RefreshCw, CaretDown as ChevronDown, CaretUp as ChevronUp, Check, PlugsConnected as PlugZap } from '@phosphor-icons/react';
+import { CloudIcon as Cloud, ArrowsClockwiseIcon as RefreshCw, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, CheckIcon as Check, PlugsConnectedIcon as PlugZap } from '@phosphor-icons/react';
 import { syncService } from '../../domain/sync/syncService';
 import { webdavClient } from '../../domain/sync/webdavClient';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -165,33 +165,33 @@ export const WebDavSyncSection: React.FC = () => {
 
   return (
     <div className="space-y-1.5">
-      <div className="px-1 text-xs font-mono text-(--ink-tertiary) tracking-wider pt-1">
+      <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary)">
         <span>云端同步</span>
       </div>
 
-      <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5 py-3">
+      <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-3 shadow-xs">
         <div className="flex items-center justify-between gap-2">
           <div
-            className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer select-none"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 select-none"
             onClick={() => setIsOpen(!isOpen)}
           >
-            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <Cloud className="w-3.5 h-3.5 stroke-[1.75]" />
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+              <Cloud className="stroke-1.75 size-3.5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-[13px] font-medium text-(--ink-primary)">云端备份</span>
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-medium bg-(--paper-sunken) text-(--ink-tertiary)">
+                <span className="py-0.2 rounded bg-(--paper-sunken) px-1.5 font-mono text-[9px] font-medium text-(--ink-tertiary)">
                   WebDAV
                 </span>
-                <span className="text-[10px] font-mono text-(--ink-tertiary)">
+                <span className="font-mono text-[10px] text-(--ink-tertiary)">
                   {formatSyncTime(lastSyncAt)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5">
             <PaperButton
               variant="secondary"
               size="xs"
@@ -199,24 +199,24 @@ export const WebDavSyncSection: React.FC = () => {
               disabled={isSyncing}
               className="gap-1 font-mono text-[11px]"
             >
-              <RefreshCw className={cn('w-3 h-3', isSyncing && 'animate-spin')} />
+              <RefreshCw className={cn('size-3', isSyncing && 'animate-spin')} />
               <span>{isSyncing ? '同步中' : '立即同步'}</span>
             </PaperButton>
 
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="w-6 h-6 flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) cursor-pointer"
+              className="flex size-6 cursor-pointer items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary)"
             >
-              {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             </button>
           </div>
         </div>
 
         {isOpen && (
-          <div className="pt-3.5 mt-3 border-t border-dashed border-(--rule-hairline)/60 space-y-2.5">
+          <div className="mt-3 space-y-2.5 border-t border-dashed border-(--rule-hairline)/60 pt-3.5">
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-(--ink-tertiary) px-0.5">服务器地址</label>
+              <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
               <PaperInput
                 placeholder="https://dav.jianguoyun.com/dav/"
                 value={url}
@@ -227,7 +227,7 @@ export const WebDavSyncSection: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-(--ink-tertiary) px-0.5">账号</label>
+                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">账号</label>
                 <PaperInput
                   placeholder="账号 / 邮箱"
                   value={username}
@@ -237,7 +237,7 @@ export const WebDavSyncSection: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-(--ink-tertiary) px-0.5">应用密码</label>
+                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">应用密码</label>
                 <PaperInput
                   type="password"
                   placeholder="授权密码"
@@ -249,7 +249,7 @@ export const WebDavSyncSection: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-(--ink-tertiary) px-0.5">同步目录</label>
+              <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">同步目录</label>
               <PaperInput
                 placeholder="默认为 /hamsterstash"
                 value={syncPath}
@@ -264,7 +264,7 @@ export const WebDavSyncSection: React.FC = () => {
                 size="sm"
                 onClick={handleTest}
                 disabled={isTesting || isSyncing}
-                leftIcon={<PlugZap className="w-3.5 h-3.5" />}
+                leftIcon={<PlugZap className="size-3.5" />}
               >
                 {isTesting ? '测试中...' : '测试连接'}
               </PaperButton>
@@ -274,7 +274,7 @@ export const WebDavSyncSection: React.FC = () => {
                 size="sm"
                 onClick={handleSave}
                 disabled={isSaving || isSyncing}
-                leftIcon={<Check className="w-3.5 h-3.5" />}
+                leftIcon={<Check className="size-3.5" />}
               >
                 {isSaving ? '保存中...' : '保存配置'}
               </PaperButton>
@@ -282,7 +282,7 @@ export const WebDavSyncSection: React.FC = () => {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
+        <div className="mt-2.5 flex items-center justify-between border-t border-dashed border-(--rule-hairline)/60 pt-2.5 select-none">
           <span className="text-[13px] font-medium text-(--ink-primary)">每日自动同步</span>
           <PaperSwitch
             checked={autoSyncDaily}
@@ -291,7 +291,7 @@ export const WebDavSyncSection: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
+        <div className="mt-2.5 flex items-center justify-between border-t border-dashed border-(--rule-hairline)/60 pt-2.5 select-none">
           <span className="text-[13px] font-medium text-(--ink-primary)">备份凭证附件</span>
           <PaperSwitch
             checked={syncAttachments}

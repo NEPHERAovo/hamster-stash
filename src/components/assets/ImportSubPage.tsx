@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { UploadSimple as FileUp, Check, WarningCircle as AlertCircle, ArrowRight, ArrowLeft, Plus, Sparkle as Sparkles, Sliders, ArrowsClockwise as RefreshCw, FolderSimple as FolderSync } from '@phosphor-icons/react';
+import { UploadSimpleIcon as FileUp, CheckIcon as Check, WarningCircleIcon as AlertCircle, ArrowRightIcon as ArrowRight, ArrowLeftIcon as ArrowLeft, PlusIcon as Plus, SparkleIcon as Sparkles, SlidersIcon as Sliders, ArrowsClockwiseIcon as RefreshCw, FolderSimpleIcon as FolderSync } from '@phosphor-icons/react';
 import { PaperButton } from '../ui/PaperButton';
 import { parseCsv, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {
@@ -340,10 +340,10 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   ];
 
   return (
-    <div className="w-full pb-12 pt-1 px-4 text-(--ink-primary) space-y-4">
-      <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-3 shadow-xs">
-        <div className="flex items-center justify-between relative px-2">
-          <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-[1px] bg-(--rule-hairline) z-0" />
+    <div className="w-full space-y-4 px-4 pt-1 pb-12 text-(--ink-primary)">
+      <div className="rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 shadow-xs">
+        <div className="relative flex items-center justify-between px-2">
+          <div className="absolute inset-x-6 top-1/2 z-0 h-px -translate-y-1/2 bg-(--rule-hairline)" />
           {[
             { num: 1, label: '上传文件' },
             { num: 2, label: '字段列' },
@@ -359,14 +359,14 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               stepBadgeClass = 'bg-(--ink-primary) text-(--paper-sheet)';
             }
             return (
-              <div key={s.num} className="flex flex-col items-center gap-1 relative z-10">
+              <div key={s.num} className="relative z-10 flex flex-col items-center gap-1">
                 <div
                   className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                    'flex size-6 items-center justify-center rounded-full text-xs font-bold transition-all',
                     stepBadgeClass
                   )}
                 >
-                  {isDone ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : s.num}
+                  {isDone ? <Check className="stroke-2.5 size-3.5" /> : s.num}
                 </div>
                 <span
                   className={cn(
@@ -383,8 +383,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       </div>
 
       {errorMsg && (
-        <div className="p-3 rounded-(--radius-sm) bg-(--color-expense-bg) text-(--color-expense) text-xs flex items-center gap-2 border border-(--color-expense)/20">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-2 rounded-(--radius-sm) border border-(--color-expense)/20 bg-(--color-expense-bg) p-3 text-xs text-(--color-expense)">
+          <AlertCircle className="size-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -415,23 +415,23 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                     }
                   }}
                   className={cn(
-                    'p-3.5 rounded-(--radius-md) border transition-all cursor-pointer flex items-center gap-3',
+                    'flex cursor-pointer items-center gap-3 rounded-(--radius-md) border p-3.5 transition-all',
                     isSelected
-                      ? 'bg-(--paper-sheet) border-(--ink-primary) ring-1 ring-(--ink-primary) shadow-xs'
-                      : 'bg-(--paper-sheet) border-(--rule-hairline) hover:border-(--ink-tertiary)'
+                      ? 'border-(--ink-primary) bg-(--paper-sheet) shadow-xs ring-1 ring-(--ink-primary)'
+                      : 'border-(--rule-hairline) bg-(--paper-sheet) hover:border-(--ink-tertiary)'
                   )}
                 >
                   <div
                     className={cn(
-                      'w-8 h-8 rounded-(--badge-radius) flex items-center justify-center shrink-0',
+                      'flex size-8 shrink-0 items-center justify-center rounded-(--badge-radius)',
                       isSelected ? 'bg-(--color-income-bg) text-(--color-income)' : 'bg-(--paper-sunken) text-(--ink-secondary)'
                     )}
                   >
-                    <IconComp className="w-4 h-4 stroke-[1.8]" />
+                    <IconComp className="stroke-1.8 size-4" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[13px] text-(--ink-primary)">{preset.name}</div>
-                    <div className="text-[11px] text-(--ink-tertiary) truncate mt-0.5">{preset.shortDesc}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-bold text-(--ink-primary)">{preset.name}</div>
+                    <div className="mt-0.5 truncate text-[11px] text-(--ink-tertiary)">{preset.shortDesc}</div>
                   </div>
                 </div>
               );
@@ -441,7 +441,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           <div
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              'border-2 border-dashed rounded-(--radius-md) py-8 px-4 text-center cursor-pointer transition-all bg-(--paper-sheet)',
+              'cursor-pointer rounded-(--radius-md) border-2 border-dashed bg-(--paper-sheet) px-4 py-8 text-center transition-all',
               fileName
                 ? 'border-(--color-income)'
                 : 'border-(--rule-hairline) hover:border-(--ink-tertiary) hover:bg-(--paper-hover)/40'
@@ -456,11 +456,11 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             />
             {fileName ? (
               <div className="space-y-1.5">
-                <div className="w-9 h-9 rounded-full bg-(--color-income-bg) text-(--color-income) flex items-center justify-center mx-auto">
-                  <Check className="w-5 h-5 stroke-[2.2]" />
+                <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-(--color-income-bg) text-(--color-income)">
+                  <Check className="stroke-2.2 size-5" />
                 </div>
-                <div className="font-bold text-xs text-(--ink-primary)">{fileName}</div>
-                <div className="text-[11px] font-mono text-(--ink-tertiary)">
+                <div className="text-xs font-bold text-(--ink-primary)">{fileName}</div>
+                <div className="font-mono text-[11px] text-(--ink-tertiary)">
                   {fileSizeStr} · 共 {parsed.rows.length} 行
                 </div>
                 <button
@@ -469,17 +469,17 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                     e.stopPropagation();
                     fileInputRef.current?.click();
                   }}
-                  className="text-xs text-(--color-income) hover:underline cursor-pointer pt-1"
+                  className="cursor-pointer pt-1 text-xs text-(--color-income) hover:underline"
                 >
                   更换文件
                 </button>
               </div>
             ) : (
               <div className="space-y-1.5">
-                <div className="w-9 h-9 rounded-full bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center mx-auto">
-                  <FileUp className="w-5 h-5 stroke-[1.8]" />
+                <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-(--paper-sunken) text-(--ink-secondary)">
+                  <FileUp className="stroke-1.8 size-5" />
                 </div>
-                <div className="font-semibold text-xs text-(--ink-primary)">
+                <div className="text-xs font-semibold text-(--ink-primary)">
                   点击选择 CSV 文件
                 </div>
                 <div className="text-[11px] text-(--ink-tertiary)">
@@ -489,7 +489,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             )}
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <PaperButton variant="secondary" size="sm" onClick={handleClose}>
               取消
             </PaperButton>
@@ -500,7 +500,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               onClick={() => setCurrentStep(2)}
             >
               <span>下一步：确认字段</span>
-              <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              <ArrowRight className="ml-1 size-3.5" />
             </PaperButton>
           </div>
         </div>
@@ -508,7 +508,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
 
       {currentStep === 2 && (
         <div className="space-y-4">
-          <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) divide-y divide-(--rule-hairline) shadow-xs text-xs">
+          <div className="divide-y divide-(--rule-hairline) rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-xs shadow-xs">
             {[
               { key: 'dateCol', label: '日期时间列', required: true, desc: '交易发生时间' },
               { key: 'amountCol', label: '金额列', required: true, desc: '交易金额数值' },
@@ -523,9 +523,9 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                 desc: !isReimbursementEnabled ? '报销标记（设置中已停用报销）' : '报销标记',
               },
             ].map((field) => (
-              <div key={field.key} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
+              <div key={field.key} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
                 <div>
-                  <div className="font-semibold text-(--ink-primary) flex items-center gap-1">
+                  <div className="flex items-center gap-1 font-semibold text-(--ink-primary)">
                     {field.required && <span className="text-(--color-expense)">*</span>}
                     {field.label}
                   </div>
@@ -539,7 +539,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                       [field.key]: e.target.value || undefined,
                     })
                   }
-                  className="px-2.5 py-1.5 rounded-(--radius-xs) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) text-xs outline-none focus:border-(--ink-primary) cursor-pointer max-w-[160px]"
+                  className="max-w-40 cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 py-1.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
                 >
                   {getColOptions().map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -551,9 +551,9 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             ))}
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <PaperButton variant="secondary" size="sm" onClick={() => setCurrentStep(1)}>
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+              <ArrowLeft className="mr-1 size-3.5" />
               <span>上一步</span>
             </PaperButton>
             <PaperButton
@@ -570,7 +570,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               }}
             >
               <span>下一步：分类匹配</span>
-              <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              <ArrowRight className="ml-1 size-3.5" />
             </PaperButton>
           </div>
         </div>
@@ -578,7 +578,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
 
       {currentStep === 3 && (
         <div className="space-y-4">
-          <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-3 shadow-xs flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center justify-between gap-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 text-xs shadow-xs">
             <span className="text-[11px] text-(--ink-secondary)">
               共解析出 {extractedCategoryStats.length} 个分类
             </span>
@@ -586,19 +586,19 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               type="button"
               onClick={handleBatchCreateMissingCategories}
               disabled={isCreatingCategory}
-              className="px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-primary) text-xs font-semibold flex items-center gap-1 border border-(--rule-hairline) cursor-pointer transition-all active:scale-95"
+              className="flex cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 py-1 text-xs font-semibold text-(--ink-primary) transition-all hover:bg-(--paper-hover) active:scale-95"
             >
-              <Plus className="w-3 h-3 text-(--color-income)" />
+              <Plus className="size-3 text-(--color-income)" />
               <span>批量新建未匹配分类</span>
             </button>
           </div>
 
           {extractedCategoryStats.length === 0 ? (
-            <div className="text-center py-8 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) text-xs text-(--ink-tertiary)">
+            <div className="rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) py-8 text-center text-xs text-(--ink-tertiary)">
               未指定分类列，将统一使用默认分类入库。
             </div>
           ) : (
-            <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) divide-y divide-(--rule-hairline) shadow-xs overflow-hidden max-h-[360px] overflow-y-auto">
+            <div className="max-h-90 divide-y divide-(--rule-hairline) overflow-hidden overflow-y-auto rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
               {extractedCategoryStats.map((stat) => {
                 const currentMappedCatId =
                   categoryMapping[stat.rawName] ||
@@ -609,9 +609,9 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                 );
 
                 return (
-                  <div key={stat.rawName} className="p-2.5 flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 min-w-[80px] shrink-0">
-                      <span className="font-semibold text-(--ink-primary) truncate max-w-[100px]">
+                  <div key={stat.rawName} className="flex items-center justify-between gap-2 p-2.5 text-xs">
+                    <div className="flex min-w-20 shrink-0 items-center gap-1.5">
+                      <span className="max-w-25 truncate font-semibold text-(--ink-primary)">
                         {stat.rawName}
                       </span>
                       <span className="text-[10px] text-(--ink-tertiary) tabular-nums">
@@ -619,8 +619,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <ArrowRight className="w-3.5 h-3.5 text-(--ink-tertiary) shrink-0" />
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <ArrowRight className="size-3.5 shrink-0 text-(--ink-tertiary)" />
                       <select
                         value={currentMappedCatId}
                         onChange={(e) =>
@@ -629,7 +629,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                             [stat.rawName]: e.target.value,
                           })
                         }
-                        className="flex-1 min-w-0 px-2 py-1 rounded-(--radius-xs) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) text-xs outline-none focus:border-(--ink-primary) cursor-pointer"
+                        className="min-w-0 flex-1 cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-1 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
                       >
                         <optgroup label="支出">
                           {categories.filter((c) => c.type === 'expense').map((c) => (
@@ -649,10 +649,10 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                         type="button"
                         onClick={() => handleCreateCategoryForRaw(stat.rawName, stat.dominantType)}
                         disabled={isCreatingCategory}
-                        className="px-2 py-1 rounded-(--radius-xs) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) text-[11px] font-semibold flex items-center gap-0.5 border border-(--rule-hairline) shrink-0 cursor-pointer"
+                        className="flex shrink-0 cursor-pointer items-center gap-0.5 rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-1 text-[11px] font-semibold text-(--ink-secondary) hover:text-(--ink-primary)"
                         title="新建分类"
                       >
-                        <Plus className="w-3 h-3 text-(--color-income)" />
+                        <Plus className="size-3 text-(--color-income)" />
                         <span>新建</span>
                       </button>
                     )}
@@ -663,16 +663,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           )}
 
           {extractedTypeStats.length > 0 && (
-            <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) divide-y divide-(--rule-hairline) shadow-xs text-xs">
+            <div className="divide-y divide-(--rule-hairline) rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-xs shadow-xs">
               {extractedTypeStats.map((t) => {
                 const currentMappedType = typeMapping[t.rawName] || t.suggestedType;
                 return (
-                  <div key={t.rawName} className="p-2.5 flex items-center justify-between gap-2">
+                  <div key={t.rawName} className="flex items-center justify-between gap-2 p-2.5">
                     <span className="font-semibold text-(--ink-primary)">
                       {t.rawName} <span className="text-[10px] text-(--ink-tertiary)">({t.count}笔)</span>
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <ArrowRight className="w-3.5 h-3.5 text-(--ink-tertiary)" />
+                      <ArrowRight className="size-3.5 text-(--ink-tertiary)" />
                       <select
                         value={currentMappedType}
                         onChange={(e) =>
@@ -681,7 +681,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                             [t.rawName]: e.target.value as TransactionType | 'skip',
                           })
                         }
-                        className="px-2 py-1 rounded-(--radius-xs) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) text-xs outline-none focus:border-(--ink-primary) cursor-pointer"
+                        className="cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-1 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
                       >
                         <option value="expense">支出</option>
                         <option value="income">收入</option>
@@ -696,14 +696,14 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             </div>
           )}
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <PaperButton variant="secondary" size="sm" onClick={() => setCurrentStep(2)}>
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+              <ArrowLeft className="mr-1 size-3.5" />
               <span>上一步</span>
             </PaperButton>
             <PaperButton variant="ink" size="sm" onClick={() => setCurrentStep(4)}>
               <span>下一步：确认导入</span>
-              <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              <ArrowRight className="ml-1 size-3.5" />
             </PaperButton>
           </div>
         </div>
@@ -711,16 +711,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
 
       {currentStep === 4 && (
         <div className="space-y-4">
-          <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-3.5 space-y-3 text-xs shadow-xs">
+          <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 text-xs shadow-xs">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <span className="font-semibold text-(--ink-primary) block">默认入账账户</span>
+                <span className="block font-semibold text-(--ink-primary)">默认入账账户</span>
                 <span className="text-[10px] text-(--ink-tertiary)">未指定账户时归属此项</span>
               </div>
               <select
                 value={defaultAccountId}
                 onChange={(e) => setDefaultAccountId(e.target.value)}
-                className="px-2.5 py-1.5 rounded-(--radius-xs) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) text-xs outline-none focus:border-(--ink-primary) cursor-pointer max-w-[160px]"
+                className="max-w-40 cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 py-1.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
@@ -728,7 +728,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               </select>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer pt-2.5 border-t border-(--rule-hairline)">
+            <label className="flex cursor-pointer items-center gap-2 border-t border-(--rule-hairline) pt-2.5">
               <input
                 type="checkbox"
                 checked={autoCreateAccounts}
@@ -742,14 +742,14 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           </div>
 
           {previewData.some((r) => r.isReimbursable) && !isReimbursementEnabled && (
-            <div className="p-2.5 rounded-(--radius-sm) bg-(--paper-sunken) text-(--ink-secondary) text-[11px] flex items-center gap-2 border border-(--rule-hairline)">
-              <AlertCircle className="w-3.5 h-3.5 text-(--ink-tertiary) shrink-0" />
+            <div className="flex items-center gap-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-[11px] text-(--ink-secondary)">
+              <AlertCircle className="size-3.5 shrink-0 text-(--ink-tertiary)" />
               <span>表格中包含待报销流水。当前设置中已停用报销功能，导入后可随时在设置中开启报销查看。</span>
             </div>
           )}
 
-          <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) divide-y divide-(--rule-hairline) shadow-xs overflow-hidden">
-            <div className="px-3.5 py-2 text-[11px] font-semibold text-(--ink-tertiary) bg-(--paper-sunken)">
+          <div className="divide-y divide-(--rule-hairline) overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
+            <div className="bg-(--paper-sunken) px-3.5 py-2 text-[11px] font-semibold text-(--ink-tertiary)">
               数据预览 (前 {previewData.length} 笔)
             </div>
             {previewData.map((rec, i) => {
@@ -762,12 +762,12 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               return (
                 <div key={i} className="flex items-center justify-between p-2.5 text-xs">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 stroke-[1.8]" />
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                      <Icon className="stroke-1.8 size-4" />
                     </div>
                     <div>
                       <div className="font-semibold text-(--ink-primary)">{cat?.name || '默认'}</div>
-                      <div className="text-[10px] font-mono text-(--ink-tertiary)">
+                      <div className="font-mono text-[10px] text-(--ink-tertiary)">
                         {rec.date}{timePart} · {rec.rawAccountName || acct?.name || '默认'}
                         {rec.note && ` · ${rec.note}`}
                       </div>
@@ -776,7 +776,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                   <div className="text-right">
                     <span
                       className={cn(
-                        'font-bold text-sm font-mono tabular-nums',
+                        'font-mono text-sm font-bold tabular-nums',
                         rec.type === 'income' ? 'text-(--color-income)' : 'text-(--color-expense)'
                       )}
                     >
@@ -788,14 +788,14 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             })}
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <PaperButton
               variant="secondary"
               size="sm"
               onClick={() => setCurrentStep(3)}
               disabled={isImporting}
             >
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+              <ArrowLeft className="mr-1 size-3.5" />
               <span>上一步</span>
             </PaperButton>
             <PaperButton
@@ -806,12 +806,12 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             >
               {isImporting ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" />
+                  <RefreshCw className="mr-1 size-3.5 animate-spin" />
                   <span>导入中...</span>
                 </>
               ) : (
                 <>
-                  <FolderSync className="w-3.5 h-3.5 mr-1" />
+                  <FolderSync className="mr-1 size-3.5" />
                   <span>确认导入 ({parsed.rows.length} 笔)</span>
                 </>
               )}

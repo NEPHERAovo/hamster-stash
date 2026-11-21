@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DownloadSimple as Download, Check, List as Menu, DotsThreeVertical as MoreVertical, ShareNetwork as Share, PlusSquare, ShieldCheck, Info, DeviceMobile as Smartphone } from '@phosphor-icons/react';
+import { DownloadSimpleIcon as Download, CheckIcon as Check, ListIcon as Menu, DotsThreeVerticalIcon as MoreVertical, ShareNetworkIcon as Share, PlusSquareIcon as PlusSquare, ShieldCheckIcon as ShieldCheck, InfoIcon as Info, DeviceMobileIcon as Smartphone } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { usePwaStore } from '../../stores/usePwaStore';
 import { detectBrowserFamily, type BrowserFamily } from '../../utils/browser';
@@ -149,9 +149,9 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
   const renderBanner = () => {
     if (isInstalled) {
       return (
-        <div className="p-3 rounded-(--radius-md) bg-(--color-income-bg) border border-(--color-income)/20 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-(--color-income) text-white flex items-center justify-center shrink-0">
-            <Check className="w-4 h-4 stroke-2" />
+        <div className="flex items-center gap-3 rounded-(--radius-md) border border-(--color-income)/20 bg-(--color-income-bg) p-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-(--color-income) text-white">
+            <Check className="size-4 stroke-2" />
           </div>
           <div className="min-w-0">
             <div className="text-xs font-semibold text-(--ink-primary)">
@@ -166,16 +166,16 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
     }
     if (installPrompt) {
       return (
-        <div className="p-3 rounded-(--radius-md) bg-(--paper-sunken) border border-(--rule-hairline) flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-(--badge-radius) bg-(--color-income-bg) text-(--color-income) flex items-center justify-center shrink-0">
-              <Download className="w-4 h-4 stroke-2" />
+        <div className="flex items-center justify-between gap-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken) p-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--color-income-bg) text-(--color-income)">
+              <Download className="size-4 stroke-2" />
             </div>
             <div className="min-w-0">
               <div className="text-xs font-semibold text-(--ink-primary)">
                 检测到当前浏览器支持一键安装
               </div>
-              <div className="text-[11px] text-(--ink-secondary) truncate">
+              <div className="truncate text-[11px] text-(--ink-secondary)">
                 点击按钮即可直接唤起系统安装弹窗
               </div>
             </div>
@@ -184,7 +184,7 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
             type="button"
             onClick={handleDirectInstall}
             disabled={isPrompting}
-            className="px-3 py-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer active:scale-95 transition-all shrink-0 disabled:opacity-50"
+            className="shrink-0 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-3 py-1.5 text-xs font-semibold text-(--btn-primary-fg) transition-all active:scale-95 disabled:opacity-50"
           >
             {isPrompting ? '唤起中...' : '立即安装'}
           </button>
@@ -200,14 +200,14 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
       onClose={onClose}
       title="添加到手机桌面"
     >
-      <div className="p-4 pt-3 pb-[calc(18px+var(--safe-bottom))] space-y-4 select-none">
+      <div className="space-y-4 p-4 pt-3 pb-[calc(18px+var(--safe-bottom))] select-none">
         {renderBanner()}
 
         <div>
-          <div className="text-[11px] font-medium text-(--ink-tertiary) mb-1.5 px-0.5">
+          <div className="mb-1.5 px-0.5 text-[11px] font-medium text-(--ink-tertiary)">
             选择您的手机浏览器类型
           </div>
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 p-1 rounded-(--radius-md) bg-(--paper-sunken)">
+          <div className="grid grid-cols-2 gap-1.5 rounded-(--radius-md) bg-(--paper-sunken) p-1 sm:grid-cols-4">
             {BROWSER_OPTIONS.map((item) => {
               const isActive = selectedFamily === item.key;
               return (
@@ -216,9 +216,9 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
                   type="button"
                   onClick={() => setSelectedFamily(item.key)}
                   className={cn(
-                    'py-1.5 px-2 text-xs font-medium rounded-(--radius-sm) transition-all text-center truncate cursor-pointer',
+                    'cursor-pointer truncate rounded-(--radius-sm) px-2 py-1.5 text-center text-xs font-medium transition-all',
                     isActive
-                      ? 'bg-(--paper-sheet) text-(--ink-primary) shadow-xs font-semibold'
+                      ? 'bg-(--paper-sheet) font-semibold text-(--ink-primary) shadow-xs'
                       : 'text-(--ink-secondary) hover:text-(--ink-primary)'
                   )}
                 >
@@ -235,26 +235,26 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
             return (
               <div
                 key={step.number}
-                className="p-3 rounded-(--radius-md) bg-(--paper-sheet) border border-(--rule-hairline) flex items-start gap-3"
+                className="flex items-start gap-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3"
               >
-                <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center shrink-0 text-(--ink-secondary) mt-0.5">
-                  <IconComp className="w-3.5 h-3.5 stroke-[1.75]" />
+                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                  <IconComp className="stroke-1.75 size-3.5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="font-mono text-[10px] text-(--ink-tertiary) font-semibold">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-0.5 flex items-center gap-1.5">
+                    <span className="font-mono text-[10px] font-semibold text-(--ink-tertiary)">
                       {step.number}
                     </span>
                     <span className="text-xs font-semibold text-(--ink-primary)">
                       {step.title}
                     </span>
                   </div>
-                  <p className="text-[11px] text-(--ink-secondary) leading-relaxed">
+                  <p className="text-[11px] leading-relaxed text-(--ink-secondary)">
                     {step.description}
                   </p>
                   {step.hint && (
-                    <div className="mt-1 flex items-center gap-1 text-[10px] text-(--color-expense) font-medium">
-                      <Info className="w-3 h-3 stroke-2 shrink-0" />
+                    <div className="mt-1 flex items-center gap-1 text-[10px] font-medium text-(--color-expense)">
+                      <Info className="size-3 shrink-0 stroke-2" />
                       <span>{step.hint}</span>
                     </div>
                   )}
@@ -264,8 +264,8 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
           })}
         </div>
 
-        <div className="pt-2 border-t border-dashed border-(--rule-hairline) text-[11px] text-(--ink-tertiary) flex items-start gap-1.5 px-1 leading-relaxed">
-          <Info className="w-3.5 h-3.5 stroke-[1.75] shrink-0 mt-0.5 text-(--ink-tertiary)" />
+        <div className="flex items-start gap-1.5 border-t border-dashed border-(--rule-hairline) px-1 pt-2 text-[11px] leading-relaxed text-(--ink-tertiary)">
+          <Info className="stroke-1.75 mt-0.5 size-3.5 shrink-0 text-(--ink-tertiary)" />
           <span>
             安装后支持完全离线使用与秒级启动；数据保存在本机，卸载应用或清理浏览器数据将清空账本，请注意定期备份。
           </span>

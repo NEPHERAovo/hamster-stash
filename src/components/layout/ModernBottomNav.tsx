@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus } from '@phosphor-icons/react';
+import { PlusIcon as Plus } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { LiquidGlassDock } from '../ui/liquid-glass/LiquidGlassDock';
 import type { DockTabItem } from '../ui/liquid-glass/drawDockTexture';
@@ -60,17 +60,17 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
   return (
     <>
       {showAddButton && onAddClick && (
-        <div className="fixed bottom-[calc(72px+var(--dock-bottom))] left-1/2 -translate-x-1/2 w-full max-w-[430px] pointer-events-none z-50">
+        <div className="pointer-events-none fixed bottom-[calc(72px+var(--dock-bottom))] left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2">
           <button
             type="button"
             onClick={onAddClick}
             title={resolvedAddTitle}
             aria-label={resolvedAddTitle}
-            className="pointer-events-auto absolute right-4 bottom-0 w-14 h-14 rounded-full bg-(--btn-primary-bg) text-(--btn-primary-fg) flex items-center justify-center shadow-[0_4px_12px_-2px_var(--color-accent-bg)] active:scale-90 transition-all cursor-pointer"
+            className="pointer-events-auto absolute right-4 bottom-0 flex size-14 cursor-pointer items-center justify-center rounded-full bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-[0_4px_12px_-2px_var(--color-accent-bg)] transition-all active:scale-90"
           >
             <Plus
               className={cn(
-                'w-6 h-6 stroke-[2.4] transition-transform duration-200',
+                'stroke-2.4 size-6 transition-transform duration-200',
                 isAddOpen && 'rotate-45'
               )}
             />
@@ -80,11 +80,11 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
 
       <div
         className={cn(
-          'fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pb-(--dock-bottom) px-4 pointer-events-none select-none',
+          'pointer-events-none fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 px-4 pb-(--dock-bottom) select-none',
           className
         )}
       >
-        <div className="w-full max-w-[366px] mx-auto pointer-events-auto">
+        <div className="pointer-events-auto mx-auto w-full max-w-[366px]">
           <LiquidGlassDock
             className="h-[58px]"
             tabs={allTabs}

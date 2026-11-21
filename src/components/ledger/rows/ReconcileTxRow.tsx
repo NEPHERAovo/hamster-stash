@@ -56,18 +56,18 @@ export const ReconcileTxRow: React.FC<ReconcileTxRowProps> = ({
         />
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[13px] font-medium text-(--ink-primary) leading-tight truncate">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="truncate text-[13px] leading-tight font-medium text-(--ink-primary)">
             {title}
           </span>
-          <span className="real-stamp text-[9px] px-1 py-0.5 text-(--ink-tertiary)">
+          <span className="real-stamp px-1 py-0.5 text-[9px] text-(--ink-tertiary)">
             平账
           </span>
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] text-(--ink-tertiary) font-mono">
+        <div className="flex items-center gap-1 font-mono text-[11px] text-(--ink-tertiary)">
           <span>{dateTimeLabel}</span>
           <span>·</span>
           <span>余额校准</span>
@@ -80,10 +80,10 @@ export const ReconcileTxRow: React.FC<ReconcileTxRowProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 text-right ml-2.5">
+      <div className="ml-2.5 shrink-0 text-right">
         <span
           className={cn(
-            'font-mono text-sm font-semibold tabular-nums tracking-tight',
+            'font-mono text-sm font-semibold tracking-tight tabular-nums',
             isPositive && 'text-(--color-income)',
             isNegative && 'text-(--color-expense)',
             !isPositive && !isNegative && 'text-(--ink-tertiary)'

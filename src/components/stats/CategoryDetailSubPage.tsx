@@ -23,24 +23,24 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
   const { category, periodLabel, transactions, totalExpense, categoryPercentage } = data;
 
   return (
-    <div className="p-4 space-y-3.5 pb-12">
-      <div className="w-full p-4 bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-md) shadow-xs select-none space-y-2.5">
+    <div className="space-y-3.5 p-4 pb-12">
+      <div className="paper-card w-full space-y-2.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-4 shadow-xs select-none">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <CategoryBadge category={category} size="md" />
-            <span className="font-semibold text-base text-(--ink-solid) truncate">{category.name}</span>
+            <span className="truncate text-base font-semibold text-(--ink-solid)">{category.name}</span>
           </div>
-          <span className="font-mono text-xs text-(--ink-tertiary) shrink-0">{periodLabel}</span>
+          <span className="shrink-0 font-mono text-xs text-(--ink-tertiary)">{periodLabel}</span>
         </div>
 
         <div>
-          <div className="text-[11px] text-(--ink-tertiary) mb-0.5">本期消费合计</div>
+          <div className="mb-0.5 text-[11px] text-(--ink-tertiary)">本期消费合计</div>
           <div className="font-mono text-2xl font-bold text-(--ink-solid) tabular-nums">
             ¥{centsToYuan(totalExpense)}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-1 border-t border-(--rule-hairline)/60 text-xs text-(--ink-secondary)">
+        <div className="flex items-center gap-3 border-t border-(--rule-hairline)/60 pt-1 text-xs text-(--ink-secondary)">
           <span>
             占比 <strong className="font-mono text-(--ink-solid)">{categoryPercentage}%</strong>
           </span>
@@ -54,7 +54,7 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
       <div className="space-y-1.5 pt-1">
         <div className="flex items-center justify-between px-1 select-none">
           <span className="text-xs font-semibold text-(--ink-secondary)">分类明细</span>
-          <span className="text-[11px] font-mono text-(--ink-tertiary)">
+          <span className="font-mono text-[11px] text-(--ink-tertiary)">
             共 {transactions.length} 笔
           </span>
         </div>

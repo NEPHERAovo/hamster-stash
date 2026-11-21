@@ -119,7 +119,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
       onClose={onClose}
       title="导出账本（CSV）"
     >
-      <div className="p-4 space-y-4 select-none">
+      <div className="space-y-4 p-4 select-none">
         <div className="flex flex-wrap gap-1.5">
           {RANGE_OPTIONS.map((opt) => {
             const isSelected = rangeMode === opt.value;
@@ -129,10 +129,10 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
                 type="button"
                 onClick={() => setRangeMode(opt.value)}
                 className={cn(
-                  'px-3 py-1.5 text-xs rounded-(--btn-radius) border transition-all cursor-pointer',
+                  'cursor-pointer rounded-(--btn-radius) border px-3 py-1.5 text-xs transition-all',
                   isSelected
-                    ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) border-transparent font-semibold'
-                    : 'bg-(--paper-sunken) text-(--ink-secondary) border-(--rule-hairline) hover:text-(--ink-primary)'
+                    ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                    : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
                 )}
               >
                 {opt.label}
@@ -144,27 +144,27 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
         {rangeMode === 'custom' && (
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-(--ink-tertiary)">开始日期</label>
+              <label className="font-mono text-[11px] text-(--ink-tertiary)">开始日期</label>
               <input
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="w-full h-9 px-2.5 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none"
+                className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 font-mono text-xs text-(--ink-primary) outline-none"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-(--ink-tertiary)">结束日期</label>
+              <label className="font-mono text-[11px] text-(--ink-tertiary)">结束日期</label>
               <input
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="w-full h-9 px-2.5 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none"
+                className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 font-mono text-xs text-(--ink-primary) outline-none"
               />
             </div>
           </div>
         )}
 
-        <div className="p-3 rounded-(--radius-sm) bg-(--paper-sunken)/70 border border-dashed border-(--rule-hairline) text-xs font-mono space-y-1">
+        <div className="space-y-1 rounded-(--radius-sm) border border-dashed border-(--rule-hairline) bg-(--paper-sunken)/70 p-3 font-mono text-xs">
           <div className="flex items-center justify-between text-(--ink-secondary)">
             <span>导出范围</span>
             <span className="text-(--ink-primary)">{resolvedBounds.label}</span>
@@ -179,7 +179,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
+            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
           >
             取消
           </button>
@@ -187,7 +187,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
             type="button"
             disabled={isExporting || isRangeInvalid || matchedCount === 0}
             onClick={handleConfirmExport}
-            className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-45"
+            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-45"
           >
             {isExporting ? '导出中...' : '确认导出'}
           </button>

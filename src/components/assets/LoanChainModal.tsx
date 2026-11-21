@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Receipt as ReceiptText, CheckCircle as CheckCircle2, Calendar, Eye } from '@phosphor-icons/react';
+import { ReceiptIcon as ReceiptText, CheckCircleIcon as CheckCircle2, CalendarIcon as Calendar, EyeIcon as Eye } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
@@ -115,15 +115,15 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
       onClose={onClose}
       title="借贷与报销结算"
     >
-      <div className="p-4 space-y-3.5 select-none">
+      <div className="space-y-3.5 p-4 select-none">
         {allItems.length === 0 ? (
-          <div className="py-12 text-center text-xs text-(--ink-tertiary) space-y-2">
-            <CheckCircle2 className="w-8 h-8 text-(--color-income) mx-auto opacity-75" />
+          <div className="space-y-2 py-12 text-center text-xs text-(--ink-tertiary)">
+            <CheckCircle2 className="mx-auto size-8 text-(--color-income) opacity-75" />
             <p className="text-sm font-medium text-(--ink-secondary)">暂无待收或待报销记录</p>
           </div>
         ) : (
           <>
-            <div className="flex bg-(--paper-sunken) p-1 rounded-(--radius-sm) gap-1 overflow-x-auto no-scrollbar">
+            <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-(--radius-sm) bg-(--paper-sunken) p-1">
               {allItems.map((entry) => {
                 const isSelected = activeEntry?.id === entry.id;
                 return (
@@ -132,9 +132,9 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                     type="button"
                     onClick={() => setActiveTabId(entry.id)}
                     className={cn(
-                      'flex-1 min-w-[130px] py-1.5 px-2.5 text-xs rounded-(--btn-radius) font-medium transition-all cursor-pointer truncate',
+                      'min-w-[130px] flex-1 cursor-pointer truncate rounded-(--btn-radius) px-2.5 py-1.5 text-xs font-medium transition-all',
                       isSelected
-                        ? 'bg-(--paper-sheet) text-(--ink-primary) font-bold shadow-xs'
+                        ? 'bg-(--paper-sheet) font-bold text-(--ink-primary) shadow-xs'
                         : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
                     )}
                   >
@@ -145,21 +145,21 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
             </div>
 
             {currentItem && (
-              <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-md) p-3.5 space-y-3 shadow-xs">
+              <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-sm text-(--ink-primary)">
+                    <h3 className="text-sm font-bold text-(--ink-primary)">
                       {isLoan
                         ? `借给${currentItem.loanParty || '朋友'} · 临时周转`
                         : `${currentItem.note || '公费垫付'} · 发票报销`}
                     </h3>
-                    <p className="text-[11px] font-mono text-(--ink-tertiary) mt-0.5">
+                    <p className="mt-0.5 font-mono text-[11px] text-(--ink-tertiary)">
                       发起日期：{currentItem.date}
                     </p>
                   </div>
                   <span
                     className={cn(
-                      'text-[10px] font-bold font-mono px-2 py-0.5 rounded-full',
+                      'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
                       isLoan && currentItem.loanStatus === 'settled'
                         ? 'bg-(--color-income-bg) text-(--color-income)'
                         : 'bg-(--color-accent-bg) text-(--color-accent)'
@@ -169,35 +169,35 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                   </span>
                 </div>
 
-                <div className="w-full h-1.5 bg-(--paper-sunken) rounded-full overflow-hidden">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--paper-sunken)">
                   <div
                     className="h-full bg-(--color-income) transition-all duration-300"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
 
-                <div className="grid grid-cols-3 text-center pt-2 border-t border-dashed border-(--rule-hairline) font-mono">
+                <div className="grid grid-cols-3 border-t border-dashed border-(--rule-hairline) pt-2 text-center font-mono">
                   <div>
-                    <span className="text-[10px] font-semibold text-(--ink-tertiary) block uppercase tracking-wider">
+                    <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
                       {isLoan ? '借出本金' : '垫付总额'}
                     </span>
-                    <span className="text-sm font-bold text-(--ink-primary) tabular-nums mt-0.5 block">
+                    <span className="mt-0.5 block text-sm font-bold text-(--ink-primary) tabular-nums">
                       ¥{centsToYuan(totalAmount)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-semibold text-(--ink-tertiary) block uppercase tracking-wider">
+                    <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
                       {isLoan ? '已还金额' : '已报金额'}
                     </span>
-                    <span className="text-sm font-bold text-(--color-income) tabular-nums mt-0.5 block">
+                    <span className="mt-0.5 block text-sm font-bold text-(--color-income) tabular-nums">
                       ¥{centsToYuan(repaidAmount)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-semibold text-(--ink-tertiary) block uppercase tracking-wider">
+                    <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
                       待收结余
                     </span>
-                    <span className="text-sm font-bold text-(--color-accent) tabular-nums mt-0.5 block">
+                    <span className="mt-0.5 block text-sm font-bold text-(--color-accent) tabular-nums">
                       ¥{centsToYuan(remainingAmount)}
                     </span>
                   </div>
@@ -206,42 +206,42 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
             )}
 
             {currentItem?.voucher && (
-              <div className="flex items-center justify-between p-2.5 bg-(--paper-sunken) border border-(--rule-hairline) rounded-(--radius-sm) text-xs">
+              <div className="flex items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-xs">
                 <div className="flex items-center gap-2">
-                  <ReceiptText className="w-4 h-4 text-(--color-accent)" />
+                  <ReceiptText className="size-4 text-(--color-accent)" />
                   <div>
                     <div className="font-semibold text-(--ink-primary)">{currentItem.voucher.name}</div>
-                    <div className="text-[10px] font-mono text-(--ink-tertiary)">{currentItem.voucher.size} · 原始凭证</div>
+                    <div className="font-mono text-[10px] text-(--ink-tertiary)">{currentItem.voucher.size} · 原始凭证</div>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => toast(`查验凭证：${currentItem.voucher?.name}`)}
-                  className="px-2 py-1 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) flex items-center gap-1 text-(--ink-secondary) text-[11px] hover:text-(--ink-primary) cursor-pointer"
+                  className="flex cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-1 text-[11px] text-(--ink-secondary) hover:text-(--ink-primary)"
                 >
-                  <Eye className="w-3 h-3" />
+                  <Eye className="size-3" />
                   <span>查验凭证</span>
                 </button>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-(--ink-tertiary) block">
+              <span className="block text-xs font-semibold text-(--ink-tertiary)">
                 关联记录与结算时间轴
               </span>
-              <div className="bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) p-2.5 space-y-2 text-xs">
+              <div className="space-y-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-2.5 text-xs">
                 {relatedTxs.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between py-1 border-b border-(--rule-hairline) last:border-none">
+                  <div key={t.id} className="flex items-center justify-between border-b border-(--rule-hairline) py-1 last:border-none">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-(--ink-tertiary)" />
+                      <Calendar className="size-3.5 text-(--ink-tertiary)" />
                       <div>
                         <span className="font-medium text-(--ink-primary)">
                           {t.note || (t.loanRole === 'repayment' ? '收回还款' : '初始借出款')}
                         </span>
-                        <span className="text-[10px] font-mono text-(--ink-tertiary) block">{t.date}</span>
+                        <span className="block font-mono text-[10px] text-(--ink-tertiary)">{t.date}</span>
                       </div>
                     </div>
-                    <span className={cn('font-bold font-mono tabular-nums', t.loanRole === 'repayment' ? 'text-(--color-income)' : 'text-(--ink-primary)')}>
+                    <span className={cn('font-mono font-bold tabular-nums', t.loanRole === 'repayment' ? 'text-(--color-income)' : 'text-(--ink-primary)')}>
                       {t.loanRole === 'repayment' ? `+¥${centsToYuan(t.amount)}` : `¥${centsToYuan(t.amount)}`}
                     </span>
                   </div>
@@ -255,9 +255,9 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                   type="button"
                   disabled={loading}
                   onClick={handleSettle}
-                  className="w-full h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+                  className="active:scale-0.98 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) shadow-xs transition-transform disabled:opacity-50"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="size-3.5" />
                   <span>一键结清剩余 ¥{centsToYuan(remainingAmount)}</span>
                 </button>
               </div>

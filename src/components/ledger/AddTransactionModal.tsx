@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Trash as Trash2, Paperclip } from '@phosphor-icons/react';
+import { XIcon as X, TrashIcon as Trash2, PaperclipIcon as Paperclip } from '@phosphor-icons/react';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -755,14 +755,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       <div
         ref={sheetRef}
         className={cn(
-          'transaction-sheet w-full max-w-[430px] flex flex-col relative will-change-transform',
-          'bg-(--paper-sheet) paper-sawtooth-top border-t border-(--rule-hairline) shadow-2xl'
+          'transaction-sheet relative flex w-full max-w-[430px] flex-col will-change-transform',
+          'paper-sawtooth-top border-t border-(--rule-hairline) bg-(--paper-sheet) shadow-2xl'
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 z-30 shadow-xs" />
+        <div className="washi-tape absolute -top-3 left-1/2 z-30 -translate-x-1/2 shadow-xs" />
 
-        <div className="flex items-center justify-between px-3.5 pt-3 pb-1 border-b border-(--rule-hairline)/60">
+        <div className="flex items-center justify-between border-b border-(--rule-hairline)/60 px-3.5 pt-3 pb-1">
           <div className="shrink-0">
             <SegToggle
               options={[
@@ -782,10 +782,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <button
                 type="button"
                 onClick={handleDelete}
-                className="flex items-center gap-1 text-[11px] font-mono text-(--color-expense) hover:bg-(--color-expense-bg) px-1.5 py-0.5 rounded-xs transition-colors cursor-pointer"
+                className="flex cursor-pointer items-center gap-1 rounded-xs px-1.5 py-0.5 font-mono text-[11px] text-(--color-expense) transition-colors hover:bg-(--color-expense-bg)"
                 title="删除此笔账单"
               >
-                <Trash2 className="w-3.5 h-3.5 stroke-[1.8]" />
+                <Trash2 className="stroke-1.8 size-3.5" />
                 <span>删除</span>
               </button>
             )}
@@ -793,16 +793,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <button
               type="button"
               onClick={() => closeWithAnimation(240)}
-              className="text-(--ink-tertiary) hover:text-(--ink-primary) p-1 rounded-xs hover:bg-(--paper-sunken) transition-colors cursor-pointer"
+              className="cursor-pointer rounded-xs p-1 text-(--ink-tertiary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
               title="收拢便签"
             >
-              <X className="w-4 h-4 stroke-2" />
+              <X className="size-4 stroke-2" />
             </button>
           </div>
         </div>
 
-        <div className="px-4 py-2 border-t border-b border-dashed border-(--rule-hairline)">
-          <div className="font-mono text-xs text-(--ink-tertiary) h-4 text-right tabular-nums">
+        <div className="border-y border-dashed border-(--rule-hairline) px-4 py-2">
+          <div className="h-4 text-right font-mono text-xs text-(--ink-tertiary) tabular-nums">
             {hasOperator ? `${expr} = ¥ ${evaluatedVal.toFixed(2)}` : ''}
           </div>
 
@@ -815,16 +815,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             >
               ¥
             </span>
-            <span className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-(--ink-primary) tabular-nums">
+            <span className="font-mono text-3xl font-bold tracking-tight text-(--ink-primary) tabular-nums sm:text-4xl">
               {expr}
             </span>
-            <span className="inline-block w-0.5 h-7 bg-(--ink-secondary) ml-0.5 animate-pulse" />
+            <span className="ml-0.5 inline-block h-7 w-0.5 animate-pulse bg-(--ink-secondary)" />
           </div>
         </div>
 
         <div className="px-3.5 py-1.5">
           {txType === 'loan' ? (
-            <div className="category-grid py-0.5 select-none grid grid-cols-4 gap-0">
+            <div className="category-grid grid grid-cols-4 gap-0 py-0.5 select-none">
               {LOAN_FLOW_OPTIONS.map((flow, idx) => {
                 const isSelected = selectedLoanFlow.id === flow.id;
                 const IconComp = getCategoryIcon(flow.icon);
@@ -836,25 +836,25 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     type="button"
                     onClick={() => setSelectedCatId(flow.id)}
                     className={cn(
-                      'flex flex-col items-center justify-center py-2 px-1 transition-all cursor-pointer select-none relative',
+                      'relative flex cursor-pointer flex-col items-center justify-center px-1 py-2 transition-all select-none',
                       hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
                       isSelected
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs z-10'
-                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50'
+                        ? 'z-10 bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs'
+                        : 'text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
                     )}
                   >
-                    <div className="w-6 h-6 flex items-center justify-center mb-0.5">
+                    <div className="mb-0.5 flex size-6 items-center justify-center">
                       <IconComp
                         className={cn(
-                          'w-4 h-4 stroke-[1.8]',
+                          'stroke-1.8 size-4',
                           flow.isInflow ? 'text-(--color-income)' : 'text-(--color-expense)'
                         )}
                       />
                     </div>
-                    <span className="text-[10px] leading-tight truncate w-full text-center">
+                    <span className="w-full truncate text-center text-[10px] leading-tight">
                       {flow.label}
                     </span>
-                    <span className="text-[9px] font-mono text-(--ink-faint) leading-none mt-0.5">
+                    <span className="mt-0.5 font-mono text-[9px] leading-none text-(--ink-faint)">
                       {flow.flowHint}
                     </span>
                   </button>
@@ -867,7 +867,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 'category-grid py-0.5 select-none',
                 currentCategories.length <= 8
                   ? 'grid grid-cols-4 gap-0'
-                  : 'grid grid-rows-2 grid-flow-col auto-cols-[calc(25%-6px)] gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
+                  : 'grid [scrollbar-width:none] auto-cols-[calc(25%-6px)] grid-flow-col grid-rows-2 gap-1 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
               )}
             >
               {currentCategories.map((cat, idx) => {
@@ -892,23 +892,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       setSelectedCatId(cat.id);
                     }}
                     className={cn(
-                      'flex flex-col items-center justify-center py-2 px-1 transition-all cursor-pointer select-none relative',
+                      'relative flex cursor-pointer flex-col items-center justify-center px-1 py-2 transition-all select-none',
                       hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
                       hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
                       isSelected
-                        ? 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs z-10'
-                        : 'text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-hover)/50'
+                        ? 'z-10 bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs'
+                        : 'text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
                     )}
                   >
-                    <div className="w-6 h-6 flex items-center justify-center mb-0.5">
+                    <div className="mb-0.5 flex size-6 items-center justify-center">
                       <IconComp
                         className={cn(
-                          'w-4 h-4 stroke-[1.8]',
+                          'stroke-1.8 size-4',
                           iconColor
                         )}
                       />
                     </div>
-                    <span className="text-[10px] leading-tight truncate w-full text-center">
+                    <span className="w-full truncate text-center text-[10px] leading-tight">
                       {cat.name}
                     </span>
                   </button>
@@ -918,8 +918,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
         </div>
 
-        <div className="px-4 py-1.5 border-t border-b border-dashed border-(--rule-hairline) space-y-1.5">
-          <div className="metadata-bar flex items-center justify-between gap-1 text-xs font-mono select-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap min-w-0">
+        <div className="space-y-1.5 border-y border-dashed border-(--rule-hairline) px-4 py-1.5">
+          <div className="metadata-bar flex min-w-0 [scrollbar-width:none] flex-nowrap items-center justify-between gap-1 overflow-x-auto font-mono text-xs select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
               onClick={() => {
@@ -930,17 +930,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsOffsetTrayOpen(false);
               }}
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
+                'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--paper-sunken) px-2.5 py-1 transition-colors',
                 isAcctTrayOpen
-                  ? 'text-(--ink-solid) font-semibold shadow-2xs'
+                  ? 'font-semibold text-(--ink-solid) shadow-2xs'
                   : 'text-(--ink-secondary) hover:text-(--ink-primary)'
               )}
             >
-              <span className="max-w-[76px] truncate">{activeAccount?.name || '选择账户'}</span>
+              <span className="max-w-19 truncate">{activeAccount?.name || '选择账户'}</span>
               <span className="text-[9px] opacity-60">▾</span>
             </button>
 
-            <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
+            <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
 
             <button
               type="button"
@@ -952,9 +952,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsOffsetTrayOpen(false);
               }}
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
+                'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--paper-sunken) px-2.5 py-1 transition-colors',
                 isDtTrayOpen
-                  ? 'text-(--ink-solid) font-semibold shadow-2xs'
+                  ? 'font-semibold text-(--ink-solid) shadow-2xs'
                   : 'text-(--ink-secondary) hover:text-(--ink-primary)'
               )}
             >
@@ -964,7 +964,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             {txType === 'expense' && (
               <>
-                <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
+                <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
                 {(isReimbursementEnabled || isReimbursable) && (
                   <button
                     type="button"
@@ -978,9 +978,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       });
                     }}
                     className={cn(
-                      'px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
+                      'shrink-0 cursor-pointer rounded-(--btn-radius) px-2.5 py-1 transition-colors',
                       isReimbursable
-                        ? 'bg-(--color-expense-bg) text-(--color-expense) font-semibold'
+                        ? 'bg-(--color-expense-bg) font-semibold text-(--color-expense)'
                         : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
                     )}
                   >
@@ -990,7 +990,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
                 {(isReimbursable || Boolean(voucher)) && (
                   <>
-                    <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
+                    <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1004,12 +1004,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         }
                       }}
                       className={cn(
-                        'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sunken) transition-colors cursor-pointer shrink-0',
-                        voucher ? 'text-(--brass-metal) font-semibold' : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                        'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--paper-sunken) px-2.5 py-1 transition-colors',
+                        voucher ? 'font-semibold text-(--brass-metal)' : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
                       )}
                       title={voucher ? voucher.name : '添加凭证附件'}
                     >
-                      <Paperclip className="w-3 h-3 stroke-2" />
+                      <Paperclip className="size-3 stroke-2" />
                       <span className="shrink-0">{voucher ? '已附凭证' : '凭证'}</span>
                     </button>
                   </>
@@ -1017,7 +1017,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
                 {(isAmortizationEnabled || Boolean(amortizeMonths)) && (
                   <>
-                    <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
+                    <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1027,9 +1027,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         setIsVoucherTrayOpen(false);
                       }}
                       className={cn(
-                        'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
-                        amortizeMonths && 'bg-(--paper-sunken) text-(--ink-primary) font-semibold shadow-2xs',
-                        !amortizeMonths && isAmortizeTrayOpen && 'text-(--ink-solid) font-semibold',
+                        'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) px-2.5 py-1 transition-colors',
+                        amortizeMonths && 'bg-(--paper-sunken) font-semibold text-(--ink-primary) shadow-2xs',
+                        !amortizeMonths && isAmortizeTrayOpen && 'font-semibold text-(--ink-solid)',
                         !amortizeMonths && !isAmortizeTrayOpen && 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
                       )}
                     >
@@ -1043,7 +1043,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             {txType === 'income' && (
               <>
-                <span className="metadata-sep text-(--ink-faint) shrink-0 select-none">·</span>
+                <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -1052,13 +1052,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     setIsDtTrayOpen(false);
                   }}
                   className={cn(
-                    'flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) transition-colors cursor-pointer shrink-0',
-                    offsetTransactionId && 'bg-(--color-income-bg) text-(--color-income) font-semibold shadow-2xs',
-                    !offsetTransactionId && isOffsetTrayOpen && 'bg-(--paper-sunken) text-(--ink-solid) font-semibold shadow-2xs',
+                    'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) px-2.5 py-1 transition-colors',
+                    offsetTransactionId && 'bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs',
+                    !offsetTransactionId && isOffsetTrayOpen && 'bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs',
                     !offsetTransactionId && !isOffsetTrayOpen && 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
                   )}
                 >
-                  <span className="max-w-[88px] truncate">
+                  <span className="max-w-22 truncate">
                     {selectedOffsetTx
                       ? `抵扣 · ${selectedOffsetTx.note || categories.find((c) => c.id === selectedOffsetTx.categoryId)?.name || '支出'}`
                       : '抵扣支出'}
@@ -1080,23 +1080,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
 
           {isVoucherTrayOpen && voucher && (
-            <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 flex items-center justify-between gap-2 text-xs font-mono">
+            <div className="flex items-center justify-between gap-2 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs">
               <div className="min-w-0 flex-1">
-                <div className="text-(--ink-primary) font-medium truncate">{voucher.name}</div>
+                <div className="truncate font-medium text-(--ink-primary)">{voucher.name}</div>
                 <div className="text-[10px] text-(--ink-tertiary)">{voucher.size}</div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setIsVoucherPreviewOpen(true)}
-                  className="px-2.5 py-1 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-[11px] font-semibold cursor-pointer"
+                  className="cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-2.5 py-1 text-[11px] font-semibold text-(--btn-primary-fg)"
                 >
                   查看
                 </button>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-2 py-1 rounded-(--btn-radius) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary) text-[11px] cursor-pointer"
+                  className="cursor-pointer rounded-(--btn-radius) bg-(--paper-sunken) px-2 py-1 text-[11px] text-(--ink-secondary) hover:text-(--ink-primary)"
                 >
                   更换
                 </button>
@@ -1106,7 +1106,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     setVoucher(null);
                     setIsVoucherTrayOpen(false);
                   }}
-                  className="px-2 py-1 rounded-(--btn-radius) bg-(--color-expense-bg) text-(--color-expense) text-[11px] cursor-pointer"
+                  className="cursor-pointer rounded-(--btn-radius) bg-(--color-expense-bg) px-2 py-1 text-[11px] text-(--color-expense)"
                 >
                   移除
                 </button>
@@ -1115,7 +1115,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
 
           {isAcctTrayOpen && (
-            <div className="pt-2 pb-0.5 border-t border-dashed border-(--rule-hairline)/60">
+            <div className="border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-0.5">
               <div className="flex flex-wrap items-center gap-1.5">
                 {accounts.map((a) => (
                   <button
@@ -1126,10 +1126,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       setIsAcctTrayOpen(false);
                     }}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) max-w-[140px] truncate transition-all cursor-pointer border',
+                      'max-w-35 cursor-pointer truncate rounded-(--btn-radius) border px-2.5 py-1 font-mono text-xs transition-all',
                       selectedAcctId === a.id
-                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
-                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
+                        ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
+                        : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
                     )}
                   >
                     {a.name}
@@ -1168,15 +1168,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
 
           {isDtTrayOpen && (
-            <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none font-mono text-xs">
-              <div className="flex items-center gap-1.5 text-[11px] text-(--ink-tertiary) px-0.5">
+            <div className="space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
+              <div className="flex items-center gap-1.5 px-0.5 text-[11px] text-(--ink-tertiary)">
                 <button
                   type="button"
                   onClick={() => setDateDelta(0)}
                   className={cn(
-                    'px-2.5 py-0.5 rounded-[3px] transition-colors cursor-pointer',
+                    'cursor-pointer rounded-[3px] px-2.5 py-0.5 transition-colors',
                     dateStr === todayStr
-                      ? 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-2xs'
+                      ? 'bg-(--ink-solid) font-semibold text-(--paper-sheet) shadow-2xs'
                       : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-primary)'
                   )}
                 >
@@ -1186,9 +1186,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   type="button"
                   onClick={() => setDateDelta(-1)}
                   className={cn(
-                    'px-2.5 py-0.5 rounded-[3px] transition-colors cursor-pointer',
+                    'cursor-pointer rounded-[3px] px-2.5 py-0.5 transition-colors',
                     dateStr === yesterdayStr
-                      ? 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-2xs'
+                      ? 'bg-(--ink-solid) font-semibold text-(--paper-sheet) shadow-2xs'
                       : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-primary)'
                   )}
                 >
@@ -1198,9 +1198,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   type="button"
                   onClick={() => setDateDelta(-2)}
                   className={cn(
-                    'px-2.5 py-0.5 rounded-[3px] transition-colors cursor-pointer',
+                    'cursor-pointer rounded-[3px] px-2.5 py-0.5 transition-colors',
                     dateStr === beforeYesterdayStr
-                      ? 'bg-(--ink-solid) text-(--paper-sheet) font-semibold shadow-2xs'
+                      ? 'bg-(--ink-solid) font-semibold text-(--paper-sheet) shadow-2xs'
                       : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-primary)'
                   )}
                 >
@@ -1231,13 +1231,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <PluginSlot name="tx.modal.metaTray" context={modalContext} />
 
           {txType === 'loan' && selectedLoanFlow.role === 'repayment' && settlementSummary && (
-            <div className="pt-1 text-[11px] font-mono text-(--ink-secondary)">
+            <div className="pt-1 font-mono text-[11px] text-(--ink-secondary)">
               <div className="flex items-center gap-1.5">
                 <span className="text-(--ink-tertiary)">关联借据:</span>
                 <select
                   value={relatedLoanId}
                   onChange={(e) => setRelatedLoanId(e.target.value)}
-                  className="bg-(--paper-sunken) text-(--ink-primary) rounded-xs px-1.5 py-0.5 text-xs outline-none cursor-pointer"
+                  className="cursor-pointer rounded-xs bg-(--paper-sunken) px-1.5 py-0.5 text-xs text-(--ink-primary) outline-none"
                 >
                   <option value="none">无关联 (单笔独立借贷)</option>
                   {settlementSummary.pendingLoans.map((l: Transaction) => (
@@ -1257,7 +1257,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="添加备注..."
-            className="w-full py-1 text-xs bg-transparent border-b border-dashed border-(--rule-hairline) focus:border-(--ink-tertiary) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none transition-colors"
+            className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
           />
         </div>
 
