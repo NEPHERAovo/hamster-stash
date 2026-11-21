@@ -3,6 +3,7 @@ import { ArrowsLeftRightIcon as ArrowLeftRight, TrashIcon as Trash2 } from '@pho
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperSelect } from '../ui/PaperSelect';
+import { PaperInput } from '../ui/PaperInput';
 import { AmountInput } from '../ui/AmountInput';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
@@ -200,23 +201,21 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
         <div className="space-y-1.5">
           <label className="font-mono text-xs text-(--ink-tertiary)">划转日期</label>
-          <input
+          <PaperInput
             type="date"
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
-            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 font-mono text-xs text-(--ink-primary) outline-none"
+            inputClassName="font-mono text-xs"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="font-mono text-xs text-(--ink-tertiary)">划转备注</label>
-          <input
-            type="text"
+          <PaperInput
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="添加备注"
             maxLength={30}
-            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-xs text-(--ink-primary) outline-none placeholder:text-(--ink-faint)"
           />
         </div>
 

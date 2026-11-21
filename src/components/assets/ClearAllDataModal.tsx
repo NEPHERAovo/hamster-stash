@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { WarningIcon as AlertTriangle } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
+import { PaperInput } from '../ui/PaperInput';
+import { PaperButton } from '../ui/PaperButton';
 import { toast } from '../../stores/useToastStore';
 
 export interface ClearAllDataModalProps {
@@ -80,20 +82,22 @@ export const ClearAllDataModal: React.FC<ClearAllDataModalProps> = ({
             </button>
 
             <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-              <button
+              <PaperButton
                 type="button"
+                variant="sunken"
+                className="flex-1"
                 onClick={handleClose}
-                className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
               >
                 取消
-              </button>
-              <button
+              </PaperButton>
+              <PaperButton
                 type="button"
+                variant="danger"
+                className="flex-1"
                 onClick={() => setStep(2)}
-                className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--color-expense) text-xs font-semibold text-white"
               >
                 我已了解，继续清空
-              </button>
+              </PaperButton>
             </div>
           </>
         ) : (
@@ -106,8 +110,7 @@ export const ClearAllDataModal: React.FC<ClearAllDataModalProps> = ({
                 </span>{' '}
                 以解锁清空按钮：
               </p>
-              <input
-                type="text"
+              <PaperInput
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -118,29 +121,33 @@ export const ClearAllDataModal: React.FC<ClearAllDataModalProps> = ({
                 }}
                 placeholder={`请输入 ${CONFIRM_PHRASE}`}
                 autoFocus
-                className="h-10 w-full rounded-(--input-radius) border border-(--color-expense)/40 bg-(--paper-sunken) px-3 font-mono text-sm text-(--ink-primary) outline-none placeholder:text-(--ink-faint) focus:border-(--color-expense)"
+                className="border-(--color-expense)/40 focus-within:border-(--color-expense)"
+                inputClassName="font-mono"
               />
             </div>
 
             <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-              <button
+              <PaperButton
                 type="button"
+                variant="sunken"
+                className="flex-1"
                 onClick={() => {
                   setStep(1);
                   setConfirmInput('');
                 }}
-                className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
               >
                 返回上一步
-              </button>
-              <button
+              </PaperButton>
+              <PaperButton
                 type="button"
+                variant="danger"
+                className="flex-1"
                 disabled={!isPhraseMatched || isClearing}
+                loading={isClearing}
                 onClick={handleExecuteClear}
-                className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--color-expense) text-xs font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
               >
                 {isClearing ? '清空中...' : '永久清空所有数据'}
-              </button>
+              </PaperButton>
             </div>
           </>
         )}

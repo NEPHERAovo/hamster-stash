@@ -13,6 +13,9 @@ import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperSwitch } from '../ui/PaperSwitch';
+import { PaperButton } from '../ui/PaperButton';
+import { PaperInput } from '../ui/PaperInput';
+import { PaperChip } from '../ui/PaperChip';
 import { ClearAllDataModal } from './ClearAllDataModal';
 import { PwaInstallGuideModal } from './PwaInstallGuideModal';
 import { pluginManager } from '../../core/plugin/PluginManager';
@@ -453,61 +456,52 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       >
         <div className="space-y-4 p-4">
           <div className="flex flex-wrap gap-2">
-            {[100, 200, 500, 1000, 2000].map((preset) => {
-              const isSelected = Number(majorInput) === preset;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setMajorInput(String(preset))}
-                  className={cn(
-                    'cursor-pointer rounded-(--btn-radius) border px-3 py-1.5 font-mono text-xs transition-all',
-                    isSelected
-                      ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                      : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                  )}
-                >
-                  ¥{preset}
-                </button>
-              );
-            })}
+            {[100, 200, 500, 1000, 2000].map((preset) => (
+              <PaperChip
+                key={preset}
+                selected={Number(majorInput) === preset}
+                onClick={() => setMajorInput(String(preset))}
+              >
+                ¥{preset}
+              </PaperChip>
+            ))}
           </div>
 
           <div className="space-y-1.5">
             <label className="font-mono text-xs text-(--ink-tertiary)">自定义金额</label>
-            <div className="flex h-10 items-center gap-2 rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3">
-              <span className="font-mono text-sm text-(--ink-tertiary)">¥</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={majorInput}
-                onChange={(e) => setMajorInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing || e.key === 'Process' || e.keyCode === 229) return;
-                  if (e.key === 'Enter') handleSaveMajorThreshold();
-                }}
-                placeholder="输入金额"
-                className="flex-1 bg-transparent font-mono text-sm font-semibold text-(--ink-primary) outline-none"
-              />
-            </div>
+            <PaperInput
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={majorInput}
+              onChange={(e) => setMajorInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing || e.key === 'Process' || e.keyCode === 229) return;
+                if (e.key === 'Enter') handleSaveMajorThreshold();
+              }}
+              placeholder="输入金额"
+              leftIcon={<span className="font-mono text-sm text-(--ink-tertiary)">¥</span>}
+              inputClassName="font-mono font-semibold"
+            />
           </div>
 
           <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-            <button
+            <PaperButton
               type="button"
+              variant="sunken"
+              className="flex-1"
               onClick={() => setIsMajorModalOpen(false)}
-              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
             >
               取消
-            </button>
-            <button
+            </PaperButton>
+            <PaperButton
               type="button"
+              variant="primary"
+              className="flex-1"
               onClick={handleSaveMajorThreshold}
-              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg)"
             >
               保存
-            </button>
+            </PaperButton>
           </div>
         </div>
       </PaperModal>
@@ -538,21 +532,24 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </p>
 
           <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-            <button
+            <PaperButton
               type="button"
+              variant="sunken"
+              className="flex-1"
               onClick={() => setIsBackupConfirmOpen(false)}
-              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
             >
               取消
-            </button>
-            <button
+            </PaperButton>
+            <PaperButton
               type="button"
+              variant="primary"
+              className="flex-1"
               disabled={isExportingBackup}
+              loading={isExportingBackup}
               onClick={handleExportJson}
-              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-50"
             >
               {isExportingBackup ? '导出中...' : '确认导出备份'}
-            </button>
+            </PaperButton>
           </div>
         </div>
       </PaperModal>

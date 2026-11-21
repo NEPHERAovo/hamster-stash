@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
+import { PaperIconButton } from '../ui/PaperIconButton';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
 
@@ -103,30 +104,21 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
           </span>
           {(onStepPrev || onStepNext) && (
             <div className="flex items-center gap-1">
-              <button
-                type="button"
+              <PaperIconButton
+                size="sm"
+                icon={ChevronLeft}
                 onClick={onStepPrev}
-                className="flex size-5.5 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) font-mono text-(--ink-secondary) shadow-2xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                 title="上个月"
                 aria-label="上个月"
-              >
-                <ChevronLeft className="size-3 stroke-2" />
-              </button>
-              <button
-                type="button"
+              />
+              <PaperIconButton
+                size="sm"
+                icon={ChevronRight}
                 onClick={onStepNext}
                 disabled={!canStepNext}
-                className={cn(
-                  'flex size-5.5 items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) font-mono text-(--ink-secondary) shadow-2xs transition-all',
-                  canStepNext
-                    ? 'cursor-pointer hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95'
-                    : 'pointer-events-none cursor-not-allowed opacity-35'
-                )}
                 title="下个月"
                 aria-label="下个月"
-              >
-                <ChevronRight className="size-3 stroke-2" />
-              </button>
+              />
             </div>
           )}
         </div>

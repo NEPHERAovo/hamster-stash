@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { PaperModal } from '../ui/PaperModal';
+import { PaperInput } from '../ui/PaperInput';
+import { PaperChip } from '../ui/PaperChip';
+import { PaperButton } from '../ui/PaperButton';
 import { core } from '../../core';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 import { toast } from '../../stores/useToastStore';
-import { cn } from '../../utils/cn';
 import { dayjs, todayDate } from '../../utils/date';
 
 export interface ExportCsvModalProps {
@@ -121,44 +123,37 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
     >
       <div className="space-y-4 p-4 select-none">
         <div className="flex flex-wrap gap-1.5">
-          {RANGE_OPTIONS.map((opt) => {
-            const isSelected = rangeMode === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setRangeMode(opt.value)}
-                className={cn(
-                  'cursor-pointer rounded-(--btn-radius) border px-3 py-1.5 text-xs transition-all',
-                  isSelected
-                    ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                    : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                )}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+          {RANGE_OPTIONS.map((opt) => (
+            <PaperChip
+              key={opt.value}
+              selected={rangeMode === opt.value}
+              onClick={() => setRangeMode(opt.value)}
+            >
+              {opt.label}
+            </PaperChip>
+          ))}
         </div>
 
         {rangeMode === 'custom' && (
           <div className="picker-fade-enter grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="font-mono text-[11px] text-(--ink-tertiary)">开始日期</label>
-              <input
+              <PaperInput
                 type="date"
+                size="sm"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 font-mono text-xs text-(--ink-primary) outline-none"
+                inputClassName="font-mono text-xs"
               />
             </div>
             <div className="space-y-1">
               <label className="font-mono text-[11px] text-(--ink-tertiary)">结束日期</label>
-              <input
+              <PaperInput
                 type="date"
+                size="sm"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 font-mono text-xs text-(--ink-primary) outline-none"
+                inputClassName="font-mono text-xs"
               />
             </div>
           </div>
@@ -176,21 +171,24 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
         </div>
 
         <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-          <button
+          <PaperButton
             type="button"
+            variant="sunken"
+            className="flex-1"
             onClick={onClose}
-            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
           >
             取消
-          </button>
-          <button
+          </PaperButton>
+          <PaperButton
             type="button"
+            variant="primary"
+            className="flex-1"
             disabled={isExporting || isRangeInvalid || matchedCount === 0}
+            loading={isExporting}
             onClick={handleConfirmExport}
-            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-45"
           >
             {isExporting ? '导出中...' : '确认导出'}
-          </button>
+          </PaperButton>
         </div>
       </div>
     </PaperModal>

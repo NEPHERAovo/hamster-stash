@@ -14,3 +14,7 @@ export * from './ThemeSelector';
 export * from './Toast';
 export * from './ConfirmDialog';
 export * from './PaperDayPicker';
+export * from './PaperIconButton';
+export * from './PaperChip';
+export * from './PaperEmptyState';
+export * from './PaperSelect';

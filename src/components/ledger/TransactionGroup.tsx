@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { MagnifyingGlassIcon as Search, XIcon as X } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
 import { PaperTransactionGroup } from './PaperTransactionGroup';
 import { ModernTransactionGroup } from './ModernTransactionGroup';
 import { SegToggle } from '../ui/SegToggle';
+import { PaperInput } from '../ui/PaperInput';
+import { PaperEmptyState } from '../ui/PaperEmptyState';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useThemeStore } from '../../stores/useThemeStore';
@@ -208,19 +210,12 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     }
 
     return (
-      <div
-        className={cn(
-          contained ? 'mx-0' : 'mx-4',
-          'my-4 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)]',
-          shouldAnimateEmpty && 'filter-fade-enter'
-        )}
-      >
-        <div className="rounded-xs border border-dashed border-(--rule-hairline) px-4 py-8">
-          <p className="text-xs font-semibold text-(--ink-tertiary)">
-            {searchQuery ? '未找到匹配的流水' : '暂无流水记录'}
-          </p>
-        </div>
-      </div>
+      <PaperEmptyState
+        title={searchQuery ? '未找到匹配的流水' : '暂无流水记录'}
+        variant="dashed"
+        animate={shouldAnimateEmpty}
+        className={contained ? 'mx-0' : 'mx-4'}
+      />
     );
   };
 
@@ -228,25 +223,17 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     <div className="w-full">
       <div className={cn(contained ? 'mt-0 px-0 py-1' : 'mt-2 px-4 pt-3 pb-1', 'space-y-2 select-none')}>
         <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-(--ink-tertiary)" />
-            <input
-              type="text"
+          <div className="min-w-0 flex-1">
+            <PaperInput
+              size="sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索备注、分类、账户..."
-              className="h-7.5 w-full rounded-(--input-radius) border-none bg-(--paper-sunken)/70 px-7 font-mono text-xs text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:bg-(--paper-sunken)"
+              leftIcon={<Search className="size-3.5" />}
+              clearable
+              onClear={() => setSearchQuery('')}
+              inputClassName="font-mono"
             />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer p-0.5 text-(--ink-tertiary) hover:text-(--ink-primary)"
-                title="清空搜索"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
           </div>
 
           <div className="shrink-0">

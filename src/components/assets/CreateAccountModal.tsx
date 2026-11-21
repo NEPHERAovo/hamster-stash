@@ -5,6 +5,9 @@ import { AmountInput } from '../ui/AmountInput';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperSwitch } from '../ui/PaperSwitch';
 import { PaperDayPicker } from '../ui/PaperDayPicker';
+import { PaperInput } from '../ui/PaperInput';
+import { PaperChip } from '../ui/PaperChip';
+import { PaperButton } from '../ui/PaperButton';
 import type { Account, AccountType } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
@@ -219,8 +222,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
         <div className="space-y-1.5">
           <label className="font-mono text-xs text-(--ink-tertiary)">账户名称</label>
-          <input
-            type="text"
+          <PaperInput
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={
@@ -230,19 +232,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             }
             maxLength={24}
             autoFocus
-            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="font-mono text-xs text-(--ink-tertiary)">账户备注</label>
-          <input
-            type="text"
+          <PaperInput
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="添加备注"
             maxLength={30}
-            className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
           />
         </div>
 
@@ -372,36 +371,21 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 <div className="text-xs text-(--ink-tertiary)">暂无可用储蓄账户</div>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
+                  <PaperChip
+                    selected={!repaymentAccountId}
                     onClick={() => setRepaymentAccountId(undefined)}
-                    className={cn(
-                      'cursor-pointer rounded-(--btn-radius) border px-2.5 py-1 text-xs transition-all',
-                      !repaymentAccountId
-                        ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                        : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                    )}
                   >
                     未关联
-                  </button>
-                  {availableSavingsAccounts.map((a) => {
-                    const isSelected = repaymentAccountId === a.id;
-                    return (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => setRepaymentAccountId(a.id)}
-                        className={cn(
-                          'cursor-pointer truncate rounded-(--btn-radius) border px-2.5 py-1 text-xs transition-all',
-                          isSelected
-                            ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                            : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                        )}
-                      >
-                        {a.name}
-                      </button>
-                    );
-                  })}
+                  </PaperChip>
+                  {availableSavingsAccounts.map((a) => (
+                    <PaperChip
+                      key={a.id}
+                      selected={repaymentAccountId === a.id}
+                      onClick={() => setRepaymentAccountId(a.id)}
+                    >
+                      {a.name}
+                    </PaperChip>
+                  ))}
                 </div>
               )}
             </div>
@@ -455,20 +439,23 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-          <button
+          <PaperButton
             type="button"
+            variant="sunken"
+            className="flex-1"
             onClick={handleClose}
-            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
           >
             取消
-          </button>
-          <button
+          </PaperButton>
+          <PaperButton
             type="submit"
+            variant="primary"
+            className="flex-1"
             disabled={isSubmitting}
-            className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-50"
+            loading={isSubmitting}
           >
             {submitLabel}
-          </button>
+          </PaperButton>
         </div>
       </form>
     </PaperModal>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useConfirmStore } from '../../stores/useConfirmStore';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { PaperButton } from './PaperButton';
 import { cn } from '../../utils/cn';
 
 export const ConfirmDialog: React.FC = () => {
@@ -83,25 +84,24 @@ export const ConfirmDialog: React.FC = () => {
         </div>
 
         <div className="mt-1 flex items-center gap-2.5 border-t border-dashed border-(--rule-hairline)/60 pt-4">
-          <button
+          <PaperButton
             type="button"
+            variant="sunken"
+            size="sm"
+            className="flex-1"
             onClick={() => handleResolve(false)}
-            className="h-9 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) transition-all hover:bg-(--paper-sunken)/80 hover:text-(--ink-primary) active:scale-95"
           >
             {options.cancelText || '取消'}
-          </button>
-          <button
+          </PaperButton>
+          <PaperButton
             type="button"
+            variant={options.isDestructive ? 'danger' : 'primary'}
+            size="sm"
+            className="flex-1"
             onClick={() => handleResolve(true)}
-            className={cn(
-              'h-9 flex-1 cursor-pointer rounded-(--btn-radius) text-xs font-semibold shadow-xs transition-all active:scale-95',
-              options.isDestructive
-                ? 'bg-(--color-expense) text-(--paper-sheet) hover:opacity-90'
-                : 'bg-(--btn-primary-bg) text-(--btn-primary-fg)'
-            )}
           >
             {options.confirmText || '确定'}
-          </button>
+          </PaperButton>
         </div>
       </div>
     </div>,

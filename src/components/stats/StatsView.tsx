@@ -20,10 +20,11 @@ import { CategoryDetailSubPage } from './CategoryDetailSubPage';
 import { SubPageShell, SubPageBackButton } from '../layout/SubPageShell';
 import { PageHeader } from '../layout/PageHeader';
 import { SegToggle } from '../ui/SegToggle';
+import { PaperIconButton } from '../ui/PaperIconButton';
+import { PaperEmptyState } from '../ui/PaperEmptyState';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
-import { cn } from '../../utils/cn';
 
 export interface CategoryDrilldownData {
   category: Category;
@@ -242,37 +243,28 @@ export const StatsView: React.FC<StatsViewProps> = ({
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
+            <PaperIconButton
+              icon={ChevronLeft}
               onClick={handlePrevPeriod}
-              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) font-mono text-(--ink-secondary) shadow-xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
               title="上个周期"
               aria-label="上个周期"
-            >
-              <ChevronLeft className="size-3.5 stroke-2" />
-            </button>
-            <button
-              type="button"
+            />
+            <PaperIconButton
+              icon={ChevronRight}
               onClick={handleNextPeriod}
-              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) font-mono text-(--ink-secondary) shadow-xs transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
               title="下个周期"
               aria-label="下个周期"
-            >
-              <ChevronRight className="size-3.5 stroke-2" />
-            </button>
+            />
           </div>
         </div>
 
         {totalExpense === 0 ? (
-          <div
-            className={cn(
-              'paper-card flex w-full flex-col items-center gap-1.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center text-xs text-(--ink-tertiary) shadow-xs transition-all duration-200 select-none',
-              shouldAnimateEmptyExpense && 'filter-fade-enter'
-            )}
-          >
-            <PieChart className="stroke-1.5 size-6 text-(--ink-faint)" />
-            <span>本周期暂无支出记录</span>
-          </div>
+          <PaperEmptyState
+            icon={PieChart}
+            title="本周期暂无支出记录"
+            variant="card"
+            animate={shouldAnimateEmptyExpense}
+          />
         ) : (
           <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-5">
             <div className="flex items-center justify-between">

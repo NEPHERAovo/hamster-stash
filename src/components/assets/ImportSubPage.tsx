@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { UploadSimpleIcon as FileUp, CheckIcon as Check, WarningCircleIcon as AlertCircle, ArrowRightIcon as ArrowRight, ArrowLeftIcon as ArrowLeft, PlusIcon as Plus, SparkleIcon as Sparkles, SlidersIcon as Sliders, ArrowsClockwiseIcon as RefreshCw, FolderSimpleIcon as FolderSync } from '@phosphor-icons/react';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperSelect } from '../ui/PaperSelect';
+import { PaperSwitch } from '../ui/PaperSwitch';
 import { parseCsv, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {
   inferColumnMapping,
@@ -733,17 +734,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
               </PaperSelect>
             </div>
 
-            <label className="flex cursor-pointer items-center gap-2 border-t border-(--rule-hairline) pt-2.5">
-              <input
-                type="checkbox"
-                checked={autoCreateAccounts}
-                onChange={(e) => setAutoCreateAccounts(e.target.checked)}
-                className="rounded text-(--ink-primary)"
-              />
+            <div className="flex items-center justify-between border-t border-(--rule-hairline) pt-2.5">
               <span className="font-semibold text-(--ink-primary)">
                 自动创建表格中出现的新账户
               </span>
-            </label>
+              <PaperSwitch
+                checked={autoCreateAccounts}
+                onChange={setAutoCreateAccounts}
+                aria-label="自动创建表格中出现的新账户"
+              />
+            </div>
           </div>
 
           {previewData.some((r) => r.isReimbursable) && !isReimbursementEnabled && (

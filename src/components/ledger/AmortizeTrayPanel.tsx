@@ -1,7 +1,7 @@
 import React from 'react';
 import { evaluateArithmetic } from '../../utils/math';
 import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator';
-import { cn } from '../../utils/cn';
+import { PaperChip } from '../ui/PaperChip';
 
 export interface AmortizeTrayPanelProps {
   expr: string;
@@ -35,19 +35,13 @@ export const AmortizeTrayPanel: React.FC<AmortizeTrayPanelProps> = ({
     <div className="picker-fade-enter space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
       <div className="flex flex-wrap items-center gap-1.5">
         {AMORTIZE_PRESETS.map((opt) => (
-          <button
+          <PaperChip
             key={opt.label}
-            type="button"
+            selected={amortizeMonths === opt.months && !isCustomAmortize}
             onClick={() => onSelectMonths(opt.months)}
-            className={cn(
-              'cursor-pointer rounded-(--btn-radius) border px-2.5 py-1 font-mono text-xs transition-all',
-              amortizeMonths === opt.months && !isCustomAmortize
-                ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
-                : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
-            )}
           >
             {opt.label}
-          </button>
+          </PaperChip>
         ))}
 
         {isCustomAmortize ? (
@@ -66,8 +60,8 @@ export const AmortizeTrayPanel: React.FC<AmortizeTrayPanelProps> = ({
             <span className="text-[11px] text-(--ink-tertiary)">期</span>
           </div>
         ) : (
-          <button
-            type="button"
+          <PaperChip
+            selected={amortizeMonths !== null && ![3, 6, 12, 24, 36].includes(amortizeMonths)}
             onClick={() => {
               const initVal =
                 amortizeMonths && ![3, 6, 12, 24, 36].includes(amortizeMonths)
@@ -75,17 +69,11 @@ export const AmortizeTrayPanel: React.FC<AmortizeTrayPanelProps> = ({
                   : '';
               onCustomAmortizeToggle(true, initVal);
             }}
-            className={cn(
-              'cursor-pointer rounded-(--btn-radius) border px-2.5 py-1 font-mono text-xs transition-all',
-              amortizeMonths !== null && ![3, 6, 12, 24, 36].includes(amortizeMonths)
-                ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
-                : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
-            )}
           >
             {amortizeMonths && ![3, 6, 12, 24, 36].includes(amortizeMonths)
               ? `${amortizeMonths}期`
               : '自定义'}
-          </button>
+          </PaperChip>
         )}
       </div>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { XIcon as X, DownloadSimpleIcon as Download, ArrowSquareOutIcon as ExternalLink, FileTextIcon as FileText, WarningCircleIcon as AlertCircle, ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react';
 import type { VoucherAttachment } from '../../types/transaction';
+import { PaperIconButton } from '../ui/PaperIconButton';
 import { attachmentStore } from '../../core/attachments/attachmentStore';
 import { syncService } from '../../domain/sync/syncService';
 
@@ -217,14 +218,14 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
                 <Download className="stroke-1.8 size-4" />
               </a>
             )}
-            <button
-              type="button"
+            <PaperIconButton
+              icon={X}
+              size="md"
+              variant="ghost"
               onClick={onClose}
-              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) text-(--ink-secondary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
               title="关闭预览"
-            >
-              <X className="size-4 stroke-2" />
-            </button>
+              aria-label="关闭预览"
+            />
           </div>
         </div>
 

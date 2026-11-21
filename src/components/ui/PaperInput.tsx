@@ -2,23 +2,27 @@ import React from 'react';
 import { XIcon as X } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
-export interface PaperInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface PaperInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   clearable?: boolean;
   onClear?: () => void;
   variant?: 'sunken' | 'surface' | 'ghost';
+  size?: 'sm' | 'md';
+  inputClassName?: string;
 }
 
 export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
   (
     {
       className,
+      inputClassName,
       leftIcon,
       rightIcon,
       clearable = false,
       onClear,
       variant = 'sunken',
+      size = 'md',
       value,
       disabled,
       ...props
@@ -31,13 +35,19 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
       ghost: 'bg-transparent border-transparent focus-within:border-(--rule-strong) focus-within:bg-(--paper-sheet)',
     };
 
+    const sizeStyles = {
+      sm: 'h-8 px-2.5 text-xs',
+      md: 'h-10 px-3 text-sm',
+    };
+
     const hasValue = value !== undefined && value !== null && value !== '';
 
     return (
       <div
         className={cn(
-          'relative flex h-10 items-center rounded-(--input-radius) border px-3 transition-all duration-200',
+          'relative flex items-center rounded-(--input-radius) border transition-all duration-200',
           variantStyles[variant],
+          sizeStyles[size],
           disabled && 'cursor-not-allowed opacity-50',
           className
         )}
@@ -52,7 +62,11 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
           ref={ref}
           value={value}
           disabled={disabled}
-          className="w-full flex-1 border-none bg-transparent text-sm text-(--ink-primary) outline-none placeholder:text-(--ink-faint)"
+          className={cn(
+            'w-full flex-1 border-none bg-transparent text-(--ink-primary) outline-none placeholder:text-(--ink-faint)',
+            size === 'sm' ? 'text-xs' : 'text-sm',
+            inputClassName
+          )}
           {...props}
         />
 

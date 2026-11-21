@@ -11,6 +11,8 @@ import { confirmAction } from '../../stores/useConfirmStore';
 import { SwipeableRow } from '../ui/SwipeableRow';
 import { PaperSwitch } from '../ui/PaperSwitch';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperInput } from '../ui/PaperInput';
+import { PaperIconButton } from '../ui/PaperIconButton';
 import { cn } from '../../utils/cn';
 
 const CATEGORY_ICON_CHOICES = [
@@ -660,14 +662,12 @@ export const CategoryManageSubPage: React.FC = () => {
         <form onSubmit={handleSave} className="space-y-4 p-4 select-none">
           <div className="space-y-1.5">
             <label className="font-mono text-xs text-(--ink-tertiary)">分类名称</label>
-            <input
-              type="text"
+            <PaperInput
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               placeholder="输入分类名称"
               maxLength={12}
               autoFocus
-              className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
             />
           </div>
 
@@ -697,31 +697,35 @@ export const CategoryManageSubPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 pt-1">
-            <button
+            <PaperButton
               type="button"
+              variant="sunken"
+              className="flex-1"
               onClick={() => setIsModalOpen(false)}
-              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary)"
             >
               取消
-            </button>
-            <button
+            </PaperButton>
+            <PaperButton
               type="submit"
+              variant="primary"
+              className="flex-1"
               disabled={isSaving}
-              className="h-10 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) disabled:opacity-50"
+              loading={isSaving}
             >
               {submitLabel}
-            </button>
+            </PaperButton>
           </div>
 
           {editingCat && (
             <div className="space-y-2 border-t border-(--rule-hairline) pt-2 pb-(--safe-bottom)">
-              <button
+              <PaperButton
                 type="button"
+                variant="secondary"
+                fullWidth
                 onClick={() => handleToggleFromModal(editingCat)}
-                className="flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) text-xs font-semibold text-(--ink-secondary) transition-colors hover:bg-(--paper-hover)"
               >
-                <span>{editingCat.isArchived ? '启用分类' : '停用分类'}</span>
-              </button>
+                {editingCat.isArchived ? '启用分类' : '停用分类'}
+              </PaperButton>
               <PaperButton
                 type="button"
                 variant="danger-ghost"
@@ -741,15 +745,16 @@ export const CategoryManageSubPage: React.FC = () => {
       </PaperModal>
 
       <div className="fixed right-6 bottom-6 z-40">
-        <button
-          type="button"
+        <PaperIconButton
+          icon={Plus}
+          size="lg"
+          variant="primary"
+          rounded="full"
+          className="size-12 shadow-[0_4px_14px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:scale-95"
           onClick={openCreateModal}
           title="新增分类"
           aria-label="新增分类"
-          className="flex size-12 cursor-pointer items-center justify-center rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-[0_4px_14px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 active:scale-95"
-        >
-          <Plus className="stroke-2.2 size-5" />
-        </button>
+        />
       </div>
     </div>
   );

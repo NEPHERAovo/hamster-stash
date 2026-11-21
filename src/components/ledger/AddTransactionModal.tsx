@@ -18,6 +18,10 @@ import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperIconButton } from '../ui/PaperIconButton';
+import { PaperChip } from '../ui/PaperChip';
+import { PaperSelect } from '../ui/PaperSelect';
+import { PaperInput } from '../ui/PaperInput';
 import { cn } from '../../utils/cn';
 import { readVoucherFile } from '../../utils/voucherFile';
 import {
@@ -792,14 +796,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </PaperButton>
             )}
 
-            <button
-              type="button"
+            <PaperIconButton
+              icon={X}
+              size="sm"
+              variant="ghost"
               onClick={() => closeWithAnimation(240)}
-              className="cursor-pointer rounded-xs p-1 text-(--ink-tertiary) transition-colors hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
               title="收拢便签"
-            >
-              <X className="size-4 stroke-2" />
-            </button>
+              aria-label="收拢便签"
+            />
           </div>
         </div>
 
@@ -1120,22 +1124,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <div className="picker-fade-enter border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-0.5">
               <div className="flex flex-wrap items-center gap-1.5">
                 {accounts.map((a) => (
-                  <button
+                  <PaperChip
                     key={a.id}
-                    type="button"
+                    selected={selectedAcctId === a.id}
                     onClick={() => {
                       setSelectedAcctId(a.id);
                       setIsAcctTrayOpen(false);
                     }}
-                    className={cn(
-                      'max-w-35 cursor-pointer truncate rounded-(--btn-radius) border px-2.5 py-1 font-mono text-xs transition-all',
-                      selectedAcctId === a.id
-                        ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
-                        : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
-                    )}
+                    className="max-w-35"
                   >
                     {a.name}
-                  </button>
+                  </PaperChip>
                 ))}
               </div>
             </div>
@@ -1236,10 +1235,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <div className="pt-1 font-mono text-[11px] text-(--ink-secondary)">
               <div className="flex items-center gap-1.5">
                 <span className="text-(--ink-tertiary)">关联借据:</span>
-                <select
+                <PaperSelect
                   value={relatedLoanId}
                   onChange={(e) => setRelatedLoanId(e.target.value)}
-                  className="cursor-pointer rounded-xs bg-(--paper-sunken) px-1.5 py-0.5 text-xs text-(--ink-primary) outline-none"
+                  className="py-1 text-xs"
                 >
                   <option value="none">无关联 (单笔独立借贷)</option>
                   {settlementSummary.pendingLoans.map((l: Transaction) => (
@@ -1247,19 +1246,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       {l.note || l.loanParty || '借款'} (¥{((l.amount - (l.repaidAmount || 0)) / 100).toFixed(2)})
                     </option>
                   ))}
-                </select>
+                </PaperSelect>
               </div>
             </div>
           )}
         </div>
 
         <div className="px-4 py-2">
-          <input
+          <PaperInput
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="添加备注..."
-            className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
+            variant="ghost"
+            size="sm"
+            className="rounded-none border-0 border-b border-dashed border-(--rule-hairline) px-0 py-1 transition-colors focus-within:border-(--ink-tertiary)"
+            inputClassName="text-xs text-(--ink-primary) placeholder:text-(--ink-faint)"
           />
         </div>
 
