@@ -52,7 +52,7 @@ const mockAccounts: Account[] = [
 ];
 
 describe('AccountList Component', () => {
-  it('renders savings and credit accounts with repayment day and auto repay badge', () => {
+  it('renders savings and credit accounts with repayment day and available credit', () => {
     const handleSelect = vi.fn();
     render(<AccountList accounts={mockAccounts} onSelectAccount={handleSelect} />);
 
@@ -62,7 +62,7 @@ describe('AccountList Component', () => {
     expect(screen.getByText('招商银行')).toBeInTheDocument();
     expect(screen.getByText('招行信用卡')).toBeInTheDocument();
     expect(screen.getByText('每月23日还款')).toBeInTheDocument();
-    expect(screen.getByText('自动还款')).toBeInTheDocument();
+    expect(screen.getByText('剩余可用 ¥18500.00')).toBeInTheDocument();
     expect(screen.getByText('-¥ 1500.00')).toBeInTheDocument();
   });
 

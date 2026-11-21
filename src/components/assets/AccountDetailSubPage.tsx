@@ -14,6 +14,7 @@ import { parseLocalDate, currentYearMonth, stepYearMonth } from '../../utils/dat
 import { computeAccountMonthlyBalanceTrends } from '../../domain/finance/periodStats';
 import { MonthlyTrendBar } from '../stats/MonthlyTrendBar';
 import { PaperSwitch } from '../ui/PaperSwitch';
+import { PaperButton } from '../ui/PaperButton';
 
 export interface AccountDetailSubPageProps {
   account: Account;
@@ -159,17 +160,6 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     };
   }, [accountTxs, account.id]);
 
-  const getAccountTypeName = (type: string) => {
-    switch (type) {
-      case 'ewallet': return '电子钱包';
-      case 'bank': return '储蓄卡';
-      case 'credit': return '信用卡';
-      case 'cash': return '现金钱包';
-      case 'investment': return '投资理财';
-      default: return '普通账户';
-    }
-  };
-
   const handleDeleteClick = async () => {
     if (accounts.length <= 1) {
       toast.error('系统至少需保留一个资金账户');
@@ -231,8 +221,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           <div>
             <div className="text-sm font-bold text-(--ink-primary)">{account.name}</div>
             <div className="font-mono text-[11px] text-(--ink-tertiary)">
-              {isCredit ? '信用账户 · ' : '储蓄账户 · '}
-              {getAccountTypeName(account.type)}
+              {isCredit ? '信用账户' : '储蓄账户'}
             </div>
           </div>
         </div>
@@ -312,10 +301,6 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
             <span className="font-medium text-(--ink-primary)">
               {isCredit ? '信用账户' : '储蓄账户'}
             </span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-(--ink-tertiary)">账户类型</span>
-            <span className="font-medium text-(--ink-primary)">{getAccountTypeName(account.type)}</span>
           </div>
 
           {isCredit && (
@@ -458,14 +443,15 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
 
       {onDeleteAccount && (
         <div className="flex justify-center pt-2 pb-6">
-          <button
+          <PaperButton
             type="button"
+            variant="danger-ghost"
+            size="sm"
+            leftIcon={<Trash2 className="stroke-1.8 size-3.5" />}
             onClick={handleDeleteClick}
-            className="flex cursor-pointer items-center gap-1.5 rounded-(--btn-radius) px-3 py-1.5 text-xs text-(--color-expense) opacity-80 transition-opacity hover:bg-(--color-expense-bg)/40 hover:underline hover:opacity-100"
           >
-            <Trash2 className="stroke-1.8 size-3.5" />
-            <span>删除此账户</span>
-          </button>
+            删除此账户
+          </PaperButton>
         </div>
       )}
     </div>

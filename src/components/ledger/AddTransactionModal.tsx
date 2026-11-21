@@ -17,6 +17,7 @@ import { AmortizeTrayPanel } from './AmortizeTrayPanel';
 import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { SegToggle } from '../ui/SegToggle';
+import { PaperButton } from '../ui/PaperButton';
 import { cn } from '../../utils/cn';
 import { readVoucherFile } from '../../utils/voucherFile';
 import {
@@ -779,15 +780,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           <div className="flex items-center gap-2">
             {editingTransaction && (
-              <button
+              <PaperButton
                 type="button"
+                variant="danger-ghost"
+                size="xs"
+                leftIcon={<Trash2 className="stroke-1.8 size-3.5" />}
                 onClick={handleDelete}
-                className="flex cursor-pointer items-center gap-1 rounded-xs px-1.5 py-0.5 font-mono text-[11px] text-(--color-expense) transition-colors hover:bg-(--color-expense-bg)"
                 title="删除此笔账单"
               >
-                <Trash2 className="stroke-1.8 size-3.5" />
-                <span>删除</span>
-              </button>
+                删除
+              </PaperButton>
             )}
 
             <button

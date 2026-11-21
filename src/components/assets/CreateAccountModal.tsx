@@ -33,19 +33,6 @@ export interface CreateAccountModalProps {
   onUpdate?: (id: string, patch: UpdateAccountInput) => Promise<void>;
 }
 
-const SAVINGS_ACCOUNT_TYPES: { value: AccountType; label: string; defaultIcon: string }[] = [
-  { value: 'bank', label: '储蓄卡', defaultIcon: 'landmark' },
-  { value: 'ewallet', label: '电子钱包', defaultIcon: 'wallet' },
-  { value: 'cash', label: '现金', defaultIcon: 'banknote' },
-  { value: 'investment', label: '投资理财', defaultIcon: 'trending-up' },
-  { value: 'other', label: '其他', defaultIcon: 'coins' },
-];
-
-const CREDIT_ACCOUNT_TYPES: { value: AccountType; label: string; defaultIcon: string }[] = [
-  { value: 'credit', label: '信用卡', defaultIcon: 'credit-card' },
-  { value: 'other', label: '信用消费', defaultIcon: 'credit-card' },
-];
-
 const ACCOUNT_ICONS = [
   'landmark',
   'wallet',
@@ -137,16 +124,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     }
   };
 
-  const handleSelectType = (nextType: AccountType) => {
-    setType(nextType);
-    const activeList =
-      accountCategory === 'credit' ? CREDIT_ACCOUNT_TYPES : SAVINGS_ACCOUNT_TYPES;
-    const matched = activeList.find((item) => item.value === nextType);
-    if (matched) {
-      setIcon(matched.defaultIcon);
-    }
-  };
-
   const handleConfirm = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
@@ -219,9 +196,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     submitLabel = '保存修改';
   }
 
-  const typeOptions =
-    accountCategory === 'credit' ? CREDIT_ACCOUNT_TYPES : SAVINGS_ACCOUNT_TYPES;
-
   return (
     <PaperModal
       isOpen={isOpen}
@@ -250,37 +224,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             onChange={(e) => setName(e.target.value)}
             placeholder={
               accountCategory === 'credit'
-                ? '例如：招行信用卡、花呗'
-                : '例如：微信零钱、工行卡、日常活钱'
+                ? '输入信用账户名称'
+                : '输入储蓄账户名称'
             }
             maxLength={24}
             autoFocus
             className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) transition-colors outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
           />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="font-mono text-xs text-(--ink-tertiary)">账户标签</label>
-          <div className="flex flex-wrap gap-1.5">
-            {typeOptions.map((item) => {
-              const isSelected = type === item.value;
-              return (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => handleSelectType(item.value)}
-                  className={cn(
-                    'cursor-pointer rounded-(--btn-radius) border px-3 py-1.5 text-xs transition-all',
-                    isSelected
-                      ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                      : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                  )}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         <div className="space-y-1.5">

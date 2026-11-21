@@ -10,6 +10,7 @@ import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { SwipeableRow } from '../ui/SwipeableRow';
 import { PaperSwitch } from '../ui/PaperSwitch';
+import { PaperButton } from '../ui/PaperButton';
 import { cn } from '../../utils/cn';
 
 const CATEGORY_ICON_CHOICES = [
@@ -663,7 +664,7 @@ export const CategoryManageSubPage: React.FC = () => {
               type="text"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
-              placeholder={activeType === 'expense' ? '例如：宠物、运动' : '例如：兼职、理财'}
+              placeholder="输入分类名称"
               maxLength={12}
               autoFocus
               className="h-10 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-3 text-sm text-(--ink-primary) outline-none placeholder:text-(--ink-faint) focus:border-(--ink-tertiary)"
@@ -721,17 +722,19 @@ export const CategoryManageSubPage: React.FC = () => {
               >
                 <span>{editingCat.isArchived ? '启用分类' : '停用分类'}</span>
               </button>
-              <button
+              <PaperButton
                 type="button"
+                variant="danger-ghost"
+                size="sm"
+                fullWidth
+                leftIcon={<Trash2 className="size-3.5 stroke-2" />}
                 onClick={() => {
                   setIsModalOpen(false);
                   handleRemove(editingCat);
                 }}
-                className="flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) text-xs font-semibold text-(--color-expense) transition-colors hover:bg-(--color-expense-bg)/40"
               >
-                <Trash2 className="size-3.5 stroke-2" />
-                <span>删除分类</span>
-              </button>
+                删除分类
+              </PaperButton>
             </div>
           )}
         </form>

@@ -25,23 +25,6 @@ interface SwipeableAccountRowProps {
   onDelete?: () => void;
 }
 
-const getAccountTypeLabel = (type: string) => {
-  switch (type) {
-    case 'ewallet':
-      return '电子钱包';
-    case 'bank':
-      return '储蓄卡';
-    case 'credit':
-      return '信用卡';
-    case 'cash':
-      return '现金';
-    case 'investment':
-      return '投资理财';
-    default:
-      return '账户';
-  }
-};
-
 const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   account,
   canDelete,
@@ -53,6 +36,10 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   const isCredit = isCreditAccount(account);
   const Icon = getCategoryIcon(account.icon || (isCredit ? 'credit-card' : 'wallet'));
   const isNegative = account.balance < 0;
+  const availableCreditCents =
+    isCredit && account.creditLimit !== undefined
+      ? Math.max(0, account.creditLimit + account.balance)
+      : undefined;
 
   const handleDelete = async () => {
     if (!canDelete) {
@@ -94,19 +81,16 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
             {account.name}
           </div>
           <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-(--ink-tertiary)">
-            <span>{getAccountTypeLabel(account.type)}</span>
             {isCredit && account.repaymentDay && (
               <span className="font-semibold text-(--color-accent)">
                 每月{account.repaymentDay}日还款
               </span>
             )}
-            {isCredit && account.autoRepay && (
-              <span className="rounded bg-(--color-income)/10 px-1 py-0.5 text-[9px] font-medium text-(--color-income)">
-                自动还款
-              </span>
+            {availableCreditCents !== undefined && (
+              <span>剩余可用 ¥{centsToYuan(availableCreditCents)}</span>
             )}
             {account.includeInNetWorth === false && (
-              <span className="text-(--ink-faint)">· 不计净资产</span>
+              <span className="text-(--ink-faint)">不计净资产</span>
             )}
           </div>
         </div>

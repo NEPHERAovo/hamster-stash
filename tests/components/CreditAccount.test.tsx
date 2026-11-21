@@ -55,12 +55,10 @@ describe('Credit Account Features', () => {
     fireEvent.click(screen.getByText('信用账户'));
 
     expect(screen.getByText('账户类型')).toBeInTheDocument();
-    expect(screen.getByText('账户标签')).toBeInTheDocument();
-    expect(screen.getByText('信用卡')).toBeInTheDocument();
     expect(screen.getByText('每月还款日')).toBeInTheDocument();
     expect(screen.getByText('自动还款')).toBeInTheDocument();
 
-    const nameInput = screen.getByPlaceholderText('例如：招行信用卡、花呗');
+    const nameInput = screen.getByPlaceholderText('输入信用账户名称');
     fireEvent.change(nameInput, { target: { value: '广发信用卡' } });
 
     const repaymentDayBtn = screen.getByText('每月还款日').closest('div')!.querySelector('button')!;

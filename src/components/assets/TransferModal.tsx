@@ -222,15 +222,15 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
         <div className="flex items-center gap-2 pt-2">
           {isEditing && onDelete && (
-            <button
+            <PaperButton
               type="button"
+              variant="danger"
+              size="icon"
               onClick={handleDelete}
               disabled={isSubmitting}
-              className="flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--color-expense-bg) px-3 font-mono text-xs text-(--color-expense) transition-all hover:opacity-90 active:scale-95"
               title="删除此笔划转"
-            >
-              <Trash2 className="stroke-1.8 size-4" />
-            </button>
+              leftIcon={<Trash2 className="stroke-1.8 size-4" />}
+            />
           )}
 
           <PaperButton

@@ -240,7 +240,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={kind === 'subscription' ? '例如：ChatGPT Plus、iCloud+、宽带' : '例如：MacBook、咖啡机、公路车'}
+              placeholder={kind === 'subscription' ? '输入服务名称' : '输入物品名称'}
               className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-sm font-semibold text-(--ink-solid) outline-none focus:border-(--ink-primary)"
               autoFocus
             />

@@ -254,7 +254,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       {sortedDates.length === 0 ? (
         renderEmptyOrLoading()
       ) : (
-        <section key={effectiveFilter} className={cn('filter-fade-enter relative mt-2', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
+        <section key={effectiveFilter} className="filter-fade-enter relative mt-2 pb-4" id="ledgerSurface">
           {uiStyle === 'modern' ? (
             <ModernTransactionGroup
               visibleDates={visibleDates}
@@ -290,8 +290,8 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               </span>
             ) : (
               sortedDates.length > 0 && (
-                <span className="font-mono text-[10px] tracking-widest text-(--ink-tertiary)/40 uppercase">
-                  END OF JOURNAL
+                <span className="font-mono text-[10px] tracking-wider text-(--ink-tertiary)/50">
+                  已加载全部 {transactions.length} 笔流水
                 </span>
               )
             )}

@@ -534,7 +534,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   type="text"
                   value={maintNote}
                   onChange={(e) => setMaintNote(e.target.value)}
-                  placeholder={isSub ? '例如：月度续费、会员升级' : '例如：保护壳、贴膜、换电池'}
+                  placeholder="输入支出备注"
                   className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-secondary) outline-none"
                 />
               </div>
@@ -622,7 +622,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   type="text"
                   value={sellNote}
                   onChange={(e) => setSellNote(e.target.value)}
-                  placeholder="例如：海鲜市场售出、出给朋友"
+                  placeholder="输入转出或退订说明"
                   className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-secondary) outline-none"
                 />
               </div>
