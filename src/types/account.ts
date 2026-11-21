@@ -1,11 +1,10 @@
-export type AccountType = 'cash' | 'bank' | 'ewallet' | 'credit' | 'investment' | 'other';
-export type AccountCategory = 'savings' | 'credit';
+export type AccountType = 'savings' | 'credit';
+export type AccountCategory = AccountType;
 
 export interface Account {
   id: string;
   name: string;
   type: AccountType;
-  accountCategory?: AccountCategory;
   balance: number;
   currency: string;
   icon: string;
@@ -22,6 +21,6 @@ export interface Account {
   updatedAt: string;
 }
 
-export const isCreditAccount = (account: { type: AccountType; accountCategory?: AccountCategory }): boolean => {
-  return account.accountCategory === 'credit' || account.type === 'credit';
+export const isCreditAccount = (account: { type: AccountType }): boolean => {
+  return account.type === 'credit';
 };

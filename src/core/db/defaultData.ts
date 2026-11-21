@@ -49,5 +49,5 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'createdAt' | 'updatedAt'>[] = [
 ];
 
 export const DEFAULT_ACCOUNTS: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
-  { id: 'acct_default', name: '默认账户', type: 'cash', balance: 0, currency: 'CNY', icon: 'wallet', sortOrder: 1 },
+  { id: 'acct_default', name: '默认账户', type: 'savings', balance: 0, currency: 'CNY', icon: 'wallet', sortOrder: 1 },
 ];

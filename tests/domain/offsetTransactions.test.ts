@@ -222,7 +222,7 @@ describe('AA 分摊 / 收入抵扣支出统计与业务核心', () => {
       await acctRepo.create({
         id: 'acct_card',
         name: '招商银行',
-        type: 'bank',
+        type: 'savings',
         balance: 100000, // 1000 元
         currency: 'CNY',
         icon: 'credit-card',

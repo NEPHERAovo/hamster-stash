@@ -30,7 +30,7 @@ describe('TransactionService & Core Bookkeeping Logic', () => {
     await acctRepo.create({
       id: 'acct_wechat',
       name: '微信零钱',
-      type: 'ewallet',
+      type: 'savings',
       balance: 100000, // 初始 1000.00 元
       currency: 'CNY',
       icon: 'wallet',
@@ -40,7 +40,7 @@ describe('TransactionService & Core Bookkeeping Logic', () => {
     await acctRepo.create({
       id: 'acct_bank',
       name: '招商银行卡',
-      type: 'bank',
+      type: 'savings',
       balance: 500000, // 初始 5000.00 元
       currency: 'CNY',
       icon: 'landmark',

@@ -50,7 +50,7 @@ describe('Style & Invariant Contracts', () => {
       { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', color: 'var(--cat-food)', sortOrder: 1, createdAt: '', updatedAt: '' },
     ];
     const mockAccounts: Account[] = [
-      { id: 'acct_1', name: '微信零钱', type: 'ewallet', balance: 10000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
+      { id: 'acct_1', name: '微信零钱', type: 'savings', balance: 10000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
     ];
     const mockTxs: Transaction[] = [
       {

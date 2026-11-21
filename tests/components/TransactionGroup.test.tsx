@@ -14,7 +14,7 @@ describe('TransactionGroup component', () => {
   ];
 
   const mockAccounts: Account[] = [
-    { id: 'acct_1', name: '招行卡', type: 'bank', balance: 500000, currency: 'CNY', icon: 'landmark', sortOrder: 1, createdAt: '', updatedAt: '' },
+    { id: 'acct_1', name: '招行卡', type: 'savings', balance: 500000, currency: 'CNY', icon: 'landmark', sortOrder: 1, createdAt: '', updatedAt: '' },
   ];
 
   const mockTransactions: Transaction[] = [

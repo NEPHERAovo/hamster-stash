@@ -25,7 +25,7 @@ describe('Loan Linking & Reimbursement Settlement Business Logic', () => {
     await acctRepo.create({
       id: 'acct_wechat',
       name: '微信零钱',
-      type: 'ewallet',
+      type: 'savings',
       balance: 100000, // 1000.00 元
       currency: 'CNY',
       icon: 'wallet',
@@ -35,7 +35,7 @@ describe('Loan Linking & Reimbursement Settlement Business Logic', () => {
     await acctRepo.create({
       id: 'acct_bank',
       name: '招商银行卡',
-      type: 'bank',
+      type: 'savings',
       balance: 500000, // 5000.00 元
       currency: 'CNY',
       icon: 'landmark',

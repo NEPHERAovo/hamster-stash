@@ -104,7 +104,7 @@ describe('Period Statistics Domain Logic', () => {
     const mockAccount: Account = {
       id: 'acct_1',
       name: '招商银行',
-      type: 'bank',
+      type: 'savings',
       balance: 150000, // 1500.00 current balance
       currency: 'CNY',
       icon: 'wallet',

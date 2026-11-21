@@ -21,7 +21,7 @@ describe('AccountService', () => {
   it('creates an account with initial balance and sort order', async () => {
     const acct1 = await acctService.createAccount({
       name: '招商银行储蓄卡',
-      type: 'bank',
+      type: 'savings',
       initialBalance: 500000,
     });
 
@@ -32,7 +32,7 @@ describe('AccountService', () => {
 
     const acct2 = await acctService.createAccount({
       name: '微信零钱',
-      type: 'ewallet',
+      type: 'savings',
       initialBalance: 12000,
     });
     expect(acct2.sortOrder).toBe(2);
@@ -42,7 +42,7 @@ describe('AccountService', () => {
     await expect(
       acctService.createAccount({
         name: '   ',
-        type: 'cash',
+        type: 'savings',
       })
     ).rejects.toThrow('账户名称不能为空');
   });
@@ -50,7 +50,7 @@ describe('AccountService', () => {
   it('calculates total net worth across active accounts', async () => {
     await acctService.createAccount({
       name: '储蓄卡',
-      type: 'bank',
+      type: 'savings',
       initialBalance: 800000,
     });
     await acctService.createAccount({
@@ -66,13 +66,13 @@ describe('AccountService', () => {
   it('excludes accounts with includeInNetWorth set to false from total net worth', async () => {
     await acctService.createAccount({
       name: '工资卡',
-      type: 'bank',
+      type: 'savings',
       initialBalance: 800000,
       includeInNetWorth: true,
     });
     await acctService.createAccount({
       name: '代管资金',
-      type: 'ewallet',
+      type: 'savings',
       initialBalance: 250000,
       includeInNetWorth: false,
     });
@@ -84,7 +84,7 @@ describe('AccountService', () => {
   it('updates account metadata including name, type, icon, and includeInNetWorth', async () => {
     const acct = await acctService.createAccount({
       name: '默认卡',
-      type: 'bank',
+      type: 'savings',
       initialBalance: 100000,
     });
 
@@ -109,7 +109,7 @@ describe('AccountService', () => {
   it('prevents deleting the last remaining account', async () => {
     const acct = await acctService.createAccount({
       name: '默认账户',
-      type: 'cash',
+      type: 'savings',
       initialBalance: 0,
     });
 
@@ -121,12 +121,12 @@ describe('AccountService', () => {
   it('prevents deleting an account with transactions unless force is specified', async () => {
     const acct1 = await acctService.createAccount({
       name: '零钱',
-      type: 'ewallet',
+      type: 'savings',
       initialBalance: 1000,
     });
     await acctService.createAccount({
       name: '备用账户',
-      type: 'cash',
+      type: 'savings',
       initialBalance: 0,
     });
 
@@ -151,14 +151,13 @@ describe('AccountService', () => {
   it('creates and updates credit accounts with repayment day, autoRepay, and linked repayment account', async () => {
     const debit = await acctService.createAccount({
       name: '招商银行储蓄卡',
-      type: 'bank',
+      type: 'savings',
       initialBalance: 500000,
     });
 
     const credit = await acctService.createAccount({
       name: '招商信用卡',
       type: 'credit',
-      accountCategory: 'credit',
       initialBalance: -150000,
       creditLimit: 2000000,
       billDay: 5,
@@ -167,7 +166,7 @@ describe('AccountService', () => {
       autoRepay: true,
     });
 
-    expect(credit.accountCategory).toBe('credit');
+    expect(credit.type).toBe('credit');
     expect(credit.creditLimit).toBe(2000000);
     expect(credit.billDay).toBe(5);
     expect(credit.repaymentDay).toBe(23);

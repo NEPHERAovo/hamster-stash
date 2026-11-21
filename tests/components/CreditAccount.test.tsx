@@ -9,8 +9,7 @@ describe('Credit Account Features', () => {
   const mockDebitAccount: Account = {
     id: 'acct-debit',
     name: '招商银行储蓄卡',
-    type: 'bank',
-    accountCategory: 'savings',
+    type: 'savings',
     balance: 500000,
     currency: 'CNY',
     icon: 'landmark',
@@ -24,7 +23,6 @@ describe('Credit Account Features', () => {
     id: 'acct-credit',
     name: '招行经典白金卡',
     type: 'credit',
-    accountCategory: 'credit',
     balance: -280000,
     currency: 'CNY',
     icon: 'credit-card',
@@ -82,7 +80,6 @@ describe('Credit Account Features', () => {
         expect.objectContaining({
           name: '广发信用卡',
           type: 'credit',
-          accountCategory: 'credit',
           repaymentDay: 18,
           billDay: 2,
           repaymentAccountId: 'acct-debit',

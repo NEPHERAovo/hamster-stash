@@ -1,4 +1,4 @@
-import type { Account, AccountType, AccountCategory } from '../../types/account';
+import type { Account, AccountType } from '../../types/account';
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { TransactionRepository } from '../../core/repositories/TransactionRepository';
 import { pluginManager } from '../../core/plugin/PluginManager';
@@ -6,7 +6,6 @@ import { pluginManager } from '../../core/plugin/PluginManager';
 export interface CreateAccountInput {
   name: string;
   type: AccountType;
-  accountCategory?: AccountCategory;
   initialBalance?: number;
   currency?: string;
   icon?: string;
@@ -22,7 +21,6 @@ export interface CreateAccountInput {
 export interface UpdateAccountInput {
   name?: string;
   type?: AccountType;
-  accountCategory?: AccountCategory;
   icon?: string;
   color?: string;
   includeInNetWorth?: boolean;
@@ -52,16 +50,13 @@ export class AccountService {
 
     const all = await this.acctRepo.findAll();
     const sortOrder = all.length > 0 ? Math.max(...all.map((a) => a.sortOrder)) + 1 : 1;
-    const resolvedCategory: AccountCategory =
-      input.accountCategory || (input.type === 'credit' ? 'credit' : 'savings');
 
     return this.acctRepo.create({
       name: input.name.trim(),
       type: input.type,
-      accountCategory: resolvedCategory,
       balance: input.initialBalance || 0,
       currency: input.currency || 'CNY',
-      icon: input.icon || (resolvedCategory === 'credit' ? 'credit-card' : 'wallet'),
+      icon: input.icon || (input.type === 'credit' ? 'credit-card' : 'wallet'),
       color: input.color,
       includeInNetWorth: input.includeInNetWorth ?? true,
       creditLimit: input.creditLimit,
@@ -88,7 +83,6 @@ export class AccountService {
       updates.name = trimmed;
     }
     if (patch.type !== undefined) updates.type = patch.type;
-    if (patch.accountCategory !== undefined) updates.accountCategory = patch.accountCategory;
     if (patch.icon !== undefined) updates.icon = patch.icon;
     if (patch.color !== undefined) updates.color = patch.color;
     if (patch.includeInNetWorth !== undefined) updates.includeInNetWorth = patch.includeInNetWorth;

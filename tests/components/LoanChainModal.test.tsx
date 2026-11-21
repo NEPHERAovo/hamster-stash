@@ -11,7 +11,7 @@ describe('LoanChainModal', () => {
   const mockAccount: Account = {
     id: 'acct_1',
     name: '招商银行',
-    type: 'bank',
+    type: 'savings',
     balance: 500000,
     currency: 'CNY',
     icon: 'wallet',

@@ -285,7 +285,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             if (!existingNames.has(rawName.toLowerCase())) {
               const newAcct = await createAccount({
                 name: rawName,
-                type: rawName.includes('信用') ? 'credit' : 'bank',
+                type: rawName.includes('信用') ? 'credit' : 'savings',
                 initialBalance: 0,
               });
               currentAccounts.push(newAcct);

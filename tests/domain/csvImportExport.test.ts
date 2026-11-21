@@ -64,7 +64,7 @@ describe('Import Modes: Elephant Stash vs Standard CSV', () => {
     { id: 'cat_salary', name: '工资', type: 'income', icon: 'wallet', color: '', sortOrder: 5, createdAt: '', updatedAt: '' },
   ];
   const accounts: Account[] = [
-    { id: 'acct_default', name: '默认资产', type: 'bank', balance: 100000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
+    { id: 'acct_default', name: '默认资产', type: 'savings', balance: 100000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
   ];
 
   it('Elephant Mode: maps alias categories ("吃饭" -> 餐饮, "生活" -> 居住, "超市" -> 购物) without manual configuration', () => {
@@ -263,7 +263,7 @@ describe('All Data Participates in Account Calculation & Reconcile Flow', () => 
     await acctRepo.create({
       id: 'acct_wechat',
       name: '微信零钱',
-      type: 'ewallet',
+      type: 'savings',
       balance: 500000,
       currency: 'CNY',
       icon: 'wallet',
@@ -374,7 +374,7 @@ describe('All Data Participates in Account Calculation & Reconcile Flow', () => 
       { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', color: '', sortOrder: 1, createdAt: '', updatedAt: '' },
     ];
     const accounts: Account[] = [
-      { id: 'acct_wechat', name: '微信零钱', type: 'ewallet', balance: 500000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
+      { id: 'acct_wechat', name: '微信零钱', type: 'savings', balance: 500000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: '', updatedAt: '' },
     ];
 
     const { records } = mapElephantCsvRows(

@@ -160,7 +160,7 @@ describe('Modular Stats & UI Components', () => {
           {
             id: 'acct_1',
             name: '现金',
-            type: 'cash',
+            type: 'savings',
             balance: 100000,
             sortOrder: 1,
             createdAt: '',
@@ -230,7 +230,7 @@ describe('Modular Stats & UI Components', () => {
           {
             id: 'acct_1',
             name: '现金',
-            type: 'cash',
+            type: 'savings',
             balance: 100000,
             sortOrder: 1,
             createdAt: '',

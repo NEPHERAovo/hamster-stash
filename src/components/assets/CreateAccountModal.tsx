@@ -4,7 +4,7 @@ import { PaperModal } from '../ui/PaperModal';
 import { AmountInput } from '../ui/AmountInput';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperSwitch } from '../ui/PaperSwitch';
-import type { Account, AccountType, AccountCategory } from '../../types/account';
+import type { Account, AccountType } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -20,7 +20,6 @@ export interface CreateAccountModalProps {
   onSubmit: (input: {
     name: string;
     type: AccountType;
-    accountCategory?: AccountCategory;
     initialBalance: number;
     icon: string;
     includeInNetWorth: boolean;
@@ -53,9 +52,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   onUpdate,
 }) => {
   const isEditing = Boolean(editingAccount);
-  const [accountCategory, setAccountCategory] = useState<AccountCategory>('savings');
+  const [type, setType] = useState<AccountType>('savings');
   const [name, setName] = useState('');
-  const [type, setType] = useState<AccountType>('bank');
   const [icon, setIcon] = useState('landmark');
   const [balanceStr, setBalanceStr] = useState('');
   const [creditLimitStr, setCreditLimitStr] = useState('');
@@ -67,15 +65,16 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeDayPicker, setActiveDayPicker] = useState<'repayment' | 'bill' | null>(null);
 
+  const isCredit = type === 'credit';
+
   const availableSavingsAccounts = useMemo(() => {
     return accounts.filter((a) => !isCreditAccount(a) && a.id !== editingAccount?.id);
   }, [accounts, editingAccount?.id]);
 
   const resetForm = () => {
     setActiveDayPicker(null);
-    setAccountCategory('savings');
+    setType('savings');
     setName('');
-    setType('bank');
     setIcon('landmark');
     setBalanceStr('');
     setCreditLimitStr('');
@@ -89,11 +88,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     if (editingAccount) {
-      const isCredit = isCreditAccount(editingAccount);
-      setAccountCategory(isCredit ? 'credit' : 'savings');
+      const isCreditAcct = isCreditAccount(editingAccount);
+      setType(isCreditAcct ? 'credit' : 'savings');
       setName(editingAccount.name);
-      setType(editingAccount.type);
-      setIcon(editingAccount.icon || (isCredit ? 'credit-card' : 'wallet'));
+      setIcon(editingAccount.icon || (isCreditAcct ? 'credit-card' : 'wallet'));
       setIncludeInNetWorth(editingAccount.includeInNetWorth !== false);
       setCreditLimitStr(
         editingAccount.creditLimit ? centsToYuan(editingAccount.creditLimit) : ''
@@ -113,13 +111,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     onClose();
   };
 
-  const handleCategoryChange = (nextCategory: AccountCategory) => {
-    setAccountCategory(nextCategory);
-    if (nextCategory === 'credit') {
-      setType('credit');
+  const handleTypeChange = (nextType: AccountType) => {
+    setType(nextType);
+    if (nextType === 'credit') {
       setIcon('credit-card');
     } else {
-      setType('bank');
       setIcon('landmark');
     }
   };
@@ -141,7 +137,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         await onUpdate(editingAccount.id, {
           name: trimmed,
           type,
-          accountCategory,
           icon,
           includeInNetWorth,
           creditLimit: parsedCreditLimit,
@@ -162,14 +157,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       }
 
       const initialCents =
-        accountCategory === 'credit'
+        isCredit
           ? -Math.round(Math.abs(parsedBalance) * 100)
           : Math.round(parsedBalance * 100);
 
       await onSubmit({
         name: trimmed,
         type,
-        accountCategory,
         initialBalance: initialCents,
         icon,
         includeInNetWorth,
@@ -210,8 +204,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               { value: 'savings', label: '储蓄账户' },
               { value: 'credit', label: '信用账户' },
             ]}
-            value={accountCategory}
-            onChange={handleCategoryChange}
+            value={type}
+            onChange={handleTypeChange}
             size="sm"
           />
         </div>
@@ -223,7 +217,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={
-              accountCategory === 'credit'
+              isCredit
                 ? '输入信用账户名称'
                 : '输入储蓄账户名称'
             }
@@ -258,7 +252,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </div>
         </div>
 
-        {accountCategory === 'credit' && (
+        {isCredit && (
           <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
@@ -448,7 +442,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         {!isEditing && (
           <div className="space-y-1.5">
             <label className="font-mono text-xs text-(--ink-tertiary)">
-              {accountCategory === 'credit' ? '当前欠款 (元)' : '初始余额 (元)'}
+              {isCredit ? '当前欠款 (元)' : '初始余额 (元)'}
             </label>
             <AmountInput
               value={balanceStr}
@@ -456,7 +450,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               placeholder="0.00"
               size="sm"
               variant="sunken"
-              aria-label={accountCategory === 'credit' ? '初始欠款' : '初始余额'}
+              aria-label={isCredit ? '初始欠款' : '初始余额'}
             />
           </div>
         )}

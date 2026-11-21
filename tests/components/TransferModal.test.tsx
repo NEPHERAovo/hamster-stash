@@ -11,7 +11,7 @@ describe('TransferModal Component', () => {
     {
       id: 'acct_1',
       name: '活期存款',
-      type: 'cash',
+      type: 'savings',
       balance: 100000,
       currency: 'CNY',
       icon: 'wallet',
@@ -22,7 +22,7 @@ describe('TransferModal Component', () => {
     {
       id: 'acct_2',
       name: '理财账户',
-      type: 'investment',
+      type: 'savings',
       balance: 500000,
       currency: 'CNY',
       icon: 'trending-up',

@@ -10,7 +10,7 @@ describe('TransactionItem Polymorphic Rows', () => {
   const mockAccountFrom: Account = {
     id: 'acct_1',
     name: '日常活钱',
-    type: 'cash',
+    type: 'savings',
     balance: 100000,
     currency: 'CNY',
     icon: 'wallet',
@@ -22,7 +22,7 @@ describe('TransactionItem Polymorphic Rows', () => {
   const mockAccountTo: Account = {
     id: 'acct_2',
     name: '稳健理财',
-    type: 'investment',
+    type: 'savings',
     balance: 200000,
     currency: 'CNY',
     icon: 'trending-up',

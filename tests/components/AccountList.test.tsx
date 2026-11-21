@@ -8,8 +8,7 @@ const mockAccounts: Account[] = [
   {
     id: 'acct-1',
     name: '微信钱包',
-    type: 'ewallet',
-    accountCategory: 'savings',
+    type: 'savings',
     balance: 50000,
     currency: 'CNY',
     sortOrder: 1,
@@ -21,8 +20,7 @@ const mockAccounts: Account[] = [
   {
     id: 'acct-2',
     name: '招商银行',
-    type: 'bank',
-    accountCategory: 'savings',
+    type: 'savings',
     balance: 200000,
     currency: 'CNY',
     sortOrder: 2,
@@ -35,7 +33,6 @@ const mockAccounts: Account[] = [
     id: 'acct-3',
     name: '招行信用卡',
     type: 'credit',
-    accountCategory: 'credit',
     balance: -150000,
     currency: 'CNY',
     sortOrder: 3,

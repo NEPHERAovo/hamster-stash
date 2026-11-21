@@ -51,7 +51,7 @@ describe('diffMerger', () => {
     const acct: Account = {
       id: 'acct_remote',
       name: 'Cloud Vault',
-      type: 'bank',
+      type: 'savings',
       balance: 100000,
       sortOrder: 1,
       createdAt: '2026-11-18T09:00:00.000Z',
