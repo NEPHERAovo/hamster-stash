@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import { DB_NAME, DB_VERSION, STORES } from '../db/schema';
+import { DB_VERSION, STORES, getActiveDbName, isSandboxModeActive } from '../db/schema';
 import { DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES } from '../db/defaultData';
 import type {
   DataAdapter,
@@ -14,11 +14,16 @@ import type { Transaction } from '../../types/transaction';
 export class IndexedDBAdapter implements DataAdapter {
   readonly id = 'indexeddb';
   private db: IDBPDatabase | null = null;
+  private dbName: string;
+
+  constructor(dbName?: string) {
+    this.dbName = dbName || getActiveDbName();
+  }
 
   async initialize(): Promise<void> {
     if (this.db) return;
 
-    this.db = await openDB(DB_NAME, DB_VERSION, {
+    this.db = await openDB(this.dbName, DB_VERSION, {
       upgrade(db, _oldVersion, _newVersion, _transaction) {
         if (!db.objectStoreNames.contains(STORES.TRANSACTIONS)) {
           const txStore = db.createObjectStore(STORES.TRANSACTIONS, { keyPath: 'id' });
@@ -94,16 +99,21 @@ export class IndexedDBAdapter implements DataAdapter {
         if (!existing) {
           await tx.store.put({
             ...cat,
-            isArchived: true,
+            isArchived: cat.isArchived ?? true,
             createdAt: now,
             updatedAt: now,
           });
-        } else if (cat.subTags && (!existing.subTags || existing.subTags.length === 0)) {
-          await tx.store.put({
-            ...existing,
-            subTags: cat.subTags,
-            updatedAt: now,
-          });
+        } else if (existing.isSystem) {
+          const shouldUpdateName = existing.name !== cat.name && existing.name.length > 2;
+          const shouldUpdateSubTags = cat.subTags && (!existing.subTags || existing.subTags.length === 0);
+          if (shouldUpdateName || shouldUpdateSubTags) {
+            await tx.store.put({
+              ...existing,
+              name: shouldUpdateName ? cat.name : existing.name,
+              subTags: shouldUpdateSubTags ? cat.subTags : existing.subTags,
+              updatedAt: now,
+            });
+          }
         }
       }
       await tx.done;
@@ -120,6 +130,37 @@ export class IndexedDBAdapter implements DataAdapter {
         });
       }
       await tx.done;
+    }
+
+    if (isSandboxModeActive()) {
+      const txCount = await this.db.count(STORES.TRANSACTIONS);
+      if (txCount === 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const tx = this.db.transaction([STORES.ACCOUNTS, STORES.TRANSACTIONS], 'readwrite');
+        const acctStore = tx.objectStore(STORES.ACCOUNTS);
+        const txStore = tx.objectStore(STORES.TRANSACTIONS);
+
+        const sampleAccounts: Account[] = [
+          { id: 'acct_cash', name: '日常活钱', type: 'cash', balance: 125000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: now, updatedAt: now },
+          { id: 'acct_bank', name: '招商银行', type: 'bank', balance: 5860000, currency: 'CNY', icon: 'landmark', sortOrder: 2, createdAt: now, updatedAt: now },
+          { id: 'acct_wx', name: '微信钱包', type: 'ewallet', balance: 64200, currency: 'CNY', icon: 'credit-card', sortOrder: 3, createdAt: now, updatedAt: now },
+        ];
+        for (const acct of sampleAccounts) {
+          await acctStore.put(acct);
+        }
+
+        const sampleTransactions: Transaction[] = [
+          { id: 'tx_demo_1', type: 'expense', amount: 3500, accountId: 'acct_wx', categoryId: 'cat_food', date: today, note: '老街馄饨', subTag: '三餐', createdAt: `${today}T12:30:00.000Z`, updatedAt: `${today}T12:30:00.000Z` },
+          { id: 'tx_demo_2', type: 'expense', amount: 700, accountId: 'acct_wx', categoryId: 'cat_transit', date: today, note: '地铁通勤', subTag: '地铁', createdAt: `${today}T08:45:00.000Z`, updatedAt: `${today}T08:45:00.000Z` },
+          { id: 'tx_demo_3', type: 'expense', amount: 6850, accountId: 'acct_bank', categoryId: 'cat_market', date: today, note: '超市生鲜日用品', subTag: '生鲜', createdAt: `${today}T18:20:00.000Z`, updatedAt: `${today}T18:20:00.000Z` },
+          { id: 'tx_demo_4', type: 'income', amount: 1680000, accountId: 'acct_bank', categoryId: 'cat_salary', date: today, note: '本月薪酬入账', createdAt: `${today}T10:00:00.000Z`, updatedAt: `${today}T10:00:00.000Z` },
+        ];
+        for (const t of sampleTransactions) {
+          await txStore.put(t);
+        }
+
+        await tx.done;
+      }
     }
   }
 

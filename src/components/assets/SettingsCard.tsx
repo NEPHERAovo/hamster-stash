@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { SlidersHorizontal, Receipt as ReceiptText, CalendarCheck as CalendarClock, Tag as Tags, FileCsv as FileSpreadsheet, UploadSimple as FileUp, UploadSimple as HardDriveUpload, CaretRight as ChevronRight, SquaresFour as Blocks, Trash as Trash2, ArrowsClockwise as RefreshCw, DownloadSimple as Download } from '@phosphor-icons/react';
+import { SlidersHorizontal, Receipt as ReceiptText, CalendarCheck as CalendarClock, Tag as Tags, FileCsv as FileSpreadsheet, UploadSimple as FileUp, UploadSimple as HardDriveUpload, CaretRight as ChevronRight, SquaresFour as Blocks, Trash as Trash2, ArrowsClockwise as RefreshCw, DownloadSimple as Download, Flask } from '@phosphor-icons/react';
 import { core } from '../../core';
+import { isSandboxModeActive, setSandboxMode, resetSandboxData } from '../../core/db/schema';
 import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
@@ -321,6 +322,43 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
               )}
             />
           </button>
+        </div>
+
+        <div className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 select-none">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
+              <Flask className="w-3.5 h-3.5 stroke-[1.75]" />
+            </div>
+            <span className="text-[13px] font-medium text-(--ink-primary)">沙盒测试模式</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {isSandboxModeActive() && (
+              <button
+                type="button"
+                onClick={() => void resetSandboxData()}
+                className="text-[11px] text-(--ink-secondary) hover:text-(--ink-primary) underline cursor-pointer"
+              >
+                重置演示数据
+              </button>
+            )}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isSandboxModeActive()}
+              onClick={() => setSandboxMode(!isSandboxModeActive())}
+              className={cn(
+                'w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0',
+                isSandboxModeActive() ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 w-4 h-4 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
+                  isSandboxModeActive() ? 'left-4.5' : 'left-0.5'
+                )}
+              />
+            </button>
+          </div>
         </div>
 
         <div

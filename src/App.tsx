@@ -46,6 +46,7 @@ import { pluginManager } from './core/plugin/PluginManager';
 import { syncService } from './domain/sync/syncService';
 import { cn } from './utils/cn';
 import { currentYearMonth, stepYearMonth } from './utils/date';
+import { isSandboxModeActive, setSandboxMode, resetSandboxData } from './core/db/schema';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('ledger');
@@ -345,6 +346,30 @@ export function App() {
 
   return (
     <AppShell>
+      {isSandboxModeActive() && (
+        <div className="w-full bg-(--color-accent)/10 border-b border-(--color-accent)/30 px-3.5 py-1.5 flex items-center justify-between text-xs font-mono text-(--ink-primary) select-none">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-(--color-accent) animate-pulse shrink-0" />
+            <span className="font-medium truncate">测试沙盒 (与真实数据隔离)</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => void resetSandboxData()}
+              className="px-2 py-0.5 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-[11px] hover:bg-(--paper-hover) cursor-pointer"
+            >
+              重置
+            </button>
+            <button
+              type="button"
+              onClick={() => setSandboxMode(false)}
+              className="px-2 py-0.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-[11px] font-semibold cursor-pointer"
+            >
+              退出测试
+            </button>
+          </div>
+        </div>
+      )}
       <div key={currentTab} className="tab-header-enter w-full">
         {renderHeader()}
       </div>
