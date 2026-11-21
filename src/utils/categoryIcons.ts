@@ -68,6 +68,8 @@ import {
   Bed,
   Trophy,
   Percent,
+  MagicWand,
+  SquaresFour,
   type Icon as PhosphorIconType,
   type IconProps as PhosphorIconProps,
 } from '@phosphor-icons/react';
@@ -110,8 +112,9 @@ const ICON_MAP: Record<string, React.FC<CategoryIconProps>> = {
   bag: adapt(Bag),
   shirt: adapt(TShirt),
   clothes: adapt(TShirt),
+  'magic-wand': adapt(MagicWand),
+  beauty: adapt(MagicWand),
   'spray-bottle': adapt(SprayBottle),
-  beauty: adapt(SprayBottle),
 
   house: adapt(House),
   home: adapt(House),
@@ -149,6 +152,7 @@ const ICON_MAP: Record<string, React.FC<CategoryIconProps>> = {
   donate: adapt(HandHeart),
   firstaid: adapt(FirstAid),
   'first-aid': adapt(FirstAid),
+  'shield-check': adapt(ShieldCheck),
   insurance: adapt(ShieldCheck),
 
   'book-open': adapt(BookOpen),
@@ -193,6 +197,8 @@ const ICON_MAP: Record<string, React.FC<CategoryIconProps>> = {
   'calendar-clock': adapt(CalendarCheck),
   box: adapt(Package),
   package: adapt(Package),
+  'squares-four': adapt(SquaresFour),
+  other: adapt(SquaresFour),
   armchair: adapt(Armchair),
   sofa: adapt(Armchair),
 };

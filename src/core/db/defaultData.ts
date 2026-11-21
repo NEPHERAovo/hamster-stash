@@ -9,7 +9,7 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'createdAt' | 'updatedAt'>[] = [
   { id: 'cat_home', name: '住房', type: 'expense', icon: 'house', color: 'var(--cat-home)', colorClass: 'cat-home', sortOrder: 5, isSystem: true, isArchived: false },
   { id: 'cat_fun', name: '娱乐', type: 'expense', icon: 'clapperboard', color: 'var(--cat-fun)', colorClass: 'cat-fun', sortOrder: 6, isSystem: true, isArchived: false },
   { id: 'cat_health', name: '医疗', type: 'expense', icon: 'heart-pulse', color: 'var(--cat-health)', colorClass: 'cat-health', sortOrder: 7, isSystem: true, isArchived: false },
-  { id: 'cat_other', name: '其他', type: 'expense', icon: 'subscription', color: 'var(--cat-edu)', colorClass: 'cat-edu', sortOrder: 8, isSystem: true, isArchived: false },
+  { id: 'cat_other', name: '其他', type: 'expense', icon: 'squares-four', color: 'var(--cat-edu)', colorClass: 'cat-edu', sortOrder: 8, isSystem: true, isArchived: false },
 
   { id: 'cat_pet', name: '宠物', type: 'expense', icon: 'pet', color: 'var(--cat-food)', colorClass: 'cat-food', sortOrder: 9, isSystem: true, isArchived: true },
   { id: 'cat_digital', name: '数码', type: 'expense', icon: 'laptop', color: 'var(--cat-transit)', colorClass: 'cat-transit', sortOrder: 10, isSystem: true, isArchived: true },
@@ -17,7 +17,7 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'createdAt' | 'updatedAt'>[] = [
   { id: 'cat_social', name: '人情', type: 'expense', icon: 'gift', color: 'var(--cat-health)', colorClass: 'cat-health', sortOrder: 12, isSystem: true, isArchived: true },
   { id: 'cat_car', name: '汽车', type: 'expense', icon: 'car', color: 'var(--cat-transit)', colorClass: 'cat-transit', sortOrder: 13, isSystem: true, isArchived: true },
   { id: 'cat_travel', name: '旅行', type: 'expense', icon: 'airplane', color: 'var(--cat-fun)', colorClass: 'cat-fun', sortOrder: 14, isSystem: true, isArchived: true },
-  { id: 'cat_beauty', name: '美妆', type: 'expense', icon: 'spray-bottle', color: 'var(--cat-health)', colorClass: 'cat-health', sortOrder: 15, isSystem: true, isArchived: true },
+  { id: 'cat_beauty', name: '美妆', type: 'expense', icon: 'magic-wand', color: 'var(--cat-health)', colorClass: 'cat-health', sortOrder: 15, isSystem: true, isArchived: true },
   { id: 'cat_baby', name: '育儿', type: 'expense', icon: 'baby', color: 'var(--cat-food)', colorClass: 'cat-food', sortOrder: 16, isSystem: true, isArchived: true },
   { id: 'cat_sport', name: '运动', type: 'expense', icon: 'sport', color: 'var(--cat-transit)', colorClass: 'cat-transit', sortOrder: 17, isSystem: true, isArchived: true },
   { id: 'cat_clothes', name: '服饰', type: 'expense', icon: 'shirt', color: 'var(--cat-shop)', colorClass: 'cat-shop', sortOrder: 18, isSystem: true, isArchived: true },
@@ -35,7 +35,7 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'createdAt' | 'updatedAt'>[] = [
   { id: 'cat_invest', name: '理财', type: 'income', icon: 'trending-up', color: 'var(--color-income)', colorClass: 'cat-salary', sortOrder: 3, isSystem: true, isArchived: false },
   { id: 'cat_parttime', name: '兼职', type: 'income', icon: 'briefcase', color: 'var(--color-income)', colorClass: 'cat-salary', sortOrder: 4, isSystem: true, isArchived: false },
   { id: 'cat_refund', name: '退款', type: 'income', icon: 'receipt', color: 'var(--color-income)', colorClass: 'cat-salary', sortOrder: 5, isSystem: true, isArchived: false },
-  { id: 'cat_other_in', name: '其他', type: 'income', icon: 'plus-circle', color: 'var(--ink-secondary)', colorClass: 'cat-salary', sortOrder: 6, isSystem: true, isArchived: false },
+  { id: 'cat_other_in', name: '其他', type: 'income', icon: 'squares-four', color: 'var(--ink-secondary)', colorClass: 'cat-salary', sortOrder: 6, isSystem: true, isArchived: false },
 
   { id: 'cat_redpacket', name: '红包', type: 'income', icon: 'gift', color: 'var(--color-income)', colorClass: 'cat-salary', sortOrder: 7, isSystem: true, isArchived: true },
   { id: 'cat_resale', name: '变现', type: 'income', icon: 'package', color: 'var(--color-income)', colorClass: 'cat-salary', sortOrder: 8, isSystem: true, isArchived: true },

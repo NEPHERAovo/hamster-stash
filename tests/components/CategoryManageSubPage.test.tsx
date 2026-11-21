@@ -222,10 +222,25 @@ describe('CategoryManageSubPage', () => {
   });
 
   it('provides rich category icons for specialized categories and incomes', () => {
-    const icons = ['spray-bottle', 'wine', 'orange-slice', 'hand-heart', 'bed', 'trophy', 'percent'];
+    const icons = ['magic-wand', 'squares-four', 'spray-bottle', 'wine', 'orange-slice', 'hand-heart', 'bed', 'trophy', 'percent'];
     icons.forEach((iconName) => {
       const Icon = getCategoryIcon(iconName);
       expect(Icon).toBeDefined();
     });
+  });
+
+  it('renders 64 category icon choices in an 8x8 grid when adding a category', async () => {
+    render(<CategoryManageSubPage />);
+
+    const addFab = screen.getByTitle('新增分类');
+    fireEvent.click(addFab);
+
+    await waitFor(() => {
+      expect(screen.getByText('分类名称')).toBeInTheDocument();
+    });
+
+    const iconGrid = screen.getByText('选择图标').closest('div')?.querySelector('.grid-cols-8');
+    expect(iconGrid).not.toBeNull();
+    expect(iconGrid?.children.length).toBe(64);
   });
 });
