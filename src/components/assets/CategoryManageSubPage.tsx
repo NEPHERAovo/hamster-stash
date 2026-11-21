@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, ArchiveRestore, GripVertical } from 'lucide-react';
+import { Plus, Trash as Trash2, Archive as ArchiveRestore, DotsSixVertical as GripVertical } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';

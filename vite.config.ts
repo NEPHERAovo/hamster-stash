@@ -24,11 +24,11 @@ export default defineConfig({
             }
           }
           if (id.includes('node_modules')) {
+            if (id.includes('@phosphor-icons/react')) {
+              return 'vendor-icons';
+            }
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
               return 'vendor-framework';
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
             }
             if (id.includes('idb') || id.includes('zustand') || id.includes('dayjs') || id.includes('clsx')) {
               return 'vendor-core';

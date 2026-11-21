@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package } from 'lucide-react';
+import { Package } from '@phosphor-icons/react';
 import { cn } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';

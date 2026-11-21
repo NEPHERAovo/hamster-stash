@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, X } from 'lucide-react';
+import { MagnifyingGlass as Search, X } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftRight, Trash2 } from 'lucide-react';
+import { ArrowsLeftRight as ArrowLeftRight, Trash as Trash2 } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
 import { AmountInput } from '../ui/AmountInput';

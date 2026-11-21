@@ -1,13 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  ChevronLeft,
-  Plus,
-  Trash2,
-  Edit2,
-  DollarSign,
-  ArrowRightLeft,
-  Check,
-} from 'lucide-react';
+import { CaretLeft as ChevronLeft, Plus, Trash as Trash2, PencilSimple as Edit2, Coins as DollarSign, ArrowsLeftRight as ArrowRightLeft, Check } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   useHostAccounts,

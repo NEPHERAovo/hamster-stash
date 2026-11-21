@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Plus, Settings, Pencil, ArrowLeftRight } from 'lucide-react';
+import { Plus, Gear as Settings, PencilSimple as Pencil, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
 import {
   AppShell,
   PageHeader,

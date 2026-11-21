@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, Plus, Package } from 'lucide-react';
+import { CaretLeft as ChevronLeft, Plus, Package } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   usePluginNavigation,

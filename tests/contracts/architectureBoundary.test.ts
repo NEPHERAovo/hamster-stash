@@ -93,4 +93,25 @@ describe('Architecture & Language Boundary Contracts', () => {
 
     expect(violations).toEqual([]);
   });
+
+  it('contract: lucide-react must be completely purged from package.json and all source files', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf-8'));
+    expect(pkg.dependencies?.['lucide-react']).toBeUndefined();
+    expect(pkg.devDependencies?.['lucide-react']).toBeUndefined();
+
+    const allSourceFiles = getFilesRecursively(path.resolve(process.cwd(), 'src'), ['.ts', '.tsx']);
+    const violations: { file: string; line: string }[] = [];
+
+    for (const filePath of allSourceFiles) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const lines = content.split('\n');
+      for (const line of lines) {
+        if (/['"]lucide-react['"]/.test(line)) {
+          violations.push({ file: path.relative(process.cwd(), filePath), line: line.trim() });
+        }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
 });

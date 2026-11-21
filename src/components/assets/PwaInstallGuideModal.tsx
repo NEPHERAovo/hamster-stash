@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Download,
-  Check,
-  Menu,
-  MoreVertical,
-  Share,
-  PlusSquare,
-  ShieldCheck,
-  Info,
-  Smartphone,
-} from 'lucide-react';
+import { DownloadSimple as Download, Check, List as Menu, DotsThreeVertical as MoreVertical, ShareNetwork as Share, PlusSquare, ShieldCheck, Info, DeviceMobile as Smartphone } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { usePwaStore } from '../../stores/usePwaStore';
 import { detectBrowserFamily, type BrowserFamily } from '../../utils/browser';

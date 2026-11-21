@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Info, Warning as AlertTriangle } from '@phosphor-icons/react';
 import { useToastStore } from '../../stores/useToastStore';
 import { cn } from '../../utils/cn';
 

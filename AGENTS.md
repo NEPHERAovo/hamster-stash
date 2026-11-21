@@ -13,7 +13,7 @@
 - **Crafted Stationery Design System**:
   - Subtle warm paper base with a micro-dot grid background.
   - Natural low-saturation functional colors (cypress green income, terra-cotta red expense).
-  - Clean vector line icons (`lucide-react`) exclusively—emojis are strictly banned from UI chrome.
+  - Clean vector line icons (`@phosphor-icons/react` with duotone paper ink accents) exclusively—emojis are strictly banned from UI chrome.
   - Flat paper sheets with hairline rules and physical deckle/sawtooth cuts instead of heavy glassmorphism.
 - **Pluggable Data Layer**: Storage abstracted via `DataAdapter` interface, completely decoupling UI from persistence (IndexedDB by default; WebDAV/cloud sync ready).
 - **Mobile-First Offline PWA**: Optimized for vertical mobile viewport, fully installable and operational without network access.
@@ -28,7 +28,7 @@
 | Language | TypeScript | ~5.9.3 | Strict mode, zero `any` |
 | Bundler | Vite | ^7.1.9 | Fast ESM dev server and build |
 | Styling | Tailwind CSS | ^4.3.5 | Utility-first with semantic CSS variables |
-| Icons | lucide-react | ^1.73.0 | Vector line iconography |
+| Icons | @phosphor-icons/react | ^2.1.10 | Vector line iconography & duotone paper stamps |
 | State | Zustand | ^5.1.0 | Sliced reactive stores |
 | Local Storage | idb | ^8.0.4 | Lightweight IndexedDB promise wrapper |
 | Offline / PWA | vite-plugin-pwa + workbox | ^1.1.0 / ^7.4.0 | Service Worker precaching & offline runtime |

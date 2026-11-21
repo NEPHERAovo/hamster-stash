@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { PendingSettlementSummary } from '../../domain/transaction/transactionService';
 import { cn } from '../../utils/cn';

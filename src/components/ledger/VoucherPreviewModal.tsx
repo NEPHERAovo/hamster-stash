@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, ExternalLink, FileText, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, DownloadSimple as Download, ArrowSquareOut as ExternalLink, FileText, WarningCircle as AlertCircle, ArrowsClockwise as RefreshCw } from '@phosphor-icons/react';
 import type { VoucherAttachment } from '../../types/transaction';
 import { attachmentStore } from '../../core/attachments/attachmentStore';
 import { syncService } from '../../domain/sync/syncService';

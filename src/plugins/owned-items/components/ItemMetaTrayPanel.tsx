@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from '@phosphor-icons/react';
 import { getCategoryIcon, cn } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, X } from 'lucide-react';
+import { ArrowsClockwise as RefreshCw, X } from '@phosphor-icons/react';
 import { usePwaStore } from '../../stores/usePwaStore';
 
 export const PwaUpdateBanner: React.FC = () => {

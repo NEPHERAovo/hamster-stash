@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import {
-  X,
-  Trash2,
-  Paperclip,
-  Delete,
-} from 'lucide-react';
+import { X, Trash as Trash2, Paperclip, Backspace as Delete } from '@phosphor-icons/react';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useAccountStore } from '../../stores/useAccountStore';

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Scale, Trash2, ArrowLeftRight } from 'lucide-react';
+import { Scales as Scale, Trash as Trash2, ArrowsLeftRight as ArrowLeftRight } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {

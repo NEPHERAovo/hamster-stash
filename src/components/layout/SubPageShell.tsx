@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { CaretLeft as ChevronLeft } from '@phosphor-icons/react';
 import { SubPageContext, useSubPage } from './SubPageContext';
 import { cn } from '../../utils/cn';
 import {

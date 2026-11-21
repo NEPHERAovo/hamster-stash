@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import { CaretRight as ChevronRight } from '@phosphor-icons/react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { CategoryStatItem } from '../../domain/finance/periodStats';
 import { cn } from '../../utils/cn';

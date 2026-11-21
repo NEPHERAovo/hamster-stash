@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { NotebookText, BarChart3, Wallet, Plus, type LucideIcon } from 'lucide-react';
+import { BookBookmark as NotebookText, ChartBar as BarChart3, Wallet, Plus, type Icon as LucideIcon } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { cn } from '../../utils/cn';

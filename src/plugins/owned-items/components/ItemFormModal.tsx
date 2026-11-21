@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check } from '@phosphor-icons/react';
 import {
   useHostAccounts,
   useHostTransactionActions,

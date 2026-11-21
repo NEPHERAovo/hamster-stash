@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { LiquidGlassDock } from '../ui/liquid-glass/LiquidGlassDock';
 import type { DockTabItem } from '../ui/liquid-glass/drawDockTexture';

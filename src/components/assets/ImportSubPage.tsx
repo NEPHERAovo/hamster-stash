@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  FileUp,
-  Check,
-  AlertCircle,
-  ArrowRight,
-  ArrowLeft,
-  Plus,
-  Sparkles,
-  Sliders,
-  RefreshCw,
-  FolderSync,
-} from 'lucide-react';
+import { UploadSimple as FileUp, Check, WarningCircle as AlertCircle, ArrowRight, ArrowLeft, Plus, Sparkle as Sparkles, Sliders, ArrowsClockwise as RefreshCw, FolderSimple as FolderSync } from '@phosphor-icons/react';
 import { PaperButton } from '../ui/PaperButton';
 import { parseCsv, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {

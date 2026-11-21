@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Delete, Trash2 } from 'lucide-react';
+import { Backspace as Delete, Trash as Trash2 } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 
 export interface PaperKeypadProps {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash as Trash2 } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';

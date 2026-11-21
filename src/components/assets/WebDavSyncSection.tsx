@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cloud, RefreshCw, ChevronDown, ChevronUp, Check, PlugZap } from 'lucide-react';
+import { Cloud, ArrowsClockwise as RefreshCw, CaretDown as ChevronDown, CaretUp as ChevronUp, Check, PlugsConnected as PlugZap } from '@phosphor-icons/react';
 import { syncService } from '../../domain/sync/syncService';
 import { webdavClient } from '../../domain/sync/webdavClient';
 import { useAccountStore } from '../../stores/useAccountStore';

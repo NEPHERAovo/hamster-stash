@@ -1,10 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  ReceiptText,
-  CheckCircle2,
-  Calendar,
-  Eye,
-} from 'lucide-react';
+import { Receipt as ReceiptText, CheckCircle as CheckCircle2, Calendar, Eye } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 import { useThemeStore, THEME_OPTIONS, type ThemeOption } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 

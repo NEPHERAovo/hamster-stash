@@ -1,18 +1,5 @@
 import React, { useRef, useState } from 'react';
-import {
-  SlidersHorizontal,
-  ReceiptText,
-  CalendarClock,
-  Tags,
-  FileSpreadsheet,
-  FileUp,
-  HardDriveUpload,
-  ChevronRight,
-  Blocks,
-  Trash2,
-  RefreshCw,
-  Download,
-} from 'lucide-react';
+import { SlidersHorizontal, Receipt as ReceiptText, CalendarCheck as CalendarClock, Tag as Tags, FileCsv as FileSpreadsheet, UploadSimple as FileUp, UploadSimple as HardDriveUpload, CaretRight as ChevronRight, SquaresFour as Blocks, Trash as Trash2, ArrowsClockwise as RefreshCw, DownloadSimple as Download } from '@phosphor-icons/react';
 import { core } from '../../core';
 import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
