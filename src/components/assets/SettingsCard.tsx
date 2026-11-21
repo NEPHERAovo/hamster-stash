@@ -511,11 +511,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
       </PaperModal>
 
-      <ExportCsvModal
-        isOpen={isExportCsvOpen}
-        onClose={() => setIsExportCsvOpen(false)}
-      />
-
       <PaperModal
         isOpen={isBackupConfirmOpen}
         onClose={() => setIsBackupConfirmOpen(false)}
