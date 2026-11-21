@@ -28,7 +28,7 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
   className,
 }) => {
   return (
-    <div className={cn('keypad-tray grid grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px] select-none', className)}>
+    <div className={cn('keypad-tray grid touch-manipulation grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px] select-none', className)}>
       <button
         type="button"
         onClick={() => onDigit('7')}

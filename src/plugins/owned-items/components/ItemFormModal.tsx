@@ -191,7 +191,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
         aria-hidden="true"
       />
       <div
-        className="transaction-sheet sheet-slide-up paper-sawtooth-top relative flex max-h-[90vh] w-full max-w-[430px] flex-col overflow-visible overflow-y-auto rounded-t-[2px] border-t border-(--rule-hairline) bg-(--paper-sheet) shadow-[0_-6px_22px_rgba(0,0,0,0.09)]"
+        className="transaction-sheet sheet-slide-up paper-sawtooth-top relative flex max-h-[90dvh] w-full max-w-[430px] flex-col overflow-visible overflow-y-auto rounded-t-[2px] border-t border-(--rule-hairline) bg-(--paper-sheet) shadow-[0_-6px_22px_rgba(0,0,0,0.09)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="washi-tape absolute -top-3 left-1/2 z-30 -translate-x-1/2 shadow-xs" />

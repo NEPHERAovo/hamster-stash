@@ -141,7 +141,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
         <img
           src={resolvedUrl}
           alt={voucher?.name}
-          className="max-h-[70vh] max-w-full rounded-(--radius-sm) object-contain"
+          className="max-h-[70dvh] max-w-full rounded-(--radius-sm) object-contain"
         />
       );
     }
@@ -152,7 +152,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
           <iframe
             src={pdfBlobUrl}
             title={voucher?.name}
-            className="h-[56vh] w-full rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet)"
+            className="h-[56dvh] w-full rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet)"
           />
         )}
         <div className="flex items-center justify-center gap-2">
@@ -193,7 +193,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
       aria-modal="true"
     >
       <div
-        className="flex max-h-[88vh] w-full max-w-[430px] flex-col overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) shadow-2xl"
+        className="flex max-h-[88dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 border-b border-(--rule-hairline) px-3.5 py-2.5">

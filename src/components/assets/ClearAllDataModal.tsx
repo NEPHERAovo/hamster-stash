@@ -111,6 +111,7 @@ export const ClearAllDataModal: React.FC<ClearAllDataModalProps> = ({
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing || e.key === 'Process' || e.keyCode === 229) return;
                   if (e.key === 'Enter' && isPhraseMatched) {
                     void handleExecuteClear();
                   }

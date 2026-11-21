@@ -48,7 +48,7 @@ export class MemoryAdapter implements DataAdapter {
   async read<T extends StoredEntity>(collection: string, id: string): Promise<T | null> {
     const col = this.getCollection(collection);
     const item = col.get(id);
-    return item ? (JSON.parse(JSON.stringify(item)) as T) : null;
+    return item ? (structuredClone(item) as T) : null;
   }
 
   async update<T extends StoredEntity>(
@@ -69,7 +69,7 @@ export class MemoryAdapter implements DataAdapter {
     } as unknown as T;
 
     col.set(id, updated);
-    return JSON.parse(JSON.stringify(updated)) as T;
+    return structuredClone(updated) as T;
   }
 
   async delete(collection: string, id: string): Promise<void> {
@@ -111,7 +111,7 @@ export class MemoryAdapter implements DataAdapter {
       items = items.slice(0, options.limit);
     }
 
-    return items.map((i) => JSON.parse(JSON.stringify(i)));
+    return items.map((i) => structuredClone(i));
   }
 
   async export(): Promise<ExportData> {

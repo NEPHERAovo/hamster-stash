@@ -484,6 +484,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
                 value={majorInput}
                 onChange={(e) => setMajorInput(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing || e.key === 'Process' || e.keyCode === 229) return;
                   if (e.key === 'Enter') handleSaveMajorThreshold();
                 }}
                 placeholder="输入金额"

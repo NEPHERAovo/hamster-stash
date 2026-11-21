@@ -47,7 +47,7 @@ export class WebDavClient {
 
       return resp.ok || resp.status === 207;
     } catch (e) {
-      throw new Error(`连接 WebDAV 失败：${e instanceof Error ? e.message : '网络或跨域受阻'}`);
+      throw new Error(`连接 WebDAV 失败：${e instanceof Error ? e.message : '网络或跨域受阻'}`, { cause: e });
     }
   }
 

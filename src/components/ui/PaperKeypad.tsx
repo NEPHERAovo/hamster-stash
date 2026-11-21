@@ -80,7 +80,7 @@ export const PaperKeypad: React.FC<PaperKeypadProps> = ({
   return (
     <div
       className={cn(
-        'grid grid-cols-4 gap-1.5 p-2 pb-[calc(10px+var(--safe-bottom))] transition-colors duration-200 select-none',
+        'grid touch-manipulation grid-cols-4 gap-1.5 p-2 pb-[calc(10px+var(--safe-bottom))] transition-colors duration-200 select-none',
         'paper-glass-blur border-t border-(--rule-hairline) bg-(--paper-sheet)',
         className
       )}
