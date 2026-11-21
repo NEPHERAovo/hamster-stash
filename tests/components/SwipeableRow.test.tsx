@@ -129,4 +129,42 @@ describe('SwipeableRow Component', () => {
     fireEvent.click(screen.getByTitle('移除按钮'));
     expect(handleAction).toHaveBeenCalledTimes(1);
   });
+
+  it('updates position when controlled isOpen prop changes', () => {
+    const handleOpenChange = vi.fn();
+    const { rerender } = render(
+      <SwipeableRow
+        isOpen={false}
+        actionWidth={80}
+        onOpenChange={handleOpenChange}
+        action={{
+          label: '删除',
+          title: '删除按钮',
+          onClick: vi.fn(),
+        }}
+      >
+        <div>受控内容</div>
+      </SwipeableRow>
+    );
+
+    const content = screen.getByText('受控内容').parentElement;
+    expect(content?.style.transform).toBe('translate3d(0px, 0px, 0px)');
+
+    rerender(
+      <SwipeableRow
+        isOpen={true}
+        actionWidth={80}
+        onOpenChange={handleOpenChange}
+        action={{
+          label: '删除',
+          title: '删除按钮',
+          onClick: vi.fn(),
+        }}
+      >
+        <div>受控内容</div>
+      </SwipeableRow>
+    );
+
+    expect(content?.style.transform).toBe('translate3d(-80px, 0px, 0px)');
+  });
 });

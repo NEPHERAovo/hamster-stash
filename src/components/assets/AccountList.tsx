@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Trash as Trash2 } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
@@ -19,6 +19,8 @@ export interface AccountListProps {
 interface SwipeableAccountRowProps {
   account: Account;
   canDelete: boolean;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelect: () => void;
   onDelete?: () => void;
 }
@@ -43,6 +45,8 @@ const getAccountTypeLabel = (type: string) => {
 const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   account,
   canDelete,
+  isOpen,
+  onOpenChange,
   onSelect,
   onDelete,
 }) => {
@@ -69,6 +73,8 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   return (
     <SwipeableRow
       enabled={canDelete}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
       action={{
         label: '删除',
         title: '删除账户',
@@ -126,6 +132,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   onDeleteAccount,
 }) => {
   const canDelete = accounts.length > 1;
+  const [openAccountId, setOpenAccountId] = useState<string | null>(null);
 
   const savingsAccounts = useMemo(
     () => accounts.filter((a) => !isCreditAccount(a)),
@@ -145,6 +152,13 @@ export const AccountList: React.FC<AccountListProps> = ({
     () => creditAccounts.reduce((sum, a) => sum + (a.includeInNetWorth === false ? 0 : Math.min(0, a.balance)), 0),
     [creditAccounts]
   );
+
+  const handleDeleteAccount = (acct: Account) => {
+    if (openAccountId === acct.id) {
+      setOpenAccountId(null);
+    }
+    onDeleteAccount?.(acct);
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -169,8 +183,10 @@ export const AccountList: React.FC<AccountListProps> = ({
                 key={acct.id}
                 account={acct}
                 canDelete={canDelete}
+                isOpen={openAccountId === acct.id}
+                onOpenChange={(open) => setOpenAccountId(open ? acct.id : null)}
                 onSelect={() => onSelectAccount(acct)}
-                onDelete={() => onDeleteAccount?.(acct)}
+                onDelete={() => handleDeleteAccount(acct)}
               />
             ))
           )}
@@ -194,8 +210,10 @@ export const AccountList: React.FC<AccountListProps> = ({
                 key={acct.id}
                 account={acct}
                 canDelete={canDelete}
+                isOpen={openAccountId === acct.id}
+                onOpenChange={(open) => setOpenAccountId(open ? acct.id : null)}
                 onSelect={() => onSelectAccount(acct)}
-                onDelete={() => onDeleteAccount?.(acct)}
+                onDelete={() => handleDeleteAccount(acct)}
               />
             ))}
           </div>

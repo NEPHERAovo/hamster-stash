@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '../../utils/cn';
 import {
   SPRING_OUT_EASE,
@@ -21,6 +21,8 @@ export interface SwipeableRowProps extends React.HTMLAttributes<HTMLDivElement> 
   enabled?: boolean;
   onClick?: () => void;
   actionWidth?: number;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   className?: string;
   containerClassName?: string;
 }
@@ -31,6 +33,8 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
   enabled = true,
   onClick,
   actionWidth = 76,
+  isOpen,
+  onOpenChange,
   className,
   containerClassName,
   ...rest
@@ -49,6 +53,24 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
   const lastSwipeTimeRef = useRef(0);
 
   const canSwipe = enabled && Boolean(action);
+
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      const target = isOpen ? -actionWidth : 0;
+      if (currentOffsetRef.current !== target && !isDraggingRef.current) {
+        currentOffsetRef.current = target;
+        setOffset(target);
+      }
+    }
+  }, [isOpen, actionWidth]);
+
+  useEffect(() => {
+    if (!canSwipe && offset !== 0) {
+      currentOffsetRef.current = 0;
+      setOffset(0);
+      onOpenChange?.(false);
+    }
+  }, [canSwipe, offset, onOpenChange]);
 
   const handleDragStart = (clientX: number, clientY: number) => {
     if (!canSwipe) return;
@@ -75,6 +97,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
         isHorizontalRef.current = true;
         hasSwipedRef.current = true;
         setIsSwiping(true);
+        onOpenChange?.(true);
       }
     }
 
@@ -116,6 +139,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     setSettleMs(computeSettleDuration(target - currentOffsetRef.current, vx, 190, 300));
     currentOffsetRef.current = target;
     setOffset(target);
+    onOpenChange?.(shouldOpen);
   };
 
   const handleRowClick = () => {
@@ -125,6 +149,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     if (offset < 0) {
       currentOffsetRef.current = 0;
       setOffset(0);
+      onOpenChange?.(false);
     } else {
       onClick?.();
     }
@@ -134,6 +159,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     e.stopPropagation();
     currentOffsetRef.current = 0;
     setOffset(0);
+    onOpenChange?.(false);
     action?.onClick(e);
   };
 
