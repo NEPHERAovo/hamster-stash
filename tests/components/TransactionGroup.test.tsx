@@ -239,4 +239,30 @@ describe('TransactionGroup component', () => {
     const emptyAfterSwitch = screen.getByText('暂无流水记录').closest('.bg-\\(--paper-sheet\\)');
     expect(emptyAfterSwitch).toBe(emptyContainer);
   });
+
+  it('animates empty state with filter-fade-enter when transitioning from non-empty to empty', () => {
+    const { rerender } = render(
+      <TransactionGroup
+        transactions={mockTransactions}
+        categories={mockCategories}
+        accounts={mockAccounts}
+        isLoading={false}
+      />
+    );
+
+    expect(screen.getByText('餐饮')).toBeInTheDocument();
+
+    rerender(
+      <TransactionGroup
+        transactions={[]}
+        categories={mockCategories}
+        accounts={mockAccounts}
+        isLoading={false}
+      />
+    );
+
+    const emptyContainer = screen.getByText('暂无流水记录').closest('.bg-\\(--paper-sheet\\)');
+    expect(emptyContainer).not.toBeNull();
+    expect(emptyContainer?.classList.contains('filter-fade-enter')).toBe(true);
+  });
 });

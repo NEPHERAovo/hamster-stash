@@ -13,3 +13,4 @@ export * from './PaperSwitch';
 export * from './ThemeSelector';
 export * from './Toast';
 export * from './ConfirmDialog';
+export * from './PaperDayPicker';

@@ -32,7 +32,7 @@ export const AmortizeTrayPanel: React.FC<AmortizeTrayPanelProps> = ({
   onCustomAmortizeChange,
 }) => {
   return (
-    <div className="space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
+    <div className="picker-fade-enter space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
       <div className="flex flex-wrap items-center gap-1.5">
         {AMORTIZE_PRESETS.map((opt) => (
           <button

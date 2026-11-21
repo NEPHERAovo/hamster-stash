@@ -4,6 +4,7 @@ import { PaperModal } from '../ui/PaperModal';
 import { AmountInput } from '../ui/AmountInput';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperSwitch } from '../ui/PaperSwitch';
+import { PaperDayPicker } from '../ui/PaperDayPicker';
 import type { Account, AccountType } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
@@ -271,7 +272,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         {isCredit && (
-          <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-3">
+          <div className="picker-fade-enter space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="font-mono text-xs text-(--ink-tertiary)">每月还款日</label>
@@ -343,55 +344,26 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
 
             {activeDayPicker && (
-              <div className="space-y-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-2.5 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-(--ink-tertiary)">
-                    {activeDayPicker === 'repayment' ? '选择每月还款日' : '选择每月账单日'} (1-31日)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (activeDayPicker === 'repayment') {
-                        setRepaymentDay(undefined);
-                      } else {
-                        setBillDay(undefined);
-                      }
-                      setActiveDayPicker(null);
-                    }}
-                    className="cursor-pointer text-[11px] font-medium text-(--ink-tertiary) hover:text-(--ink-primary)"
-                  >
-                    清除设置
-                  </button>
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => {
-                    const isSelected =
-                      activeDayPicker === 'repayment' ? repaymentDay === d : billDay === d;
-                    return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => {
-                          if (activeDayPicker === 'repayment') {
-                            setRepaymentDay(d);
-                          } else {
-                            setBillDay(d);
-                          }
-                          setActiveDayPicker(null);
-                        }}
-                        className={cn(
-                          'flex h-7 cursor-pointer items-center justify-center rounded-(--radius-xs) font-mono text-xs transition-all',
-                          isSelected
-                            ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
-                            : 'bg-(--paper-sunken)/60 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
-                        )}
-                      >
-                        {d}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <PaperDayPicker
+                title={activeDayPicker === 'repayment' ? '选择每月还款日' : '选择每月账单日'}
+                selectedDay={activeDayPicker === 'repayment' ? repaymentDay : billDay}
+                onSelectDay={(d) => {
+                  if (activeDayPicker === 'repayment') {
+                    setRepaymentDay(d);
+                  } else {
+                    setBillDay(d);
+                  }
+                  setActiveDayPicker(null);
+                }}
+                onClear={() => {
+                  if (activeDayPicker === 'repayment') {
+                    setRepaymentDay(undefined);
+                  } else {
+                    setBillDay(undefined);
+                  }
+                  setActiveDayPicker(null);
+                }}
+              />
             )}
 
             <div className="space-y-1.5">

@@ -139,6 +139,15 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     return sortedDates.slice(0, visibleGroupCount);
   }, [sortedDates, visibleGroupCount]);
 
+  const prevCountRef = useRef(filteredTransactions.length);
+  const wasEmpty = prevCountRef.current === 0;
+  const isEmpty = filteredTransactions.length === 0;
+  const shouldAnimateEmpty = !wasEmpty && isEmpty;
+
+  useEffect(() => {
+    prevCountRef.current = filteredTransactions.length;
+  });
+
   const hasMore = visibleGroupCount < sortedDates.length;
 
   useEffect(() => {
@@ -202,7 +211,8 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       <div
         className={cn(
           contained ? 'mx-0' : 'mx-4',
-          'my-4 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)]'
+          'my-4 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)]',
+          shouldAnimateEmpty && 'filter-fade-enter'
         )}
       >
         <div className="rounded-xs border border-dashed border-(--rule-hairline) px-4 py-8">

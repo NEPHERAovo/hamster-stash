@@ -142,7 +142,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
         </div>
 
         {rangeMode === 'custom' && (
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="picker-fade-enter grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="font-mono text-[11px] text-(--ink-tertiary)">开始日期</label>
               <input

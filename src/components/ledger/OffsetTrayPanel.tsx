@@ -22,7 +22,7 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
   onClearOffsetExpense,
 }) => {
   return (
-    <div className="space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
+    <div className="picker-fade-enter space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
       <div className="flex items-center justify-between px-0.5 text-[11px] text-(--ink-tertiary)">
         <span>选择要抵扣的原支出流水:</span>
         {offsetTransactionId && (

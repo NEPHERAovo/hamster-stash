@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ChartPieIcon as PieChart } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
@@ -23,6 +23,7 @@ import { SegToggle } from '../ui/SegToggle';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
+import { cn } from '../../utils/cn';
 
 export interface CategoryDrilldownData {
   category: Category;
@@ -104,6 +105,15 @@ export const StatsView: React.FC<StatsViewProps> = ({
       mode
     );
   }, [periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
+
+  const prevExpenseRef = useRef(totalExpense);
+  const wasEmptyExpense = prevExpenseRef.current === 0;
+  const isEmptyExpense = totalExpense === 0;
+  const shouldAnimateEmptyExpense = !wasEmptyExpense && isEmptyExpense;
+
+  useEffect(() => {
+    prevExpenseRef.current = totalExpense;
+  }, [totalExpense]);
 
   const [trendOffset, setTrendOffset] = useState<number>(0);
 
@@ -254,7 +264,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
 
         {totalExpense === 0 ? (
-          <div className="paper-card flex w-full flex-col items-center gap-1.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center text-xs text-(--ink-tertiary) shadow-xs transition-all duration-200 select-none">
+          <div
+            className={cn(
+              'paper-card flex w-full flex-col items-center gap-1.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center text-xs text-(--ink-tertiary) shadow-xs transition-all duration-200 select-none',
+              shouldAnimateEmptyExpense && 'filter-fade-enter'
+            )}
+          >
             <PieChart className="stroke-1.5 size-6 text-(--ink-faint)" />
             <span>本周期暂无支出记录</span>
           </div>

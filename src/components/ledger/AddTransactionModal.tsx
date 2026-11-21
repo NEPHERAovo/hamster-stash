@@ -1117,7 +1117,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
 
           {isAcctTrayOpen && (
-            <div className="border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-0.5">
+            <div className="picker-fade-enter border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-0.5">
               <div className="flex flex-wrap items-center gap-1.5">
                 {accounts.map((a) => (
                   <button
