@@ -471,13 +471,12 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <span className="text-[13px] font-medium text-(--ink-primary)">检查更新</span>
           </div>
           <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
-            {needRefresh ? (
+            {needRefresh && (
               <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-income-bg) text-(--color-income) font-semibold">
                 有新版本
               </span>
-            ) : (
-              <span>{isChecking ? '检查中...' : '离线缓存'}</span>
             )}
+            {isChecking && <span>检查中...</span>}
             <ChevronRight className="w-3.5 h-3.5" />
           </div>
         </div>
