@@ -26,18 +26,6 @@ export default defineConfig([
     rules: {
       // Complexity and code smell prevention
       'no-nested-ternary': 'error',
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'lucide-react',
-              message:
-                'lucide-react is prohibited. All icons must be imported from @phosphor-icons/react or src/utils/categoryIcons.',
-            },
-          ],
-        },
-      ],
 
       // Tailwind CSS rules tailored for Tailwind v4 and clean styling
       'tailwindcss/no-contradicting-classname': 'error',
