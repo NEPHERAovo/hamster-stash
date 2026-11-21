@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { SlidersHorizontal, Receipt as ReceiptText, CalendarCheck as CalendarClock, Tag as Tags, Database, CaretRight as ChevronRight, SquaresFour as Blocks, Trash as Trash2, ArrowsClockwise as RefreshCw, DownloadSimple as Download, Flask } from '@phosphor-icons/react';
 import { core } from '../../core';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from '../../core/db/schema';
-import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
@@ -14,7 +13,6 @@ import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperSwitch } from '../ui/PaperSwitch';
-import { ExportCsvModal } from './ExportCsvModal';
 import { ClearAllDataModal } from './ClearAllDataModal';
 import { PwaInstallGuideModal } from './PwaInstallGuideModal';
 import { pluginManager } from '../../core/plugin/PluginManager';
@@ -35,10 +33,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   onOpenCategories,
   onOpenDataManage,
 }) => {
-  const jsonFileInputRef = useRef<HTMLInputElement>(null);
-
   const { accounts, loadAccounts } = useAccountStore();
-  const { allTransactions, loadMonth, loadTransactions, loadSettlementSummary } = useLedgerStore();
+  const { allTransactions, loadTransactions, loadSettlementSummary } = useLedgerStore();
   const { categories, loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const {
@@ -61,11 +57,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
   const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
-  const [isExportCsvOpen, setIsExportCsvOpen] = useState(false);
   const [isBackupConfirmOpen, setIsBackupConfirmOpen] = useState(false);
   const [isExportingBackup, setIsExportingBackup] = useState(false);
-  const [pendingRestore, setPendingRestore] = useState<{ fileName: string; data: ExportData } | null>(null);
-  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
   const [isClearAllOpen, setIsClearAllOpen] = useState(false);
   const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
 
@@ -131,46 +124,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       toast.error('导出 JSON 备份失败');
     } finally {
       setIsExportingBackup(false);
-    }
-  };
-
-  const handleImportJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text) as ExportData;
-      if (!Array.isArray(data.transactions) || !Array.isArray(data.accounts)) {
-        throw new Error('无效的备份文件结构');
-      }
-      setPendingRestore({ fileName: file.name, data });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '备份文件解析失败');
-    } finally {
-      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
-    }
-  };
-
-  const handleConfirmRestoreJson = async () => {
-    if (!pendingRestore) return;
-    setIsRestoringBackup(true);
-    try {
-      await core.init();
-      await core.adapter.import(pendingRestore.data);
-
-      await loadAccounts();
-      await loadCategories();
-      await loadMonth();
-      await useThemeStore.getState().loadThemeFromDB();
-      await usePreferenceStore.getState().loadPreferencesFromDB();
-
-      setPendingRestore(null);
-      toast.success('JSON 数据恢复成功');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '恢复备份数据失败');
-    } finally {
-      setIsRestoringBackup(false);
     }
   };
 
@@ -603,50 +556,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
               className="flex-1 h-10 rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) text-xs font-semibold cursor-pointer disabled:opacity-50"
             >
               {isExportingBackup ? '导出中...' : '确认导出备份'}
-            </button>
-          </div>
-        </div>
-      </PaperModal>
-
-      <PaperModal
-        isOpen={Boolean(pendingRestore)}
-        onClose={() => setPendingRestore(null)}
-        title="确认恢复备份"
-        subtitle={pendingRestore?.fileName}
-      >
-        <div className="p-4 space-y-4 select-none">
-          {pendingRestore && (
-            <div className="p-3 rounded-(--radius-sm) bg-(--paper-sunken)/70 border border-dashed border-(--rule-hairline) text-xs font-mono space-y-1.5">
-              <div className="flex items-center justify-between text-(--ink-secondary)">
-                <span>备份流水</span>
-                <span className="font-semibold text-(--ink-solid)">{pendingRestore.data.transactions.length} 笔</span>
-              </div>
-              <div className="flex items-center justify-between text-(--ink-secondary)">
-                <span>备份账户</span>
-                <span className="font-semibold text-(--ink-solid)">{pendingRestore.data.accounts.length} 个</span>
-              </div>
-            </div>
-          )}
-
-          <p className="text-xs text-(--color-expense) leading-relaxed">
-            恢复操作将完全覆盖当前设备中的所有账本数据，此操作不可撤销，请确认已做好备份。
-          </p>
-
-          <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-            <button
-              type="button"
-              onClick={() => setPendingRestore(null)}
-              className="flex-1 h-10 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) cursor-pointer"
-            >
-              取消
-            </button>
-            <button
-              type="button"
-              disabled={isRestoringBackup}
-              onClick={handleConfirmRestoreJson}
-              className="flex-1 h-10 rounded-(--btn-radius) bg-(--color-expense) text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
-            >
-              {isRestoringBackup ? '恢复中...' : '确认覆盖恢复'}
             </button>
           </div>
         </div>
