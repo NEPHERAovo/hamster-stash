@@ -203,9 +203,10 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
 
     return (
       <div
+        key={effectiveFilter}
         className={cn(
           contained ? 'mx-0' : 'mx-4',
-          'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] text-center select-none'
+          'my-4 p-6 bg-(--paper-sheet) border border-(--rule-hairline) rounded-(--radius-sm) shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)] text-center select-none filter-fade-enter'
         )}
       >
         <div className="border border-dashed border-(--rule-hairline) py-8 px-4 rounded-xs">
@@ -257,7 +258,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       {sortedDates.length === 0 ? (
         renderEmptyOrLoading()
       ) : (
-        <section className={cn('relative mt-2', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
+        <section key={effectiveFilter} className={cn('relative mt-2 filter-fade-enter', contained ? 'pb-4' : 'pb-20')} id="ledgerSurface">
           {uiStyle === 'modern' ? (
             <ModernTransactionGroup
               visibleDates={visibleDates}
