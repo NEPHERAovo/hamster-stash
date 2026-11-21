@@ -199,28 +199,26 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">划转日期</label>
-            <input
-              type="date"
-              value={dateStr}
-              onChange={(e) => setDateStr(e.target.value)}
-              className="w-full h-10 px-3 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none"
-            />
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-mono text-(--ink-tertiary)">划转日期</label>
+          <input
+            type="date"
+            value={dateStr}
+            onChange={(e) => setDateStr(e.target.value)}
+            className="w-full h-10 px-3 text-xs font-mono rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) outline-none"
+          />
+        </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-mono text-(--ink-tertiary)">划转备注 (选填)</label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="如：定期储蓄/定投"
-              maxLength={30}
-              className="w-full h-10 px-3 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none"
-            />
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-mono text-(--ink-tertiary)">划转备注</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="添加备注"
+            maxLength={30}
+            className="w-full h-10 px-3 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none"
+          />
         </div>
 
         <div className="pt-2 flex items-center gap-2">
