@@ -41,11 +41,12 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
 
   const isDraggingRef = useRef(false);
   const isHorizontalRef = useRef(false);
+  const hasSwipedRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const currentOffsetRef = useRef(0);
   const velocityRef = useRef(new VelocityTracker(90));
-  const lastTouchTimeRef = useRef(0);
+  const lastSwipeTimeRef = useRef(0);
 
   const canSwipe = enabled && Boolean(action);
 
@@ -53,6 +54,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     if (!canSwipe) return;
     isDraggingRef.current = true;
     isHorizontalRef.current = false;
+    hasSwipedRef.current = false;
     startXRef.current = clientX - currentOffsetRef.current;
     startYRef.current = clientY;
     velocityRef.current.reset(currentOffsetRef.current, performance.now());
@@ -71,6 +73,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
       }
       if (deltaX > 6) {
         isHorizontalRef.current = true;
+        hasSwipedRef.current = true;
         setIsSwiping(true);
       }
     }
@@ -94,7 +97,10 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     setIsSwiping(false);
-    lastTouchTimeRef.current = Date.now();
+
+    if (hasSwipedRef.current) {
+      lastSwipeTimeRef.current = Date.now();
+    }
 
     const vx = velocityRef.current.getVelocity(performance.now());
     let shouldOpen = false;
@@ -113,7 +119,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
   };
 
   const handleRowClick = () => {
-    if (Date.now() - lastTouchTimeRef.current < 350) {
+    if (Date.now() - lastSwipeTimeRef.current < 350) {
       return;
     }
     if (offset < 0) {
