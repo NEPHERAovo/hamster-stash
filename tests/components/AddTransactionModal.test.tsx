@@ -134,4 +134,44 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
       );
     });
   });
+
+  it('renders quick-chips and passes subTag when selected', async () => {
+    const categoryWithTags: Category = {
+      id: 'cat_food',
+      name: '餐饮',
+      type: 'expense',
+      icon: 'fork-knife',
+      color: '#fff',
+      subTags: ['三餐', '外卖', '水果'],
+      sortOrder: 1,
+      createdAt: '',
+      updatedAt: '',
+    };
+    useCategoryStore.setState({ categories: [categoryWithTags] });
+
+    const recordSpy = vi.fn().mockResolvedValue({ id: 'tx_with_subtag' });
+    useLedgerStore.setState({ recordTransaction: recordSpy });
+
+    render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+    expect(screen.getByText('三餐')).toBeInTheDocument();
+    expect(screen.getByText('外卖')).toBeInTheDocument();
+    expect(screen.getByText('水果')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('外卖'));
+
+    fireEvent.click(screen.getByText('2'));
+    fireEvent.click(screen.getByText('5'));
+    fireEvent.click(screen.getByText('完成'));
+
+    await waitFor(() => {
+      expect(recordSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'expense',
+          amount: 2500,
+          subTag: '外卖',
+        })
+      );
+    });
+  });
 });

@@ -65,6 +65,11 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
           <span className="text-[13px] font-medium text-(--ink-primary) leading-tight truncate">
             {title}
           </span>
+          {transaction.subTag && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-(--paper-sunken) text-(--ink-secondary) border border-(--rule-hairline) font-sans leading-none">
+              {transaction.subTag}
+            </span>
+          )}
           {transaction.isReimbursable && (
             <span className="real-stamp text-[9px] px-1 py-0.5">
               {transaction.reimburseStatus === 'settled' ? '已报销' : '待报销'}

@@ -13,12 +13,13 @@ import { todayDate } from '../../utils/date';
 
 export interface CreateTransactionInput {
   type: TransactionType;
-  amount: number;             // 单位：分
+  amount: number;
   accountId: string;
   categoryId: string;
   toAccountId?: string;
-  date: string;               // YYYY-MM-DD
+  date: string;
   note?: string;
+  subTag?: string;
   tags?: string[];
   createdAt?: string;
 
@@ -174,6 +175,7 @@ export class TransactionService {
       toAccountId: input.toAccountId,
       date: input.date,
       note: input.note?.trim(),
+      subTag: input.subTag?.trim(),
       tags: input.tags,
       loanParty: input.loanParty?.trim(),
       loanDirection,
