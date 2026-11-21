@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { PaperModal } from '../ui/PaperModal';
 import { AmountInput } from '../ui/AmountInput';
 import { SegToggle } from '../ui/SegToggle';
+import { PaperSwitch } from '../ui/PaperSwitch';
 import type { Account, AccountType, AccountCategory } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
@@ -226,7 +227,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     >
       <form onSubmit={handleConfirm} className="p-4 space-y-4 select-none">
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">账户类型分类</label>
+          <label className="text-xs font-mono text-(--ink-tertiary)">账户类型</label>
           <SegToggle
             options={[
               { value: 'savings', label: '储蓄账户' },
@@ -256,7 +257,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-mono text-(--ink-tertiary)">子类型</label>
+          <label className="text-xs font-mono text-(--ink-tertiary)">账户标签</label>
           <div className="flex flex-wrap gap-1.5">
             {typeOptions.map((item) => {
               const isSelected = type === item.value;
@@ -362,25 +363,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
             <div className="flex items-center justify-between py-1">
               <span className="text-xs font-medium text-(--ink-primary)">配置自动还款</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={autoRepay}
-                onClick={() => setAutoRepay((prev) => !prev)}
-                className={cn(
-                  'w-9 h-5 rounded-full border transition-colors relative cursor-pointer shrink-0',
-                  autoRepay
-                    ? 'bg-(--color-income) border-(--color-income)'
-                    : 'bg-(--paper-sheet) border-(--rule-hairline)'
-                )}
-              >
-                <span
-                  className={cn(
-                    'block w-3.5 h-3.5 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                    autoRepay ? 'left-4.5' : 'left-0.5 bg-(--ink-tertiary)'
-                  )}
-                />
-              </button>
+              <PaperSwitch
+                checked={autoRepay}
+                onChange={setAutoRepay}
+                aria-label="配置自动还款"
+              />
             </div>
 
             <div className="space-y-1">
@@ -415,25 +402,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
         <div className="flex items-center justify-between py-2.5 px-3 rounded-(--input-radius) bg-(--paper-sunken)/70 border border-(--rule-hairline)">
           <span className="text-xs font-medium text-(--ink-primary)">计入净资产</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={includeInNetWorth}
-            onClick={() => setIncludeInNetWorth((prev) => !prev)}
-            className={cn(
-              'w-9 h-5 rounded-full border transition-colors relative cursor-pointer shrink-0',
-              includeInNetWorth
-                ? 'bg-(--ink-primary) border-(--ink-primary)'
-                : 'bg-(--paper-sheet) border-(--rule-hairline)'
-            )}
-          >
-            <span
-              className={cn(
-                'block w-3.5 h-3.5 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                includeInNetWorth ? 'left-4.5' : 'left-0.5 bg-(--ink-tertiary)'
-              )}
-            />
-          </button>
+          <PaperSwitch
+            checked={includeInNetWorth}
+            onChange={setIncludeInNetWorth}
+            aria-label="计入净资产"
+          />
         </div>
 
         <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">

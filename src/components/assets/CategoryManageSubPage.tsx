@@ -9,6 +9,7 @@ import { PaperModal } from '../ui/PaperModal';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { SwipeableRow } from '../ui/SwipeableRow';
+import { PaperSwitch } from '../ui/PaperSwitch';
 import { cn } from '../../utils/cn';
 
 const CATEGORY_ICON_CHOICES = [
@@ -137,24 +138,11 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isEnabled}
-          onClick={() => onToggleActive(cat)}
-          className={cn(
-            'w-8 h-4.5 rounded-full transition-colors relative cursor-pointer shrink-0',
-            isEnabled ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
-          )}
-          title={isEnabled ? '停用' : '启用'}
-        >
-          <span
-            className={cn(
-              'absolute top-0.5 w-3.5 h-3.5 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
-              isEnabled ? 'left-4' : 'left-0.5'
-            )}
-          />
-        </button>
+        <PaperSwitch
+          checked={isEnabled}
+          onChange={() => onToggleActive(cat)}
+          aria-label={isEnabled ? '停用' : '启用'}
+        />
 
         {showDragHandle && onDragStartHtml5 && (
           <div

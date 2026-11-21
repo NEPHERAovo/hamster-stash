@@ -13,6 +13,7 @@ import { cn } from '../../utils/cn';
 import { parseLocalDate, currentYearMonth, stepYearMonth } from '../../utils/date';
 import { computeAccountMonthlyBalanceTrends } from '../../domain/finance/periodStats';
 import { MonthlyTrendBar } from '../stats/MonthlyTrendBar';
+import { PaperSwitch } from '../ui/PaperSwitch';
 
 export interface AccountDetailSubPageProps {
   account: Account;
@@ -351,26 +352,11 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           <div className="flex items-center justify-between py-2">
             <span className="text-(--ink-tertiary)">计入净资产</span>
             {onToggleIncludeInNetWorth ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isIncludedInNetWorth}
+              <PaperSwitch
+                checked={isIncludedInNetWorth}
+                onChange={handleToggleNetWorth}
                 aria-label="计入净资产"
-                onClick={handleToggleNetWorth}
-                className={cn(
-                  'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
-                  isIncludedInNetWorth
-                    ? 'bg-(--ink-primary) border-(--ink-primary)'
-                    : 'bg-(--paper-sunken) border-(--rule-hairline)'
-                )}
-              >
-                <span
-                  className={cn(
-                    'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                    isIncludedInNetWorth ? 'left-4' : 'left-0.5'
-                  )}
-                />
-              </button>
+              />
             ) : (
               <span
                 className={cn(

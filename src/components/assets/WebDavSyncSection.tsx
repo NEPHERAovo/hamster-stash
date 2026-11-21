@@ -9,6 +9,7 @@ import { useThemeStore } from '../../stores/useThemeStore';
 import { toast } from '../../stores/useToastStore';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperInput } from '../ui/PaperInput';
+import { PaperSwitch } from '../ui/PaperSwitch';
 import { cn } from '../../utils/cn';
 import { formatMonthDayTime } from '../../utils/date';
 
@@ -211,50 +212,20 @@ export const WebDavSyncSection: React.FC = () => {
 
         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
           <span className="text-[13px] font-medium text-(--ink-primary)">每日自动同步</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoSyncDaily}
+          <PaperSwitch
+            checked={autoSyncDaily}
+            onChange={handleToggleAutoSync}
             aria-label="每日自动同步"
-            onClick={handleToggleAutoSync}
-            className={cn(
-              'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
-              autoSyncDaily
-                ? 'bg-(--ink-primary) border-(--ink-primary)'
-                : 'bg-(--paper-sunken) border-(--rule-hairline)'
-            )}
-          >
-            <span
-              className={cn(
-                'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                autoSyncDaily ? 'left-4' : 'left-0.5'
-              )}
-            />
-          </button>
+          />
         </div>
 
         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
           <span className="text-[13px] font-medium text-(--ink-primary)">备份凭证附件</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={syncAttachments}
+          <PaperSwitch
+            checked={syncAttachments}
+            onChange={handleToggleSyncAttachments}
             aria-label="备份凭证附件"
-            onClick={handleToggleSyncAttachments}
-            className={cn(
-              'w-8 h-4.5 rounded-full border transition-colors relative cursor-pointer shrink-0',
-              syncAttachments
-                ? 'bg-(--ink-primary) border-(--ink-primary)'
-                : 'bg-(--paper-sunken) border-(--rule-hairline)'
-            )}
-          >
-            <span
-              className={cn(
-                'block w-3 h-3 rounded-full bg-(--paper-sheet) shadow-2xs absolute top-0.5 transition-transform duration-200',
-                syncAttachments ? 'left-4' : 'left-0.5'
-              )}
-            />
-          </button>
+          />
         </div>
 
         {isOpen && (

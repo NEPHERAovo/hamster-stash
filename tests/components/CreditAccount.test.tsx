@@ -54,6 +54,8 @@ describe('Credit Account Features', () => {
 
     fireEvent.click(screen.getByText('信用账户'));
 
+    expect(screen.getByText('账户类型')).toBeInTheDocument();
+    expect(screen.getByText('账户标签')).toBeInTheDocument();
     expect(screen.getByText('信用卡')).toBeInTheDocument();
     expect(screen.getByText('每月还款日')).toBeInTheDocument();
     expect(screen.getByText('配置自动还款')).toBeInTheDocument();

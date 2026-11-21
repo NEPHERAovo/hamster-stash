@@ -13,6 +13,7 @@ import { usePwaStore } from '../../stores/usePwaStore';
 import { ThemeSelector } from '../ui/ThemeSelector';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
+import { PaperSwitch } from '../ui/PaperSwitch';
 import { ExportCsvModal } from './ExportCsvModal';
 import { ClearAllDataModal } from './ClearAllDataModal';
 import { PwaInstallGuideModal } from './PwaInstallGuideModal';
@@ -279,23 +280,11 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">报销功能</span>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isReimbursementEnabled}
-            onClick={() => setReimbursementEnabled(!isReimbursementEnabled)}
-            className={cn(
-              'w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0',
-              isReimbursementEnabled ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
-            )}
-          >
-            <span
-              className={cn(
-                'absolute top-0.5 w-4 h-4 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
-                isReimbursementEnabled ? 'left-4.5' : 'left-0.5'
-              )}
-            />
-          </button>
+          <PaperSwitch
+            checked={isReimbursementEnabled}
+            onChange={(checked) => setReimbursementEnabled(checked)}
+            aria-label="报销功能"
+          />
         </div>
 
         <div className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 select-none">
@@ -305,23 +294,11 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             </div>
             <span className="text-[13px] font-medium text-(--ink-primary)">分期支出</span>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isAmortizationEnabled}
-            onClick={() => setAmortizationEnabled(!isAmortizationEnabled)}
-            className={cn(
-              'w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0',
-              isAmortizationEnabled ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
-            )}
-          >
-            <span
-              className={cn(
-                'absolute top-0.5 w-4 h-4 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
-                isAmortizationEnabled ? 'left-4.5' : 'left-0.5'
-              )}
-            />
-          </button>
+          <PaperSwitch
+            checked={isAmortizationEnabled}
+            onChange={(checked) => setAmortizationEnabled(checked)}
+            aria-label="分期支出"
+          />
         </div>
 
         <div className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 select-none">
@@ -341,23 +318,11 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
                 重置演示数据
               </button>
             )}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isSandboxModeActive()}
-              onClick={() => setSandboxMode(!isSandboxModeActive())}
-              className={cn(
-                'w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0',
-                isSandboxModeActive() ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
-              )}
-            >
-              <span
-                className={cn(
-                  'absolute top-0.5 w-4 h-4 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
-                  isSandboxModeActive() ? 'left-4.5' : 'left-0.5'
-                )}
-              />
-            </button>
+            <PaperSwitch
+              checked={isSandboxModeActive()}
+              onChange={(checked) => setSandboxMode(checked)}
+              aria-label="沙盒测试模式"
+            />
           </div>
         </div>
 

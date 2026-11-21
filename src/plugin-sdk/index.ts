@@ -42,6 +42,7 @@ export { PaperModal, type PaperModalProps } from '../components/ui/PaperModal';
 export { PaperBadge, type PaperBadgeProps } from '../components/ui/PaperBadge';
 export { CategoryBadge, type CategoryBadgeProps } from '../components/ui/CategoryBadge';
 export { SegToggle, type SegToggleProps } from '../components/ui/SegToggle';
+export { PaperSwitch, type PaperSwitchProps } from '../components/ui/PaperSwitch';
 export { PaperKeypad, type PaperKeypadProps } from '../components/ui/PaperKeypad';
 export { DrumWheelPicker, type DrumWheelPickerProps } from '../components/ledger/DrumWheelPicker';
 

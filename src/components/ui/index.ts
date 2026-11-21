@@ -9,6 +9,7 @@ export * from './SegToggle';
 export * from './PaperBadge';
 export * from './CategoryBadge';
 export * from './PaperKeypad';
+export * from './PaperSwitch';
 export * from './ThemeSelector';
 export * from './Toast';
 export * from './ConfirmDialog';
