@@ -166,7 +166,7 @@ export const WebDavSyncSection: React.FC = () => {
   return (
     <div className="space-y-1.5">
       <div className="px-1 text-xs font-mono text-(--ink-tertiary) tracking-wider pt-1">
-        <span>WebDAV 同步</span>
+        <span>云端同步</span>
       </div>
 
       <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs px-3.5 py-3">
@@ -180,7 +180,10 @@ export const WebDavSyncSection: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-(--ink-primary)">WebDAV 备份</span>
+                <span className="text-[13px] font-medium text-(--ink-primary)">云端备份</span>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-medium bg-(--paper-sunken) text-(--ink-tertiary)">
+                  WebDAV
+                </span>
                 <span className="text-[10px] font-mono text-(--ink-tertiary)">
                   {formatSyncTime(lastSyncAt)}
                 </span>
@@ -208,24 +211,6 @@ export const WebDavSyncSection: React.FC = () => {
               {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
-          <span className="text-[13px] font-medium text-(--ink-primary)">每日自动同步</span>
-          <PaperSwitch
-            checked={autoSyncDaily}
-            onChange={handleToggleAutoSync}
-            aria-label="每日自动同步"
-          />
-        </div>
-
-        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
-          <span className="text-[13px] font-medium text-(--ink-primary)">备份凭证附件</span>
-          <PaperSwitch
-            checked={syncAttachments}
-            onChange={handleToggleSyncAttachments}
-            aria-label="备份凭证附件"
-          />
         </div>
 
         {isOpen && (
@@ -296,6 +281,24 @@ export const WebDavSyncSection: React.FC = () => {
             </div>
           </div>
         )}
+
+        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
+          <span className="text-[13px] font-medium text-(--ink-primary)">每日自动同步</span>
+          <PaperSwitch
+            checked={autoSyncDaily}
+            onChange={handleToggleAutoSync}
+            aria-label="每日自动同步"
+          />
+        </div>
+
+        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-dashed border-(--rule-hairline)/60 select-none">
+          <span className="text-[13px] font-medium text-(--ink-primary)">备份凭证附件</span>
+          <PaperSwitch
+            checked={syncAttachments}
+            onChange={handleToggleSyncAttachments}
+            aria-label="备份凭证附件"
+          />
+        </div>
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import { AccountList } from './components/assets/AccountList';
 import { AccountDetailSubPage } from './components/assets/AccountDetailSubPage';
 import { SettingsSubPage } from './components/assets/SettingsSubPage';
 import { CategoryManageSubPage } from './components/assets/CategoryManageSubPage';
+import { DataManageSubPage } from './components/assets/DataManageSubPage';
 import { ImportSubPage } from './components/assets/ImportSubPage';
 import { LoanChainModal } from './components/assets/LoanChainModal';
 import { ReconcileModal } from './components/assets/ReconcileModal';
@@ -57,6 +58,7 @@ export function App() {
   const [activeDetailAccount, setActiveDetailAccount] = useState<Account | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isCategoryManageOpen, setIsCategoryManageOpen] = useState(false);
+  const [isDataManageOpen, setIsDataManageOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -486,6 +488,7 @@ export function App() {
           onToggleDark={toggleDark}
           onOpenImport={() => setIsImportOpen(true)}
           onOpenCategories={() => setIsCategoryManageOpen(true)}
+          onOpenDataManage={() => setIsDataManageOpen(true)}
         />
       </SubPageShell>
 
@@ -502,6 +505,23 @@ export function App() {
         }
       >
         <CategoryManageSubPage />
+      </SubPageShell>
+
+      <SubPageShell
+        isOpen={isDataManageOpen}
+        onClose={() => setIsDataManageOpen(false)}
+        className="z-50"
+        header={
+          <PageHeader
+            title="数据与备份"
+            centerTitle={true}
+            leftAction={<SubPageBackButton label="设置" />}
+          />
+        }
+      >
+        <DataManageSubPage
+          onOpenImport={() => setIsImportOpen(true)}
+        />
       </SubPageShell>
 
       <SubPageShell

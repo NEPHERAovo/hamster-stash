@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { SlidersHorizontal, Receipt as ReceiptText, CalendarCheck as CalendarClock, Tag as Tags, FileCsv as FileSpreadsheet, UploadSimple as FileUp, UploadSimple as HardDriveUpload, CaretRight as ChevronRight, SquaresFour as Blocks, Trash as Trash2, ArrowsClockwise as RefreshCw, DownloadSimple as Download, Flask } from '@phosphor-icons/react';
+import { SlidersHorizontal, Receipt as ReceiptText, CalendarCheck as CalendarClock, Tag as Tags, Database, CaretRight as ChevronRight, SquaresFour as Blocks, Trash as Trash2, ArrowsClockwise as RefreshCw, DownloadSimple as Download, Flask } from '@phosphor-icons/react';
 import { core } from '../../core';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from '../../core/db/schema';
 import type { ExportData } from '../../types/adapter';
@@ -17,7 +17,6 @@ import { PaperSwitch } from '../ui/PaperSwitch';
 import { ExportCsvModal } from './ExportCsvModal';
 import { ClearAllDataModal } from './ClearAllDataModal';
 import { PwaInstallGuideModal } from './PwaInstallGuideModal';
-import { WebDavSyncSection } from './WebDavSyncSection';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
@@ -29,11 +28,12 @@ export interface SettingsCardProps {
   onToggleDark?: () => void;
   onOpenImport?: () => void;
   onOpenCategories?: () => void;
+  onOpenDataManage?: () => void;
 }
 
 export const SettingsCard: React.FC<SettingsCardProps> = ({
-  onOpenImport,
   onOpenCategories,
+  onOpenDataManage,
 }) => {
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -328,64 +328,17 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
         <div
           className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
-          onClick={onOpenImport}
+          onClick={onOpenDataManage}
         >
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <FileUp className="w-3.5 h-3.5 stroke-[1.75]" />
+              <Database className="w-3.5 h-3.5 stroke-[1.75]" />
             </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">导入账本</span>
+            <span className="text-[13px] font-medium text-(--ink-primary)">数据与备份</span>
           </div>
-          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1">
+          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1 font-mono">
             <ChevronRight className="w-3.5 h-3.5" />
           </div>
-        </div>
-
-        <div
-          className="flex items-center justify-between py-2.5 border-b border-dashed border-(--rule-hairline)/60 cursor-pointer select-none"
-          onClick={() => setIsExportCsvOpen(true)}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <FileSpreadsheet className="w-3.5 h-3.5 stroke-[1.75]" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">导出账本</span>
-          </div>
-          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1">
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-        </div>
-
-        <div
-          className="flex items-center justify-between py-2.5 last:border-b-0 cursor-pointer select-none"
-          onClick={() => setIsBackupConfirmOpen(true)}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-(--badge-radius) bg-(--paper-sunken) flex items-center justify-center text-(--ink-secondary) shrink-0">
-              <HardDriveUpload className="w-3.5 h-3.5 stroke-[1.75]" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">全量备份</span>
-          </div>
-          <div className="text-xs text-(--ink-tertiary) flex items-center gap-1">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                jsonFileInputRef.current?.click();
-              }}
-              className="text-[11px] text-(--ink-secondary) hover:text-(--ink-primary) underline cursor-pointer mr-1"
-            >
-              恢复
-            </button>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
-          <input
-            ref={jsonFileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImportJson}
-            className="hidden"
-          />
         </div>
 
         {!isInstalled && (
@@ -462,8 +415,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
         </div>
       </div>
-
-      <WebDavSyncSection />
 
       {plugins.length > 0 && (
         <>
