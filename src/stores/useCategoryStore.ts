@@ -10,7 +10,7 @@ interface CategoryState {
   createCategory: (data: Partial<Category> & { name: string }) => Promise<Category>;
   updateCategory: (
     id: string,
-    patch: Partial<Pick<Category, 'name' | 'icon' | 'isArchived' | 'sortOrder'>>
+    patch: Partial<Pick<Category, 'name' | 'icon' | 'isArchived' | 'sortOrder' | 'subTags'>>
   ) => Promise<Category>;
   removeCategory: (id: string) => Promise<{ archived: boolean }>;
   reorderCategories: (orderedIds: string[]) => Promise<void>;
@@ -71,6 +71,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     if (patch.icon !== undefined) updates.icon = patch.icon;
     if (patch.isArchived !== undefined) updates.isArchived = patch.isArchived;
     if (patch.sortOrder !== undefined) updates.sortOrder = patch.sortOrder;
+    if (patch.subTags !== undefined) updates.subTags = patch.subTags;
 
     const updated = await core.catRepo.update(id, updates);
     await get().loadCategories();

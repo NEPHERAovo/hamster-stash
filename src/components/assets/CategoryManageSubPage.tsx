@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Trash as Trash2, Archive as ArchiveRestore, DotsSixVertical as GripVertical } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
@@ -56,6 +57,9 @@ interface SwipeableCategoryRowProps {
   onDragEnterHtml5: (index: number) => void;
   onDragEndHtml5: () => void;
   onDropHtml5: (e: React.DragEvent) => void;
+  onTouchRowStart: (e: React.TouchEvent, index: number) => void;
+  onTouchRowMove: (e: React.TouchEvent) => void;
+  onTouchRowEnd: (e: React.TouchEvent) => void;
   onTouchHandleStart: (e: React.TouchEvent, index: number) => void;
 }
 
@@ -70,6 +74,9 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
   onDragEnterHtml5,
   onDragEndHtml5,
   onDropHtml5,
+  onTouchRowStart,
+  onTouchRowMove,
+  onTouchRowEnd,
   onTouchHandleStart,
 }) => {
   const IconComp = getCategoryIcon(cat.icon);
@@ -80,7 +87,7 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       data-category-id={cat.id}
       containerClassName={cn(
         'bg-(--paper-sheet) select-none',
-        isDragging && 'opacity-60 bg-(--paper-sunken)'
+        isDragging && 'opacity-25 bg-(--paper-sunken) border-2 border-dashed border-(--rule-strong)'
       )}
       className="bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       action={{
@@ -91,13 +98,26 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       }}
       onClick={() => onSelect(cat)}
     >
-      <div className="flex items-center gap-2.5 min-w-0 flex-1 pointer-events-none">
+      <div
+        className="flex items-center gap-2.5 min-w-0 flex-1 touch-manipulation"
+        onTouchStart={(e) => onTouchRowStart(e, index)}
+        onTouchMove={onTouchRowMove}
+        onTouchEnd={onTouchRowEnd}
+        onTouchCancel={onTouchRowEnd}
+      >
         <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
           <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
         </div>
-        <span className="text-[13px] font-medium text-(--ink-primary) truncate">
-          {cat.name}
-        </span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[13px] font-medium text-(--ink-primary) truncate">
+            {cat.name}
+          </span>
+          {cat.subTags && cat.subTags.length > 0 && (
+            <span className="text-[10px] text-(--ink-tertiary) truncate font-mono">
+              {cat.subTags.slice(0, 4).join(' · ')}
+            </span>
+          )}
+        </div>
       </div>
 
       <div
@@ -131,11 +151,17 @@ export const CategoryManageSubPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [nameInput, setNameInput] = useState('');
+  const [subTagsInput, setSubTagsInput] = useState('');
   const [iconInput, setIconInput] = useState('shopping-cart');
   const [isSaving, setIsSaving] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const activeDragIndexRef = useRef<number | null>(null);
 
   const activeCategories = useMemo(
     () =>
@@ -161,68 +187,156 @@ export const CategoryManageSubPage: React.FC = () => {
     setLocalCategories(activeCategories);
   }, [activeCategories]);
 
-  const commitReorder = async (newList: Category[]) => {
-    try {
-      await reorderCategories(newList.map((c) => c.id));
-    } catch {
-      toast.error('保存排序失败');
-      setLocalCategories(activeCategories);
-    }
-  };
-
-  const handleTouchHandleStart = (e: React.TouchEvent, startIndex: number) => {
-    e.stopPropagation();
-    setDraggingIndex(startIndex);
-
-    const container = containerRef.current;
-    if (!container) return;
-
-    const rowElements = Array.from(
-      container.querySelectorAll<HTMLElement>('[data-category-row]')
-    );
-    if (rowElements.length === 0) return;
-
-    const firstRect = rowElements[0].getBoundingClientRect();
-    const rowHeight = firstRect.height || 44;
-    const startTop = firstRect.top;
-    const totalRows = rowElements.length;
-    let currentIdx = startIndex;
-
-    const onTouchMove = (moveEvt: TouchEvent) => {
-      if (moveEvt.cancelable) {
-        moveEvt.preventDefault();
+  const commitReorder = useCallback(
+    async (newList: Category[]) => {
+      try {
+        await reorderCategories(newList.map((c) => c.id));
+      } catch {
+        toast.error('保存排序失败');
+        setLocalCategories(activeCategories);
       }
-      const touchY = moveEvt.touches[0].clientY;
-      const targetIdx = Math.max(
-        0,
-        Math.min(totalRows - 1, Math.floor((touchY - startTop) / rowHeight))
+    },
+    [reorderCategories, activeCategories]
+  );
+
+  const startDragOperation = useCallback(
+    (startIndex: number, clientX: number, clientY: number) => {
+      isDraggingRef.current = true;
+      activeDragIndexRef.current = startIndex;
+      setDraggingIndex(startIndex);
+      setGhostPos({ x: clientX, y: clientY });
+
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate(15);
+        } catch {
+          void 0;
+        }
+      }
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rowElements = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-category-row]')
       );
+      if (rowElements.length === 0) return;
 
-      if (targetIdx !== currentIdx && targetIdx >= 0 && targetIdx < totalRows) {
-        const next = [...localCategoriesRef.current];
-        const [moved] = next.splice(currentIdx, 1);
-        next.splice(targetIdx, 0, moved);
-        localCategoriesRef.current = next;
-        setLocalCategories(next);
-        currentIdx = targetIdx;
+      const firstRect = rowElements[0].getBoundingClientRect();
+      const rowHeight = firstRect.height || 44;
+      const startTop = firstRect.top;
+      const totalRows = rowElements.length;
+      let curIdx = startIndex;
+
+      const onWindowTouchMove = (moveEvt: TouchEvent) => {
+        if (moveEvt.cancelable) {
+          moveEvt.preventDefault();
+        }
+        const touch = moveEvt.touches[0];
+        setGhostPos({ x: touch.clientX, y: touch.clientY });
+
+        const targetIdx = Math.max(
+          0,
+          Math.min(totalRows - 1, Math.floor((touch.clientY - startTop) / rowHeight))
+        );
+
+        if (targetIdx !== curIdx && targetIdx >= 0 && targetIdx < totalRows) {
+          const next = [...localCategoriesRef.current];
+          const [moved] = next.splice(curIdx, 1);
+          next.splice(targetIdx, 0, moved);
+          localCategoriesRef.current = next;
+          setLocalCategories(next);
+          curIdx = targetIdx;
+          activeDragIndexRef.current = targetIdx;
+          setDraggingIndex(targetIdx);
+
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+              navigator.vibrate(8);
+            } catch {
+              void 0;
+            }
+          }
+        }
+      };
+
+      const onWindowTouchEnd = () => {
+        window.removeEventListener('touchmove', onWindowTouchMove);
+        window.removeEventListener('touchend', onWindowTouchEnd);
+        window.removeEventListener('touchcancel', onWindowTouchEnd);
+
+        isDraggingRef.current = false;
+        setDraggingIndex(null);
+        setGhostPos(null);
+        activeDragIndexRef.current = null;
+
+        if (curIdx !== startIndex) {
+          commitReorder(localCategoriesRef.current);
+        }
+
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try {
+            navigator.vibrate(10);
+          } catch {
+            void 0;
+          }
+        }
+      };
+
+      window.addEventListener('touchmove', onWindowTouchMove, { passive: false });
+      window.addEventListener('touchend', onWindowTouchEnd);
+      window.addEventListener('touchcancel', onWindowTouchEnd);
+    },
+    [commitReorder]
+  );
+
+  const handleRowTouchStart = useCallback(
+    (e: React.TouchEvent, index: number) => {
+      const touch = e.touches[0];
+      touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
       }
-    };
 
-    const onTouchEnd = () => {
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
-      window.removeEventListener('touchcancel', onTouchEnd);
-      setDraggingIndex(null);
+      longPressTimerRef.current = window.setTimeout(() => {
+        startDragOperation(index, touch.clientX, touch.clientY);
+        longPressTimerRef.current = null;
+      }, 240);
+    },
+    [startDragOperation]
+  );
 
-      if (currentIdx !== startIndex) {
-        commitReorder(localCategoriesRef.current);
+  const handleRowTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartPosRef.current || isDraggingRef.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+
+    if (dx > 8 || dy > 8) {
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
-    };
+    }
+  }, []);
 
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('touchend', onTouchEnd);
-    window.addEventListener('touchcancel', onTouchEnd);
-  };
+  const handleRowTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+  }, []);
+
+  const handleTouchHandleStart = useCallback(
+    (e: React.TouchEvent, startIndex: number) => {
+      e.stopPropagation();
+      const touch = e.touches[0];
+      startDragOperation(startIndex, touch.clientX, touch.clientY);
+    },
+    [startDragOperation]
+  );
 
   const handleDragStartHtml5 = (e: React.DragEvent, index: number) => {
     e.dataTransfer.effectAllowed = 'move';
@@ -259,6 +373,7 @@ export const CategoryManageSubPage: React.FC = () => {
   const openCreateModal = () => {
     setEditingCat(null);
     setNameInput('');
+    setSubTagsInput('');
     setIconInput(activeType === 'income' ? 'wallet' : 'shopping-cart');
     setIsModalOpen(true);
   };
@@ -266,6 +381,7 @@ export const CategoryManageSubPage: React.FC = () => {
   const openEditModal = (cat: Category) => {
     setEditingCat(cat);
     setNameInput(cat.name);
+    setSubTagsInput(cat.subTags ? cat.subTags.join(' ') : '');
     setIconInput(cat.icon || 'shopping-cart');
     setIsModalOpen(true);
   };
@@ -289,15 +405,25 @@ export const CategoryManageSubPage: React.FC = () => {
       return;
     }
 
+    const parsedSubTags =
+      activeType === 'expense' && subTagsInput.trim()
+        ? subTagsInput.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean)
+        : undefined;
+
     setIsSaving(true);
     try {
       if (editingCat) {
-        await updateCategory(editingCat.id, { name: trimmed, icon: iconInput });
+        await updateCategory(editingCat.id, {
+          name: trimmed,
+          icon: iconInput,
+          subTags: parsedSubTags,
+        });
       } else {
         await createCategory({
           name: trimmed,
           type: activeType,
           icon: iconInput,
+          subTags: parsedSubTags,
         });
       }
       setIsModalOpen(false);
@@ -336,6 +462,19 @@ export const CategoryManageSubPage: React.FC = () => {
     }
   };
 
+  const handleArchiveFromModal = async (cat: Category) => {
+    if (activeCategories.length <= 1) {
+      toast.error('至少需保留一个可用分类');
+      return;
+    }
+    try {
+      await updateCategory(cat.id, { isArchived: true });
+      setIsModalOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '停用失败');
+    }
+  };
+
   const handleRestore = async (cat: Category) => {
     try {
       await updateCategory(cat.id, { isArchived: false });
@@ -357,6 +496,9 @@ export const CategoryManageSubPage: React.FC = () => {
   } else if (editingCat) {
     submitLabel = '保存修改';
   }
+
+  const draggingCat = draggingIndex !== null ? localCategories[draggingIndex] : null;
+  const GhostIconComp = draggingCat ? getCategoryIcon(draggingCat.icon) : null;
 
   return (
     <div className="w-full px-4 pt-2 pb-10 space-y-4 select-none">
@@ -385,8 +527,8 @@ export const CategoryManageSubPage: React.FC = () => {
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
-          <span>{activeType === 'expense' ? '支出分类' : '收入分类'}</span>
-          <span>共 {localCategories.length} 项</span>
+          <span>已启用分类</span>
+          <span>共 {localCategories.length} 项 (显示在记账键盘)</span>
         </div>
 
         <div
@@ -406,44 +548,55 @@ export const CategoryManageSubPage: React.FC = () => {
               onDragEnterHtml5={handleDragEnterHtml5}
               onDragEndHtml5={handleDragEndHtml5}
               onDropHtml5={handleDropHtml5}
+              onTouchRowStart={handleRowTouchStart}
+              onTouchRowMove={handleRowTouchMove}
+              onTouchRowEnd={handleRowTouchEnd}
               onTouchHandleStart={handleTouchHandleStart}
             />
           ))}
         </div>
         <p className="px-1 text-[11px] font-mono text-(--ink-faint) text-right">
-          点击编辑 · 拖拽右侧手柄排序 · 向左侧滑删除
+          长按或拖拽手柄排序 · 点击编辑与子分类 · 侧滑删除
         </p>
       </div>
 
       {archivedCategories.length > 0 && (
         <div className="space-y-1.5">
-          <div className="px-1 text-xs font-mono text-(--ink-tertiary)">
-            <span>已停用分类</span>
+          <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
+            <span>预设分类库 / 已停用</span>
+            <span>共 {archivedCategories.length} 项</span>
           </div>
 
-          <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60 opacity-80">
+          <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60">
             {archivedCategories.map((cat) => {
               const IconComp = getCategoryIcon(cat.icon);
               return (
                 <div
                   key={cat.id}
-                  className="flex items-center justify-between px-3.5 py-2.5"
+                  className="flex items-center justify-between px-3.5 py-2.5 hover:bg-(--paper-hover)/50 transition-colors"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-faint) flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3">
+                    <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-tertiary) flex items-center justify-center shrink-0">
                       <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
                     </div>
-                    <span className="text-[13px] text-(--ink-tertiary) line-through truncate">
-                      {cat.name}
-                    </span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-[13px] font-medium text-(--ink-secondary) truncate">
+                        {cat.name}
+                      </span>
+                      {cat.subTags && cat.subTags.length > 0 && (
+                        <span className="text-[10px] text-(--ink-faint) truncate font-mono">
+                          {cat.subTags.slice(0, 4).join(' · ')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRestore(cat)}
-                    className="px-2.5 py-1 rounded-(--btn-radius) text-xs font-medium text-(--color-income) bg-(--color-income-bg) flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                    className="px-2.5 py-1 rounded-(--btn-radius) text-xs font-semibold text-(--color-income) bg-(--color-income-bg) flex items-center gap-1 cursor-pointer active:scale-95 transition-all shrink-0"
                   >
-                    <ArchiveRestore className="w-3 h-3 stroke-2" />
-                    <span>恢复</span>
+                    <Plus className="w-3 h-3 stroke-2" />
+                    <span>启用</span>
                   </button>
                 </div>
               );
@@ -451,6 +604,42 @@ export const CategoryManageSubPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {ghostPos && draggingCat && GhostIconComp && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              left: `${ghostPos.x}px`,
+              top: `${ghostPos.y}px`,
+              transform: 'translate(-50%, -50%) scale(1.04) rotate(-1.2deg)',
+              width: containerRef.current ? `${containerRef.current.clientWidth}px` : '90vw',
+              maxWidth: '92vw',
+              zIndex: 9999,
+            }}
+            className="pointer-events-none rounded-(--radius-lg) bg-(--paper-sheet) shadow-2xl border border-(--rule-strong) px-3.5 py-2.5 flex items-center justify-between opacity-95 transition-transform duration-75 select-none"
+          >
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-solid) flex items-center justify-center shrink-0">
+                <GhostIconComp className="w-3.5 h-3.5 stroke-[1.8]" />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[13px] font-semibold text-(--ink-primary) truncate">
+                  {draggingCat.name}
+                </span>
+                {draggingCat.subTags && draggingCat.subTags.length > 0 && (
+                  <span className="text-[10px] text-(--ink-tertiary) truncate font-mono">
+                    ({draggingCat.subTags.slice(0, 3).join('/')})
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="w-7 h-7 flex items-center justify-center text-(--ink-primary) shrink-0">
+              <GripVertical className="w-4 h-4 stroke-[1.8]" />
+            </div>
+          </div>,
+          document.body
+        )}
 
       <PaperModal
         isOpen={isModalOpen}
@@ -470,6 +659,19 @@ export const CategoryManageSubPage: React.FC = () => {
               className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
             />
           </div>
+
+          {activeType === 'expense' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-(--ink-tertiary)">子分类快捷标签 (以空格分隔)</label>
+              <input
+                type="text"
+                value={subTagsInput}
+                onChange={(e) => setSubTagsInput(e.target.value)}
+                placeholder="例如：三餐 外卖 水果 零食"
+                className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-mono text-(--ink-tertiary)">选择图标</label>
@@ -514,7 +716,15 @@ export const CategoryManageSubPage: React.FC = () => {
           </div>
 
           {editingCat && (
-            <div className="pt-2 border-t border-(--rule-hairline) pb-(--safe-bottom)">
+            <div className="pt-2 border-t border-(--rule-hairline) space-y-2 pb-(--safe-bottom)">
+              <button
+                type="button"
+                onClick={() => handleArchiveFromModal(editingCat)}
+                className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--ink-secondary) hover:bg-(--paper-hover) border border-(--rule-hairline) flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ArchiveRestore className="w-3.5 h-3.5 stroke-2" />
+                <span>停用此分类 (移入预设库)</span>
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -524,7 +734,7 @@ export const CategoryManageSubPage: React.FC = () => {
                 className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--color-expense) hover:bg-(--color-expense-bg)/40 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 stroke-2" />
-                <span>删除分类</span>
+                <span>彻底删除分类</span>
               </button>
             </div>
           )}

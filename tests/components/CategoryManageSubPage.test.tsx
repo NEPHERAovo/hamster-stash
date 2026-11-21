@@ -13,6 +13,7 @@ describe('CategoryManageSubPage', () => {
       type: 'expense',
       icon: 'utensils',
       color: 'var(--cat-food)',
+      subTags: ['三餐', '外卖'],
       sortOrder: 1,
       isSystem: true,
       isArchived: false,
@@ -40,6 +41,19 @@ describe('CategoryManageSubPage', () => {
       sortOrder: 3,
       isSystem: true,
       isArchived: false,
+      createdAt: '',
+      updatedAt: '',
+    },
+    {
+      id: 'cat_archived_preset',
+      name: '宠物生灵',
+      type: 'expense',
+      icon: 'pet',
+      color: 'var(--cat-food)',
+      subTags: ['猫粮', '驱虫'],
+      sortOrder: 9,
+      isSystem: true,
+      isArchived: true,
       createdAt: '',
       updatedAt: '',
     },
@@ -101,7 +115,8 @@ describe('CategoryManageSubPage', () => {
     const nameInput = screen.getByDisplayValue('餐饮');
     expect(nameInput).toBeDefined();
 
-    expect(screen.getByText('删除分类')).toBeDefined();
+    expect(screen.getByText(/彻底删除分类/)).toBeDefined();
+    expect(screen.getByText(/停用此分类/)).toBeDefined();
   });
 
   it('reorders categories when HTML5 drag and drop occurs', async () => {
@@ -122,7 +137,6 @@ describe('CategoryManageSubPage', () => {
       getData: vi.fn(),
     };
 
-    // Drag first item (index 0) over second item (index 1)
     fireEvent.dragStart(handles[0], { dataTransfer });
     fireEvent.dragEnter(handles[1]);
     fireEvent.drop(handles[1], { dataTransfer });
@@ -137,5 +151,26 @@ describe('CategoryManageSubPage', () => {
 
     const deleteButtons = screen.getAllByTitle('删除分类');
     expect(deleteButtons.length).toBe(3);
+  });
+
+  it('renders archived preset categories and restores when clicking enable', async () => {
+    const updateSpy = vi.fn();
+    useCategoryStore.setState({
+      updateCategory: updateSpy,
+    });
+
+    render(<CategoryManageSubPage />);
+
+    expect(screen.getByText('预设分类库 / 已停用')).toBeDefined();
+    expect(screen.getByText('宠物生灵')).toBeDefined();
+
+    const enableButtons = screen.getAllByText('启用');
+    expect(enableButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(enableButtons[0]);
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith('cat_archived_preset', { isArchived: false });
+    });
   });
 });
