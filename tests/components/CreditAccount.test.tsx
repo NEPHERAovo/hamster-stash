@@ -58,17 +58,22 @@ describe('Credit Account Features', () => {
     expect(screen.getByText('账户标签')).toBeInTheDocument();
     expect(screen.getByText('信用卡')).toBeInTheDocument();
     expect(screen.getByText('每月还款日')).toBeInTheDocument();
-    expect(screen.getByText('配置自动还款')).toBeInTheDocument();
+    expect(screen.getByText('自动还款')).toBeInTheDocument();
 
     const nameInput = screen.getByPlaceholderText('例如：招行信用卡、花呗');
     fireEvent.change(nameInput, { target: { value: '广发信用卡' } });
 
-    const selects = screen.getAllByRole('combobox');
-    fireEvent.change(selects[0], { target: { value: '18' } });
-    fireEvent.change(selects[1], { target: { value: '2' } });
-    fireEvent.change(selects[2], { target: { value: 'acct-debit' } });
+    const repaymentDayBtn = screen.getByText('每月还款日').closest('div')!.querySelector('button')!;
+    fireEvent.click(repaymentDayBtn);
+    fireEvent.click(screen.getByRole('button', { name: '18' }));
 
-    const autoRepaySwitch = screen.getAllByRole('switch')[0];
+    const billDayBtn = screen.getByText('每月账单日').closest('div')!.querySelector('button')!;
+    fireEvent.click(billDayBtn);
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+
+    fireEvent.click(screen.getByRole('button', { name: mockDebitAccount.name }));
+
+    const autoRepaySwitch = screen.getByRole('switch', { name: '自动还款' });
     fireEvent.click(autoRepaySwitch);
 
     const submitBtn = screen.getByText('确认创建');
@@ -109,5 +114,25 @@ describe('Credit Account Features', () => {
     expect(screen.getByText('招商银行储蓄卡')).toBeInTheDocument();
     expect(screen.getByText('已开启')).toBeInTheDocument();
     expect(screen.getByText('账户还款')).toBeInTheDocument();
+  });
+
+  it('toggles auto repay switch in AccountDetailSubPage when handler is provided', () => {
+    const handleToggleAutoRepay = vi.fn().mockResolvedValue(undefined);
+    render(
+      <AccountDetailSubPage
+        account={mockCreditAccount}
+        transactions={[]}
+        categories={[]}
+        accounts={[mockDebitAccount, mockCreditAccount]}
+        onToggleAutoRepay={handleToggleAutoRepay}
+      />
+    );
+
+    const autoRepaySwitch = screen.getByRole('switch', { name: '自动还款' });
+    expect(autoRepaySwitch).toBeInTheDocument();
+    expect(autoRepaySwitch).toBeChecked();
+
+    fireEvent.click(autoRepaySwitch);
+    expect(handleToggleAutoRepay).toHaveBeenCalledWith(mockCreditAccount, false);
   });
 });

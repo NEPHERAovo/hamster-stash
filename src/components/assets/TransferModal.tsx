@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowsLeftRightIcon as ArrowLeftRight, TrashIcon as Trash2 } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperSelect } from '../ui/PaperSelect';
 import { AmountInput } from '../ui/AmountInput';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
@@ -146,17 +147,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             <label className="mb-1 block font-mono text-[10px] tracking-wider text-(--ink-tertiary) uppercase">
               转出账户
             </label>
-            <select
+            <PaperSelect
               value={fromAccountId}
               onChange={(e) => setFromAccountId(e.target.value)}
-              className="w-full cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-1.5 text-xs font-semibold text-(--ink-primary) outline-none"
             >
               {activeAccounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} (¥{centsToYuan(a.balance)})
                 </option>
               ))}
-            </select>
+            </PaperSelect>
           </div>
 
           <button
@@ -172,17 +172,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             <label className="mb-1 block font-mono text-[10px] tracking-wider text-(--ink-tertiary) uppercase">
               转入账户
             </label>
-            <select
+            <PaperSelect
               value={toAccountId}
               onChange={(e) => setToAccountId(e.target.value)}
-              className="w-full cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-1.5 text-xs font-semibold text-(--ink-primary) outline-none"
             >
               {activeAccounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} (¥{centsToYuan(a.balance)})
                 </option>
               ))}
-            </select>
+            </PaperSelect>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { CalendarBlankIcon as CalendarBlank, CaretDownIcon as CaretDown } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { AmountInput } from '../ui/AmountInput';
 import { SegToggle } from '../ui/SegToggle';
@@ -77,12 +78,14 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [autoRepay, setAutoRepay] = useState(false);
   const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeDayPicker, setActiveDayPicker] = useState<'repayment' | 'bill' | null>(null);
 
   const availableSavingsAccounts = useMemo(() => {
     return accounts.filter((a) => !isCreditAccount(a) && a.id !== editingAccount?.id);
   }, [accounts, editingAccount?.id]);
 
   const resetForm = () => {
+    setActiveDayPicker(null);
     setAccountCategory('savings');
     setName('');
     setType('bank');
@@ -310,63 +313,171 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="font-mono text-xs text-(--ink-tertiary)">每月还款日</label>
-                <select
-                  value={repaymentDay ?? ''}
-                  onChange={(e) =>
-                    setRepaymentDay(e.target.value ? Number(e.target.value) : undefined)
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveDayPicker((curr) => (curr === 'repayment' ? null : 'repayment'))
                   }
-                  className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                  className={cn(
+                    'flex h-9 w-full cursor-pointer items-center justify-between rounded-(--input-radius) border bg-(--paper-sunken) px-2.5 text-xs font-medium transition-all',
+                    activeDayPicker === 'repayment'
+                      ? 'border-(--ink-primary) text-(--ink-primary) ring-1 ring-(--ink-primary)/20'
+                      : 'border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary)'
+                  )}
                 >
-                  <option value="">未设置</option>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <option key={d} value={d}>
-                      每月 {d} 日
-                    </option>
-                  ))}
-                </select>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />
+                    <span
+                      className={cn(
+                        'truncate',
+                        repaymentDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
+                      )}
+                    >
+                      {repaymentDay ? `每月 ${repaymentDay} 日` : '未设置'}
+                    </span>
+                  </div>
+                  <CaretDown
+                    className={cn(
+                      'size-3 shrink-0 text-(--ink-tertiary) transition-transform',
+                      activeDayPicker === 'repayment' && 'rotate-180'
+                    )}
+                  />
+                </button>
               </div>
 
               <div className="space-y-1">
                 <label className="font-mono text-xs text-(--ink-tertiary)">每月账单日</label>
-                <select
-                  value={billDay ?? ''}
-                  onChange={(e) =>
-                    setBillDay(e.target.value ? Number(e.target.value) : undefined)
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveDayPicker((curr) => (curr === 'bill' ? null : 'bill'))
                   }
-                  className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
+                  className={cn(
+                    'flex h-9 w-full cursor-pointer items-center justify-between rounded-(--input-radius) border bg-(--paper-sunken) px-2.5 text-xs font-medium transition-all',
+                    activeDayPicker === 'bill'
+                      ? 'border-(--ink-primary) text-(--ink-primary) ring-1 ring-(--ink-primary)/20'
+                      : 'border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary)'
+                  )}
                 >
-                  <option value="">未设置</option>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <option key={d} value={d}>
-                      每月 {d} 日
-                    </option>
-                  ))}
-                </select>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />
+                    <span
+                      className={cn(
+                        'truncate',
+                        billDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
+                      )}
+                    >
+                      {billDay ? `每月 ${billDay} 日` : '未设置'}
+                    </span>
+                  </div>
+                  <CaretDown
+                    className={cn(
+                      'size-3 shrink-0 text-(--ink-tertiary) transition-transform',
+                      activeDayPicker === 'bill' && 'rotate-180'
+                    )}
+                  />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-1">
+            {activeDayPicker && (
+              <div className="space-y-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-2.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-(--ink-tertiary)">
+                    {activeDayPicker === 'repayment' ? '选择每月还款日' : '选择每月账单日'} (1-31日)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeDayPicker === 'repayment') {
+                        setRepaymentDay(undefined);
+                      } else {
+                        setBillDay(undefined);
+                      }
+                      setActiveDayPicker(null);
+                    }}
+                    className="cursor-pointer text-[11px] font-medium text-(--ink-tertiary) hover:text-(--ink-primary)"
+                  >
+                    清除设置
+                  </button>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => {
+                    const isSelected =
+                      activeDayPicker === 'repayment' ? repaymentDay === d : billDay === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          if (activeDayPicker === 'repayment') {
+                            setRepaymentDay(d);
+                          } else {
+                            setBillDay(d);
+                          }
+                          setActiveDayPicker(null);
+                        }}
+                        className={cn(
+                          'flex h-7 cursor-pointer items-center justify-center rounded-(--radius-xs) font-mono text-xs transition-all',
+                          isSelected
+                            ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
+                            : 'bg-(--paper-sunken)/60 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                        )}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
               <label className="font-mono text-xs text-(--ink-tertiary)">关联还款账户</label>
-              <select
-                value={repaymentAccountId ?? ''}
-                onChange={(e) => setRepaymentAccountId(e.target.value || undefined)}
-                className="h-9 w-full rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-tertiary)"
-              >
-                <option value="">未关联还款账户</option>
-                {availableSavingsAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} (余额: ¥{centsToYuan(a.balance)})
-                  </option>
-                ))}
-              </select>
+              {availableSavingsAccounts.length === 0 ? (
+                <div className="text-xs text-(--ink-tertiary)">暂无可用储蓄账户</div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setRepaymentAccountId(undefined)}
+                    className={cn(
+                      'cursor-pointer rounded-(--btn-radius) border px-2.5 py-1 text-xs transition-all',
+                      !repaymentAccountId
+                        ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                        : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
+                    )}
+                  >
+                    未关联
+                  </button>
+                  {availableSavingsAccounts.map((a) => {
+                    const isSelected = repaymentAccountId === a.id;
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => setRepaymentAccountId(a.id)}
+                        className={cn(
+                          'cursor-pointer truncate rounded-(--btn-radius) border px-2.5 py-1 text-xs transition-all',
+                          isSelected
+                            ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                            : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
+                        )}
+                      >
+                        {a.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between py-1">
-              <span className="text-xs font-medium text-(--ink-primary)">配置自动还款</span>
+              <span className="text-xs font-medium text-(--ink-primary)">自动还款</span>
               <PaperSwitch
                 checked={autoRepay}
                 onChange={setAutoRepay}
-                aria-label="配置自动还款"
+                aria-label="自动还款"
               />
             </div>
 

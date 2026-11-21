@@ -23,6 +23,7 @@ export interface AccountDetailSubPageProps {
   onOpenReconcile?: () => void;
   onOpenTransfer?: (account: Account) => void;
   onToggleIncludeInNetWorth?: (account: Account, nextValue: boolean) => Promise<void>;
+  onToggleAutoRepay?: (account: Account, nextValue: boolean) => Promise<void>;
   onDeleteAccount?: (account: Account) => void;
   onSelectTransaction?: (tx: Transaction) => void;
 }
@@ -35,6 +36,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   onOpenReconcile,
   onOpenTransfer,
   onToggleIncludeInNetWorth,
+  onToggleAutoRepay,
   onDeleteAccount,
   onSelectTransaction,
 }) => {
@@ -201,6 +203,15 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     }
   };
 
+  const handleToggleAutoRepay = async () => {
+    if (!onToggleAutoRepay) return;
+    try {
+      await onToggleAutoRepay(account, !account.autoRepay);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '更新设置失败');
+    }
+  };
+
   const linkedRepaymentAccount = account.repaymentAccountId
     ? acctMap.get(account.repaymentAccountId)
     : undefined;
@@ -327,16 +338,24 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
                   {linkedRepaymentAccount ? linkedRepaymentAccount.name : '未关联'}
                 </span>
               </div>
-              <div className="flex justify-between py-2">
+              <div className="flex items-center justify-between py-2">
                 <span className="text-(--ink-tertiary)">自动还款</span>
-                <span
-                  className={cn(
-                    'font-medium',
-                    account.autoRepay ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
-                  )}
-                >
-                  {account.autoRepay ? '已开启' : '未开启'}
-                </span>
+                {onToggleAutoRepay ? (
+                  <PaperSwitch
+                    checked={Boolean(account.autoRepay)}
+                    onChange={handleToggleAutoRepay}
+                    aria-label="自动还款"
+                  />
+                ) : (
+                  <span
+                    className={cn(
+                      'font-medium',
+                      account.autoRepay ? 'text-(--color-income)' : 'text-(--ink-tertiary)'
+                    )}
+                  >
+                    {account.autoRepay ? '已开启' : '未开启'}
+                  </span>
+                )}
               </div>
               {account.creditLimit !== undefined && (
                 <div className="flex justify-between py-2">

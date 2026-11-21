@@ -465,6 +465,9 @@ export function App() {
             onToggleIncludeInNetWorth={async (acct, nextValue) => {
               await updateAccount(acct.id, { includeInNetWorth: nextValue });
             }}
+            onToggleAutoRepay={async (acct, nextValue) => {
+              await updateAccount(acct.id, { autoRepay: nextValue });
+            }}
             onDeleteAccount={handleDeleteAccount}
             onSelectTransaction={handleSelectTransaction}
           />

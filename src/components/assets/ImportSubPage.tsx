@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { UploadSimpleIcon as FileUp, CheckIcon as Check, WarningCircleIcon as AlertCircle, ArrowRightIcon as ArrowRight, ArrowLeftIcon as ArrowLeft, PlusIcon as Plus, SparkleIcon as Sparkles, SlidersIcon as Sliders, ArrowsClockwiseIcon as RefreshCw, FolderSimpleIcon as FolderSync } from '@phosphor-icons/react';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperSelect } from '../ui/PaperSelect';
 import { parseCsv, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {
   inferColumnMapping,
@@ -531,7 +532,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                   </div>
                   <div className="text-[10px] text-(--ink-tertiary)">{field.desc}</div>
                 </div>
-                <select
+                <PaperSelect
                   value={(mapping as Record<string, string | undefined>)[field.key] || ''}
                   onChange={(e) =>
                     setMapping({
@@ -539,14 +540,15 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                       [field.key]: e.target.value || undefined,
                     })
                   }
-                  className="max-w-40 cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 py-1.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
+                  containerClassName="max-w-40"
+                  className="bg-(--paper-sunken)"
                 >
                   {getColOptions().map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
                   ))}
-                </select>
+                </PaperSelect>
               </div>
             ))}
           </div>
@@ -621,7 +623,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
 
                     <div className="flex min-w-0 flex-1 items-center gap-1.5">
                       <ArrowRight className="size-3.5 shrink-0 text-(--ink-tertiary)" />
-                      <select
+                      <PaperSelect
                         value={currentMappedCatId}
                         onChange={(e) =>
                           setCategoryMapping({
@@ -629,7 +631,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                             [stat.rawName]: e.target.value,
                           })
                         }
-                        className="min-w-0 flex-1 cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-1 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
+                        containerClassName="min-w-0 flex-1"
+                        className="bg-(--paper-sunken)"
                       >
                         <optgroup label="支出">
                           {categories.filter((c) => c.type === 'expense').map((c) => (
@@ -641,7 +644,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                             <option key={c.id} value={c.id}>{c.name}</option>
                           ))}
                         </optgroup>
-                      </select>
+                      </PaperSelect>
                     </div>
 
                     {!isExactExistInSystem && (
@@ -673,7 +676,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                     </span>
                     <div className="flex items-center gap-1.5">
                       <ArrowRight className="size-3.5 text-(--ink-tertiary)" />
-                      <select
+                      <PaperSelect
                         value={currentMappedType}
                         onChange={(e) =>
                           setTypeMapping({
@@ -681,14 +684,15 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                             [t.rawName]: e.target.value as TransactionType | 'skip',
                           })
                         }
-                        className="cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-1 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
+                        containerClassName="w-24"
+                        className="bg-(--paper-sunken)"
                       >
                         <option value="expense">支出</option>
                         <option value="income">收入</option>
                         <option value="transfer">转账</option>
                         <option value="loan">借贷</option>
                         <option value="skip">跳过</option>
-                      </select>
+                      </PaperSelect>
                     </div>
                   </div>
                 );
@@ -717,15 +721,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                 <span className="block font-semibold text-(--ink-primary)">默认入账账户</span>
                 <span className="text-[10px] text-(--ink-tertiary)">未指定账户时归属此项</span>
               </div>
-              <select
+              <PaperSelect
                 value={defaultAccountId}
                 onChange={(e) => setDefaultAccountId(e.target.value)}
-                className="max-w-40 cursor-pointer rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 py-1.5 text-xs text-(--ink-primary) outline-none focus:border-(--ink-primary)"
+                containerClassName="max-w-40"
+                className="bg-(--paper-sunken)"
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
-              </select>
+              </PaperSelect>
             </div>
 
             <label className="flex cursor-pointer items-center gap-2 border-t border-(--rule-hairline) pt-2.5">
