@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Trash as Trash2, Archive as ArchiveRestore, DotsSixVertical as GripVertical } from '@phosphor-icons/react';
+import { Plus, Trash as Trash2, DotsSixVertical as GripVertical, X } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -46,29 +46,64 @@ const CATEGORY_ICON_CHOICES = [
   'box',
 ];
 
+const CATEGORY_RECOMMENDED_SUBTAGS: Record<string, string[]> = {
+  餐饮: ['三餐', '外卖', '水果', '零食', '买菜', '咖啡', '奶茶', '夜宵', '早餐', '酒水'],
+  超市: ['日用', '生鲜', '零食', '杂货', '粮油', '纸品', '清洁', '调味'],
+  交通: ['地铁', '公交', '打车', '加油', '停车', '火车', '飞机', '骑行'],
+  购物: ['服饰', '数码', '日用', '家居', '美妆', '鞋包', '家电', '配件'],
+  住房: ['房租', '水电', '物业', '维修', '话费', '宽带', '燃气', '家政'],
+  娱乐: ['聚会', '电影', '演出', '游戏', '爱好', 'KTV', '门票', '展览'],
+  医疗: ['门诊', '药品', '体检', '疫苗', '保险', '牙科', '视光', '检查'],
+  其他: ['杂费', '意外', '手续', '临时', '礼金'],
+  宠物: ['猫粮', '狗粮', '医疗', '洗护', '用品', '零食', '玩具', '寄养'],
+  数码: ['手机', '电脑', '外设', '平板', '配件', '维修', '耳机', '软件'],
+  学习: ['书籍', '课程', '考试', '文具', '培训', '资料', '学费', '考证'],
+  人情: ['礼金', '请客', '礼物', '孝敬', '红包', '随礼', '聚餐'],
+  汽车: ['加油', '停车', '保养', '车险', '过路', '洗车', '年检', '维修'],
+  旅行: ['机票', '高铁', '酒店', '门票', '度假', '特产', '租车', '游玩'],
+  美妆: ['护肤', '美发', '美甲', '彩妆', '香水', '防晒', '医美'],
+  育儿: ['奶粉', '尿裤', '童装', '玩具', '早教', '学费', '推车', '疫苗'],
+  运动: ['健身', '装备', '场馆', '私教', '球类', '游泳', '跑步', '户外'],
+  服饰: ['衣服', '鞋子', '包袋', '配饰', '内衣', '运动鞋', '保暖'],
+  通讯: ['话费', '宽带', '流量', '云盘', '副卡', '座机'],
+  烟酒: ['咖啡', '茶饮', '香烟', '酒水', '精酿', '茶叶'],
+  水果: ['鲜果', '果切', '果汁', '应季', '进口'],
+  办公: ['文具', '耗材', '差旅', '快递', '打印', '外设'],
+  彩票: ['福彩', '体彩', '刮奖', '大乐透', '双色球'],
+  维修: ['家电', '管道', '门窗', '锁具', '数码', '家具'],
+  公益: ['捐款', '物资', '志愿', '助学', '筹款'],
+  酒店: ['宾馆', '民宿', '青旅', '短租', '商务'],
+};
+
+const GENERAL_RECOMMENDED_SUBTAGS = ['日常', '必要', '临时', '固定', '弹性', '专项'];
+
 interface SwipeableCategoryRowProps {
   cat: Category;
   index: number;
   isDragging: boolean;
+  showDragHandle?: boolean;
   onSelect: (cat: Category) => void;
   onDelete: (cat: Category) => void;
-  onDragStartHtml5: (e: React.DragEvent, index: number) => void;
-  onDragOverHtml5: (e: React.DragEvent) => void;
-  onDragEnterHtml5: (index: number) => void;
-  onDragEndHtml5: () => void;
-  onDropHtml5: (e: React.DragEvent) => void;
-  onTouchRowStart: (e: React.TouchEvent, index: number) => void;
-  onTouchRowMove: (e: React.TouchEvent) => void;
-  onTouchRowEnd: (e: React.TouchEvent) => void;
-  onTouchHandleStart: (e: React.TouchEvent, index: number) => void;
+  onToggleActive: (cat: Category) => void;
+  onDragStartHtml5?: (e: React.DragEvent, index: number) => void;
+  onDragOverHtml5?: (e: React.DragEvent) => void;
+  onDragEnterHtml5?: (index: number) => void;
+  onDragEndHtml5?: () => void;
+  onDropHtml5?: (e: React.DragEvent) => void;
+  onTouchRowStart?: (e: React.TouchEvent, index: number) => void;
+  onTouchRowMove?: (e: React.TouchEvent) => void;
+  onTouchRowEnd?: (e: React.TouchEvent) => void;
+  onTouchHandleStart?: (e: React.TouchEvent, index: number) => void;
 }
 
 const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
   cat,
   index,
   isDragging,
+  showDragHandle,
   onSelect,
   onDelete,
+  onToggleActive,
   onDragStartHtml5,
   onDragOverHtml5,
   onDragEnterHtml5,
@@ -80,6 +115,7 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
   onTouchHandleStart,
 }) => {
   const IconComp = getCategoryIcon(cat.icon);
+  const isEnabled = !cat.isArchived;
 
   return (
     <SwipeableRow
@@ -87,7 +123,8 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       data-category-id={cat.id}
       containerClassName={cn(
         'bg-(--paper-sheet) select-none',
-        isDragging && 'opacity-25 bg-(--paper-sunken) border-2 border-dashed border-(--rule-strong)'
+        isDragging && 'opacity-25 bg-(--paper-sunken) border-2 border-dashed border-(--rule-strong)',
+        !isEnabled && 'opacity-75'
       )}
       className="bg-(--paper-sheet) flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
       action={{
@@ -99,17 +136,29 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       onClick={() => onSelect(cat)}
     >
       <div
-        className="flex items-center gap-2.5 min-w-0 flex-1 touch-manipulation"
-        onTouchStart={(e) => onTouchRowStart(e, index)}
+        className="flex items-center gap-2.5 min-w-0 flex-1 touch-manipulation mr-2"
+        onTouchStart={onTouchRowStart ? (e) => onTouchRowStart(e, index) : undefined}
         onTouchMove={onTouchRowMove}
         onTouchEnd={onTouchRowEnd}
         onTouchCancel={onTouchRowEnd}
       >
-        <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary) flex items-center justify-center shrink-0">
+        <div
+          className={cn(
+            'w-7 h-7 rounded-(--badge-radius) flex items-center justify-center shrink-0',
+            isEnabled
+              ? 'bg-(--paper-sunken) text-(--ink-secondary)'
+              : 'bg-(--paper-sunken) text-(--ink-tertiary)'
+          )}
+        >
           <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
         </div>
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-[13px] font-medium text-(--ink-primary) truncate">
+          <span
+            className={cn(
+              'text-[13px] font-medium truncate',
+              isEnabled ? 'text-(--ink-primary)' : 'text-(--ink-secondary)'
+            )}
+          >
             {cat.name}
           </span>
           {cat.subTags && cat.subTags.length > 0 && (
@@ -121,24 +170,45 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
       </div>
 
       <div
-        className="flex items-center gap-1 shrink-0"
+        className="flex items-center gap-2 shrink-0"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
       >
-        <div
-          draggable
-          onDragStart={(e) => onDragStartHtml5(e, index)}
-          onDragOver={onDragOverHtml5}
-          onDragEnter={() => onDragEnterHtml5(index)}
-          onDragEnd={onDragEndHtml5}
-          onDrop={onDropHtml5}
-          onTouchStart={(e) => onTouchHandleStart(e, index)}
-          className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
-          title="拖拽排序"
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isEnabled}
+          onClick={() => onToggleActive(cat)}
+          className={cn(
+            'w-8 h-4.5 rounded-full transition-colors relative cursor-pointer shrink-0',
+            isEnabled ? 'bg-(--color-income)' : 'bg-(--paper-sunken) border border-(--rule-hairline)'
+          )}
+          title={isEnabled ? '点击停用' : '点击启用'}
         >
-          <GripVertical className="w-4 h-4 stroke-[1.8]" />
-        </div>
+          <span
+            className={cn(
+              'absolute top-0.5 w-3.5 h-3.5 rounded-full bg-(--paper-sheet) transition-transform shadow-xs',
+              isEnabled ? 'left-4' : 'left-0.5'
+            )}
+          />
+        </button>
+
+        {showDragHandle && onDragStartHtml5 && (
+          <div
+            draggable
+            onDragStart={(e) => onDragStartHtml5(e, index)}
+            onDragOver={onDragOverHtml5}
+            onDragEnter={() => onDragEnterHtml5?.(index)}
+            onDragEnd={onDragEndHtml5}
+            onDrop={onDropHtml5}
+            onTouchStart={onTouchHandleStart ? (e) => onTouchHandleStart(e, index) : undefined}
+            className="w-7 h-7 rounded-(--btn-radius) flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) transition-colors cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
+            title="拖拽排序"
+          >
+            <GripVertical className="w-4 h-4 stroke-[1.8]" />
+          </div>
+        )}
       </div>
     </SwipeableRow>
   );
@@ -151,7 +221,8 @@ export const CategoryManageSubPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [nameInput, setNameInput] = useState('');
-  const [subTagsInput, setSubTagsInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
   const [iconInput, setIconInput] = useState('shopping-cart');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -370,10 +441,24 @@ export const CategoryManageSubPage: React.FC = () => {
     commitReorder(localCategoriesRef.current);
   };
 
+  const handleToggleActive = async (cat: Category) => {
+    const isCurrentlyActive = !cat.isArchived;
+    if (isCurrentlyActive && activeCategories.length <= 1) {
+      toast.error('至少需保留一个可用分类');
+      return;
+    }
+    try {
+      await updateCategory(cat.id, { isArchived: isCurrentlyActive });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '操作失败');
+    }
+  };
+
   const openCreateModal = () => {
     setEditingCat(null);
     setNameInput('');
-    setSubTagsInput('');
+    setTags([]);
+    setNewTagInput('');
     setIconInput(activeType === 'income' ? 'wallet' : 'shopping-cart');
     setIsModalOpen(true);
   };
@@ -381,10 +466,29 @@ export const CategoryManageSubPage: React.FC = () => {
   const openEditModal = (cat: Category) => {
     setEditingCat(cat);
     setNameInput(cat.name);
-    setSubTagsInput(cat.subTags ? cat.subTags.join(' ') : '');
+    setTags(cat.subTags ? [...cat.subTags] : []);
+    setNewTagInput('');
     setIconInput(cat.icon || 'shopping-cart');
     setIsModalOpen(true);
   };
+
+  const handleAddTag = (rawTag: string) => {
+    const clean = rawTag.trim();
+    if (!clean) return;
+    if (tags.includes(clean)) return;
+    setTags((prev) => [...prev, clean]);
+    setNewTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags((prev) => prev.filter((t) => t !== tagToRemove));
+  };
+
+  const recommendedTags = useMemo(() => {
+    const key = nameInput.trim();
+    const pool = CATEGORY_RECOMMENDED_SUBTAGS[key] || GENERAL_RECOMMENDED_SUBTAGS;
+    return pool.filter((item) => !tags.includes(item));
+  }, [nameInput, tags]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -405,10 +509,7 @@ export const CategoryManageSubPage: React.FC = () => {
       return;
     }
 
-    const parsedSubTags =
-      activeType === 'expense' && subTagsInput.trim()
-        ? subTagsInput.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean)
-        : undefined;
+    const parsedSubTags = activeType === 'expense' && tags.length > 0 ? tags : undefined;
 
     setIsSaving(true);
     try {
@@ -435,7 +536,7 @@ export const CategoryManageSubPage: React.FC = () => {
   };
 
   const handleRemove = async (cat: Category) => {
-    if (activeCategories.length <= 1) {
+    if (activeCategories.length <= 1 && !cat.isArchived) {
       toast.error('至少需保留一个可用分类');
       return;
     }
@@ -462,24 +563,17 @@ export const CategoryManageSubPage: React.FC = () => {
     }
   };
 
-  const handleArchiveFromModal = async (cat: Category) => {
-    if (activeCategories.length <= 1) {
+  const handleToggleFromModal = async (cat: Category) => {
+    const isCurrentlyActive = !cat.isArchived;
+    if (isCurrentlyActive && activeCategories.length <= 1) {
       toast.error('至少需保留一个可用分类');
       return;
     }
     try {
-      await updateCategory(cat.id, { isArchived: true });
+      await updateCategory(cat.id, { isArchived: isCurrentlyActive });
       setIsModalOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '停用失败');
-    }
-  };
-
-  const handleRestore = async (cat: Category) => {
-    try {
-      await updateCategory(cat.id, { isArchived: false });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '恢复失败');
+      toast.error(err instanceof Error ? err.message : '操作失败');
     }
   };
 
@@ -527,7 +621,7 @@ export const CategoryManageSubPage: React.FC = () => {
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
-          <span>已启用分类</span>
+          <span>已启用</span>
           <span>共 {localCategories.length} 项 (显示在记账键盘)</span>
         </div>
 
@@ -541,8 +635,10 @@ export const CategoryManageSubPage: React.FC = () => {
               cat={cat}
               index={idx}
               isDragging={draggingIndex === idx}
+              showDragHandle={true}
               onSelect={openEditModal}
               onDelete={handleRemove}
+              onToggleActive={handleToggleActive}
               onDragStartHtml5={handleDragStartHtml5}
               onDragOverHtml5={handleDragOverHtml5}
               onDragEnterHtml5={handleDragEnterHtml5}
@@ -556,51 +652,30 @@ export const CategoryManageSubPage: React.FC = () => {
           ))}
         </div>
         <p className="px-1 text-[11px] font-mono text-(--ink-faint) text-right">
-          长按或拖拽手柄排序 · 点击编辑与子分类 · 侧滑删除
+          长按或拖拽手柄排序 · 开关启用停用 · 点击编辑子分类 · 侧滑删除
         </p>
       </div>
 
       {archivedCategories.length > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-1 text-xs font-mono text-(--ink-tertiary)">
-            <span>预设分类库 / 已停用</span>
+            <span>未启用</span>
             <span>共 {archivedCategories.length} 项</span>
           </div>
 
           <div className="bg-(--paper-sheet) paper-card border border-(--rule-hairline) rounded-(--radius-lg) overflow-hidden shadow-xs divide-y divide-dashed divide-(--rule-hairline)/60">
-            {archivedCategories.map((cat) => {
-              const IconComp = getCategoryIcon(cat.icon);
-              return (
-                <div
-                  key={cat.id}
-                  className="flex items-center justify-between px-3.5 py-2.5 hover:bg-(--paper-hover)/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-3">
-                    <div className="w-7 h-7 rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-tertiary) flex items-center justify-center shrink-0">
-                      <IconComp className="w-3.5 h-3.5 stroke-[1.8]" />
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[13px] font-medium text-(--ink-secondary) truncate">
-                        {cat.name}
-                      </span>
-                      {cat.subTags && cat.subTags.length > 0 && (
-                        <span className="text-[10px] text-(--ink-faint) truncate font-mono">
-                          {cat.subTags.slice(0, 4).join(' · ')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRestore(cat)}
-                    className="px-2.5 py-1 rounded-(--btn-radius) text-xs font-semibold text-(--color-income) bg-(--color-income-bg) flex items-center gap-1 cursor-pointer active:scale-95 transition-all shrink-0"
-                  >
-                    <Plus className="w-3 h-3 stroke-2" />
-                    <span>启用</span>
-                  </button>
-                </div>
-              );
-            })}
+            {archivedCategories.map((cat, idx) => (
+              <SwipeableCategoryRow
+                key={cat.id}
+                cat={cat}
+                index={idx}
+                isDragging={false}
+                showDragHandle={false}
+                onSelect={openEditModal}
+                onDelete={handleRemove}
+                onToggleActive={handleToggleActive}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -661,15 +736,73 @@ export const CategoryManageSubPage: React.FC = () => {
           </div>
 
           {activeType === 'expense' && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono text-(--ink-tertiary)">子分类快捷标签 (以空格分隔)</label>
-              <input
-                type="text"
-                value={subTagsInput}
-                onChange={(e) => setSubTagsInput(e.target.value)}
-                placeholder="例如：三餐 外卖 水果 零食"
-                className="w-full h-10 px-3 text-sm rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
-              />
+            <div className="space-y-2">
+              <label className="text-xs font-mono text-(--ink-tertiary)">子分类快捷标签</label>
+
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-xs font-medium text-(--ink-primary) shadow-2xs"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) cursor-pointer"
+                        title="删除标签"
+                      >
+                        <X className="w-2.5 h-2.5 stroke-2" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddTag(newTagInput);
+                    }
+                  }}
+                  placeholder="输入子分类名称..."
+                  maxLength={8}
+                  className="flex-1 h-9 px-3 text-xs rounded-(--input-radius) bg-(--paper-sunken) border border-(--rule-hairline) text-(--ink-primary) placeholder:text-(--ink-faint) outline-none focus:border-(--ink-tertiary)"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddTag(newTagInput)}
+                  disabled={!newTagInput.trim()}
+                  className="h-9 px-3 rounded-(--btn-radius) bg-(--paper-sheet) border border-(--rule-hairline) text-xs font-medium text-(--ink-primary) hover:bg-(--paper-hover) disabled:opacity-40 cursor-pointer shrink-0"
+                >
+                  添加
+                </button>
+              </div>
+
+              {recommendedTags.length > 0 && (
+                <div className="space-y-1 pt-0.5">
+                  <span className="text-[11px] font-mono text-(--ink-tertiary)">常用推荐</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {recommendedTags.slice(0, 8).map((rec) => (
+                      <button
+                        key={rec}
+                        type="button"
+                        onClick={() => handleAddTag(rec)}
+                        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-(--btn-radius) bg-(--paper-sunken) hover:bg-(--paper-hover) text-[11px] text-(--ink-secondary) hover:text-(--ink-primary) border border-(--rule-hairline)/60 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <Plus className="w-2.5 h-2.5 stroke-2" />
+                        <span>{rec}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -719,11 +852,10 @@ export const CategoryManageSubPage: React.FC = () => {
             <div className="pt-2 border-t border-(--rule-hairline) space-y-2 pb-(--safe-bottom)">
               <button
                 type="button"
-                onClick={() => handleArchiveFromModal(editingCat)}
+                onClick={() => handleToggleFromModal(editingCat)}
                 className="w-full h-9 rounded-(--btn-radius) text-xs font-semibold text-(--ink-secondary) hover:bg-(--paper-hover) border border-(--rule-hairline) flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <ArchiveRestore className="w-3.5 h-3.5 stroke-2" />
-                <span>停用此分类 (移入预设库)</span>
+                <span>{editingCat.isArchived ? '启用此分类' : '停用此分类'}</span>
               </button>
               <button
                 type="button"

@@ -45,8 +45,8 @@ describe('CategoryManageSubPage', () => {
       updatedAt: '',
     },
     {
-      id: 'cat_archived_preset',
-      name: '宠物生灵',
+      id: 'cat_archived_pet',
+      name: '宠物',
       type: 'expense',
       icon: 'pet',
       color: 'var(--cat-food)',
@@ -102,7 +102,7 @@ describe('CategoryManageSubPage', () => {
     expect(dragHandles.length).toBe(3);
   });
 
-  it('opens edit modal when clicking category row and displays delete category action in modal', async () => {
+  it('opens edit modal when clicking category row and displays actions and capsule subtags', async () => {
     render(<CategoryManageSubPage />);
 
     const foodRow = screen.getByText('餐饮');
@@ -115,8 +115,50 @@ describe('CategoryManageSubPage', () => {
     const nameInput = screen.getByDisplayValue('餐饮');
     expect(nameInput).toBeDefined();
 
+    expect(screen.getByText('三餐')).toBeDefined();
+    expect(screen.getByText('外卖')).toBeDefined();
+
     expect(screen.getByText(/彻底删除分类/)).toBeDefined();
     expect(screen.getByText(/停用此分类/)).toBeDefined();
+  });
+
+  it('allows adding and removing subcategory capsule tags in edit modal', async () => {
+    const updateSpy = vi.fn();
+    useCategoryStore.setState({
+      updateCategory: updateSpy,
+    });
+
+    render(<CategoryManageSubPage />);
+
+    fireEvent.click(screen.getByText('餐饮'));
+
+    await waitFor(() => {
+      expect(screen.getByText('编辑分类')).toBeDefined();
+    });
+
+    const removeButtons = screen.getAllByTitle('删除标签');
+    expect(removeButtons.length).toBe(2);
+    fireEvent.click(removeButtons[0]);
+
+    expect(screen.getAllByTitle('删除标签').length).toBe(1);
+
+    const subTagInput = screen.getByPlaceholderText('输入子分类名称...');
+    fireEvent.change(subTagInput, { target: { value: '夜宵' } });
+    fireEvent.click(screen.getByText('添加'));
+
+    expect(screen.getAllByTitle('删除标签').length).toBe(2);
+
+    const saveButton = screen.getByText('保存修改');
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith(
+        'cat_food',
+        expect.objectContaining({
+          subTags: ['外卖', '夜宵'],
+        })
+      );
+    });
   });
 
   it('reorders categories when HTML5 drag and drop occurs', async () => {
@@ -146,14 +188,14 @@ describe('CategoryManageSubPage', () => {
     });
   });
 
-  it('renders swipe-to-reveal delete button behind each category row', () => {
+  it('renders swipe-to-reveal delete button behind category rows', () => {
     render(<CategoryManageSubPage />);
 
     const deleteButtons = screen.getAllByTitle('删除分类');
-    expect(deleteButtons.length).toBe(3);
+    expect(deleteButtons.length).toBe(4);
   });
 
-  it('renders archived preset categories and restores when clicking enable', async () => {
+  it('renders unarchived and archived sections with switches and toggles category active state', async () => {
     const updateSpy = vi.fn();
     useCategoryStore.setState({
       updateCategory: updateSpy,
@@ -161,16 +203,25 @@ describe('CategoryManageSubPage', () => {
 
     render(<CategoryManageSubPage />);
 
-    expect(screen.getByText('预设分类库 / 已停用')).toBeDefined();
-    expect(screen.getByText('宠物生灵')).toBeDefined();
+    expect(screen.getByText('已启用')).toBeDefined();
+    expect(screen.getByText('未启用')).toBeDefined();
+    expect(screen.getByText('宠物')).toBeDefined();
 
-    const enableButtons = screen.getAllByText('启用');
-    expect(enableButtons.length).toBeGreaterThan(0);
+    const switches = screen.getAllByRole('switch');
+    expect(switches.length).toBe(4);
 
-    fireEvent.click(enableButtons[0]);
+    const activeSwitch = screen.getAllByTitle('点击停用')[0];
+    fireEvent.click(activeSwitch);
 
     await waitFor(() => {
-      expect(updateSpy).toHaveBeenCalledWith('cat_archived_preset', { isArchived: false });
+      expect(updateSpy).toHaveBeenCalledWith('cat_food', { isArchived: true });
+    });
+
+    const inactiveSwitch = screen.getByTitle('点击启用');
+    fireEvent.click(inactiveSwitch);
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith('cat_archived_pet', { isArchived: false });
     });
   });
 });
