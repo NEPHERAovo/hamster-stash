@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Trash as Trash2, Paperclip, Backspace as Delete } from '@phosphor-icons/react';
+import { X, Trash as Trash2, Paperclip } from '@phosphor-icons/react';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -11,6 +11,9 @@ import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { DrumWheelPicker } from './DrumWheelPicker';
+import { TransactionKeypad } from './TransactionKeypad';
+import { OffsetTrayPanel } from './OffsetTrayPanel';
+import { AmortizeTrayPanel } from './AmortizeTrayPanel';
 import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { SegToggle } from '../ui/SegToggle';
@@ -1137,93 +1140,31 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
 
           {txType === 'expense' && isAmortizeTrayOpen && (
-            <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none font-mono text-xs">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[
-                  { label: '不分期', months: null },
-                  { label: '3期', months: 3 },
-                  { label: '6期', months: 6 },
-                  { label: '12期', months: 12 },
-                  { label: '24期', months: 24 },
-                  { label: '36期', months: 36 },
-                ].map((opt) => (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    onClick={() => {
-                      setAmortizeMonths(opt.months);
-                      setIsCustomAmortize(false);
-                      setCustomAmortizeInput('');
-                      setIsAmortizeTrayOpen(false);
-                    }}
-                    className={cn(
-                      'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) transition-all cursor-pointer border',
-                      amortizeMonths === opt.months && !isCustomAmortize
-                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
-                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-
-                {isCustomAmortize ? (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-(--btn-radius) bg-(--paper-sunken) border border-(--rule-hairline)">
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={2}
-                      max={120}
-                      autoFocus
-                      value={customAmortizeInput}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCustomAmortizeInput(val);
-                        const num = parseInt(val, 10);
-                        if (Number.isFinite(num) && num > 1) {
-                          setAmortizeMonths(num);
-                        } else {
-                          setAmortizeMonths(null);
-                        }
-                      }}
-                      placeholder="期数"
-                      className="w-10 bg-transparent text-xs font-mono text-center font-semibold text-(--ink-primary) outline-none"
-                    />
-                    <span className="text-[11px] text-(--ink-tertiary)">期</span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomAmortize(true);
-                      setCustomAmortizeInput(
-                        amortizeMonths && ![3, 6, 12, 24, 36].includes(amortizeMonths)
-                          ? String(amortizeMonths)
-                          : ''
-                      );
-                    }}
-                    className={cn(
-                      'px-2.5 py-1 text-xs font-mono rounded-(--btn-radius) transition-all cursor-pointer border',
-                      amortizeMonths !== null && ![3, 6, 12, 24, 36].includes(amortizeMonths)
-                        ? 'bg-(--btn-primary-bg) text-(--btn-primary-fg) font-semibold border-transparent shadow-2xs'
-                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:text-(--ink-primary) hover:bg-(--paper-sunken) border-(--rule-hairline)/60'
-                    )}
-                  >
-                    {amortizeMonths && ![3, 6, 12, 24, 36].includes(amortizeMonths)
-                      ? `${amortizeMonths}期`
-                      : '自定义'}
-                  </button>
-                )}
-              </div>
-
-              {amortizeMonths && (
-                <div className="text-[11px] font-mono text-(--ink-tertiary) px-0.5 text-right">
-                  <span>
-                    约 ¥{centsToYuan(Math.floor(yuanToCents(evaluateArithmetic(expr)) / amortizeMonths))} / 月
-                  </span>
-                </div>
-              )}
-            </div>
+            <AmortizeTrayPanel
+              expr={expr}
+              amortizeMonths={amortizeMonths}
+              isCustomAmortize={isCustomAmortize}
+              customAmortizeInput={customAmortizeInput}
+              onSelectMonths={(optMonths) => {
+                setAmortizeMonths(optMonths);
+                setIsCustomAmortize(false);
+                setCustomAmortizeInput('');
+                setIsAmortizeTrayOpen(false);
+              }}
+              onCustomAmortizeToggle={(active, initVal) => {
+                setIsCustomAmortize(active);
+                setCustomAmortizeInput(initVal);
+              }}
+              onCustomAmortizeChange={(val) => {
+                setCustomAmortizeInput(val);
+                const num = parseInt(val, 10);
+                if (Number.isFinite(num) && num > 1) {
+                  setAmortizeMonths(num);
+                } else {
+                  setAmortizeMonths(null);
+                }
+              }}
+            />
           )}
 
           {isDtTrayOpen && (
@@ -1277,73 +1218,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
 
           {txType === 'income' && isOffsetTrayOpen && (
-            <div className="pt-2 pb-1 border-t border-dashed border-(--rule-hairline)/60 space-y-1.5 select-none font-mono text-xs">
-              <div className="flex items-center justify-between text-[11px] text-(--ink-tertiary) px-0.5">
-                <span>选择要抵扣的原支出流水:</span>
-                {offsetTransactionId && (
-                  <button
-                    type="button"
-                    onClick={handleClearOffsetExpense}
-                    className="text-(--color-expense) hover:underline cursor-pointer"
-                  >
-                    取消抵扣 (独立收入)
-                  </button>
-                )}
-              </div>
-
-              {recentExpenses.length === 0 ? (
-                <div className="py-4 text-center text-xs text-(--ink-tertiary)">
-                  暂无可选的支出记录
-                </div>
-              ) : (
-                <div className="max-h-40 overflow-y-auto space-y-1 divide-y divide-dashed divide-(--rule-hairline)/40 pr-0.5">
-                  {recentExpenses.map((exp) => {
-                    const alreadyOffset = offsetSummaryMap.get(exp.id) || 0;
-                    const remaining = Math.max(0, exp.amount - alreadyOffset);
-                    const isSelected = offsetTransactionId === exp.id;
-                    const cat = categories.find((c) => c.id === exp.categoryId);
-                    const isFullyOffset = remaining <= 0;
-
-                    return (
-                      <button
-                        key={exp.id}
-                        type="button"
-                        onClick={() => handleSelectOffsetExpense(exp)}
-                        className={cn(
-                          'w-full px-2 py-1.5 rounded-[2px] flex items-center justify-between text-left transition-all cursor-pointer',
-                          isSelected
-                            ? 'bg-(--paper-sunken) shadow-2xs'
-                            : 'hover:bg-(--paper-hover)/50'
-                        )}
-                      >
-                        <div className="min-w-0 flex-1 pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-(--ink-primary) truncate text-xs">
-                              {exp.note || cat?.name || '支出'}
-                            </span>
-                            <span className="text-[10px] text-(--ink-tertiary)">{exp.date}</span>
-                            {isFullyOffset && (
-                              <span className="text-[9px] px-1 rounded-xs bg-(--color-income-bg) text-(--color-income)">
-                                已全额分摊
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-(--ink-faint) truncate">
-                            {cat?.name || '支出'} · 原金额 ¥{centsToYuan(exp.amount)}
-                          </div>
-                        </div>
-
-                        <div className="shrink-0 text-right font-mono">
-                          <div className="text-xs text-(--ink-secondary)">
-                            待冲减: <span className="font-semibold text-(--ink-primary)">¥{centsToYuan(remaining)}</span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <OffsetTrayPanel
+              recentExpenses={recentExpenses}
+              categories={categories}
+              offsetTransactionId={offsetTransactionId}
+              offsetSummaryMap={offsetSummaryMap}
+              onSelectOffsetExpense={handleSelectOffsetExpense}
+              onClearOffsetExpense={handleClearOffsetExpense}
+            />
           )}
 
           <PluginSlot name="tx.modal.metaTray" context={modalContext} />
@@ -1379,153 +1261,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           />
         </div>
 
-        <div className="keypad-tray grid grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px] select-none">
-          <button
-            type="button"
-            onClick={() => handleDigit('7')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            7
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('8')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            8
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('9')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            9
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOperator('+')}
-            className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
-            title="加法运算"
-          >
-            +
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDigit('4')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            4
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('5')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            5
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('6')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            6
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOperator('-')}
-            className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) font-mono text-base font-bold flex items-center justify-center transition-colors cursor-pointer"
-            title="减法运算"
-          >
-            −
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDigit('1')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            1
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('2')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            2
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('3')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            3
-          </button>
-          <button
-            type="button"
-            onClick={handleBackspace}
-            className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) flex items-center justify-center transition-colors cursor-pointer"
-            title="退格"
-          >
-            <Delete className="w-4 h-4 stroke-[1.8]" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDigit('.')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            .
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDigit('0')}
-            className="h-11 bg-(--paper-sheet) hover:bg-(--paper-hover) active:bg-(--paper-sunken) text-(--ink-primary) font-mono text-base font-semibold flex items-center justify-center transition-colors cursor-pointer"
-          >
-            0
-          </button>
-
-          {!editingTransaction ? (
-            <button
-              type="button"
-              onClick={() => handleSubmit(true)}
-              disabled={isSubmitting}
-              className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-secondary) text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
-              title="保存并继续记录下一笔"
-            >
-              再记一笔
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="h-11 keypad-op-btn bg-(--paper-sunken) hover:bg-(--paper-hover) text-(--ink-tertiary) font-mono text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
-              title="清空重置"
-            >
-              C
-            </button>
-          )}
-
-          {hasOperator ? (
-            <button
-              type="button"
-              onClick={handleEqual}
-              className="h-11 bg-(--color-accent-bg) hover:opacity-90 active:scale-[0.98] text-(--color-accent) font-mono text-lg font-bold flex items-center justify-center transition-all cursor-pointer"
-              title="计算结果"
-            >
-              =
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => handleSubmit(false)}
-              disabled={isSubmitting}
-              className="h-11 bg-(--btn-primary-bg) hover:opacity-95 active:scale-[0.98] text-(--btn-primary-fg) font-mono text-xs font-bold tracking-wider uppercase flex items-center justify-center transition-all cursor-pointer shadow-xs"
-            >
-              {editingTransaction ? '保存' : '完成'}
-            </button>
-          )}
-        </div>
+        <TransactionKeypad
+          onDigit={handleDigit}
+          onOperator={handleOperator}
+          onBackspace={handleBackspace}
+          onClear={handleClear}
+          onEqual={handleEqual}
+          onSubmit={handleSubmit}
+          hasOperator={hasOperator}
+          isEditing={Boolean(editingTransaction)}
+          isSubmitting={isSubmitting}
+        />
       </div>
 
       {isVoucherPreviewOpen && voucher && (

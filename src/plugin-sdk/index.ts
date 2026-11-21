@@ -45,6 +45,7 @@ export { SegToggle, type SegToggleProps } from '../components/ui/SegToggle';
 export { PaperSwitch, type PaperSwitchProps } from '../components/ui/PaperSwitch';
 export { PaperKeypad, type PaperKeypadProps } from '../components/ui/PaperKeypad';
 export { DrumWheelPicker, type DrumWheelPickerProps } from '../components/ledger/DrumWheelPicker';
+export { TransactionKeypad, type TransactionKeypadProps } from '../components/ledger/TransactionKeypad';
 
 export { toast } from '../stores/useToastStore';
 export { confirmAction, type ConfirmOptions } from '../stores/useConfirmStore';
