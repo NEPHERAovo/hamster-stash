@@ -7,6 +7,7 @@ import { MonthlyTrendBar } from '../../src/components/stats/MonthlyTrendBar';
 import { SpendingRankList } from '../../src/components/stats/SpendingRankList';
 import { CategoryDetailSubPage } from '../../src/components/stats/CategoryDetailSubPage';
 import { CategoryBadge } from '../../src/components/ui/CategoryBadge';
+import { StatsView } from '../../src/components/stats/StatsView';
 import type { CategoryStatItem, TrendItem } from '../../src/domain/finance/periodStats';
 
 describe('Modular Stats & UI Components', () => {
@@ -39,11 +40,15 @@ describe('Modular Stats & UI Components', () => {
 
   it('renders DonutChart with total amount and SVG segments', () => {
     const { container } = render(
-      <DonutChart items={mockItems} totalExpense={70000} circumference={326.7} />
+      <DonutChart items={mockItems} totalExpense={70000} circumference={326.7} periodKey="2026-11" />
     );
 
     expect(screen.getByText('总支出')).toBeInTheDocument();
     expect(screen.getByText('¥700.00')).toBeInTheDocument();
+
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg?.classList.contains('donut-ring-spin')).toBe(true);
 
     const circles = container.querySelectorAll('circle');
     expect(circles.length).toBe(2);
@@ -190,5 +195,53 @@ describe('Modular Stats & UI Components', () => {
 
     const svg = container.querySelector('svg');
     expect(svg).not.toBeNull();
+  });
+
+  it('renders StatsView with 支出构成 without italic font styling', () => {
+    const mockTxs = [
+      {
+        id: 'tx_1',
+        type: 'expense' as const,
+        amount: 5000,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-15',
+        createdAt: '',
+        updatedAt: '',
+      },
+    ];
+
+    render(
+      <StatsView
+        allTransactions={mockTxs}
+        categories={[
+          {
+            id: 'cat_food',
+            name: '餐饮',
+            type: 'expense',
+            icon: 'utensils',
+            color: 'var(--cat-food)',
+            sortOrder: 1,
+            createdAt: '',
+            updatedAt: '',
+          },
+        ]}
+        accounts={[
+          {
+            id: 'acct_1',
+            name: '现金',
+            type: 'cash',
+            balance: 100000,
+            sortOrder: 1,
+            createdAt: '',
+            updatedAt: '',
+          },
+        ]}
+      />
+    );
+
+    const titleEl = screen.getByText('支出构成');
+    expect(titleEl).toBeInTheDocument();
+    expect(titleEl.classList.contains('italic')).toBe(false);
   });
 });

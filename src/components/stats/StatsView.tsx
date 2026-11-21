@@ -261,7 +261,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
         ) : (
           <div className="w-full p-3.5 sm:p-5 bg-(--paper-sheet) paper-card border border-(--rule-hairline) select-none transition-all duration-200 rounded-(--radius-md) shadow-xs space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-serif italic text-(--ink-secondary)">
+              <span className="text-sm font-serif text-(--ink-secondary)">
                 支出构成
               </span>
               <span className="font-mono text-xs text-(--ink-tertiary)">
@@ -274,6 +274,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 items={donutItems}
                 totalExpense={totalExpense}
                 circumference={circumference}
+                periodKey={periodInfo.key}
               />
             </div>
 

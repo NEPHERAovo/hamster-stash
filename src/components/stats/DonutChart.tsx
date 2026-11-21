@@ -8,6 +8,7 @@ export interface DonutChartProps {
   totalExpense: number;
   circumference: number;
   className?: string;
+  periodKey?: string;
 }
 
 export const DonutChart: React.FC<DonutChartProps> = ({
@@ -15,10 +16,11 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   totalExpense,
   circumference,
   className,
+  periodKey,
 }) => {
   return (
     <div className={cn('relative w-[130px] h-[130px] shrink-0', className)}>
-      <svg viewBox="0 0 130 130" className="w-full h-full -rotate-90">
+      <svg key={periodKey} viewBox="0 0 130 130" className="w-full h-full -rotate-90 donut-ring-spin">
         {items.map((item) => {
           const visibleDash = items.length > 1 ? Math.max(0.8, item.dashLength - 1.8) : item.dashLength;
           return (
