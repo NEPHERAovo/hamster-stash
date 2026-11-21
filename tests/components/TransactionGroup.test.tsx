@@ -218,4 +218,25 @@ describe('TransactionGroup component', () => {
     expect(screen.getByText('半年度健身卡')).toBeInTheDocument();
     expect(screen.getByText('分期 6期 · ¥100.00/月')).toBeInTheDocument();
   });
+
+  it('keeps empty state stable without replaying entrance animation when switching filter tabs', () => {
+    const { container } = render(
+      <TransactionGroup
+        transactions={[]}
+        categories={mockCategories}
+        accounts={mockAccounts}
+        isLoading={false}
+      />
+    );
+
+    const emptyContainer = screen.getByText('暂无流水记录').closest('.bg-\\(--paper-sheet\\)');
+    expect(emptyContainer).not.toBeNull();
+    expect(emptyContainer?.classList.contains('filter-fade-enter')).toBe(false);
+
+    const reimbursementBtn = screen.getByText('待报销');
+    fireEvent.click(reimbursementBtn);
+
+    const emptyAfterSwitch = screen.getByText('暂无流水记录').closest('.bg-\\(--paper-sheet\\)');
+    expect(emptyAfterSwitch).toBe(emptyContainer);
+  });
 });
