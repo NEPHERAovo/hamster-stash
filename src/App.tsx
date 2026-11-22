@@ -590,7 +590,6 @@ export function App() {
       <LoanChainModal
         isOpen={isLoanHubOpen}
         onClose={() => setIsLoanHubOpen(false)}
-        onSelectTransaction={handleSelectTransaction}
       />
 
       <ReconcileModal

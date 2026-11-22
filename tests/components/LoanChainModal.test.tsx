@@ -4,8 +4,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { LoanChainModal } from '../../src/components/assets/LoanChainModal';
 import { useLedgerStore } from '../../src/stores/useLedgerStore';
 import { useAccountStore } from '../../src/stores/useAccountStore';
-import type { Transaction } from '../../src/types/transaction';
-import type { Account } from '../../src/types/account';
+import type { Transaction } from '../../types/transaction';
+import type { Account } from '../../types/account';
 
 describe('LoanChainModal', () => {
   const mockAccount: Account = {
@@ -59,8 +59,7 @@ describe('LoanChainModal', () => {
     expect(screen.getByText('暂无借贷与分期记录')).toBeInTheDocument();
   });
 
-  it('renders pending loan details and triggers settlement', async () => {
-    const settleLoanSpy = vi.fn();
+  it('renders pending loan card details without action buttons', () => {
     useLedgerStore.setState({
       settlementSummary: {
         totalPendingLendCents: 70000,
@@ -70,7 +69,6 @@ describe('LoanChainModal', () => {
         pendingReimbursements: [],
       },
       transactions: [mockPendingLoan],
-      settleLoanOrigin: settleLoanSpy,
     });
 
     render(<LoanChainModal isOpen={true} onClose={vi.fn()} />);
@@ -78,16 +76,12 @@ describe('LoanChainModal', () => {
     expect(screen.getByText(/借给 张三/)).toBeInTheDocument();
     expect(screen.getByText('+¥700.00')).toBeInTheDocument();
     expect(screen.getByText('待收资产')).toBeInTheDocument();
-
-    const settleBtn = screen.getByText('一键结清');
-    expect(settleBtn).toBeInTheDocument();
-
-    await fireEvent.click(settleBtn);
-    expect(settleLoanSpy).toHaveBeenCalledWith('tx_loan_1', 'acct_1');
+    expect(screen.getByText(/本金 ¥1000\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/已还 ¥300\.00/)).toBeInTheDocument();
+    expect(screen.queryByText('一键结清')).toBeNull();
   });
 
-  it('renders pending installment details and triggers transaction selection', () => {
-    const handleSelectTx = vi.fn();
+  it('renders pending installment card details without action buttons', () => {
     const mockInstallmentTx: Transaction = {
       id: 'tx_laptop_1',
       type: 'expense',
@@ -130,22 +124,17 @@ describe('LoanChainModal', () => {
       <LoanChainModal
         isOpen={true}
         onClose={vi.fn()}
-        onSelectTransaction={handleSelectTx}
       />
     );
 
     expect(screen.getByText('MacBook Pro 分期')).toBeInTheDocument();
     expect(screen.getByText('分期待还')).toBeInTheDocument();
     expect(screen.getByText('-¥6000.00')).toBeInTheDocument();
-    expect(screen.getByText(/每月约 ¥1000\.00/)).toBeInTheDocument();
-
-    const viewBtn = screen.getByText('查看流水');
-    fireEvent.click(viewBtn);
-    expect(handleSelectTx).toHaveBeenCalledWith(mockInstallmentTx);
+    expect(screen.getByText(/月供约 ¥1000\.00/)).toBeInTheDocument();
+    expect(screen.queryByText('查看流水')).toBeNull();
   });
 
-  it('filters items by tab category and handles reimbursement settlement', async () => {
-    const settleReimbSpy = vi.fn();
+  it('filters items by tab category', () => {
     const mockReimbTx: Transaction = {
       id: 'tx_reimb_1',
       type: 'expense',
@@ -172,7 +161,6 @@ describe('LoanChainModal', () => {
         pendingInstallments: [],
       },
       transactions: [mockReimbTx],
-      settleReimbursement: settleReimbSpy,
     });
 
     render(<LoanChainModal isOpen={true} onClose={vi.fn()} />);
@@ -192,9 +180,6 @@ describe('LoanChainModal', () => {
 
     const allTab = screen.getByRole('button', { name: '全部' });
     fireEvent.click(allTab);
-
-    const settleBtn = screen.getByText('报销到账');
-    await fireEvent.click(settleBtn);
-    expect(settleReimbSpy).toHaveBeenCalledWith('tx_reimb_1', 'acct_1');
+    expect(screen.getByText('客户商务宴请')).toBeInTheDocument();
   });
 });

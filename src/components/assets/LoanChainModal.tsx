@@ -9,10 +9,7 @@ import type { Transaction } from '../../types/transaction';
 import type { ActiveInstallment } from '../../domain/finance/amortization';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
-import { useAccountStore } from '../../stores/useAccountStore';
-import { toast } from '../../stores/useToastStore';
 import { PaperModal } from '../ui/PaperModal';
-import { PaperButton } from '../ui/PaperButton';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
 import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
@@ -20,7 +17,6 @@ import { cn } from '../../utils/cn';
 export interface LoanChainModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectTransaction?: (transaction: Transaction) => void;
 }
 
 interface HubItem {
@@ -38,17 +34,10 @@ interface HubItem {
 export const LoanChainModal: React.FC<LoanChainModalProps> = ({
   isOpen,
   onClose,
-  onSelectTransaction,
 }) => {
-  const {
-    settlementSummary,
-    settleLoanOrigin,
-    settleReimbursement,
-  } = useLedgerStore();
-  const { accounts } = useAccountStore();
+  const { settlementSummary } = useLedgerStore();
 
   const [filterKind, setFilterKind] = useState<'all' | 'loan' | 'reimb' | 'installment'>('all');
-  const [loading, setLoading] = useState(false);
 
   const allItems = useMemo(() => {
     const list: HubItem[] = [];
@@ -66,11 +55,15 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
       if (l.loanParty) {
         title = isLend ? `借给 ${l.loanParty}` : `向 ${l.loanParty} 借入`;
       }
+      const notePrefix = l.note ? `${l.note} · ` : '';
+      const repaidText = repaid > 0 ? ` · 已还 ¥${centsToYuan(repaid)}` : '';
+      const subtitle = `${notePrefix}本金 ¥${centsToYuan(l.amount)}${repaidText} · ${l.date}`;
+
       list.push({
         id: l.id,
         kind: 'loan',
         title,
-        subtitle: l.note ? `${l.note} · ${l.date}` : l.date,
+        subtitle,
         amount: rem,
         isExpenseOrDebt: !isLend,
         statusLabel,
@@ -80,11 +73,12 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
 
     for (const r of settlementSummary.pendingReimbursements) {
       const target = r.reimburseTarget ? ` · 报销给 ${r.reimburseTarget}` : '';
+      const voucherText = r.voucher ? ' · 📎 凭证已附' : '';
       list.push({
         id: r.id,
         kind: 'reimb',
         title: r.note || '公费垫付',
-        subtitle: `${r.date}${target}${r.voucher ? ' · 📎 凭证已附' : ''}`,
+        subtitle: `${r.date}${target}${voucherText}`,
         amount: r.amount,
         isExpenseOrDebt: false,
         statusLabel: '待报销',
@@ -97,7 +91,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
         id: inst.transaction.id,
         kind: 'installment',
         title: inst.transaction.note || '分期消费',
-        subtitle: `剩余 ${inst.remainingMonths}/${inst.months} 期 · 每月约 ¥${centsToYuan(inst.monthlyAmount)}`,
+        subtitle: `剩余 ${inst.remainingMonths}/${inst.months} 期 · 月供约 ¥${centsToYuan(inst.monthlyAmount)} · 总额 ¥${centsToYuan(inst.totalAmount)}`,
         amount: inst.remainingDebt,
         isExpenseOrDebt: true,
         statusLabel: '分期待还',
@@ -113,25 +107,6 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
     if (filterKind === 'all') return allItems;
     return allItems.filter((i) => i.kind === filterKind);
   }, [allItems, filterKind]);
-
-  const handleSettle = async (item: HubItem) => {
-    if (accounts.length === 0) return;
-    setLoading(true);
-    try {
-      const defaultAcctId = accounts[0].id;
-      if (item.kind === 'loan') {
-        await settleLoanOrigin(item.transaction.id, defaultAcctId);
-      } else if (item.kind === 'reimb') {
-        await settleReimbursement(item.transaction.id, defaultAcctId);
-      }
-      onClose();
-      toast.success(item.kind === 'loan' ? '借贷流水核销成功' : '报销待收结算成功');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '结算失败');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getEmptyTitle = () => {
     if (filterKind === 'loan') return '暂无未结借贷记录';
@@ -219,42 +194,18 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2.5">
-                  <div className="text-right">
-                    <div
-                      className={cn(
-                        'font-mono text-xs font-bold tabular-nums',
-                        entry.isExpenseOrDebt ? 'text-(--color-expense)' : 'text-(--color-income)'
-                      )}
-                    >
-                      {entry.isExpenseOrDebt ? `-¥${centsToYuan(entry.amount)}` : `+¥${centsToYuan(entry.amount)}`}
-                    </div>
-                    <div className="font-mono text-[10px] text-(--ink-faint)">
-                      {entry.isExpenseOrDebt ? '待还欠款' : '待收资产'}
-                    </div>
+                <div className="shrink-0 text-right">
+                  <div
+                    className={cn(
+                      'font-mono text-xs font-bold tabular-nums',
+                      entry.isExpenseOrDebt ? 'text-(--color-expense)' : 'text-(--color-income)'
+                    )}
+                  >
+                    {entry.isExpenseOrDebt ? `-¥${centsToYuan(entry.amount)}` : `+¥${centsToYuan(entry.amount)}`}
                   </div>
-
-                  {entry.kind === 'installment' ? (
-                    <PaperButton
-                      variant="secondary"
-                      size="xs"
-                      onClick={() => {
-                        onClose();
-                        onSelectTransaction?.(entry.transaction);
-                      }}
-                    >
-                      查看流水
-                    </PaperButton>
-                  ) : (
-                    <PaperButton
-                      variant="secondary"
-                      size="xs"
-                      disabled={loading}
-                      onClick={() => handleSettle(entry)}
-                    >
-                      {entry.kind === 'reimb' ? '报销到账' : '一键结清'}
-                    </PaperButton>
-                  )}
+                  <div className="font-mono text-[10px] text-(--ink-faint)">
+                    {entry.isExpenseOrDebt ? '待还欠款' : '待收资产'}
+                  </div>
                 </div>
               </div>
             ))}
