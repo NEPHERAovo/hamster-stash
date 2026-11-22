@@ -129,6 +129,72 @@
         window.location.replace(u.toString());
       }
 
+      async function exportEmergencyData() {
+        var status = document.getElementById('splash-status-text');
+        if (status) status.textContent = '正在导出本地数据...';
+        try {
+          var dump = { exportedAt: new Date().toISOString(), localStorage: Object.assign({}, localStorage) };
+          if ('indexedDB' in window) {
+            var req = indexedDB.open('hamsterStash_db');
+            await new Promise(function (resolve) {
+              req.onsuccess = function (e) {
+                var db = e.target.result;
+                var names = Array.from(db.objectStoreNames);
+                if (names.length === 0) {
+                  db.close();
+                  resolve();
+                  return;
+                }
+                var completed = 0;
+                for (var i = 0; i < names.length; i++) {
+                  (function (storeName) {
+                    try {
+                      var tx = db.transaction(storeName, 'readonly');
+                      var st = tx.objectStore(storeName);
+                      var getAllReq = st.getAll();
+                      getAllReq.onsuccess = function () {
+                        dump[storeName] = getAllReq.result;
+                        completed++;
+                        if (completed >= names.length) {
+                          db.close();
+                          resolve();
+                        }
+                      };
+                      getAllReq.onerror = function () {
+                        completed++;
+                        if (completed >= names.length) {
+                          db.close();
+                          resolve();
+                        }
+                      };
+                    } catch (err) {
+                      completed++;
+                      if (completed >= names.length) {
+                        db.close();
+                        resolve();
+                      }
+                    }
+                  })(names[i]);
+                }
+              };
+              req.onerror = function () { resolve(); };
+            });
+          }
+          var blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'hamsterstash_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          if (status) status.textContent = '数据已导出，可安全点击清空重置。';
+        } catch (err) {
+          alert('数据导出失败: ' + err);
+        }
+      }
+
       function copySplashDiagnostics() {
         var err = window.__splashErrorDetails || '无捕获到的错误信息';
         var info = [
@@ -222,21 +288,25 @@
           </div>
           <pre id="splash-error-pre" style="max-height:120px;overflow:auto;font-size:10px;line-height:1.4;background:rgba(0,0,0,0.05);padding:6px;border-radius:6px;margin:6px 0;word-break:break-all;white-space:pre-wrap;user-select:text;-webkit-user-select:text;"></pre>
           <div style="display:flex;gap:6px;margin-top:8px;">
-            <button type="button" onclick="copySplashDiagnostics()" style="flex:1;background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;color:inherit;">复制错误信息</button>
-            <button type="button" onclick="forceRepairAndReload(false)" style="flex:1;background:#1677ff;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;font-weight:600;">清除缓存重试</button>
+            <button type="button" onclick="exportEmergencyData()" style="flex:1;background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;color:inherit;font-weight:600;">导出当前数据 (JSON)</button>
+            <button type="button" onclick="copySplashDiagnostics()" style="background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;color:inherit;">复制报错</button>
           </div>
-          <button type="button" onclick="forceRepairAndReload(true)" style="width:100%;margin-top:6px;background:transparent;border:1px dashed #ef4444;color:#ef4444;border-radius:6px;padding:5px 8px;font-size:10px;cursor:pointer;">清空数据库并重置</button>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button type="button" onclick="forceRepairAndReload(false)" style="flex:1;background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;color:inherit;">清除缓存重试</button>
+            <button type="button" onclick="forceRepairAndReload(true)" style="flex:1;background:transparent;border:1px dashed #ef4444;color:#ef4444;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;">清空数据库重置</button>
+          </div>
         </div>
 
         <div id="splash-fallback" style="display:none;margin-top:16px;text-align:center;font-size:12px;opacity:0.9;">
           <div style="margin-bottom:8px;">加载时间较长？</div>
           <div id="splash-status-text" style="font-size:11px;margin-bottom:8px;color:#1677ff;"></div>
           <div style="display:flex;gap:8px;justify-content:center;">
-            <button type="button" onclick="forceRepairAndReload(false)" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;color:inherit;">强制清缓存并重载</button>
-            <button type="button" onclick="copySplashDiagnostics()" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:inherit;">复制诊断</button>
+            <button type="button" onclick="exportEmergencyData()" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:inherit;font-weight:600;">导出当前数据 (JSON)</button>
+            <button type="button" onclick="forceRepairAndReload(false)" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:inherit;">清除缓存重载</button>
           </div>
-          <div style="margin-top:8px;">
-            <button type="button" onclick="forceRepairAndReload(true)" style="background:transparent;border:none;color:#ef4444;font-size:10px;cursor:pointer;text-decoration:underline;">清空本地数据库重置</button>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
+            <button type="button" onclick="copySplashDiagnostics()" style="background:transparent;border:none;font-size:11px;cursor:pointer;color:inherit;opacity:0.8;">复制诊断</button>
+            <button type="button" onclick="forceRepairAndReload(true)" style="background:transparent;border:none;color:#ef4444;font-size:11px;cursor:pointer;text-decoration:underline;">清空数据库重置</button>
           </div>
         </div>
       </div>
