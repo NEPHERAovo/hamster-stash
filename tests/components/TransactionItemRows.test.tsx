@@ -118,9 +118,7 @@ describe('TransactionItem Polymorphic Rows', () => {
       />
     );
 
-    expect(screen.getByText('借出')).toBeInTheDocument();
-    expect(screen.getByText('张三')).toBeInTheDocument();
-    expect(screen.getByText('未结清')).toBeInTheDocument();
+    expect(screen.getByText('借出·张三')).toBeInTheDocument();
     expect(screen.getByText('-1000.00')).toBeInTheDocument();
   });
 
@@ -148,5 +146,77 @@ describe('TransactionItem Polymorphic Rows', () => {
 
     fireEvent.click(screen.getByText('-20.00'));
     expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders concise offset and installment badges on standard rows', () => {
+    const amortizedTx: Transaction = {
+      id: 'tx_amortized',
+      type: 'expense',
+      amount: 1200000,
+      categoryId: 'cat_food',
+      accountId: 'acct_1',
+      date: '2026-11-20',
+      note: '电脑采购',
+      ext: { amortize: { enabled: true, months: 12 } },
+      createdAt: '2026-11-20T12:00:00Z',
+      updatedAt: '2026-11-20T12:00:00Z',
+    };
+
+    const { rerender } = render(
+      <TransactionItem
+        transaction={amortizedTx}
+        category={mockCategory}
+        account={mockAccountFrom}
+      />
+    );
+
+    expect(screen.getByText('12期·¥1000.00/月')).toBeInTheDocument();
+
+    const offsetIncomeTx: Transaction = {
+      id: 'tx_offset_in',
+      type: 'income',
+      amount: 5000,
+      categoryId: 'cat_food',
+      accountId: 'acct_1',
+      date: '2026-11-20',
+      note: '朋友转账',
+      offsetTransactionId: 'tx_orig',
+      createdAt: '2026-11-20T12:00:00Z',
+      updatedAt: '2026-11-20T12:00:00Z',
+    };
+
+    rerender(
+      <TransactionItem
+        transaction={offsetIncomeTx}
+        category={mockCategory}
+        account={mockAccountFrom}
+        offsetTargetNote="聚餐AA火锅很贵的一顿"
+      />
+    );
+
+    expect(screen.getByText('抵扣·聚餐AA火锅…')).toBeInTheDocument();
+
+    const offsetExpenseTx: Transaction = {
+      id: 'tx_offset_exp',
+      type: 'expense',
+      amount: 10000,
+      categoryId: 'cat_food',
+      accountId: 'acct_1',
+      date: '2026-11-20',
+      note: '聚餐垫付',
+      createdAt: '2026-11-20T12:00:00Z',
+      updatedAt: '2026-11-20T12:00:00Z',
+    };
+
+    rerender(
+      <TransactionItem
+        transaction={offsetExpenseTx}
+        category={mockCategory}
+        account={mockAccountFrom}
+        offsetAmount={10000}
+      />
+    );
+
+    expect(screen.getByText('抵扣·全额')).toBeInTheDocument();
   });
 });

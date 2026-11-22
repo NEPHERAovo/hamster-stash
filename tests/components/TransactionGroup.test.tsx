@@ -216,7 +216,7 @@ describe('TransactionGroup component', () => {
     );
 
     expect(screen.getByText('半年度健身卡')).toBeInTheDocument();
-    expect(screen.getByText('分期 6期 · ¥100.00/月')).toBeInTheDocument();
+    expect(screen.getByText('6期·¥100.00/月')).toBeInTheDocument();
   });
 
   it('keeps empty state stable without replaying entrance animation when switching filter tabs', () => {

@@ -39,12 +39,18 @@ export const LoanTxRow: React.FC<LoanTxRowProps> = ({
   };
   const title = transaction.note || getDefaultTitle();
 
-  const loanStatusLabels: Record<string, string> = {
-    settled: '已结清',
-    partially_repaid: '部分已还',
+  const getLoanBadgeText = () => {
+    let action = isLend ? '借出' : '借入';
+    if (isRepayment) {
+      action = isLend ? '收回' : '还款';
+    }
+    if (!transaction.loanParty) {
+      return action;
+    }
+    const party = transaction.loanParty.trim();
+    const truncatedParty = party.length > 6 ? `${party.slice(0, 6)}…` : party;
+    return `${action}·${truncatedParty}`;
   };
-  const statusLabel =
-    (transaction.loanStatus && loanStatusLabels[transaction.loanStatus]) || '未结清';
 
   const formattedAmount = centsToYuan(transaction.amount);
   const dateTimeLabel = formatRowDateTime(transaction.date, transaction.createdAt, showDate);
@@ -68,19 +74,9 @@ export const LoanTxRow: React.FC<LoanTxRowProps> = ({
           <span className="truncate text-[13px] leading-tight font-medium text-(--ink-primary)">
             {title}
           </span>
-          <span className="real-stamp px-1 py-0.5 text-[9px]">
-            {isLend ? '借出' : '借入'}
+          <span className="real-stamp px-1 py-0.5 text-[9px] text-(--color-accent)">
+            {getLoanBadgeText()}
           </span>
-          {transaction.loanParty && (
-            <span className="real-stamp px-1 py-0.5 text-[9px] text-(--color-accent)">
-              {transaction.loanParty}
-            </span>
-          )}
-          {transaction.loanStatus && (
-            <span className="real-stamp px-1 py-0.5 text-[9px] text-(--ink-tertiary)">
-              {statusLabel}
-            </span>
-          )}
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />
         </div>
 

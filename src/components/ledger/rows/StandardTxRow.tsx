@@ -47,6 +47,23 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
   const formattedAmount = centsToYuan(transaction.amount);
   const dateTimeLabel = formatRowDateTime(transaction.date, transaction.createdAt, showDate);
 
+  const formatOffsetIncomeText = () => {
+    if (!offsetTargetNote) return '抵扣';
+    const trimmed = offsetTargetNote.trim();
+    const truncated = trimmed.length > 6 ? `${trimmed.slice(0, 6)}…` : trimmed;
+    return `抵扣·${truncated}`;
+  };
+
+  const formatOffsetExpenseText = () => {
+    if (offsetAmount === undefined || offsetAmount <= 0) return '';
+    if (offsetAmount >= transaction.amount) return '抵扣·全额';
+    return `抵扣·¥${centsToYuan(offsetAmount)}`;
+  };
+
+  const amortizeLabel = amortizeConfig
+    ? `${amortizeConfig.months}期·¥${centsToYuan(Math.floor(transaction.amount / amortizeConfig.months))}/月`
+    : '';
+
   return (
     <div
       onClick={onClick}
@@ -92,19 +109,17 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
                 offsetAmount >= transaction.amount ? 'text-(--color-income)' : 'text-(--color-expense)'
               )}
             >
-              {offsetAmount >= transaction.amount
-                ? '已全额抵扣'
-                : `实付 ¥${centsToYuan(transaction.amount - offsetAmount)}`}
+              {formatOffsetExpenseText()}
             </span>
           )}
           {isExpense && amortizeConfig && (
             <span className="real-stamp px-1 py-0.5 text-[9px] text-(--ink-secondary)">
-              分期 {amortizeConfig.months}期 · ¥{centsToYuan(Math.floor(transaction.amount / amortizeConfig.months))}/月
+              {amortizeLabel}
             </span>
           )}
           {isIncome && transaction.offsetTransactionId && (
             <span className="real-stamp px-1 py-0.5 text-[9px] text-(--color-income)">
-              AA抵扣{offsetTargetNote ? ` · ${offsetTargetNote}` : ''}
+              {formatOffsetIncomeText()}
             </span>
           )}
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />
