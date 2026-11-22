@@ -65,8 +65,7 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
         type={type}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex cursor-pointer items-center justify-center font-medium transition-all duration-150 select-none',
-          'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40',
+          'paper-btn',
           variantStyles[variant],
           sizeStyles[size],
           fullWidth && 'w-full',

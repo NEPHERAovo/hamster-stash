@@ -14,7 +14,6 @@ import { usePwaStore, type BeforeInstallPromptEvent } from './stores/usePwaStore
 try {
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
       usePwaStore.getState().setInstallPrompt(e as BeforeInstallPromptEvent);
     });
 

@@ -32,19 +32,19 @@ export const PaperChip = React.forwardRef<HTMLButtonElement, PaperChipProps>(
 
     const variantStyles = {
       default: selected
-        ? 'border-transparent bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg) shadow-2xs'
+        ? 'border-transparent bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-2xs'
         : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)',
       accent: selected
-        ? 'border-transparent bg-(--color-accent) font-semibold text-white shadow-2xs'
+        ? 'border-transparent bg-(--color-accent) text-white shadow-2xs'
         : 'border-(--color-accent)/30 bg-(--color-accent)/10 text-(--color-accent) hover:bg-(--color-accent)/20',
       expense: selected
-        ? 'border-(--color-expense)/30 bg-(--color-expense-bg) font-semibold text-(--color-expense) shadow-2xs'
+        ? 'border-(--color-expense)/30 bg-(--color-expense-bg) text-(--color-expense) shadow-2xs'
         : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)',
       income: selected
-        ? 'border-(--color-income)/30 bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs'
+        ? 'border-(--color-income)/30 bg-(--color-income-bg) text-(--color-income) shadow-2xs'
         : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)',
       brass: selected
-        ? 'border-(--brass-metal)/30 bg-(--paper-sunken) font-semibold text-(--brass-metal) shadow-2xs'
+        ? 'border-(--brass-metal)/30 bg-(--paper-sunken) text-(--brass-metal) shadow-2xs'
         : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)',
     };
 
@@ -54,8 +54,7 @@ export const PaperChip = React.forwardRef<HTMLButtonElement, PaperChipProps>(
         type="button"
         disabled={disabled}
         className={cn(
-          'inline-flex cursor-pointer items-center justify-center truncate rounded-(--btn-radius) border font-mono transition-all select-none',
-          'active:scale-95 disabled:pointer-events-none disabled:opacity-40',
+          'paper-chip',
           sizeStyles[size],
           variantStyles[variant],
           className

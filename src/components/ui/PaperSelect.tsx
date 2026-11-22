@@ -13,10 +13,7 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
         <select
           ref={ref}
           disabled={disabled}
-          className={cn(
-            'w-full cursor-pointer appearance-none rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sheet) py-1.5 pr-7 pl-2.5 text-xs font-semibold text-(--ink-primary) transition-colors outline-none focus:border-(--ink-tertiary) disabled:cursor-not-allowed disabled:opacity-40',
-            className
-          )}
+          className={cn('paper-select', className)}
           {...props}
         >
           {children}

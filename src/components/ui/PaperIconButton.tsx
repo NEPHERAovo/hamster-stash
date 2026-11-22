@@ -52,9 +52,8 @@ export const PaperIconButton = React.forwardRef<HTMLButtonElement, PaperIconButt
         type="button"
         disabled={disabled}
         className={cn(
-          'flex cursor-pointer items-center justify-center font-mono transition-all select-none',
+          'paper-icon-btn',
           rounded === 'full' ? 'rounded-full' : 'rounded-(--btn-radius)',
-          'active:scale-95 disabled:pointer-events-none disabled:opacity-35',
           sizeStyles[size],
           variantStyles[variant],
           active && 'border-(--color-accent) text-(--color-accent)',
