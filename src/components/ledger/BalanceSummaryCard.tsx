@@ -42,26 +42,26 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
       </div>
 
       <div className="summary-card-divider flex items-center border-t border-dashed border-(--rule-strong) pt-2 font-mono text-[11px] tabular-nums">
-        <div className="flex items-baseline gap-1">
-          <span className="text-[9px] tracking-wider text-(--ink-tertiary) uppercase">收入</span>
+        <div className="flex items-end gap-1 leading-none">
+          <span className="text-[10px] text-(--ink-tertiary)">收入</span>
           <span className="font-semibold text-(--color-income)">
             +{centsToYuan(summary.totalIncome)}
           </span>
         </div>
 
-        <span className="px-2 text-xs text-(--ink-faint) select-none">–</span>
+        <span className="px-2 text-xs leading-none text-(--ink-faint) select-none">–</span>
 
-        <div className="flex items-baseline gap-1">
-          <span className="text-[9px] tracking-wider text-(--ink-tertiary) uppercase">支出</span>
+        <div className="flex items-end gap-1 leading-none">
+          <span className="text-[10px] text-(--ink-tertiary)">支出</span>
           <span className="font-semibold text-(--color-expense)">
             {centsToYuan(summary.totalExpense)}
           </span>
         </div>
 
-        <span className="px-2 text-xs text-(--ink-faint) select-none">=</span>
+        <span className="px-2 text-xs leading-none text-(--ink-faint) select-none">=</span>
 
-        <div className="flex items-baseline gap-1">
-          <span className="text-[9px] tracking-wider text-(--ink-tertiary) uppercase">结余</span>
+        <div className="flex items-end gap-1 leading-none">
+          <span className="text-[10px] text-(--ink-tertiary)">结余</span>
           <span className={cn('font-bold', isSurplus ? 'text-(--color-income)' : 'text-(--color-expense)')}>
             {isSurplus ? '+' : ''}{centsToYuan(summary.netBalance)}
           </span>
