@@ -56,7 +56,7 @@ describe('LoanChainModal', () => {
 
     render(<LoanChainModal isOpen={true} onClose={vi.fn()} />);
 
-    expect(screen.getByText('暂无待收或待报销记录')).toBeInTheDocument();
+    expect(screen.getByText('暂无往来待收、待还或分期记录')).toBeInTheDocument();
     expect(screen.queryByText('所有借款与垫付已结清')).toBeNull();
   });
 

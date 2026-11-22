@@ -393,11 +393,8 @@ export function App() {
                 <div className="tab-stagger-2 w-full">
                   <AccountList
                     accounts={accounts}
-                    allTransactions={transactions}
-                    categories={categories}
                     onSelectAccount={(acct) => setActiveDetailAccount(acct)}
                     onDeleteAccount={handleDeleteAccount}
-                    onSelectTransaction={handleSelectTransaction}
                   />
                 </div>
               </div>

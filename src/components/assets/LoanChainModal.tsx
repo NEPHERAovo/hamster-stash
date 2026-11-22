@@ -182,7 +182,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
         {allItems.length === 0 ? (
           <div className="space-y-2 py-12 text-center text-xs text-(--ink-tertiary)">
             <CheckCircle2 className="mx-auto size-8 text-(--color-income) opacity-75" />
-            <p className="text-sm font-medium text-(--ink-secondary)">暂无待收或待报销记录</p>
+            <p className="text-sm font-medium text-(--ink-secondary)">暂无往来待收、待还或分期记录</p>
           </div>
         ) : (
           <>
@@ -200,181 +200,180 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
               />
             </div>
 
-            <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-(--radius-sm) bg-(--paper-sunken) p-1">
-              {filteredItems.map((entry) => {
-                const isSelected = activeEntry?.id === entry.id;
-                return (
-                  <PaperChip
-                    key={entry.id}
-                    selected={isSelected}
-                    onClick={() => setActiveTabId(entry.id)}
-                    className="min-w-[130px] flex-1"
-                  >
-                    {entry.title} ({entry.kind === 'installment' ? '待还' : '待收'} ¥{centsToYuan(entry.remainingAmount)})
-                  </PaperChip>
-                );
-              })}
-            </div>
-
-            {currentItem && (
-              <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-(--ink-primary)">
-                      {detailTitle}
-                    </h3>
-                    <p className="mt-0.5 font-mono text-[11px] text-(--ink-tertiary)">
-                      发起日期：{currentItem.date}
-                      {isInstallment && activeInstallment && ` · 期限 ${activeInstallment.months} 期`}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
-                      badgeClass
-                    )}
-                  >
-                    {getBadgeText()}
-                  </span>
-                </div>
-
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--paper-sunken)">
-                  <div
-                    className="h-full bg-(--color-income) transition-all duration-300"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 border-t border-dashed border-(--rule-hairline) pt-2 text-center font-mono">
-                  <div>
-                    <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
-                      {totalLabel}
-                    </span>
-                    <span className="mt-0.5 block text-sm font-bold text-(--ink-primary) tabular-nums">
-                      ¥{centsToYuan(totalAmount)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
-                      {repaidLabel}
-                    </span>
-                    <span className="mt-0.5 block text-sm font-bold text-(--color-income) tabular-nums">
-                      ¥{centsToYuan(repaidAmount)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
-                      {remainingLabel}
-                    </span>
-                    <span
-                      className={cn(
-                        'mt-0.5 block text-sm font-bold tabular-nums',
-                        isInstallment ? 'text-(--color-expense)' : 'text-(--color-accent)'
-                      )}
-                    >
-                      ¥{centsToYuan(remainingAmount)}
-                    </span>
-                  </div>
-                </div>
+            {filteredItems.length === 0 ? (
+              <div className="py-8 text-center text-xs text-(--ink-tertiary)">
+                该分类下暂无记录
               </div>
-            )}
-
-            {isInstallment && activeInstallment && (
-              <div className="flex items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-xs">
-                <div>
-                  <div className="font-semibold text-(--ink-primary)">
-                    每月月供约 ¥{centsToYuan(activeInstallment.monthlyAmount)}
-                  </div>
-                  <div className="font-mono text-[10px] text-(--ink-tertiary)">
-                    剩余 {activeInstallment.remainingMonths} 期待摊还款
-                  </div>
+            ) : (
+              <>
+                <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-(--radius-sm) bg-(--paper-sunken) p-1">
+                  {filteredItems.map((entry) => {
+                    const isSelected = activeEntry?.id === entry.id;
+                    return (
+                      <PaperChip
+                        key={entry.id}
+                        selected={isSelected}
+                        onClick={() => setActiveTabId(entry.id)}
+                        className="min-w-[130px] flex-1"
+                      >
+                        {entry.title} ({entry.kind === 'installment' ? '待还' : '待收'} ¥{centsToYuan(entry.remainingAmount)})
+                      </PaperChip>
+                    );
+                  })}
                 </div>
-                <PaperButton
-                  variant="secondary"
-                  size="xs"
-                  leftIcon={<Eye className="size-3" />}
-                  onClick={() => {
-                    onClose();
-                    if (currentItem) onSelectTransaction?.(currentItem);
-                  }}
-                >
-                  查看流水
-                </PaperButton>
-              </div>
-            )}
 
-            {currentItem?.voucher && (
-              <div className="flex items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <ReceiptText className="size-4 text-(--color-accent)" />
-                  <div>
-                    <div className="font-semibold text-(--ink-primary)">{currentItem.voucher.name}</div>
-                    <div className="font-mono text-[10px] text-(--ink-tertiary)">{currentItem.voucher.size} · 原始凭证</div>
-                  </div>
-                </div>
-                <PaperButton
-                  variant="secondary"
-                  size="xs"
-                  leftIcon={<Eye className="size-3" />}
-                  onClick={() => toast(`查验凭证：${currentItem.voucher?.name}`)}
-                >
-                  查验凭证
-                </PaperButton>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <span className="block text-xs font-semibold text-(--ink-tertiary)">
-                关联记录与结算时间轴
-              </span>
-              <div className="space-y-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-2.5 text-xs">
-                {relatedTxs.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between border-b border-(--rule-hairline) py-1 last:border-none">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="size-3.5 text-(--ink-tertiary)" />
+                {currentItem && (
+                  <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-medium text-(--ink-primary)">
-                          {t.note || (t.loanRole === 'repayment' ? '收回还款' : '初始借出款')}
+                        <h3 className="text-sm font-bold text-(--ink-primary)">
+                          {detailTitle}
+                        </h3>
+                        <p className="mt-0.5 font-mono text-[11px] text-(--ink-tertiary)">
+                          发起日期：{currentItem.date}
+                          {isInstallment && activeInstallment && ` · 期限 ${activeInstallment.months} 期`}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
+                          badgeClass
+                        )}
+                      >
+                        {getBadgeText()}
+                      </span>
+                    </div>
+
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--paper-sunken)">
+                      <div
+                        className="h-full bg-(--color-income) transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 border-t border-dashed border-(--rule-hairline) pt-2 text-center font-mono">
+                      <div>
+                        <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
+                          {totalLabel}
                         </span>
-                        <span className="block font-mono text-[10px] text-(--ink-tertiary)">{t.date}</span>
+                        <span className="mt-0.5 block text-sm font-bold text-(--ink-primary) tabular-nums">
+                          ¥{centsToYuan(totalAmount)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
+                          {repaidLabel}
+                        </span>
+                        <span className="mt-0.5 block text-sm font-bold text-(--color-income) tabular-nums">
+                          ¥{centsToYuan(repaidAmount)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
+                          {remainingLabel}
+                        </span>
+                        <span
+                          className={cn(
+                            'mt-0.5 block text-sm font-bold tabular-nums',
+                            isInstallment ? 'text-(--color-expense)' : 'text-(--color-accent)'
+                          )}
+                        >
+                          ¥{centsToYuan(remainingAmount)}
+                        </span>
                       </div>
                     </div>
-                    <span className={cn('font-mono font-bold tabular-nums', t.loanRole === 'repayment' ? 'text-(--color-income)' : 'text-(--ink-primary)')}>
-                      {t.loanRole === 'repayment' ? `+¥${centsToYuan(t.amount)}` : `¥${centsToYuan(t.amount)}`}
-                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {remainingAmount > 0 && (
-              <div className="pt-2 pb-(--safe-bottom)">
-                {isInstallment ? (
-                  <PaperButton
-                    variant="primary"
-                    size="md"
-                    fullWidth
-                    leftIcon={<Eye className="size-3.5" />}
-                    onClick={() => {
-                      onClose();
-                      if (currentItem) onSelectTransaction?.(currentItem);
-                    }}
-                  >
-                    查看分期账单流水
-                  </PaperButton>
-                ) : (
-                  <PaperButton
-                    variant="primary"
-                    size="md"
-                    fullWidth
-                    disabled={loading}
-                    leftIcon={<CheckCircle2 className="size-3.5" />}
-                    onClick={handleSettle}
-                  >
-                    一键结清剩余 ¥{centsToYuan(remainingAmount)}
-                  </PaperButton>
                 )}
-              </div>
+
+                {isInstallment && activeInstallment && (
+                  <div className="flex items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-xs">
+                    <div>
+                      <div className="font-semibold text-(--ink-primary)">
+                        每月月供约 ¥{centsToYuan(activeInstallment.monthlyAmount)}
+                      </div>
+                      <div className="font-mono text-[10px] text-(--ink-tertiary)">
+                        剩余 {activeInstallment.remainingMonths} 期待摊还款
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentItem?.voucher && (
+                  <div className="flex items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <ReceiptText className="size-4 text-(--color-accent)" />
+                      <div>
+                        <div className="font-semibold text-(--ink-primary)">{currentItem.voucher.name}</div>
+                        <div className="font-mono text-[10px] text-(--ink-tertiary)">{currentItem.voucher.size} · 原始凭证</div>
+                      </div>
+                    </div>
+                    <PaperButton
+                      variant="secondary"
+                      size="xs"
+                      leftIcon={<Eye className="size-3" />}
+                      onClick={() => toast(`查验凭证：${currentItem.voucher?.name}`)}
+                    >
+                      查验凭证
+                    </PaperButton>
+                  </div>
+                )}
+
+                {!isInstallment && relatedTxs.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="block text-xs font-semibold text-(--ink-tertiary)">
+                      关联记录与结算时间轴
+                    </span>
+                    <div className="space-y-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-2.5 text-xs">
+                      {relatedTxs.map((t) => (
+                        <div key={t.id} className="flex items-center justify-between border-b border-(--rule-hairline) py-1 last:border-none">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="size-3.5 text-(--ink-tertiary)" />
+                            <div>
+                              <span className="font-medium text-(--ink-primary)">
+                                {t.note || (t.loanRole === 'repayment' ? '收回还款' : '初始借出款')}
+                              </span>
+                              <span className="block font-mono text-[10px] text-(--ink-tertiary)">{t.date}</span>
+                            </div>
+                          </div>
+                          <span className={cn('font-mono font-bold tabular-nums', t.loanRole === 'repayment' ? 'text-(--color-income)' : 'text-(--ink-primary)')}>
+                            {t.loanRole === 'repayment' ? `+¥${centsToYuan(t.amount)}` : `¥${centsToYuan(t.amount)}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {remainingAmount > 0 && (
+                  <div className="pt-2 pb-(--safe-bottom)">
+                    {isInstallment ? (
+                      <PaperButton
+                        variant="primary"
+                        size="md"
+                        fullWidth
+                        leftIcon={<Eye className="size-3.5" />}
+                        onClick={() => {
+                          onClose();
+                          if (currentItem) onSelectTransaction?.(currentItem);
+                        }}
+                      >
+                        查看分期账单流水
+                      </PaperButton>
+                    ) : (
+                      <PaperButton
+                        variant="primary"
+                        size="md"
+                        fullWidth
+                        disabled={loading}
+                        leftIcon={<CheckCircle2 className="size-3.5" />}
+                        onClick={handleSettle}
+                      >
+                        一键结清剩余 ¥{centsToYuan(remainingAmount)}
+                      </PaperButton>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

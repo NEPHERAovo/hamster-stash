@@ -1,12 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { TrashIcon as Trash2 } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
-import type { Transaction } from '../../types/transaction';
-import type { Category } from '../../types/category';
 import { isCreditAccount } from '../../types/account';
-import { centsToYuan, buildOffsetMap } from '../../domain/finance/balanceCalculator';
-import { computePendingInstallments } from '../../domain/finance/amortization';
-import { currentYearMonth } from '../../utils/date';
+import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
@@ -15,11 +11,8 @@ import { cn } from '../../utils/cn';
 
 export interface AccountListProps {
   accounts: Account[];
-  allTransactions?: Transaction[];
-  categories?: Category[];
   onSelectAccount: (account: Account) => void;
   onDeleteAccount?: (account: Account) => void;
-  onSelectTransaction?: (transaction: Transaction) => void;
   onAddAccount?: () => void;
 }
 
@@ -120,22 +113,11 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
 
 export const AccountList: React.FC<AccountListProps> = ({
   accounts,
-  allTransactions = [],
-  categories = [],
   onSelectAccount,
   onDeleteAccount,
-  onSelectTransaction,
 }) => {
   const canDelete = accounts.length > 1;
   const [openAccountId, setOpenAccountId] = useState<string | null>(null);
-
-  const pendingInstallments = useMemo(() => {
-    if (!allTransactions || allTransactions.length === 0) {
-      return { totalRemainingDebt: 0, installments: [] };
-    }
-    const offsetMap = buildOffsetMap(allTransactions);
-    return computePendingInstallments(allTransactions, currentYearMonth(), offsetMap);
-  }, [allTransactions]);
 
   const savingsAccounts = useMemo(
     () => accounts.filter((a) => !isCreditAccount(a)),
@@ -219,59 +201,6 @@ export const AccountList: React.FC<AccountListProps> = ({
                 onDelete={() => handleDeleteAccount(acct)}
               />
             ))}
-          </div>
-        </div>
-      )}
-
-      {pendingInstallments.installments.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between px-1 select-none">
-            <span className="font-mono text-xs tracking-wider text-(--ink-tertiary) uppercase">
-              待还分期
-            </span>
-            <span className="font-mono text-[11px] text-(--ink-faint)">
-              共 {pendingInstallments.installments.length} 项 · 待还 ¥{centsToYuan(pendingInstallments.totalRemainingDebt)}
-            </span>
-          </div>
-
-          <div className="paper-card overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs transition-all duration-200 select-none">
-            {pendingInstallments.installments.map((inst) => {
-              const cat = categories.find((c) => c.id === inst.transaction.categoryId);
-              const Icon = getCategoryIcon(cat?.icon || 'credit-card');
-              return (
-                <div
-                  key={inst.transaction.id}
-                  onClick={() => onSelectTransaction?.(inst.transaction)}
-                  className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 px-3.5 py-2.5 last:border-b-0 hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
-                >
-                  <div className="mr-2 flex min-w-0 flex-1 items-center gap-2.5">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                      <Icon className="stroke-1.8 size-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-semibold text-(--ink-primary)">
-                        {inst.transaction.note || cat?.name || '分期支出'}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-(--ink-tertiary)">
-                        <span className="font-semibold text-(--color-accent)">
-                          剩余 {inst.remainingMonths}/{inst.months} 期
-                        </span>
-                        <span>每月约 ¥{centsToYuan(inst.monthlyAmount)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 text-right">
-                    <div className="font-mono text-sm font-semibold text-(--color-expense) tabular-nums">
-                      -¥ {centsToYuan(inst.remainingDebt)}
-                    </div>
-                    <div className="font-mono text-[10px] text-(--ink-faint)">
-                      总计 ¥{centsToYuan(inst.totalAmount)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}
