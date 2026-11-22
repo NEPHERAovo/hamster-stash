@@ -9,7 +9,9 @@ import type { TransactionRepository } from '../../core/repositories/TransactionR
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { CategoryRepository } from '../../core/repositories/CategoryRepository';
 import { pluginManager } from '../../core/plugin/PluginManager';
-import { todayDate } from '../../utils/date';
+import { todayDate, currentYearMonth } from '../../utils/date';
+import { computePendingInstallments, type ActiveInstallment } from '../finance/amortization';
+import { buildOffsetMap } from '../finance/balanceCalculator';
 
 export interface CreateTransactionInput {
   type: TransactionType;
@@ -45,12 +47,14 @@ export interface ReconcileInput {
 }
 
 export interface PendingSettlementSummary {
-  lendPendingAmount: number;   // 借出待收总额（单位：分）
-  reimbPendingAmount: number;  // 垫付待报销总额（单位：分）
-  borrowPendingAmount: number; // 借入待还总额（单位：分）
-  netPendingAmount: number;    // 待结算净资产 = (借出待收 + 垫付待报) - 借入待还
+  lendPendingAmount: number;
+  reimbPendingAmount: number;
+  borrowPendingAmount: number;
+  installmentPendingAmount: number;
+  netPendingAmount: number;
   pendingLoans: Transaction[];
   pendingReimbursements: Transaction[];
+  pendingInstallments: ActiveInstallment[];
 }
 
 export class TransactionService {
@@ -317,15 +321,20 @@ export class TransactionService {
       }
     }
 
-    const netPendingAmount = lendPendingAmount + reimbPendingAmount - borrowPendingAmount;
+    const offsetMap = buildOffsetMap(all);
+    const { totalRemainingDebt, installments } = computePendingInstallments(all, currentYearMonth(), offsetMap);
+
+    const netPendingAmount = lendPendingAmount + reimbPendingAmount - (borrowPendingAmount + totalRemainingDebt);
 
     return {
       lendPendingAmount,
       reimbPendingAmount,
       borrowPendingAmount,
+      installmentPendingAmount: totalRemainingDebt,
       netPendingAmount,
       pendingLoans,
       pendingReimbursements,
+      pendingInstallments: installments,
     };
   }
 

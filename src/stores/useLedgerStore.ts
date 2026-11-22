@@ -50,9 +50,11 @@ const initialSettlementSummary: PendingSettlementSummary = {
   lendPendingAmount: 0,
   reimbPendingAmount: 0,
   borrowPendingAmount: 0,
+  installmentPendingAmount: 0,
   netPendingAmount: 0,
   pendingLoans: [],
   pendingReimbursements: [],
+  pendingInstallments: [],
 };
 
 export const useLedgerStore = create<LedgerState>((set, get) => ({

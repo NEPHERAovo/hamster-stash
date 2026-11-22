@@ -4,6 +4,7 @@ import { TransactionRepository } from '../../src/core/repositories/TransactionRe
 import { AccountRepository } from '../../src/core/repositories/AccountRepository';
 import { CategoryRepository } from '../../src/core/repositories/CategoryRepository';
 import { TransactionService } from '../../src/domain/transaction/transactionService';
+import { currentYearMonth } from '../../src/utils/date';
 
 describe('Loan Linking & Reimbursement Settlement Business Logic', () => {
   let adapter: MemoryAdapter;
@@ -246,6 +247,24 @@ describe('Loan Linking & Reimbursement Settlement Business Logic', () => {
       expect(summary.netPendingAmount).toBe(78000);   // 待结算净额 +¥780.00
       expect(summary.pendingLoans.length).toBe(1);
       expect(summary.pendingReimbursements.length).toBe(1);
+    });
+
+    it('aggregates pending installments into pending settlement summary', async () => {
+      const nowMonth = currentYearMonth();
+      await txService.recordTransaction({
+        type: 'expense',
+        amount: 120000,
+        accountId: 'acct_bank',
+        categoryId: 'cat_food',
+        date: `${nowMonth}-01`,
+        ext: { amortize: { enabled: true, months: 12 } },
+      });
+
+      const summary = await txService.getPendingSettlementSummary();
+      expect(summary.installmentPendingAmount).toBe(110000);
+      expect(summary.pendingInstallments.length).toBe(1);
+      expect(summary.pendingInstallments[0].remainingMonths).toBe(11);
+      expect(summary.netPendingAmount).toBe(-110000);
     });
 
     it('allows toggling reimbursement feature switch on and off in preference store', async () => {

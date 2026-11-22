@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ReceiptIcon as ReceiptText, CheckCircleIcon as CheckCircle2, CalendarIcon as Calendar, EyeIcon as Eye } from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
+import type { ActiveInstallment } from '../../domain/finance/amortization';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -8,16 +9,19 @@ import { toast } from '../../stores/useToastStore';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperChip } from '../ui/PaperChip';
+import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
 
 export interface LoanChainModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectTransaction?: (transaction: Transaction) => void;
 }
 
 export const LoanChainModal: React.FC<LoanChainModalProps> = ({
   isOpen,
   onClose,
+  onSelectTransaction,
 }) => {
   const {
     settlementSummary,
@@ -27,16 +31,18 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
   } = useLedgerStore();
   const { accounts } = useAccountStore();
 
+  const [filterKind, setFilterKind] = useState<'all' | 'loan' | 'reimb' | 'installment'>('all');
   const [activeTabId, setActiveTabId] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   const allItems = useMemo(() => {
     const list: Array<{
       id: string;
-      kind: 'loan' | 'reimb';
+      kind: 'loan' | 'reimb' | 'installment';
       item: Transaction;
       title: string;
       remainingAmount: number;
+      installment?: ActiveInstallment;
     }> = [];
 
     for (const l of settlementSummary.pendingLoans) {
@@ -60,31 +66,86 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
       });
     }
 
+    for (const inst of settlementSummary.pendingInstallments || []) {
+      list.push({
+        id: inst.transaction.id,
+        kind: 'installment',
+        item: inst.transaction,
+        title: `${inst.transaction.note || '分期消费'} · 分期`,
+        remainingAmount: inst.remainingDebt,
+        installment: inst,
+      });
+    }
+
     return list;
   }, [settlementSummary]);
 
+  const filteredItems = useMemo(() => {
+    if (filterKind === 'all') return allItems;
+    return allItems.filter((i) => i.kind === filterKind);
+  }, [allItems, filterKind]);
+
   const activeEntry = useMemo(() => {
-    if (allItems.length === 0) return null;
-    const found = allItems.find((e) => e.id === activeTabId);
-    return found || allItems[0];
-  }, [allItems, activeTabId]);
+    if (filteredItems.length === 0) return null;
+    const found = filteredItems.find((e) => e.id === activeTabId);
+    return found || filteredItems[0];
+  }, [filteredItems, activeTabId]);
 
   const currentItem = activeEntry?.item;
   const isLoan = activeEntry?.kind === 'loan';
-  const totalAmount = currentItem ? currentItem.amount : 0;
-  const repaidAmount = currentItem ? (currentItem.repaidAmount || 0) : 0;
+  const isReimb = activeEntry?.kind === 'reimb';
+  const isInstallment = activeEntry?.kind === 'installment';
+  const activeInstallment = activeEntry?.installment;
+
+  let totalAmount = 0;
+  let repaidAmount = 0;
   let remainingAmount = 0;
-  if (currentItem) {
+
+  if (isInstallment && activeInstallment) {
+    totalAmount = activeInstallment.totalAmount;
+    remainingAmount = activeInstallment.remainingDebt;
+    repaidAmount = totalAmount - remainingAmount;
+  } else if (currentItem) {
+    totalAmount = currentItem.amount;
+    repaidAmount = currentItem.repaidAmount || 0;
     remainingAmount = isLoan ? totalAmount - repaidAmount : totalAmount;
   }
 
   const progressPercent = totalAmount > 0 ? Math.round((repaidAmount / totalAmount) * 100) : 0;
 
-  const getLoanBadgeText = () => {
-    if (!isLoan) return '待报销垫付';
+  const getBadgeText = () => {
+    if (isInstallment && activeInstallment) {
+      return `已还 ${activeInstallment.elapsedMonths}/${activeInstallment.months} 期 (${progressPercent}%)`;
+    }
+    if (isReimb) return '待报销垫付';
     if (currentItem?.loanStatus === 'settled') return '已结清';
     return `还款中 (${progressPercent}%)`;
   };
+
+  let detailTitle = `${currentItem?.note || '公费垫付'} · 发票报销`;
+  if (isInstallment) {
+    detailTitle = `${currentItem?.note || '分期消费'} · 消费分期`;
+  } else if (isLoan) {
+    detailTitle = `借给${currentItem?.loanParty || '朋友'} · 临时周转`;
+  }
+
+  const badgeClass =
+    isLoan && currentItem?.loanStatus === 'settled'
+      ? 'bg-(--color-income-bg) text-(--color-income)'
+      : 'bg-(--color-accent-bg) text-(--color-accent)';
+
+  let totalLabel = '垫付总额';
+  let repaidLabel = '已报金额';
+  let remainingLabel = '待收结余';
+  if (isInstallment) {
+    totalLabel = '分期总额';
+    repaidLabel = '已摊金额';
+    remainingLabel = '待还欠款';
+  } else if (isLoan) {
+    totalLabel = '借出本金';
+    repaidLabel = '已还金额';
+    remainingLabel = '待收结余';
+  }
 
   const relatedTxs = transactions.filter(
     (t) =>
@@ -115,7 +176,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
     <PaperModal
       isOpen={isOpen}
       onClose={onClose}
-      title="借贷与报销结算"
+      title="往来借贷与分期结算"
     >
       <div className="space-y-3.5 p-4 select-none">
         {allItems.length === 0 ? (
@@ -125,8 +186,22 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
           </div>
         ) : (
           <>
+            <div className="mx-auto max-w-72">
+              <SegToggle
+                options={[
+                  { value: 'all', label: '全部' },
+                  { value: 'loan', label: '借贷' },
+                  { value: 'reimb', label: '报销' },
+                  { value: 'installment', label: '分期' },
+                ]}
+                value={filterKind}
+                onChange={(val) => setFilterKind(val as typeof filterKind)}
+                size="sm"
+              />
+            </div>
+
             <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-(--radius-sm) bg-(--paper-sunken) p-1">
-              {allItems.map((entry) => {
+              {filteredItems.map((entry) => {
                 const isSelected = activeEntry?.id === entry.id;
                 return (
                   <PaperChip
@@ -135,7 +210,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                     onClick={() => setActiveTabId(entry.id)}
                     className="min-w-[130px] flex-1"
                   >
-                    {entry.title} (待收 ¥{centsToYuan(entry.remainingAmount)})
+                    {entry.title} ({entry.kind === 'installment' ? '待还' : '待收'} ¥{centsToYuan(entry.remainingAmount)})
                   </PaperChip>
                 );
               })}
@@ -146,23 +221,20 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-(--ink-primary)">
-                      {isLoan
-                        ? `借给${currentItem.loanParty || '朋友'} · 临时周转`
-                        : `${currentItem.note || '公费垫付'} · 发票报销`}
+                      {detailTitle}
                     </h3>
                     <p className="mt-0.5 font-mono text-[11px] text-(--ink-tertiary)">
                       发起日期：{currentItem.date}
+                      {isInstallment && activeInstallment && ` · 期限 ${activeInstallment.months} 期`}
                     </p>
                   </div>
                   <span
                     className={cn(
                       'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
-                      isLoan && currentItem.loanStatus === 'settled'
-                        ? 'bg-(--color-income-bg) text-(--color-income)'
-                        : 'bg-(--color-accent-bg) text-(--color-accent)'
+                      badgeClass
                     )}
                   >
-                    {getLoanBadgeText()}
+                    {getBadgeText()}
                   </span>
                 </div>
 
@@ -176,7 +248,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                 <div className="grid grid-cols-3 border-t border-dashed border-(--rule-hairline) pt-2 text-center font-mono">
                   <div>
                     <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
-                      {isLoan ? '借出本金' : '垫付总额'}
+                      {totalLabel}
                     </span>
                     <span className="mt-0.5 block text-sm font-bold text-(--ink-primary) tabular-nums">
                       ¥{centsToYuan(totalAmount)}
@@ -184,7 +256,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                   </div>
                   <div>
                     <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
-                      {isLoan ? '已还金额' : '已报金额'}
+                      {repaidLabel}
                     </span>
                     <span className="mt-0.5 block text-sm font-bold text-(--color-income) tabular-nums">
                       ¥{centsToYuan(repaidAmount)}
@@ -192,13 +264,42 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                   </div>
                   <div>
                     <span className="block text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
-                      待收结余
+                      {remainingLabel}
                     </span>
-                    <span className="mt-0.5 block text-sm font-bold text-(--color-accent) tabular-nums">
+                    <span
+                      className={cn(
+                        'mt-0.5 block text-sm font-bold tabular-nums',
+                        isInstallment ? 'text-(--color-expense)' : 'text-(--color-accent)'
+                      )}
+                    >
                       ¥{centsToYuan(remainingAmount)}
                     </span>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {isInstallment && activeInstallment && (
+              <div className="flex items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-xs">
+                <div>
+                  <div className="font-semibold text-(--ink-primary)">
+                    每月月供约 ¥{centsToYuan(activeInstallment.monthlyAmount)}
+                  </div>
+                  <div className="font-mono text-[10px] text-(--ink-tertiary)">
+                    剩余 {activeInstallment.remainingMonths} 期待摊还款
+                  </div>
+                </div>
+                <PaperButton
+                  variant="secondary"
+                  size="xs"
+                  leftIcon={<Eye className="size-3" />}
+                  onClick={() => {
+                    onClose();
+                    if (currentItem) onSelectTransaction?.(currentItem);
+                  }}
+                >
+                  查看流水
+                </PaperButton>
               </div>
             )}
 
@@ -248,16 +349,31 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
 
             {remainingAmount > 0 && (
               <div className="pt-2 pb-(--safe-bottom)">
-                <PaperButton
-                  variant="primary"
-                  size="md"
-                  fullWidth
-                  disabled={loading}
-                  leftIcon={<CheckCircle2 className="size-3.5" />}
-                  onClick={handleSettle}
-                >
-                  一键结清剩余 ¥{centsToYuan(remainingAmount)}
-                </PaperButton>
+                {isInstallment ? (
+                  <PaperButton
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    leftIcon={<Eye className="size-3.5" />}
+                    onClick={() => {
+                      onClose();
+                      if (currentItem) onSelectTransaction?.(currentItem);
+                    }}
+                  >
+                    查看分期账单流水
+                  </PaperButton>
+                ) : (
+                  <PaperButton
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    disabled={loading}
+                    leftIcon={<CheckCircle2 className="size-3.5" />}
+                    onClick={handleSettle}
+                  >
+                    一键结清剩余 ¥{centsToYuan(remainingAmount)}
+                  </PaperButton>
+                )}
               </div>
             )}
           </>

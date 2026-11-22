@@ -87,4 +87,62 @@ describe('LoanChainModal', () => {
     await fireEvent.click(settleBtn);
     expect(settleLoanSpy).toHaveBeenCalledWith('tx_loan_1', 'acct_1');
   });
+
+  it('renders pending installment details and triggers transaction selection', () => {
+    const handleSelectTx = vi.fn();
+    const mockInstallmentTx: Transaction = {
+      id: 'tx_laptop_1',
+      type: 'expense',
+      amount: 1200000,
+      categoryId: 'cat_shop',
+      accountId: 'acct_1',
+      date: '2026-06-01',
+      note: 'MacBook Pro 分期',
+      ext: { amortize: { enabled: true, months: 12 } },
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    useLedgerStore.setState({
+      settlementSummary: {
+        lendPendingAmount: 0,
+        reimbPendingAmount: 0,
+        borrowPendingAmount: 0,
+        installmentPendingAmount: 600000,
+        netPendingAmount: -600000,
+        pendingLoans: [],
+        pendingReimbursements: [],
+        pendingInstallments: [
+          {
+            transaction: mockInstallmentTx,
+            totalAmount: 1200000,
+            months: 12,
+            startMonth: '2026-06',
+            elapsedMonths: 6,
+            remainingMonths: 6,
+            monthlyAmount: 100000,
+            remainingDebt: 600000,
+          },
+        ],
+      },
+      transactions: [mockInstallmentTx],
+    });
+
+    render(
+      <LoanChainModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSelectTransaction={handleSelectTx}
+      />
+    );
+
+    expect(screen.getByText(/MacBook Pro 分期 · 分期/)).toBeInTheDocument();
+    expect(screen.getByText(/分期总额/)).toBeInTheDocument();
+    expect(screen.getByText(/待还欠款/)).toBeInTheDocument();
+    expect(screen.getByText(/每月月供约 ¥1000\.00/)).toBeInTheDocument();
+
+    const viewBtn = screen.getByText('查看分期账单流水');
+    fireEvent.click(viewBtn);
+    expect(handleSelectTx).toHaveBeenCalledWith(mockInstallmentTx);
+  });
 });

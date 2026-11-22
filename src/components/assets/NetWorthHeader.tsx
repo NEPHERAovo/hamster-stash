@@ -48,13 +48,20 @@ export const NetWorthHeader: React.FC<NetWorthHeaderProps> = ({
               <ArrowLeftRight className="stroke-1.8 size-3.5" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-(--ink-primary)">借贷与报销</div>
+              <div className="text-xs font-semibold text-(--ink-primary)">往来借贷与分期</div>
               <div className="font-mono text-[10px] text-(--ink-tertiary)">
-                待收款 ¥{centsToYuan(summary.lendPendingAmount)} · 待报销 ¥{centsToYuan(summary.reimbPendingAmount)}
+                待收款 ¥{centsToYuan(summary.lendPendingAmount + summary.reimbPendingAmount)} · 待还款 ¥{centsToYuan(summary.borrowPendingAmount + (summary.installmentPendingAmount || 0))}
               </div>
             </div>
           </div>
-          <span className="shrink-0 rounded-(--btn-radius) bg-(--paper-sunken) px-2 py-0.5 font-mono text-[11px] font-semibold text-(--color-accent)">
+          <span
+            className={cn(
+              'shrink-0 rounded-(--btn-radius) bg-(--paper-sunken) px-2 py-0.5 font-mono text-[11px] font-semibold',
+              summary.netPendingAmount > 0 && 'text-(--color-income)',
+              summary.netPendingAmount < 0 && 'text-(--color-expense)',
+              summary.netPendingAmount === 0 && 'text-(--color-accent)'
+            )}
+          >
             待结算 {summary.netPendingAmount >= 0 ? `+¥${centsToYuan(summary.netPendingAmount)}` : `-¥${centsToYuan(Math.abs(summary.netPendingAmount))}`}
           </span>
         </div>
