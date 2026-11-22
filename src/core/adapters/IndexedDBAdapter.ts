@@ -60,6 +60,10 @@ export class IndexedDBAdapter implements DataAdapter {
                   db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
                 }
               },
+              blocking: () => {
+                this.db?.close();
+                this.db = null;
+              },
             });
 
           try {

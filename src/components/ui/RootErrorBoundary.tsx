@@ -63,7 +63,7 @@ export class RootErrorBoundary extends Component<Props, State> {
       };
 
       try {
-        const db = await openDB('hamsterStash_db', 1);
+        const db = await openDB('hamsterStash_db');
         const stores = Array.from(db.objectStoreNames);
         for (const store of stores) {
           dump[store] = await db.getAll(store);
