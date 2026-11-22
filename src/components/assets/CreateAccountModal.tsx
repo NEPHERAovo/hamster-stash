@@ -8,6 +8,7 @@ import { PaperDayPicker } from '../ui/PaperDayPicker';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperChip } from '../ui/PaperChip';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperIconButton } from '../ui/PaperIconButton';
 import type { Account, AccountType } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import type { UpdateAccountInput } from '../../domain/account/accountService';
@@ -252,19 +253,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               const IconComp = getCategoryIcon(iconName);
               const isSelected = icon === iconName;
               return (
-                <button
+                <PaperIconButton
                   key={iconName}
-                  type="button"
+                  icon={IconComp}
+                  size="md"
+                  variant={isSelected ? 'primary' : 'sunken'}
                   onClick={() => setIcon(iconName)}
-                  className={cn(
-                    'flex h-9 cursor-pointer items-center justify-center rounded-(--badge-radius) border transition-all',
-                    isSelected
-                      ? 'border-transparent bg-(--btn-primary-bg) text-(--btn-primary-fg)'
-                      : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                  )}
-                >
-                  <IconComp className="stroke-1.8 size-4" />
-                </button>
+                />
               );
             })}
           </div>
@@ -275,70 +270,64 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="font-mono text-xs text-(--ink-tertiary)">每月还款日</label>
-                <button
-                  type="button"
+                <PaperButton
+                  variant="sunken"
+                  size="compact"
+                  fullWidth
                   onClick={() =>
                     setActiveDayPicker((curr) => (curr === 'repayment' ? null : 'repayment'))
                   }
-                  className={cn(
-                    'flex h-9 w-full cursor-pointer items-center justify-between rounded-(--input-radius) border bg-(--paper-sunken) px-2.5 text-xs font-medium transition-all',
-                    activeDayPicker === 'repayment'
-                      ? 'border-(--ink-primary) text-(--ink-primary) ring-1 ring-(--ink-primary)/20'
-                      : 'border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary)'
-                  )}
-                >
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />
-                    <span
+                  className="justify-between"
+                  leftIcon={<CalendarBlank className="size-3.5 text-(--ink-tertiary)" />}
+                  rightIcon={
+                    <CaretDown
                       className={cn(
-                        'truncate',
-                        repaymentDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
+                        'size-3 text-(--ink-tertiary) transition-transform',
+                        activeDayPicker === 'repayment' && 'rotate-180'
                       )}
-                    >
-                      {repaymentDay ? `每月 ${repaymentDay} 日` : '未设置'}
-                    </span>
-                  </div>
-                  <CaretDown
+                    />
+                  }
+                >
+                  <span
                     className={cn(
-                      'size-3 shrink-0 text-(--ink-tertiary) transition-transform',
-                      activeDayPicker === 'repayment' && 'rotate-180'
+                      'truncate',
+                      repaymentDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
                     )}
-                  />
-                </button>
+                  >
+                    {repaymentDay ? `每月 ${repaymentDay} 日` : '未设置'}
+                  </span>
+                </PaperButton>
               </div>
 
               <div className="space-y-1">
                 <label className="font-mono text-xs text-(--ink-tertiary)">每月账单日</label>
-                <button
-                  type="button"
+                <PaperButton
+                  variant="sunken"
+                  size="compact"
+                  fullWidth
                   onClick={() =>
                     setActiveDayPicker((curr) => (curr === 'bill' ? null : 'bill'))
                   }
-                  className={cn(
-                    'flex h-9 w-full cursor-pointer items-center justify-between rounded-(--input-radius) border bg-(--paper-sunken) px-2.5 text-xs font-medium transition-all',
-                    activeDayPicker === 'bill'
-                      ? 'border-(--ink-primary) text-(--ink-primary) ring-1 ring-(--ink-primary)/20'
-                      : 'border-(--rule-hairline) text-(--ink-secondary) hover:text-(--ink-primary)'
-                  )}
-                >
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />
-                    <span
+                  className="justify-between"
+                  leftIcon={<CalendarBlank className="size-3.5 text-(--ink-tertiary)" />}
+                  rightIcon={
+                    <CaretDown
                       className={cn(
-                        'truncate',
-                        billDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
+                        'size-3 text-(--ink-tertiary) transition-transform',
+                        activeDayPicker === 'bill' && 'rotate-180'
                       )}
-                    >
-                      {billDay ? `每月 ${billDay} 日` : '未设置'}
-                    </span>
-                  </div>
-                  <CaretDown
+                    />
+                  }
+                >
+                  <span
                     className={cn(
-                      'size-3 shrink-0 text-(--ink-tertiary) transition-transform',
-                      activeDayPicker === 'bill' && 'rotate-180'
+                      'truncate',
+                      billDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
                     )}
-                  />
-                </button>
+                  >
+                    {billDay ? `每月 ${billDay} 日` : '未设置'}
+                  </span>
+                </PaperButton>
               </div>
             </div>
 

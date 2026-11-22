@@ -30,6 +30,9 @@ import { TransferModal } from './components/assets/TransferModal';
 import { Toast } from './components/ui/Toast';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { PwaUpdateBanner } from './components/ui/PwaUpdateBanner';
+import { PaperButton } from './components/ui/PaperButton';
+import { PaperIconButton } from './components/ui/PaperIconButton';
+import { PaperChip } from './components/ui/PaperChip';
 import { toast } from './stores/useToastStore';
 import { useLedgerStore } from './stores/useLedgerStore';
 import { useAccountStore } from './stores/useAccountStore';
@@ -45,7 +48,6 @@ import { PluginSubPageOutlet } from './plugin-sdk/components/PluginSubPageOutlet
 import { PluginModalOutlet } from './plugin-sdk/components/PluginModalOutlet';
 import { pluginManager } from './core/plugin/PluginManager';
 import { syncService } from './domain/sync/syncService';
-import { cn } from './utils/cn';
 import { currentYearMonth, stepYearMonth } from './utils/date';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from './core/db/schema';
 
@@ -253,24 +255,16 @@ export function App() {
         <PageHeader
           title={isModern ? '统计' : 'Statistics'}
           rightAction={
-            <div className="flex items-center gap-1 font-mono text-xs select-none">
+            <div className="flex items-center gap-1">
               {(['week', 'month', 'year'] as const).map((m) => (
-                <button
+                <PaperChip
                   key={m}
-                  type="button"
+                  size="sm"
+                  selected={statsMode === m}
                   onClick={() => setStatsMode(m)}
-                  className={cn(
-                    'relative cursor-pointer px-2 py-1 text-xs transition-colors',
-                    statsMode === m
-                      ? 'font-bold text-(--ink-solid)'
-                      : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-                  )}
                 >
-                  <span>{modeLabels[m]}</span>
-                  {statsMode === m && (
-                    <span className="absolute inset-x-1.5 bottom-0 h-0.5 rounded-full bg-(--ink-solid)" />
-                  )}
-                </button>
+                  {modeLabels[m]}
+                </PaperChip>
               ))}
             </div>
           }
@@ -296,28 +290,28 @@ export function App() {
         rightAction={
           <div className="flex items-center gap-1.5">
             {accounts.length >= 2 && (
-              <button
-                type="button"
+              <PaperButton
+                variant="secondary"
+                size="compact"
+                leftIcon={<ArrowLeftRight className="size-3.5" />}
                 onClick={() => {
                   setEditingTransferTx(null);
                   setTransferDefaultFromId(undefined);
                   setIsTransferOpen(true);
                 }}
-                className="flex h-7 cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) px-2.5 font-mono text-xs text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                 title="资金划转"
               >
-                <ArrowLeftRight className="stroke-1.8 size-3.5" />
-                <span>划转</span>
-              </button>
+                划转
+              </PaperButton>
             )}
-            <button
-              type="button"
+            <PaperIconButton
+              icon={Settings}
+              size="md"
+              variant="surface"
               onClick={() => setIsSettingsOpen(true)}
-              className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
               title="设置"
-            >
-              <Settings className="stroke-1.8 size-3.5" />
-            </button>
+              aria-label="设置"
+            />
           </div>
         }
       />
@@ -333,20 +327,20 @@ export function App() {
             <span className="truncate font-medium">测试沙盒 (与真实数据隔离)</span>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
+            <PaperButton
+              variant="secondary"
+              size="xs"
               onClick={() => void resetSandboxData()}
-              className="cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-0.5 text-[11px] hover:bg-(--paper-hover)"
             >
               重置
-            </button>
-            <button
-              type="button"
+            </PaperButton>
+            <PaperButton
+              variant="primary"
+              size="xs"
               onClick={() => setSandboxMode(false)}
-              className="cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-2 py-0.5 text-[11px] font-semibold text-(--btn-primary-fg)"
             >
               退出测试
-            </button>
+            </PaperButton>
           </div>
         </div>
       )}
@@ -436,15 +430,15 @@ export function App() {
             leftAction={<SubPageBackButton label="资产" />}
             rightAction={
               currentDetailAccount ? (
-                <button
-                  type="button"
+                <PaperButton
+                  variant="secondary"
+                  size="compact"
+                  leftIcon={<Pencil className="size-3.5" />}
                   onClick={() => setEditingAccount(currentDetailAccount)}
-                  className="flex h-7 cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-base) px-2.5 font-mono text-xs text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-95"
                   title="编辑账户"
                 >
-                  <Pencil className="stroke-1.8 size-3.5" />
-                  <span>编辑</span>
-                </button>
+                  编辑
+                </PaperButton>
               ) : undefined
             }
           />

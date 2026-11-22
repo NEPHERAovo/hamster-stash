@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { CaretLeftIcon as ChevronLeft } from '@phosphor-icons/react';
-import { SubPageContext, useSubPage } from './SubPageContext';
 import { cn } from '../../utils/cn';
+import { SubPageContext, useSubPage } from './SubPageContext';
+import { PaperButton } from '../ui/PaperButton';
 import {
   GestureSmoother,
   SPRING_OUT_EASE,
@@ -14,14 +15,14 @@ import {
 export const SubPageBackButton: React.FC<{ label?: string }> = ({ label = '返回' }) => {
   const subPage = useSubPage();
   return (
-    <button
-      type="button"
+    <PaperButton
+      variant="nav"
+      size="compact"
+      leftIcon={<ChevronLeft className="size-4.5 stroke-2" />}
       onClick={() => subPage?.requestClose()}
-      className="flex cursor-pointer items-center text-sm font-semibold text-(--ink-secondary) hover:text-(--ink-primary)"
     >
-      <ChevronLeft className="size-5 stroke-2" />
-      <span>{label}</span>
-    </button>
+      {label}
+    </PaperButton>
   );
 };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowsLeftRightIcon as ArrowLeftRight, TrashIcon as Trash2 } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperSelect } from '../ui/PaperSelect';
 import { PaperInput } from '../ui/PaperInput';
 import { AmountInput } from '../ui/AmountInput';
@@ -160,14 +161,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             </PaperSelect>
           </div>
 
-          <button
-            type="button"
+          <PaperIconButton
+            icon={ArrowLeftRight}
+            size="md"
+            variant="surface"
+            rounded="full"
             onClick={handleSwapAccounts}
-            className="mt-4.5 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-2xs transition-all hover:bg-(--paper-hover) hover:text-(--ink-primary) active:scale-90"
             title="互换转出与转入账户"
-          >
-            <ArrowLeftRight className="stroke-1.8 size-3.5" />
-          </button>
+            aria-label="互换转出与转入账户"
+            className="mt-4.5"
+          />
 
           <div className="min-w-0 flex-1">
             <label className="mb-1 block font-mono text-[10px] tracking-wider text-(--ink-tertiary) uppercase">

@@ -678,19 +678,13 @@ export const CategoryManageSubPage: React.FC = () => {
                 const IconComp = getCategoryIcon(iconName);
                 const isSelected = iconInput === iconName;
                 return (
-                  <button
+                  <PaperIconButton
                     key={iconName}
-                    type="button"
+                    icon={IconComp}
+                    size="md"
+                    variant={isSelected ? 'primary' : 'sunken'}
                     onClick={() => setIconInput(iconName)}
-                    className={cn(
-                      'flex h-9 cursor-pointer items-center justify-center rounded-(--badge-radius) border transition-all',
-                      isSelected
-                        ? 'border-transparent bg-(--btn-primary-bg) text-(--btn-primary-fg)'
-                        : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-                    )}
-                  >
-                    <IconComp className="stroke-1.8 size-4" />
-                  </button>
+                  />
                 );
               })}
             </div>

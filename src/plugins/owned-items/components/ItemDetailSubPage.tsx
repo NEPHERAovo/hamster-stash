@@ -11,6 +11,10 @@ import {
   toast,
   confirmAction,
   cn,
+  PaperButton,
+  PaperIconButton,
+  PaperInput,
+  PaperSelect,
 } from '../../../plugin-sdk';
 import { type ItemStatus, getOwnedItemExt } from '../types';
 import type { Transaction } from '../../../plugin-sdk';
@@ -65,13 +69,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     return (
       <div className="space-y-3 p-8 text-center text-xs text-(--ink-tertiary)">
         <p>未找到该项信息</p>
-        <button
-          type="button"
+        <PaperButton
+          variant="ghost"
+          size="sm"
           onClick={onClose}
-          className="cursor-pointer text-(--ink-secondary) underline"
         >
           返回清单
-        </button>
+        </PaperButton>
       </div>
     );
   }
@@ -263,40 +267,40 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     if (isSub) {
       if (item.status === 'using') {
         return (
-          <button
-            type="button"
+          <PaperButton
+            variant="secondary"
+            size="compact"
             onClick={handleCancelSubscription}
-            className="flex cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-3 py-2 text-(--ink-tertiary) shadow-xs transition-all hover:border-(--rule-strong) hover:text-(--color-expense) active:scale-95"
           >
-            <span>退订服务</span>
-          </button>
+            退订服务
+          </PaperButton>
         );
       }
       return (
-        <button
-          type="button"
+        <PaperButton
+          variant="income"
+          size="compact"
+          leftIcon={<RotateCcw className="size-3.5 stroke-2" />}
           onClick={handleResumeSubscription}
-          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-3 py-2 text-(--color-income) shadow-xs transition-all hover:border-(--rule-strong) active:scale-95"
         >
-          <RotateCcw className="size-3.5 stroke-2" />
-          <span>恢复在订</span>
-        </button>
+          恢复在订
+        </PaperButton>
       );
     }
 
     if (item.status !== 'sold') {
       return (
-        <button
-          type="button"
+        <PaperButton
+          variant="income"
+          size="compact"
+          leftIcon={<DollarSign className="size-3.5 stroke-2" />}
           onClick={() => {
             setIsSellPanelOpen((prev) => !prev);
             setIsMaintPanelOpen(false);
           }}
-          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-3 py-2 text-(--color-income) shadow-xs transition-all hover:border-(--rule-strong) active:scale-95"
         >
-          <DollarSign className="size-3.5 stroke-2" />
-          <span>售出</span>
-        </button>
+          售出
+        </PaperButton>
       );
     }
 
@@ -312,14 +316,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     <div className="w-full pb-20 select-none">
       <div className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1">
         <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
+          <PaperIconButton
+            icon={ChevronLeft}
+            size="md"
+            variant="surface"
             onClick={onClose}
-            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-xs transition-all hover:text-(--ink-solid) active:scale-95"
             aria-label="返回清单"
-          >
-            <ChevronLeft className="size-4 stroke-2" />
-          </button>
+          />
           <div className="min-w-0">
             <h1 className="truncate font-serif text-xl leading-none text-(--ink-solid) not-italic sm:text-2xl">
               {item.name}
@@ -328,22 +331,22 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
+          <PaperIconButton
+            icon={Edit2}
+            size="md"
+            variant="surface"
             onClick={() => openModal('item-form', { item })}
-            className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-xs transition-all hover:text-(--ink-solid) active:scale-95"
             title="编辑信息"
-          >
-            <Edit2 className="stroke-1.8 size-3.5" />
-          </button>
-          <button
-            type="button"
+            aria-label="编辑信息"
+          />
+          <PaperIconButton
+            icon={Trash2}
+            size="md"
+            variant="surface"
             onClick={handleDelete}
-            className="flex size-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-tertiary) shadow-xs transition-all hover:text-(--color-expense) active:scale-95"
             title="移除"
-          >
-            <Trash2 className="stroke-1.8 size-3.5" />
-          </button>
+            aria-label="移除"
+          />
         </div>
       </div>
 
@@ -451,8 +454,10 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         </div>
 
         <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-          <button
-            type="button"
+          <PaperButton
+            variant="secondary"
+            size="compact"
+            leftIcon={<Plus className="size-3.5 stroke-2 text-(--color-expense)" />}
             onClick={() => {
               if (isSub && item.renewalAmountCents && !maintPriceYuan) {
                 setMaintPriceYuan(centsToYuan(item.renewalAmountCents));
@@ -460,11 +465,9 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               setIsMaintPanelOpen((prev) => !prev);
               setIsSellPanelOpen(false);
             }}
-            className="flex cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-3 py-2 text-(--ink-solid) shadow-xs transition-all hover:border-(--rule-strong) active:scale-95"
           >
-            <Plus className="size-3.5 stroke-2 text-(--color-expense)" />
-            <span>{isSub ? '记续费支出' : '记关联支出'}</span>
-          </button>
+            {isSub ? '记续费支出' : '记关联支出'}
+          </PaperButton>
 
           {renderSecondaryActionButton()}
         </div>
@@ -483,7 +486,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   支出金额
                 </label>
-                <input
+                <PaperInput
                   type="number"
                   step="0.01"
                   min="0.01"
@@ -491,7 +494,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   onChange={(e) => setMaintPriceYuan(e.target.value)}
                   placeholder="0.00"
                   autoFocus
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-sm font-semibold text-(--ink-solid) outline-none"
                 />
               </div>
 
@@ -499,17 +501,16 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   支付账户
                 </label>
-                <select
+                <PaperSelect
                   value={maintAccountId}
                   onChange={(e) => setMaintAccountId(e.target.value)}
-                  className="w-full cursor-pointer border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-solid) outline-none"
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
                     </option>
                   ))}
-                </select>
+                </PaperSelect>
               </div>
             </div>
 
@@ -518,11 +519,10 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   记账日期
                 </label>
-                <input
+                <PaperInput
                   type="date"
                   value={maintDate}
                   onChange={(e) => setMaintDate(e.target.value)}
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-xs text-(--ink-solid) outline-none"
                 />
               </div>
 
@@ -530,31 +530,31 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   支出备注
                 </label>
-                <input
+                <PaperInput
                   type="text"
                   value={maintNote}
                   onChange={(e) => setMaintNote(e.target.value)}
                   placeholder="输入支出备注"
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-secondary) outline-none"
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
-              <button
-                type="button"
+              <PaperButton
+                variant="secondary"
+                size="compact"
                 onClick={() => setIsMaintPanelOpen(false)}
-                className="cursor-pointer px-3 py-1 text-(--ink-tertiary) hover:text-(--ink-primary)"
               >
                 取消
-              </button>
-              <button
+              </PaperButton>
+              <PaperButton
+                variant="primary"
+                size="compact"
                 type="submit"
                 disabled={isSubmittingMaint}
-                className="cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-3.5 py-1 font-semibold text-(--btn-primary-fg) transition-all active:scale-95 disabled:opacity-50"
               >
                 确认记录
-              </button>
+              </PaperButton>
             </div>
           </form>
         )}
@@ -571,7 +571,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   售出金额
                 </label>
-                <input
+                <PaperInput
                   type="number"
                   step="0.01"
                   min="0"
@@ -579,7 +579,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   onChange={(e) => setSellPriceYuan(e.target.value)}
                   placeholder="0.00"
                   autoFocus
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-sm font-semibold text-(--color-income) outline-none"
                 />
               </div>
 
@@ -587,17 +586,16 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   入账账户
                 </label>
-                <select
+                <PaperSelect
                   value={sellAccountId}
                   onChange={(e) => setSellAccountId(e.target.value)}
-                  className="w-full cursor-pointer border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-solid) outline-none"
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
                     </option>
                   ))}
-                </select>
+                </PaperSelect>
               </div>
             </div>
 
@@ -606,11 +604,10 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   售出日期
                 </label>
-                <input
+                <PaperInput
                   type="date"
                   value={sellDate}
                   onChange={(e) => setSellDate(e.target.value)}
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-xs text-(--ink-solid) outline-none"
                 />
               </div>
 
@@ -618,31 +615,31 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   售出备注
                 </label>
-                <input
+                <PaperInput
                   type="text"
                   value={sellNote}
                   onChange={(e) => setSellNote(e.target.value)}
                   placeholder="输入转出或退订说明"
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-secondary) outline-none"
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
-              <button
-                type="button"
+              <PaperButton
+                variant="secondary"
+                size="compact"
                 onClick={() => setIsSellPanelOpen(false)}
-                className="cursor-pointer px-3 py-1 text-(--ink-tertiary) hover:text-(--ink-primary)"
               >
                 取消
-              </button>
-              <button
+              </PaperButton>
+              <PaperButton
+                variant="income"
+                size="compact"
                 type="submit"
                 disabled={isSubmittingSell}
-                className="cursor-pointer rounded-(--btn-radius) bg-(--color-income) px-3.5 py-1 font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
               >
                 确认结案
-              </button>
+              </PaperButton>
             </div>
           </form>
         )}

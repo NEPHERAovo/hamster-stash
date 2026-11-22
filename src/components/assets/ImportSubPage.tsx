@@ -465,16 +465,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                 <div className="font-mono text-[11px] text-(--ink-tertiary)">
                   {fileSizeStr} · 共 {parsed.rows.length} 行
                 </div>
-                <button
-                  type="button"
+                <PaperButton
+                  variant="income"
+                  size="xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     fileInputRef.current?.click();
                   }}
-                  className="cursor-pointer pt-1 text-xs text-(--color-income) hover:underline"
                 >
                   更换文件
-                </button>
+                </PaperButton>
               </div>
             ) : (
               <div className="space-y-1.5">
@@ -585,15 +585,15 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
             <span className="text-[11px] text-(--ink-secondary)">
               共解析出 {extractedCategoryStats.length} 个分类
             </span>
-            <button
-              type="button"
+            <PaperButton
+              variant="secondary"
+              size="compact"
+              leftIcon={<Plus className="size-3 text-(--color-income)" />}
               onClick={handleBatchCreateMissingCategories}
               disabled={isCreatingCategory}
-              className="flex cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2.5 py-1 text-xs font-semibold text-(--ink-primary) transition-all hover:bg-(--paper-hover) active:scale-95"
             >
-              <Plus className="size-3 text-(--color-income)" />
-              <span>批量新建未匹配分类</span>
-            </button>
+              批量新建未匹配分类
+            </PaperButton>
           </div>
 
           {extractedCategoryStats.length === 0 ? (
@@ -649,16 +649,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                     </div>
 
                     {!isExactExistInSystem && (
-                      <button
-                        type="button"
+                      <PaperButton
+                        variant="secondary"
+                        size="xs"
+                        leftIcon={<Plus className="size-3 text-(--color-income)" />}
                         onClick={() => handleCreateCategoryForRaw(stat.rawName, stat.dominantType)}
                         disabled={isCreatingCategory}
-                        className="flex shrink-0 cursor-pointer items-center gap-0.5 rounded-(--radius-xs) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-1 text-[11px] font-semibold text-(--ink-secondary) hover:text-(--ink-primary)"
                         title="新建分类"
                       >
-                        <Plus className="size-3 text-(--color-income)" />
-                        <span>新建</span>
-                      </button>
+                        新建
+                      </PaperButton>
                     )}
                   </div>
                 );

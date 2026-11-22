@@ -1,6 +1,7 @@
 import React from 'react';
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { PaperIconButton } from '../ui/PaperIconButton';
+import { PaperButton } from '../ui/PaperButton';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {
@@ -85,14 +86,14 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             {showMonthStep && (
               <>
                 {showBackToToday && onBackToToday && (
-                  <button
-                    type="button"
+                  <PaperButton
+                    variant="accent"
+                    size="compact"
                     onClick={onBackToToday}
-                    className="flex h-7 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-2 text-[11px] font-medium text-(--color-accent) shadow-xs transition-all hover:bg-(--paper-sunken) active:scale-95"
                     title="回到本月"
                   >
                     本月
-                  </button>
+                  </PaperButton>
                 )}
                 <PaperIconButton
                   icon={ChevronLeft}

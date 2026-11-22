@@ -837,16 +837,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 const hasRightBorder = idx < 3;
 
                 return (
-                  <button
+                  <PaperButton
                     key={flow.id}
-                    type="button"
+                    variant={isSelected ? 'sunken' : 'ghost'}
                     onClick={() => setSelectedCatId(flow.id)}
                     className={cn(
-                      'relative flex cursor-pointer flex-col items-center justify-center px-1 py-2 transition-all select-none',
+                      'relative flex h-auto flex-col items-center justify-center rounded-none px-1 py-2 font-normal',
                       hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
-                      isSelected
-                        ? 'z-10 bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs'
-                        : 'text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
+                      isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs'
                     )}
                   >
                     <div className="mb-0.5 flex size-6 items-center justify-center">
@@ -863,7 +861,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     <span className="mt-0.5 font-mono text-[9px] leading-none text-(--ink-faint)">
                       {flow.flowHint}
                     </span>
-                  </button>
+                  </PaperButton>
                 );
               })}
             </div>
@@ -891,19 +889,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 }
 
                 return (
-                  <button
+                  <PaperButton
                     key={cat.id}
-                    type="button"
+                    variant={isSelected ? 'sunken' : 'ghost'}
                     onClick={() => {
                       setSelectedCatId(cat.id);
                     }}
                     className={cn(
-                      'relative flex cursor-pointer flex-col items-center justify-center px-1 py-2 transition-all select-none',
+                      'relative flex h-auto flex-col items-center justify-center rounded-none px-1 py-2 font-normal',
                       hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
                       hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
-                      isSelected
-                        ? 'z-10 bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs'
-                        : 'text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
+                      isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs'
                     )}
                   >
                     <div className="mb-0.5 flex size-6 items-center justify-center">
@@ -917,7 +913,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     <span className="w-full truncate text-center text-[10px] leading-tight">
                       {cat.name}
                     </span>
-                  </button>
+                  </PaperButton>
                 );
               })}
             </div>
@@ -926,8 +922,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         <div className="space-y-1.5 border-y border-dashed border-(--rule-hairline) px-4 py-1.5">
           <div className="metadata-bar flex min-w-0 [scrollbar-width:none] flex-nowrap items-center justify-between gap-1 overflow-x-auto font-mono text-xs select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              type="button"
+            <PaperChip
+              selected={isAcctTrayOpen}
+              rightIcon={<span className="text-[9px] opacity-60">▾</span>}
               onClick={() => {
                 setIsAcctTrayOpen((prev) => !prev);
                 setIsDtTrayOpen(false);
@@ -935,21 +932,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsVoucherTrayOpen(false);
                 setIsOffsetTrayOpen(false);
               }}
-              className={cn(
-                'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--paper-sunken) px-2.5 py-1 transition-colors',
-                isAcctTrayOpen
-                  ? 'font-semibold text-(--ink-solid) shadow-2xs'
-                  : 'text-(--ink-secondary) hover:text-(--ink-primary)'
-              )}
             >
               <span className="max-w-19 truncate">{activeAccount?.name || '选择账户'}</span>
-              <span className="text-[9px] opacity-60">▾</span>
-            </button>
+            </PaperChip>
 
             <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
 
-            <button
-              type="button"
+            <PaperChip
+              selected={isDtTrayOpen}
+              rightIcon={<span className="text-[9px] opacity-60">▾</span>}
               onClick={() => {
                 setIsDtTrayOpen((prev) => !prev);
                 setIsAcctTrayOpen(false);
@@ -957,23 +948,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsVoucherTrayOpen(false);
                 setIsOffsetTrayOpen(false);
               }}
-              className={cn(
-                'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--paper-sunken) px-2.5 py-1 transition-colors',
-                isDtTrayOpen
-                  ? 'font-semibold text-(--ink-solid) shadow-2xs'
-                  : 'text-(--ink-secondary) hover:text-(--ink-primary)'
-              )}
             >
               <span className="shrink-0">{formattedDateStr} {timeStr}</span>
-              <span className="text-[9px] opacity-60">▾</span>
-            </button>
+            </PaperChip>
 
             {txType === 'expense' && (
               <>
                 <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
                 {(isReimbursementEnabled || isReimbursable) && (
-                  <button
-                    type="button"
+                  <PaperChip
+                    variant="expense"
+                    selected={isReimbursable}
                     onClick={() => {
                       setIsReimbursable((prev) => {
                         const next = !prev;
@@ -983,22 +968,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         return next;
                       });
                     }}
-                    className={cn(
-                      'shrink-0 cursor-pointer rounded-(--btn-radius) px-2.5 py-1 transition-colors',
-                      isReimbursable
-                        ? 'bg-(--color-expense-bg) font-semibold text-(--color-expense)'
-                        : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                    )}
                   >
                     {isReimbursable ? '待报销 ✓' : '报销'}
-                  </button>
+                  </PaperChip>
                 )}
 
                 {(isReimbursable || Boolean(voucher)) && (
                   <>
                     <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                    <button
-                      type="button"
+                    <PaperChip
+                      variant={voucher ? 'brass' : 'default'}
+                      selected={Boolean(voucher)}
+                      leftIcon={<Paperclip className="size-3 stroke-2" />}
+                      title={voucher ? voucher.name : '添加凭证附件'}
                       onClick={() => {
                         if (voucher) {
                           setIsVoucherTrayOpen((prev) => !prev);
@@ -1009,39 +991,27 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                           fileInputRef.current?.click();
                         }
                       }}
-                      className={cn(
-                        'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--paper-sunken) px-2.5 py-1 transition-colors',
-                        voucher ? 'font-semibold text-(--brass-metal)' : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                      )}
-                      title={voucher ? voucher.name : '添加凭证附件'}
                     >
-                      <Paperclip className="size-3 stroke-2" />
                       <span className="shrink-0">{voucher ? '已附凭证' : '凭证'}</span>
-                    </button>
+                    </PaperChip>
                   </>
                 )}
 
                 {(isAmortizationEnabled || Boolean(amortizeMonths)) && (
                   <>
                     <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                    <button
-                      type="button"
+                    <PaperChip
+                      selected={Boolean(amortizeMonths) || isAmortizeTrayOpen}
+                      rightIcon={<span className="text-[9px] opacity-60">▾</span>}
                       onClick={() => {
                         setIsAmortizeTrayOpen((prev) => !prev);
                         setIsAcctTrayOpen(false);
                         setIsDtTrayOpen(false);
                         setIsVoucherTrayOpen(false);
                       }}
-                      className={cn(
-                        'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) px-2.5 py-1 transition-colors',
-                        amortizeMonths && 'bg-(--paper-sunken) font-semibold text-(--ink-primary) shadow-2xs',
-                        !amortizeMonths && isAmortizeTrayOpen && 'font-semibold text-(--ink-solid)',
-                        !amortizeMonths && !isAmortizeTrayOpen && 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                      )}
                     >
                       <span className="shrink-0">{amortizeMonths ? `分期: ${amortizeMonths}期` : '分期'}</span>
-                      <span className="text-[9px] opacity-60">▾</span>
-                    </button>
+                    </PaperChip>
                   </>
                 )}
               </>
@@ -1050,27 +1020,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {txType === 'income' && (
               <>
                 <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                <button
-                  type="button"
+                <PaperChip
+                  variant="income"
+                  selected={Boolean(offsetTransactionId) || isOffsetTrayOpen}
+                  rightIcon={<span className="text-[9px] opacity-60">▾</span>}
                   onClick={() => {
                     setIsOffsetTrayOpen((prev) => !prev);
                     setIsAcctTrayOpen(false);
                     setIsDtTrayOpen(false);
                   }}
-                  className={cn(
-                    'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) px-2.5 py-1 transition-colors',
-                    offsetTransactionId && 'bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs',
-                    !offsetTransactionId && isOffsetTrayOpen && 'bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs',
-                    !offsetTransactionId && !isOffsetTrayOpen && 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                  )}
                 >
                   <span className="max-w-22 truncate">
                     {selectedOffsetTx
                       ? `抵扣 · ${selectedOffsetTx.note || categories.find((c) => c.id === selectedOffsetTx.categoryId)?.name || '支出'}`
                       : '抵扣支出'}
                   </span>
-                  <span className="text-[9px] opacity-60">▾</span>
-                </button>
+                </PaperChip>
               </>
             )}
 
@@ -1092,30 +1057,30 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 <div className="text-[10px] text-(--ink-tertiary)">{voucher.size}</div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  type="button"
+                <PaperButton
+                  variant="primary"
+                  size="xs"
                   onClick={() => setIsVoucherPreviewOpen(true)}
-                  className="cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-2.5 py-1 text-[11px] font-semibold text-(--btn-primary-fg)"
                 >
                   查看
-                </button>
-                <button
-                  type="button"
+                </PaperButton>
+                <PaperButton
+                  variant="secondary"
+                  size="xs"
                   onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer rounded-(--btn-radius) bg-(--paper-sunken) px-2 py-1 text-[11px] text-(--ink-secondary) hover:text-(--ink-primary)"
                 >
                   更换
-                </button>
-                <button
-                  type="button"
+                </PaperButton>
+                <PaperButton
+                  variant="danger"
+                  size="xs"
                   onClick={() => {
                     setVoucher(null);
                     setIsVoucherTrayOpen(false);
                   }}
-                  className="cursor-pointer rounded-(--btn-radius) bg-(--color-expense-bg) px-2 py-1 text-[11px] text-(--color-expense)"
                 >
                   移除
-                </button>
+                </PaperButton>
               </div>
             </div>
           )}
@@ -1171,42 +1136,27 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           {isDtTrayOpen && (
             <div className="space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
               <div className="flex items-center gap-1.5 px-0.5 text-[11px] text-(--ink-tertiary)">
-                <button
-                  type="button"
+                <PaperChip
+                  size="sm"
+                  selected={dateStr === todayStr}
                   onClick={() => setDateDelta(0)}
-                  className={cn(
-                    'cursor-pointer rounded-[3px] px-2.5 py-0.5 transition-colors',
-                    dateStr === todayStr
-                      ? 'bg-(--ink-solid) font-semibold text-(--paper-sheet) shadow-2xs'
-                      : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-primary)'
-                  )}
                 >
                   今天
-                </button>
-                <button
-                  type="button"
+                </PaperChip>
+                <PaperChip
+                  size="sm"
+                  selected={dateStr === yesterdayStr}
                   onClick={() => setDateDelta(-1)}
-                  className={cn(
-                    'cursor-pointer rounded-[3px] px-2.5 py-0.5 transition-colors',
-                    dateStr === yesterdayStr
-                      ? 'bg-(--ink-solid) font-semibold text-(--paper-sheet) shadow-2xs'
-                      : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-primary)'
-                  )}
                 >
                   昨天
-                </button>
-                <button
-                  type="button"
+                </PaperChip>
+                <PaperChip
+                  size="sm"
+                  selected={dateStr === beforeYesterdayStr}
                   onClick={() => setDateDelta(-2)}
-                  className={cn(
-                    'cursor-pointer rounded-[3px] px-2.5 py-0.5 transition-colors',
-                    dateStr === beforeYesterdayStr
-                      ? 'bg-(--ink-solid) font-semibold text-(--paper-sheet) shadow-2xs'
-                      : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-primary)'
-                  )}
                 >
                   前天
-                </button>
+                </PaperChip>
               </div>
 
               <DrumWheelPicker

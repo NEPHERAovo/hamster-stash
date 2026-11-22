@@ -266,13 +266,13 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
           <div className="flex items-center gap-2">
             {isSandboxModeActive() && (
-              <button
-                type="button"
+              <PaperButton
+                variant="ghost"
+                size="xs"
                 onClick={() => void resetSandboxData()}
-                className="cursor-pointer text-[11px] text-(--ink-secondary) underline hover:text-(--ink-primary)"
               >
                 重置演示数据
-              </button>
+              </PaperButton>
             )}
             <PaperSwitch
               checked={isSandboxModeActive()}

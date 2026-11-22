@@ -37,7 +37,11 @@ export { PluginModalOutlet } from './components/PluginModalOutlet';
 
 export { PaperCard, type PaperCardProps } from '../components/ui/PaperCard';
 export { PaperButton, type PaperButtonProps } from '../components/ui/PaperButton';
+export { PaperIconButton, type PaperIconButtonProps } from '../components/ui/PaperIconButton';
 export { PaperInput, type PaperInputProps } from '../components/ui/PaperInput';
+export { AmountInput, type AmountInputProps } from '../components/ui/AmountInput';
+export { PaperSelect, type PaperSelectProps } from '../components/ui/PaperSelect';
+export { PaperChip, type PaperChipProps } from '../components/ui/PaperChip';
 export { PaperModal, type PaperModalProps } from '../components/ui/PaperModal';
 export { PaperBadge, type PaperBadgeProps } from '../components/ui/PaperBadge';
 export { CategoryBadge, type CategoryBadgeProps } from '../components/ui/CategoryBadge';

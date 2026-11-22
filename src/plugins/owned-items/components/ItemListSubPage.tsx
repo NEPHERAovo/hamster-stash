@@ -6,6 +6,8 @@ import {
   centsToYuan,
   getCategoryIcon,
   cn,
+  PaperIconButton,
+  PaperChip,
 } from '../../../plugin-sdk';
 import type { Item } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
@@ -92,14 +94,13 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       {onClose && (
         <div className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <PaperIconButton
+              icon={ChevronLeft}
+              size="md"
+              variant="surface"
               onClick={onClose}
-              className="flex size-8 cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-secondary) shadow-xs transition-all hover:text-(--ink-solid) active:scale-95"
               aria-label="返回"
-            >
-              <ChevronLeft className="size-4 stroke-2" />
-            </button>
+            />
             <div>
               <h1 className="mt-0.5 font-serif text-2xl leading-none text-(--ink-solid) not-italic sm:text-[28px]">
                 <span className="paper-title inline">Items</span>
@@ -153,49 +154,33 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                 { key: 'physical', label: '物品' },
                 { key: 'subscription', label: '订阅' },
               ].map((k) => (
-                <button
+                <PaperChip
                   key={k.key}
-                  type="button"
+                  size="sm"
+                  selected={kindFilter === k.key}
                   onClick={() => setKindFilter(k.key as KindTab)}
-                  className={cn(
-                    'cursor-pointer rounded-full border px-2 py-0.5 font-mono text-[11px] transition-all',
-                    kindFilter === k.key
-                      ? 'border-(--rule-strong) bg-(--toggle-active-bg) font-medium text-(--toggle-active-fg) shadow-xs'
-                      : 'border-transparent bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                  )}
                 >
                   {k.label}
-                </button>
+                </PaperChip>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-5 border-b border-(--rule-hairline) px-1 font-mono text-xs">
+          <div className="flex items-center gap-2 border-b border-(--rule-hairline) pb-2 font-mono text-xs">
             {[
               { key: 'using', label: `在用 (${overallSummary.usingCount})` },
               { key: 'sold', label: `已出 (${overallSummary.soldCount})` },
               { key: 'all', label: `全部 (${overallSummary.totalCount})` },
-            ].map((tab) => {
-              const isActive = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setActiveTab(tab.key as FilterTab)}
-                  className={cn(
-                    'relative cursor-pointer pb-2 transition-all select-none',
-                    isActive
-                      ? 'font-bold text-(--ink-solid)'
-                      : 'text-(--ink-tertiary) hover:text-(--ink-secondary)'
-                  )}
-                >
-                  <span>{tab.label}</span>
-                  {isActive && (
-                    <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-(--color-accent)" />
-                  )}
-                </button>
-              );
-            })}
+            ].map((tab) => (
+              <PaperChip
+                key={tab.key}
+                size="sm"
+                selected={activeTab === tab.key}
+                onClick={() => setActiveTab(tab.key as FilterTab)}
+              >
+                {tab.label}
+              </PaperChip>
+            ))}
           </div>
 
           {filteredItems.length > 0 ? (
@@ -290,15 +275,14 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
       {onClose && (
         <div className="fixed right-6 bottom-6 z-50">
-          <button
-            type="button"
+          <PaperIconButton
+            icon={Plus}
+            size="lg"
+            variant="primary"
             onClick={() => openModal('item-form')}
             title="新建物品"
             aria-label="新建物品"
-            className="flex size-12 cursor-pointer items-center justify-center rounded-(--btn-radius) bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-[0_4px_14px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 active:scale-95"
-          >
-            <Plus className="stroke-2.2 size-5" />
-          </button>
+          />
         </div>
       )}
     </div>

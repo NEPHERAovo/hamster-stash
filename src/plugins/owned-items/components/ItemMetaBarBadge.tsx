@@ -1,6 +1,6 @@
 import React from 'react';
 import { PackageIcon as Package } from '@phosphor-icons/react';
-import { cn } from '../../../plugin-sdk';
+import { PaperChip } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';
 
@@ -52,23 +52,15 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
     <>
       <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
 
-      <button
-        type="button"
+      <PaperChip
+        selected={isActive || isTrayOpen}
+        leftIcon={<Package className="stroke-1.8 size-3 shrink-0 opacity-75" />}
+        rightIcon={<span className="text-[9px] opacity-60">▾</span>}
         onClick={toggleTray}
-        className={cn(
-          'flex shrink-0 cursor-pointer items-center gap-1 rounded-(--btn-radius) px-2.5 py-1 font-mono text-xs transition-colors select-none',
-          isActive || isTrayOpen
-            ? 'bg-(--paper-sunken) font-semibold text-(--ink-solid) shadow-2xs'
-            : 'bg-(--paper-sunken) text-(--ink-tertiary) hover:text-(--ink-secondary)'
-        )}
         title={badgeTitle}
       >
-        <Package className="stroke-1.8 size-3 shrink-0 opacity-75" />
-        <span className="max-w-16 truncate">
-          {displayText}
-        </span>
-        <span className="text-[9px] opacity-60">▾</span>
-      </button>
+        <span className="max-w-16 truncate">{displayText}</span>
+      </PaperChip>
     </>
   );
 };

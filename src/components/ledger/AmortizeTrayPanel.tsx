@@ -2,6 +2,7 @@ import React from 'react';
 import { evaluateArithmetic } from '../../utils/math';
 import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator';
 import { PaperChip } from '../ui/PaperChip';
+import { PaperInput } from '../ui/PaperInput';
 
 export interface AmortizeTrayPanelProps {
   expr: string;
@@ -45,19 +46,19 @@ export const AmortizeTrayPanel: React.FC<AmortizeTrayPanelProps> = ({
         ))}
 
         {isCustomAmortize ? (
-          <div className="flex items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) px-2 py-0.5">
-            <input
+          <div className="w-18">
+            <PaperInput
               type="number"
               inputMode="numeric"
               min={2}
               max={120}
               autoFocus
+              size="sm"
               value={customAmortizeInput}
               onChange={(e) => onCustomAmortizeChange(e.target.value)}
               placeholder="期数"
-              className="w-10 bg-transparent text-center font-mono text-xs font-semibold text-(--ink-primary) outline-none"
+              rightIcon={<span className="text-[11px] text-(--ink-tertiary)">期</span>}
             />
-            <span className="text-[11px] text-(--ink-tertiary)">期</span>
           </div>
         ) : (
           <PaperChip

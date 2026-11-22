@@ -6,6 +6,7 @@ import type { Account } from '../../../types/account';
 import { centsToYuan } from '../../../domain/finance/balanceCalculator';
 import { getAmortizeConfig } from '../../../domain/finance/amortization';
 import { CategoryBadge } from '../../ui/CategoryBadge';
+import { PaperBadge } from '../../ui/PaperBadge';
 import { PluginSlot } from '../../../plugin-sdk/components/PluginSlot';
 import { VoucherPreviewModal } from '../VoucherPreviewModal';
 import { cn } from '../../../utils/cn';
@@ -71,18 +72,18 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
             </span>
           )}
           {transaction.voucher && (
-            <button
-              type="button"
+            <PaperBadge
+              variant="stamp"
+              interactive={true}
+              icon={<Paperclip className="size-2.5 shrink-0" />}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsVoucherPreviewOpen(true);
               }}
-              className="real-stamp stamp-voucher inline-flex cursor-pointer items-center gap-0.5 px-1 py-0.5 text-[9px] transition-transform hover:opacity-100 active:scale-95"
               title="查看凭证"
             >
-              <Paperclip className="size-2.5 shrink-0" />
-              <span>凭证</span>
-            </button>
+              凭证
+            </PaperBadge>
           )}
           {isExpense && offsetAmount !== undefined && offsetAmount > 0 && (
             <span

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
+import { PaperButton } from '../ui/PaperButton';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { CategoryStatItem } from '../../domain/finance/periodStats';
 import { cn } from '../../utils/cn';
@@ -23,11 +24,13 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
   return (
     <div className={cn('pt-0.5', className)}>
       {items.map((item) => (
-        <button
+        <PaperButton
           key={item.categoryId}
-          type="button"
+          variant="ghost"
+          fullWidth
+          size="md"
           onClick={() => onSelectCategory?.(item.categoryId)}
-          className="group active:scale-0.99 flex w-full cursor-pointer items-center rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] transition-all last:border-b-0 hover:bg-(--paper-sunken)/60"
+          className="group justify-start rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] font-normal last:border-b-0 hover:bg-(--paper-sunken)/60"
           title={`查看「${item.name}」支出明细`}
         >
           <div
@@ -44,7 +47,7 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
             {item.percentage}%
           </span>
           <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
-        </button>
+        </PaperButton>
       ))}
     </div>
   );

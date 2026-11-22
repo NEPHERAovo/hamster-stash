@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { PlusIcon as Plus } from '@phosphor-icons/react';
-import { getCategoryIcon, cn } from '../../../plugin-sdk';
+import { getCategoryIcon, PaperButton, PaperChip } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';
 
@@ -72,49 +72,35 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
       <div className="flex items-center justify-between text-[11px] text-(--ink-tertiary)">
         <span>关联或新建物品</span>
         {hasActiveSelection && (
-          <button
-            type="button"
+          <PaperButton
+            variant="danger-ghost"
+            size="xs"
             onClick={handleClearAssociation}
-            className="cursor-pointer text-[11px] transition-colors hover:text-(--color-expense)"
           >
             解除关联
-          </button>
+          </PaperButton>
         )}
       </div>
 
       <div className="space-y-1.5">
         <div className="grid grid-cols-2 gap-1.5">
-          <button
-            type="button"
+          <PaperChip
+            variant="income"
+            selected={isCreateNew && (!itemExt?.kind || itemExt?.kind === 'physical')}
+            leftIcon={<Plus className="size-3.5 shrink-0 stroke-2" />}
             onClick={() => handleToggleCreateNew('physical')}
-            className={cn(
-              'flex cursor-pointer items-center justify-between rounded-(--btn-radius) border px-2 py-1.5 font-mono text-xs transition-all',
-              isCreateNew && (!itemExt?.kind || itemExt?.kind === 'physical')
-                ? 'border-(--color-income) bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs'
-                : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-            )}
           >
-            <div className="flex items-center gap-1 truncate">
-              <Plus className="size-3.5 shrink-0 stroke-2" />
-              <span className="truncate">记为新物品</span>
-            </div>
-          </button>
+            记为新物品
+          </PaperChip>
 
-          <button
-            type="button"
+          <PaperChip
+            variant="income"
+            selected={isCreateNew && itemExt?.kind === 'subscription'}
+            leftIcon={<Plus className="size-3.5 shrink-0 stroke-2" />}
             onClick={() => handleToggleCreateNew('subscription')}
-            className={cn(
-              'flex cursor-pointer items-center justify-between rounded-(--btn-radius) border px-2 py-1.5 font-mono text-xs transition-all',
-              isCreateNew && itemExt?.kind === 'subscription'
-                ? 'border-(--color-income) bg-(--color-income-bg) font-semibold text-(--color-income) shadow-2xs'
-                : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary) hover:text-(--ink-primary)'
-            )}
           >
-            <div className="flex items-center gap-1 truncate">
-              <Plus className="size-3.5 shrink-0 stroke-2" />
-              <span className="truncate">记为新订阅</span>
-            </div>
-          </button>
+            记为新订阅
+          </PaperChip>
         </div>
 
         {subscriptionItems.length > 0 && (
@@ -127,20 +113,14 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                 const ItemIcon = getCategoryIcon(it.icon);
                 const isSelected = selectedItemId === it.id && !isCreateNew;
                 return (
-                  <button
+                  <PaperChip
                     key={it.id}
-                    type="button"
+                    selected={isSelected}
+                    leftIcon={<ItemIcon className="size-3 shrink-0 opacity-70" />}
                     onClick={() => handleSelectExistingItem(it.id, 'subscription')}
-                    className={cn(
-                      'flex cursor-pointer items-center gap-1.5 truncate rounded-(--radius-sm) border px-2 py-1 text-left font-mono text-xs transition-all',
-                      isSelected
-                        ? '-rotate-1 border-(--rule-hairline) bg-(--paper-sunken) font-bold text-(--ink-solid) shadow-2xs'
-                        : 'border-transparent text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
-                    )}
                   >
-                    <ItemIcon className="size-3 shrink-0 opacity-70" />
-                    <span className="truncate">{it.name}</span>
-                  </button>
+                    {it.name}
+                  </PaperChip>
                 );
               })}
             </div>
@@ -161,20 +141,14 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                 const ItemIcon = getCategoryIcon(it.icon);
                 const isSelected = selectedItemId === it.id && !isCreateNew;
                 return (
-                  <button
+                  <PaperChip
                     key={it.id}
-                    type="button"
+                    selected={isSelected}
+                    leftIcon={<ItemIcon className="size-3 shrink-0 opacity-70" />}
                     onClick={() => handleSelectExistingItem(it.id, 'physical')}
-                    className={cn(
-                      'flex cursor-pointer items-center gap-1.5 truncate rounded-(--radius-sm) border px-2 py-1 text-left font-mono text-xs transition-all',
-                      isSelected
-                        ? '-rotate-1 border-(--rule-hairline) bg-(--paper-sunken) font-bold text-(--ink-solid) shadow-2xs'
-                        : 'border-transparent text-(--ink-secondary) hover:bg-(--paper-hover)/50 hover:text-(--ink-primary)'
-                    )}
                   >
-                    <ItemIcon className="size-3 shrink-0 opacity-70" />
-                    <span className="truncate">{it.name}</span>
-                  </button>
+                    {it.name}
+                  </PaperChip>
                 );
               })
             )}

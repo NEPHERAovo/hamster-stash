@@ -7,8 +7,12 @@ import {
   centsToYuan,
   getCategoryIcon,
   toast,
-  cn,
   SegToggle,
+  PaperButton,
+  PaperIconButton,
+  PaperInput,
+  PaperSelect,
+  PaperSwitch,
 } from '../../../plugin-sdk';
 import type { Item, ItemStatus, ItemKind, SubscriptionCycle } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
@@ -202,13 +206,13 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               {editingItem ? '编辑' : '新建'}
             </span>
           </div>
-          <button
-            type="button"
+          <PaperIconButton
+            icon={X}
+            size="sm"
+            variant="ghost"
             onClick={onClose}
-            className="cursor-pointer rounded-(--btn-radius) p-1 text-(--ink-tertiary) hover:text-(--ink-primary)"
-          >
-            <X className="size-4 stroke-2" />
-          </button>
+            aria-label="关闭"
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5 p-4 text-xs">
@@ -236,12 +240,10 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
               {kind === 'subscription' ? '服务名称' : '物品名称'}
             </label>
-            <input
-              type="text"
+            <PaperInput
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={kind === 'subscription' ? '输入服务名称' : '输入物品名称'}
-              className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-sm font-semibold text-(--ink-solid) outline-none focus:border-(--ink-primary)"
               autoFocus
             />
           </div>
@@ -255,19 +257,13 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 const IconComp = getCategoryIcon(ic);
                 const isSelected = icon === ic;
                 return (
-                  <button
+                  <PaperIconButton
                     key={ic}
-                    type="button"
+                    icon={IconComp}
+                    size="md"
+                    variant={isSelected ? 'primary' : 'sunken'}
                     onClick={() => setIcon(ic)}
-                    className={cn(
-                      'flex h-8 cursor-pointer items-center justify-center rounded-(--radius-sm) border transition-all',
-                      isSelected
-                        ? '-rotate-1 border-(--color-accent) bg-(--color-accent) font-bold text-white shadow-xs'
-                        : 'border-transparent text-(--ink-tertiary) hover:bg-(--paper-sunken)/40 hover:text-(--ink-secondary)'
-                    )}
-                  >
-                    <IconComp className="stroke-1.8 size-4" />
-                  </button>
+                  />
                 );
               })}
             </div>
@@ -277,11 +273,10 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
               {kind === 'subscription' ? '起始日期' : '购入日期'}
             </label>
-            <input
+            <PaperInput
               type="date"
               value={buyDate}
               onChange={(e) => setBuyDate(e.target.value)}
-              className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-xs text-(--ink-solid) outline-none"
             />
           </div>
 
@@ -292,30 +287,28 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                     续费周期
                   </label>
-                  <select
+                  <PaperSelect
                     value={billingCycle}
                     onChange={(e) => setBillingCycle(e.target.value as SubscriptionCycle)}
-                    className="w-full cursor-pointer border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-solid) outline-none"
                   >
                     <option value="monthly">按月</option>
                     <option value="yearly">按年</option>
                     <option value="quarterly">按季</option>
                     <option value="weekly">按周</option>
-                  </select>
+                  </PaperSelect>
                 </div>
 
                 <div>
                   <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                     续费金额
                   </label>
-                  <input
+                  <PaperInput
                     type="number"
                     step="0.01"
                     min="0"
                     value={renewalAmountYuan}
                     onChange={(e) => setRenewalAmountYuan(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-xs text-(--ink-solid) outline-none"
                   />
                 </div>
               </div>
@@ -324,11 +317,10 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                   下次续费日
                 </label>
-                <input
+                <PaperInput
                   type="date"
                   value={nextRenewalDate}
                   onChange={(e) => setNextRenewalDate(e.target.value)}
-                  className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-xs text-(--ink-solid) outline-none"
                 />
               </div>
             </div>
@@ -341,14 +333,13 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                     {kind === 'subscription' ? '首次支出' : '购入金额'}
                   </label>
-                  <input
+                  <PaperInput
                     type="number"
                     step="0.01"
                     min="0"
                     value={costYuan}
                     onChange={(e) => setCostYuan(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 font-mono text-xs text-(--ink-solid) outline-none"
                   />
                 </div>
 
@@ -356,31 +347,29 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                     支出账户
                   </label>
-                  <select
+                  <PaperSelect
                     value={selectedAcctId}
                     onChange={(e) => setSelectedAcctId(e.target.value)}
                     disabled={!costYuan || parseFloat(costYuan) <= 0}
-                    className="w-full cursor-pointer border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-solid) outline-none disabled:opacity-40"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.name}
                       </option>
                     ))}
-                  </select>
+                  </PaperSelect>
                 </div>
               </div>
 
               {costYuan && parseFloat(costYuan) > 0 && (
-                <label className="flex cursor-pointer items-center gap-2 pt-0.5 text-[11px] text-(--ink-secondary) select-none">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center justify-between pt-0.5 select-none">
+                  <span className="text-[11px] text-(--ink-secondary)">录入历史记录（仅建流水，不扣除当前余额）</span>
+                  <PaperSwitch
                     checked={isHistorical}
-                    onChange={(e) => setIsHistorical(e.target.checked)}
-                    className="cursor-pointer rounded-xs text-(--ink-solid) focus:ring-0"
+                    onChange={(val) => setIsHistorical(val)}
+                    aria-label="录入历史记录"
                   />
-                  <span>录入历史记录（仅建流水，不扣除账户当前余额）</span>
-                </label>
+                </div>
               )}
             </div>
           )}
@@ -389,31 +378,30 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
               备注
             </label>
-            <input
-              type="text"
+            <PaperInput
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="添加备注"
-              className="w-full border-b border-dashed border-(--rule-hairline) bg-transparent py-1 text-xs text-(--ink-secondary) outline-none focus:border-(--ink-primary)"
             />
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 pb-(--safe-bottom)">
-            <button
-              type="button"
+            <PaperButton
+              variant="secondary"
+              size="compact"
               onClick={onClose}
-              className="cursor-pointer rounded-(--btn-radius) px-3.5 py-1.5 font-mono text-xs text-(--ink-secondary) hover:text-(--ink-primary)"
             >
               取消
-            </button>
-            <button
+            </PaperButton>
+            <PaperButton
+              variant="primary"
+              size="compact"
               type="submit"
               disabled={isSubmitting}
-              className="flex cursor-pointer items-center gap-1 rounded-(--btn-radius) bg-(--btn-primary-bg) px-4 py-1.5 font-mono text-xs font-semibold text-(--btn-primary-fg) shadow-xs transition-all hover:opacity-90 active:scale-95"
+              leftIcon={<Check className="size-3.5 stroke-2" />}
             >
-              <Check className="size-3.5 stroke-2" />
-              <span>{editingItem ? '保存修改' : '确认添加'}</span>
-            </button>
+              {editingItem ? '保存修改' : '确认添加'}
+            </PaperButton>
           </div>
         </form>
       </div>

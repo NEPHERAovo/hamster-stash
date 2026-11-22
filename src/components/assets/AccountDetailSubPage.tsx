@@ -266,28 +266,27 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
 
         <div className="flex items-center gap-2">
           {onOpenTransfer && accounts.length >= 2 && (
-            <button
-              type="button"
-              className="active:scale-0.98 inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) shadow-2xs transition-all hover:opacity-90"
+            <PaperButton
+              variant="primary"
+              size="sm"
+              fullWidth
+              leftIcon={<ArrowLeftRight className="size-3.5" />}
               onClick={() => onOpenTransfer(account)}
             >
-              <ArrowLeftRight className="stroke-1.85 size-3.5" />
-              <span>{isCredit ? '账户还款' : '资金划转'}</span>
-            </button>
+              {isCredit ? '账户还款' : '资金划转'}
+            </PaperButton>
           )}
 
           {onOpenReconcile && (
-            <button
-              type="button"
-              className={cn(
-                'active:scale-0.98 inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-secondary) transition-all hover:bg-(--paper-hover) hover:text-(--ink-primary)',
-                onOpenTransfer && accounts.length >= 2 ? 'flex-1' : 'w-full'
-              )}
+            <PaperButton
+              variant="sunken"
+              size="sm"
+              fullWidth
+              leftIcon={<Scale className="size-4" />}
               onClick={onOpenReconcile}
             >
-              <Scale className="stroke-1.85 size-4" />
-              <span>平账校准</span>
-            </button>
+              平账校准
+            </PaperButton>
           )}
         </div>
       </div>

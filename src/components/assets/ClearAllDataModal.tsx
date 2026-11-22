@@ -70,16 +70,17 @@ export const ClearAllDataModal: React.FC<ClearAllDataModalProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
+            <PaperButton
+              variant="accent"
+              size="sm"
+              fullWidth
               onClick={() => {
                 handleClose();
                 onRequestBackup();
               }}
-              className="w-full cursor-pointer py-2 font-mono text-xs text-(--color-accent) hover:underline"
             >
               先导出一次全量备份 →
-            </button>
+            </PaperButton>
 
             <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
               <PaperButton

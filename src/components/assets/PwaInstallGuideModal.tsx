@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { DownloadSimpleIcon as Download, CheckIcon as Check, ListIcon as Menu, DotsThreeVerticalIcon as MoreVertical, ShareNetworkIcon as Share, PlusSquareIcon as PlusSquare, ShieldCheckIcon as ShieldCheck, InfoIcon as Info, DeviceMobileIcon as Smartphone } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
+import { PaperButton } from '../ui/PaperButton';
+import { PaperChip } from '../ui/PaperChip';
 import { usePwaStore } from '../../stores/usePwaStore';
 import { detectBrowserFamily, type BrowserFamily } from '../../utils/browser';
 import { toast } from '../../stores/useToastStore';
-import { cn } from '../../utils/cn';
 
 export interface PwaInstallGuideModalProps {
   isOpen: boolean;
@@ -180,14 +181,14 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
               </div>
             </div>
           </div>
-          <button
-            type="button"
+          <PaperButton
+            variant="primary"
+            size="compact"
             onClick={handleDirectInstall}
             disabled={isPrompting}
-            className="shrink-0 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) px-3 py-1.5 text-xs font-semibold text-(--btn-primary-fg) transition-all active:scale-95 disabled:opacity-50"
           >
             {isPrompting ? '唤起中...' : '立即安装'}
-          </button>
+          </PaperButton>
         </div>
       );
     }
@@ -211,19 +212,13 @@ export const PwaInstallGuideModal: React.FC<PwaInstallGuideModalProps> = ({
             {BROWSER_OPTIONS.map((item) => {
               const isActive = selectedFamily === item.key;
               return (
-                <button
+                <PaperChip
                   key={item.key}
-                  type="button"
+                  selected={isActive}
                   onClick={() => setSelectedFamily(item.key)}
-                  className={cn(
-                    'cursor-pointer truncate rounded-(--radius-sm) px-2 py-1.5 text-center text-xs font-medium transition-all',
-                    isActive
-                      ? 'bg-(--paper-sheet) font-semibold text-(--ink-primary) shadow-xs'
-                      : 'text-(--ink-secondary) hover:text-(--ink-primary)'
-                  )}
                 >
                   {item.label}
-                </button>
+                </PaperChip>
               );
             })}
           </div>

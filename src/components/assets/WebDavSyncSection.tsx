@@ -8,6 +8,7 @@ import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { toast } from '../../stores/useToastStore';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperSwitch } from '../ui/PaperSwitch';
 import { cn } from '../../utils/cn';
@@ -197,19 +198,19 @@ export const WebDavSyncSection: React.FC = () => {
               size="xs"
               onClick={handleSync}
               disabled={isSyncing}
-              className="gap-1 font-mono text-[11px]"
+              leftIcon={<RefreshCw className={cn('size-3', isSyncing && 'animate-spin')} />}
             >
-              <RefreshCw className={cn('size-3', isSyncing && 'animate-spin')} />
-              <span>{isSyncing ? '同步中' : '立即同步'}</span>
+              {isSyncing ? '同步中' : '立即同步'}
             </PaperButton>
 
-            <button
-              type="button"
+            <PaperIconButton
+              icon={isOpen ? ChevronUp : ChevronDown}
+              size="sm"
+              variant="ghost"
               onClick={() => setIsOpen(!isOpen)}
-              className="flex size-6 cursor-pointer items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary)"
-            >
-              {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-            </button>
+              title={isOpen ? '收起配置' : '展开配置'}
+              aria-label={isOpen ? '收起配置' : '展开配置'}
+            />
           </div>
         </div>
 

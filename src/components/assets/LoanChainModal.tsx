@@ -6,6 +6,8 @@ import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { toast } from '../../stores/useToastStore';
 import { PaperModal } from '../ui/PaperModal';
+import { PaperButton } from '../ui/PaperButton';
+import { PaperChip } from '../ui/PaperChip';
 import { cn } from '../../utils/cn';
 
 export interface LoanChainModalProps {
@@ -127,19 +129,14 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
               {allItems.map((entry) => {
                 const isSelected = activeEntry?.id === entry.id;
                 return (
-                  <button
+                  <PaperChip
                     key={entry.id}
-                    type="button"
+                    selected={isSelected}
                     onClick={() => setActiveTabId(entry.id)}
-                    className={cn(
-                      'min-w-[130px] flex-1 cursor-pointer truncate rounded-(--btn-radius) px-2.5 py-1.5 text-xs font-medium transition-all',
-                      isSelected
-                        ? 'bg-(--paper-sheet) font-bold text-(--ink-primary) shadow-xs'
-                        : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
-                    )}
+                    className="min-w-[130px] flex-1"
                   >
                     {entry.title} (待收 ¥{centsToYuan(entry.remainingAmount)})
-                  </button>
+                  </PaperChip>
                 );
               })}
             </div>
@@ -214,14 +211,14 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                     <div className="font-mono text-[10px] text-(--ink-tertiary)">{currentItem.voucher.size} · 原始凭证</div>
                   </div>
                 </div>
-                <button
-                  type="button"
+                <PaperButton
+                  variant="secondary"
+                  size="xs"
+                  leftIcon={<Eye className="size-3" />}
                   onClick={() => toast(`查验凭证：${currentItem.voucher?.name}`)}
-                  className="flex cursor-pointer items-center gap-1 rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) px-2 py-1 text-[11px] text-(--ink-secondary) hover:text-(--ink-primary)"
                 >
-                  <Eye className="size-3" />
-                  <span>查验凭证</span>
-                </button>
+                  查验凭证
+                </PaperButton>
               </div>
             )}
 
@@ -251,15 +248,16 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
 
             {remainingAmount > 0 && (
               <div className="pt-2 pb-(--safe-bottom)">
-                <button
-                  type="button"
+                <PaperButton
+                  variant="primary"
+                  size="md"
+                  fullWidth
                   disabled={loading}
+                  leftIcon={<CheckCircle2 className="size-3.5" />}
                   onClick={handleSettle}
-                  className="active:scale-0.98 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) shadow-xs transition-transform disabled:opacity-50"
                 >
-                  <CheckCircle2 className="size-3.5" />
-                  <span>一键结清剩余 ¥{centsToYuan(remainingAmount)}</span>
-                </button>
+                  一键结清剩余 ¥{centsToYuan(remainingAmount)}
+                </PaperButton>
               </div>
             )}
           </>

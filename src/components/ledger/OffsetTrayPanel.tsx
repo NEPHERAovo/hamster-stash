@@ -1,8 +1,8 @@
 import React from 'react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
+import { PaperButton } from '../ui/PaperButton';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
-import { cn } from '../../utils/cn';
 
 export interface OffsetTrayPanelProps {
   recentExpenses: Transaction[];
@@ -26,13 +26,13 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
       <div className="flex items-center justify-between px-0.5 text-[11px] text-(--ink-tertiary)">
         <span>选择要抵扣的原支出流水:</span>
         {offsetTransactionId && (
-          <button
-            type="button"
+          <PaperButton
+            variant="danger-ghost"
+            size="xs"
             onClick={onClearOffsetExpense}
-            className="cursor-pointer text-(--color-expense) hover:underline"
           >
             取消抵扣 (独立收入)
-          </button>
+          </PaperButton>
         )}
       </div>
 
@@ -50,16 +50,13 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
             const isFullyOffset = remaining <= 0;
 
             return (
-              <button
+              <PaperButton
                 key={exp.id}
-                type="button"
+                variant={isSelected ? 'sunken' : 'ghost'}
+                size="compact"
+                fullWidth
                 onClick={() => onSelectOffsetExpense(exp)}
-                className={cn(
-                  'flex w-full cursor-pointer items-center justify-between rounded-[2px] px-2 py-1.5 text-left transition-all',
-                  isSelected
-                    ? 'bg-(--paper-sunken) shadow-2xs'
-                    : 'hover:bg-(--paper-hover)/50'
-                )}
+                className="justify-between rounded-[2px] px-2 py-1.5 text-left font-normal"
               >
                 <div className="min-w-0 flex-1 pr-2">
                   <div className="flex items-center gap-1.5">
@@ -83,7 +80,7 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
                     待冲减: <span className="font-semibold text-(--ink-primary)">¥{centsToYuan(remaining)}</span>
                   </div>
                 </div>
-              </button>
+              </PaperButton>
             );
           })}
         </div>
