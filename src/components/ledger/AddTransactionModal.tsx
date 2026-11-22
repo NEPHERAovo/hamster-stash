@@ -866,56 +866,52 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               })}
             </div>
           ) : (
-            <div
-              className={cn(
-                'category-grid py-0.5 select-none',
-                currentCategories.length <= 8
-                  ? 'grid grid-cols-4 gap-0'
-                  : 'grid [scrollbar-width:none] auto-cols-[calc(25%-6px)] grid-flow-col grid-rows-2 gap-1 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
-              )}
-            >
-              {currentCategories.map((cat, idx) => {
-                const isSelected = selectedCatId === cat.id;
-                const IconComp = getCategoryIcon(cat.icon);
-                const col = idx % 4;
-                const row = Math.floor(idx / 4);
-                const hasRightBorder = currentCategories.length <= 8 && col < 3;
-                const hasBottomBorder = currentCategories.length > 4 && currentCategories.length <= 8 && row === 0;
-                let iconColor = 'text-(--ink-secondary)';
-                if (isSelected) {
-                  iconColor = 'text-(--ink-solid)';
-                } else if (txType === 'income') {
-                  iconColor = 'text-(--color-income)';
-                }
+            <div className="max-h-[38vh] [scrollbar-width:thin] overflow-x-hidden overflow-y-auto pr-0.5">
+              <div className="category-grid grid grid-cols-4 gap-0 py-0.5 select-none">
+                {currentCategories.map((cat, idx) => {
+                  const isSelected = selectedCatId === cat.id;
+                  const IconComp = getCategoryIcon(cat.icon);
+                  const col = idx % 4;
+                  const row = Math.floor(idx / 4);
+                  const totalRows = Math.ceil(currentCategories.length / 4);
+                  const hasRightBorder = col < 3;
+                  const hasBottomBorder = row < totalRows - 1;
+                  let iconColor = 'text-(--ink-secondary)';
+                  if (isSelected) {
+                    iconColor = 'text-(--ink-solid)';
+                  } else if (txType === 'income') {
+                    iconColor = 'text-(--color-income)';
+                  }
 
-                return (
-                  <PaperButton
-                    key={cat.id}
-                    variant={isSelected ? 'sunken' : 'ghost'}
-                    onClick={() => {
-                      setSelectedCatId(cat.id);
-                    }}
-                    className={cn(
-                      'relative flex h-auto flex-col items-center justify-center rounded-none px-1 py-2 font-normal',
-                      hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
-                      hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
-                      isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs'
-                    )}
-                  >
-                    <div className="mb-0.5 flex size-6 items-center justify-center">
-                      <IconComp
-                        className={cn(
-                          'stroke-1.8 size-4',
-                          iconColor
-                        )}
-                      />
-                    </div>
-                    <span className="w-full truncate text-center text-[10px] leading-tight">
-                      {cat.name}
-                    </span>
-                  </PaperButton>
-                );
-              })}
+                  return (
+                    <PaperButton
+                      key={cat.id}
+                      variant={isSelected ? 'sunken' : 'ghost'}
+                      onClick={() => {
+                        setSelectedCatId(cat.id);
+                      }}
+                      className={cn(
+                        'relative flex h-auto flex-col items-center justify-center rounded-none px-1 py-2 font-normal',
+                        hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
+                        hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
+                        isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs'
+                      )}
+                    >
+                      <div className="mb-0.5 flex size-6 items-center justify-center">
+                        <IconComp
+                          className={cn(
+                            'stroke-1.8 size-4',
+                            iconColor
+                          )}
+                        />
+                      </div>
+                      <span className="w-full truncate text-center text-[10px] leading-tight">
+                        {cat.name}
+                      </span>
+                    </PaperButton>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
