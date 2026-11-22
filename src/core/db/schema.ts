@@ -44,7 +44,7 @@ export const resetSandboxData = async (): Promise<void> => {
 };
 
 export const DB_NAME = DB_NAME_PRODUCTION;
-export const DB_VERSION = 5;
+export const DB_VERSION = 1;
 
 export const STORES = {
   TRANSACTIONS: 'transactions',

@@ -26,56 +26,53 @@ export class IndexedDBAdapter implements DataAdapter {
     if (!this.initPromise) {
       this.initPromise = (async () => {
         try {
-          this.db = await openDB(this.dbName, DB_VERSION, {
-            upgrade(db, _oldVersion, _newVersion, _transaction) {
-              if (!db.objectStoreNames.contains(STORES.TRANSACTIONS)) {
-                const txStore = db.createObjectStore(STORES.TRANSACTIONS, { keyPath: 'id' });
-                txStore.createIndex('by_date', 'date');
-                txStore.createIndex('by_account', 'accountId');
-                txStore.createIndex('by_category', 'categoryId');
-                txStore.createIndex('by_offset', 'offsetTransactionId');
-              } else if (_transaction) {
-                const txStore = _transaction.objectStore(STORES.TRANSACTIONS);
-                if (!txStore.indexNames.contains('by_offset')) {
+          const createDb = (name: string) =>
+            openDB(name, DB_VERSION, {
+              upgrade(db) {
+                if (!db.objectStoreNames.contains(STORES.TRANSACTIONS)) {
+                  const txStore = db.createObjectStore(STORES.TRANSACTIONS, { keyPath: 'id' });
+                  txStore.createIndex('by_date', 'date');
+                  txStore.createIndex('by_account', 'accountId');
+                  txStore.createIndex('by_category', 'categoryId');
                   txStore.createIndex('by_offset', 'offsetTransactionId');
                 }
-              }
-
-              if (!db.objectStoreNames.contains(STORES.ACCOUNTS)) {
-                const acctStore = db.createObjectStore(STORES.ACCOUNTS, { keyPath: 'id' });
-                acctStore.createIndex('by_sortOrder', 'sortOrder');
-              }
-
-              if (!db.objectStoreNames.contains(STORES.CATEGORIES)) {
-                const catStore = db.createObjectStore(STORES.CATEGORIES, { keyPath: 'id' });
-                catStore.createIndex('by_type', 'type');
-                catStore.createIndex('by_sortOrder', 'sortOrder');
-              }
-
-              if (!db.objectStoreNames.contains(STORES.PLUGIN_DATA)) {
-                const pDataStore = db.createObjectStore(STORES.PLUGIN_DATA, { keyPath: 'id' });
-                pDataStore.createIndex('by_plugin', 'pluginId');
-                pDataStore.createIndex('by_plugin_collection', ['pluginId', 'collection']);
-              }
-
-              if (!db.objectStoreNames.contains(STORES.PLUGIN_SETTINGS)) {
-                db.createObjectStore(STORES.PLUGIN_SETTINGS, { keyPath: 'id' });
-              }
-
-              if (!db.objectStoreNames.contains(STORES.ATTACHMENTS)) {
-                db.createObjectStore(STORES.ATTACHMENTS, { keyPath: 'id' });
-              }
-
-              if (_oldVersion < 4) {
-                if (db.objectStoreNames.contains(STORES.SETTINGS)) {
-                  db.deleteObjectStore(STORES.SETTINGS);
+                if (!db.objectStoreNames.contains(STORES.ACCOUNTS)) {
+                  const acctStore = db.createObjectStore(STORES.ACCOUNTS, { keyPath: 'id' });
+                  acctStore.createIndex('by_sortOrder', 'sortOrder');
                 }
-                db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
-              } else if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-                db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
-              }
-            },
-          });
+                if (!db.objectStoreNames.contains(STORES.CATEGORIES)) {
+                  const catStore = db.createObjectStore(STORES.CATEGORIES, { keyPath: 'id' });
+                  catStore.createIndex('by_type', 'type');
+                  catStore.createIndex('by_sortOrder', 'sortOrder');
+                }
+                if (!db.objectStoreNames.contains(STORES.PLUGIN_DATA)) {
+                  const pDataStore = db.createObjectStore(STORES.PLUGIN_DATA, { keyPath: 'id' });
+                  pDataStore.createIndex('by_plugin', 'pluginId');
+                  pDataStore.createIndex('by_plugin_collection', ['pluginId', 'collection']);
+                }
+                if (!db.objectStoreNames.contains(STORES.PLUGIN_SETTINGS)) {
+                  db.createObjectStore(STORES.PLUGIN_SETTINGS, { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains(STORES.ATTACHMENTS)) {
+                  db.createObjectStore(STORES.ATTACHMENTS, { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+                  db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
+                }
+              },
+            });
+
+          try {
+            this.db = await createDb(this.dbName);
+          } catch (err) {
+            if (err instanceof DOMException && err.name === 'VersionError') {
+              const { deleteDB } = await import('idb');
+              await deleteDB(this.dbName);
+              this.db = await createDb(this.dbName);
+            } else {
+              throw err;
+            }
+          }
 
           await this.seedDefaultsIfEmpty();
         } finally {
@@ -314,7 +311,7 @@ export class IndexedDBAdapter implements DataAdapter {
     }
 
     return {
-      version: '4.0.0',
+      version: '1.0.0',
       exportedAt: new Date().toISOString(),
       transactions: txs,
       accounts: accts,

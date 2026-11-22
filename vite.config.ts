@@ -35,6 +35,7 @@ export default defineConfig({
     host: true,
   },
   build: {
+    target: ['safari16', 'ios16', 'chrome105', 'firefox105', 'es2022'],
     modulePreload: {
       resolveDependencies: (_url, deps) => {
         return deps.filter((dep) => !dep.includes('plugin-'));
