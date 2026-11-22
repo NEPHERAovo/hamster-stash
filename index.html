@@ -23,27 +23,6 @@
     <script>
       (function () {
         try {
-          var params = new URLSearchParams(window.location.search);
-          if (params.has('clean') || params.has('reset')) {
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function (regs) {
-                regs.forEach(function (r) { r.unregister(); });
-              });
-            }
-            if ('caches' in window) {
-              caches.keys().then(function (keys) {
-                keys.forEach(function (k) { caches.delete(k); });
-              });
-            }
-            if (params.has('reset')) {
-              localStorage.clear();
-              sessionStorage.clear();
-              if ('indexedDB' in window) {
-                try { indexedDB.deleteDatabase('hamsterStash_db'); } catch (e) {}
-                try { indexedDB.deleteDatabase('hamsterStash_sandbox_db'); } catch (e) {}
-              }
-            }
-          }
           var mode = localStorage.getItem('hamsterstash_color_mode_v1');
           var cachedBg = localStorage.getItem('hamsterstash_splash_bg_v1');
           var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -97,8 +76,19 @@
       });
 
       async function forceRepairAndReload(resetDb) {
-        var status = document.getElementById('splash-status-text');
-        if (status) status.textContent = '正在清理缓存与离线服务...';
+        if (resetDb) {
+          if (!confirm('确定要清空全部数据库并重置吗？此操作将抹去本地记账数据。建议先导出备份。')) {
+            return;
+          }
+          if (!confirm('请再次确认：此操作不可逆，将彻底删除所有本地数据。确认清空？')) {
+            return;
+          }
+        }
+        var status = document.getElementById('splash-status-text') || document.getElementById('splash-error-status');
+        if (status) {
+          status.style.display = 'block';
+          status.textContent = '正在清理缓存与离线服务...';
+        }
         try {
           if ('serviceWorker' in navigator) {
             var regs = await navigator.serviceWorker.getRegistrations();
@@ -129,9 +119,111 @@
         window.location.replace(u.toString());
       }
 
+      async function exportEmergencyCsv() {
+        var status = document.getElementById('splash-status-text') || document.getElementById('splash-error-status');
+        if (status) {
+          status.style.display = 'block';
+          status.textContent = '正在导出账单 CSV...';
+        }
+        try {
+          var transactions = [];
+          var categories = {};
+          var accounts = {};
+          if ('indexedDB' in window) {
+            var req = indexedDB.open('hamsterStash_db');
+            await new Promise(function (resolve) {
+              req.onsuccess = function (e) {
+                var db = e.target.result;
+                var pending = 3;
+                function checkDone() {
+                  pending--;
+                  if (pending <= 0) {
+                    db.close();
+                    resolve();
+                  }
+                }
+                function readStore(name, cb) {
+                  if (!db.objectStoreNames.contains(name)) {
+                    checkDone();
+                    return;
+                  }
+                  try {
+                    var tx = db.transaction(name, 'readonly');
+                    var st = tx.objectStore(name);
+                    var getAllReq = st.getAll();
+                    getAllReq.onsuccess = function () {
+                      cb(getAllReq.result || []);
+                      checkDone();
+                    };
+                    getAllReq.onerror = function () { checkDone(); };
+                  } catch (err) { checkDone(); }
+                }
+                readStore('transactions', function (items) { transactions = items; });
+                readStore('categories', function (items) {
+                  for (var i = 0; i < items.length; i++) categories[items[i].id] = items[i].name;
+                });
+                readStore('accounts', function (items) {
+                  for (var i = 0; i < items.length; i++) accounts[items[i].id] = items[i].name;
+                });
+              };
+              req.onerror = function () { resolve(); };
+            });
+          }
+
+          function typeLabel(t) {
+            if (t === 'income') return '收入';
+            if (t === 'transfer') return '转账';
+            if (t === 'loan') return '借贷';
+            if (t === 'reconcile') return '平账';
+            return '支出';
+          }
+          function escapeCsv(val) {
+            var s = String(val == null ? '' : val);
+            if (s.indexOf('"') !== -1 || s.indexOf(',') !== -1 || s.indexOf('\n') !== -1 || s.indexOf('\r') !== -1) {
+              return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return '"' + s + '"';
+          }
+
+          var headers = ['日期', '分类名称', '收支', '金额', '账户', '备注', '是否报销', '凭证名称'];
+          var lines = [headers.map(escapeCsv).join(',')];
+          for (var i = 0; i < transactions.length; i++) {
+            var t = transactions[i];
+            var amountStr = typeof t.amount === 'number' ? (t.amount / 100).toFixed(2) : '0.00';
+            var row = [
+              t.date || '',
+              categories[t.categoryId] || '其它',
+              typeLabel(t.type),
+              amountStr,
+              accounts[t.accountId] || '默认账户',
+              t.note || '',
+              t.isReimbursable ? '是' : '否',
+              (t.voucher && t.voucher.name) || ''
+            ];
+            lines.push(row.map(escapeCsv).join(','));
+          }
+          var csvContent = '\uFEFF' + lines.join('\r\n');
+          var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'hamsterstash_records_' + new Date().toISOString().slice(0, 10) + '.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          if (status) status.textContent = '账单 CSV 已成功导出！';
+        } catch (err) {
+          alert('CSV 导出失败: ' + err);
+        }
+      }
+
       async function exportEmergencyData() {
-        var status = document.getElementById('splash-status-text');
-        if (status) status.textContent = '正在导出本地数据...';
+        var status = document.getElementById('splash-status-text') || document.getElementById('splash-error-status');
+        if (status) {
+          status.style.display = 'block';
+          status.textContent = '正在导出本地数据...';
+        }
         try {
           var dump = { exportedAt: new Date().toISOString(), localStorage: Object.assign({}, localStorage) };
           if ('indexedDB' in window) {
@@ -281,32 +373,31 @@
           <div class="app-splash-bar"></div>
         </div>
 
-        <div id="splash-error-box" style="display:none;max-width:340px;width:90%;margin-top:14px;padding:12px;border:1px solid rgba(239,68,68,0.3);border-radius:12px;background:rgba(239,68,68,0.06);color:inherit;font-size:12px;text-align:left;">
+        <div id="splash-error-box" style="display:none;max-width:340px;width:90%;margin-top:14px;padding:14px;border:1px solid rgba(239,68,68,0.3);border-radius:14px;background:rgba(239,68,68,0.06);color:inherit;font-size:12px;text-align:left;box-sizing:border-box;">
           <div style="font-weight:bold;color:#ef4444;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
             <span>⚠️</span>
             <span>启动异常拦截</span>
           </div>
-          <pre id="splash-error-pre" style="max-height:120px;overflow:auto;font-size:10px;line-height:1.4;background:rgba(0,0,0,0.05);padding:6px;border-radius:6px;margin:6px 0;word-break:break-all;white-space:pre-wrap;user-select:text;-webkit-user-select:text;"></pre>
-          <div style="display:flex;gap:6px;margin-top:8px;">
-            <button type="button" onclick="exportEmergencyData()" style="flex:1;background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;color:inherit;font-weight:600;">导出当前数据 (JSON)</button>
-            <button type="button" onclick="copySplashDiagnostics()" style="background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;color:inherit;">复制报错</button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <button type="button" onclick="forceRepairAndReload(false)" style="flex:1;background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;color:inherit;">清除缓存重试</button>
-            <button type="button" onclick="forceRepairAndReload(true)" style="flex:1;background:transparent;border:1px dashed #ef4444;color:#ef4444;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;">清空数据库重置</button>
+          <div id="splash-error-status" style="font-size:11px;margin-bottom:6px;color:#1677ff;display:none;"></div>
+          <pre id="splash-error-pre" style="max-height:100px;overflow:auto;font-size:10px;line-height:1.4;background:rgba(0,0,0,0.05);padding:6px;border-radius:6px;margin:6px 0;word-break:break-all;white-space:pre-wrap;user-select:text;-webkit-user-select:text;"></pre>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+            <button type="button" onclick="exportEmergencyCsv()" style="width:100%;height:34px;background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:inherit;">导出账单明细 (CSV)</button>
+            <button type="button" onclick="exportEmergencyData()" style="width:100%;height:34px;background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:inherit;">导出当前数据 (JSON)</button>
+            <button type="button" onclick="copySplashDiagnostics()" style="width:100%;height:32px;background:rgba(0,0,0,0.03);border:1px solid currentColor;border-radius:8px;font-size:11px;cursor:pointer;color:inherit;">复制报错与诊断</button>
+            <button type="button" onclick="forceRepairAndReload(false)" style="width:100%;height:32px;background:rgba(0,0,0,0.03);border:1px solid currentColor;border-radius:8px;font-size:11px;cursor:pointer;color:inherit;">清除缓存并重试</button>
+            <button type="button" onclick="forceRepairAndReload(true)" style="width:100%;height:32px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:8px;font-size:11px;font-weight:500;cursor:pointer;">清空数据库并重置</button>
           </div>
         </div>
 
-        <div id="splash-fallback" style="display:none;margin-top:16px;text-align:center;font-size:12px;opacity:0.9;">
-          <div style="margin-bottom:8px;">加载时间较长？</div>
-          <div id="splash-status-text" style="font-size:11px;margin-bottom:8px;color:#1677ff;"></div>
-          <div style="display:flex;gap:8px;justify-content:center;">
-            <button type="button" onclick="exportEmergencyData()" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:inherit;font-weight:600;">导出当前数据 (JSON)</button>
-            <button type="button" onclick="forceRepairAndReload(false)" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:inherit;">清除缓存重载</button>
-          </div>
-          <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-            <button type="button" onclick="copySplashDiagnostics()" style="background:transparent;border:none;font-size:11px;cursor:pointer;color:inherit;opacity:0.8;">复制诊断</button>
-            <button type="button" onclick="forceRepairAndReload(true)" style="background:transparent;border:none;color:#ef4444;font-size:11px;cursor:pointer;text-decoration:underline;">清空数据库重置</button>
+        <div id="splash-fallback" style="display:none;max-width:320px;width:88%;margin-top:16px;text-align:center;font-size:12px;opacity:0.9;box-sizing:border-box;">
+          <div style="margin-bottom:8px;font-weight:500;">加载时间较长？</div>
+          <div id="splash-status-text" style="font-size:11px;margin-bottom:8px;color:#1677ff;display:none;"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+            <button type="button" onclick="exportEmergencyCsv()" style="width:100%;height:32px;background:rgba(0,0,0,0.05);border:1px solid currentColor;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:inherit;">导出账单明细 (CSV)</button>
+            <button type="button" onclick="exportEmergencyData()" style="width:100%;height:32px;background:rgba(0,0,0,0.05);border:1px solid currentColor;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:inherit;">导出当前数据 (JSON)</button>
+            <button type="button" onclick="forceRepairAndReload(false)" style="width:100%;height:32px;background:transparent;border:1px solid currentColor;border-radius:8px;font-size:11px;cursor:pointer;color:inherit;">清除缓存重载</button>
+            <button type="button" onclick="forceRepairAndReload(true)" style="width:100%;height:32px;background:transparent;border:1px dashed #ef4444;color:#ef4444;border-radius:8px;font-size:11px;cursor:pointer;">清空数据库重置</button>
+            <button type="button" onclick="copySplashDiagnostics()" style="width:100%;height:28px;background:transparent;border:none;font-size:11px;cursor:pointer;color:inherit;opacity:0.75;">复制运行诊断</button>
           </div>
         </div>
       </div>

@@ -1,4 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import type { Transaction } from '../../types/transaction';
+import type { Category } from '../../types/category';
+import type { Account } from '../../types/account';
+import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 
 interface Props {
   children: ReactNode;
@@ -50,6 +54,46 @@ export class RootErrorBoundary extends Component<Props, State> {
       setTimeout(() => this.setState({ copied: false }), 2000);
     } catch {
       void 0;
+    }
+  };
+
+  private handleExportCsv = async () => {
+    try {
+      this.setState({ isExporting: true });
+      const { openDB } = await import('idb');
+      let transactions: Transaction[] = [];
+      let categories: Category[] = [];
+      let accounts: Account[] = [];
+
+      try {
+        const db = await openDB('hamsterStash_db');
+        if (db.objectStoreNames.contains('transactions')) {
+          transactions = (await db.getAll('transactions')) as Transaction[];
+        }
+        if (db.objectStoreNames.contains('categories')) {
+          categories = (await db.getAll('categories')) as Category[];
+        }
+        if (db.objectStoreNames.contains('accounts')) {
+          accounts = (await db.getAll('accounts')) as Account[];
+        }
+      } catch {
+        void 0;
+      }
+
+      const csvContent = exportTransactionsToCsv(transactions, categories, accounts);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hamsterstash_records_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`CSV 导出失败: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      this.setState({ isExporting: false });
     }
   };
 
@@ -110,7 +154,10 @@ export class RootErrorBoundary extends Component<Props, State> {
   };
 
   private handleResetLocalData = async () => {
-    if (!window.confirm('确定要清空全部数据库并重置吗？此操作将抹去本地记账数据。建议先点击【导出当前数据】。')) {
+    if (!window.confirm('确定要清空全部数据库并重置吗？此操作将抹去本地记账数据。建议先导出备份。')) {
+      return;
+    }
+    if (!window.confirm('请再次确认：此操作不可逆，将彻底删除所有本地数据。确认清空？')) {
       return;
     }
     try {
@@ -174,40 +221,43 @@ export class RootErrorBoundary extends Component<Props, State> {
             </details>
 
             <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={this.handleExportData}
-                  disabled={isExporting}
-                  className="h-9 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-primary) transition-all hover:bg-(--paper-hover) active:scale-98 disabled:opacity-50"
-                >
-                  {isExporting ? '正在导出...' : '导出当前数据 (JSON)'}
-                </button>
-                <button
-                  type="button"
-                  onClick={this.handleReload}
-                  className="h-9 flex-1 cursor-pointer rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) transition-all active:scale-98"
-                >
-                  重新加载
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={this.handleClearCachesAndReload}
-                  className="h-8 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-[11px] font-medium text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-98"
-                >
-                  清除缓存并重载
-                </button>
-                <button
-                  type="button"
-                  onClick={this.handleResetLocalData}
-                  className="h-8 flex-1 cursor-pointer rounded-(--btn-radius) border border-(--color-expense)/30 bg-(--color-expense-bg)/20 text-[11px] font-medium text-(--color-expense) transition-all hover:bg-(--color-expense-bg)/40 active:scale-98"
-                >
-                  清空数据库并重置
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={this.handleExportCsv}
+                disabled={isExporting}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-primary) transition-all hover:bg-(--paper-hover) active:scale-98 disabled:opacity-50"
+              >
+                {isExporting ? '正在导出...' : '导出账单明细 (CSV)'}
+              </button>
+              <button
+                type="button"
+                onClick={this.handleExportData}
+                disabled={isExporting}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken) text-xs font-semibold text-(--ink-primary) transition-all hover:bg-(--paper-hover) active:scale-98 disabled:opacity-50"
+              >
+                {isExporting ? '正在导出...' : '导出当前数据 (JSON)'}
+              </button>
+              <button
+                type="button"
+                onClick={this.handleReload}
+                className="flex h-9 w-full cursor-pointer items-center justify-center rounded-(--btn-radius) bg-(--btn-primary-bg) text-xs font-semibold text-(--btn-primary-fg) transition-all active:scale-98"
+              >
+                重新加载
+              </button>
+              <button
+                type="button"
+                onClick={this.handleClearCachesAndReload}
+                className="flex h-8 w-full cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sheet) text-[11px] font-medium text-(--ink-secondary) transition-all hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-98"
+              >
+                清除缓存并重载
+              </button>
+              <button
+                type="button"
+                onClick={this.handleResetLocalData}
+                className="flex h-8 w-full cursor-pointer items-center justify-center rounded-(--btn-radius) border border-(--color-expense)/30 bg-(--color-expense-bg)/20 text-[11px] font-medium text-(--color-expense) transition-all hover:bg-(--color-expense-bg)/40 active:scale-98"
+              >
+                清空数据库并重置
+              </button>
             </div>
           </div>
         </div>
