@@ -119,7 +119,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
     <PaperModal
       isOpen={isOpen}
       onClose={onClose}
-      title="导出账本（CSV）"
+      title="导出账本"
     >
       <div className="space-y-4 p-4 select-none">
         <div className="flex flex-wrap gap-1.5">

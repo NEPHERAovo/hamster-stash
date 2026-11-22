@@ -115,7 +115,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
               <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
                 <DownloadSimple className="stroke-1.75 size-3.5" />
               </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">导出完整备份 (JSON)</span>
+              <span className="text-[13px] font-medium text-(--ink-primary)">导出完整备份</span>
             </div>
             <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
               <ChevronRight className="size-3.5" />
@@ -130,7 +130,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
               <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
                 <UploadSimple className="stroke-1.75 size-3.5" />
               </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">恢复完整备份 (JSON)</span>
+              <span className="text-[13px] font-medium text-(--ink-primary)">恢复完整备份</span>
             </div>
             <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
               <ChevronRight className="size-3.5" />
@@ -161,7 +161,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
               <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
                 <UploadSimple className="stroke-1.75 size-3.5" />
               </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">导入账本 (向导)</span>
+              <span className="text-[13px] font-medium text-(--ink-primary)">导入账本</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
               <ChevronRight className="size-3.5" />
@@ -176,7 +176,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
               <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
                 <FileSpreadsheet className="stroke-1.75 size-3.5" />
               </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">导出账本 (CSV)</span>
+              <span className="text-[13px] font-medium text-(--ink-primary)">导出账本</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
               <ChevronRight className="size-3.5" />
