@@ -606,7 +606,7 @@ body {
 
 [data-ui-style="modern"] .real-stamp,
 [data-ui-style="modern"] .paper-stamp {
-  transform: none !important;
+  transform: none !important; rotate: 0deg !important;
   border-radius: 9999px !important;
   font-family: inherit !important;
   border-width: 1px !important;

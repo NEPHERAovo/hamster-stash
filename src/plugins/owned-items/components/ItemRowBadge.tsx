@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Transaction } from '../../../plugin-sdk';
+import { cn } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';
 
@@ -22,28 +23,25 @@ export const ItemRowBadge: React.FC<ItemRowBadgeProps> = ({ context }) => {
   const item = items.find((i) => i.id === itemId);
   if (!item) return null;
 
+  const getRoleLabel = () => {
+    if (itemRole === 'buy') return '购入';
+    if (itemRole === 'maintenance') return '保养';
+    if (itemRole === 'sell') return '回血';
+    return '物品';
+  };
+
+  const getColorClass = () => {
+    if (itemRole === 'buy') return 'text-(--color-expense)';
+    if (itemRole === 'sell') return 'text-(--color-income)';
+    return 'text-(--ink-secondary)';
+  };
+
+  const trimmed = item.name.trim();
+  const truncated = trimmed.length > 6 ? `${trimmed.slice(0, 6)}…` : trimmed;
+
   return (
-    <div className="flex shrink-0 items-center gap-1">
-      {itemRole === 'buy' && (
-        <span className="rounded-xs bg-(--color-expense-bg) px-1 py-0.5 font-mono text-[9px] leading-none font-semibold text-(--color-expense)">
-          购入
-        </span>
-      )}
-      {itemRole === 'maintenance' && (
-        <span className="rounded-xs bg-(--paper-sunken) px-1 py-0.5 font-mono text-[9px] leading-none text-(--ink-secondary)">
-          保养
-        </span>
-      )}
-      {itemRole === 'sell' && (
-        <span className="rounded-xs bg-(--color-income-bg) px-1 py-0.5 font-mono text-[9px] leading-none font-semibold text-(--color-income)">
-          回血
-        </span>
-      )}
-      {item && (
-        <span className="max-w-15 truncate font-mono text-[9px] leading-none text-(--ink-tertiary)">
-          {item.name}
-        </span>
-      )}
-    </div>
+    <span className={cn('real-stamp px-1 py-0.5 text-[9px]', getColorClass())}>
+      {`${getRoleLabel()}·${truncated}`}
+    </span>
   );
 };

@@ -206,13 +206,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const getStatusStamp = (status: ItemStatus) => {
     if (status === 'sold' || status === 'scrapped') {
       return (
-        <span className="real-stamp rotate-2 text-[9px] text-(--ink-tertiary) select-none">
+        <span className="real-stamp text-[9px] text-(--ink-tertiary) select-none">
           <span>{isSub ? '已退' : '已出'}</span>
         </span>
       );
     }
     return (
-      <span className="real-stamp -rotate-2 text-[9px] text-(--color-income) select-none">
+      <span className="real-stamp text-[9px] text-(--color-income) select-none">
         <span>{isSub ? '在订' : '在用'}</span>
       </span>
     );
@@ -466,7 +466,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
               setIsSellPanelOpen(false);
             }}
           >
-            {isSub ? '记续费支出' : '记关联支出'}
+            {isSub ? '续费支出' : '关联支出'}
           </PaperButton>
 
           {renderSecondaryActionButton()}
@@ -638,7 +638,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 type="submit"
                 disabled={isSubmittingSell}
               >
-                确认结案
+                确认
               </PaperButton>
             </div>
           </form>

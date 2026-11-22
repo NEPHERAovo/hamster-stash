@@ -252,6 +252,42 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it('ItemRowBadge renders unified stamp badge format with role and item name', () => {
+    usePluginItemStore.setState({
+      items: [
+        {
+          id: 'item_macbook',
+          name: 'MacBook Air M3',
+          icon: 'laptop',
+          kind: 'physical',
+          status: 'using',
+          buyDate: '2026-05-20',
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+    });
+    const tx: Transaction = {
+      id: 'tx_buy',
+      type: 'expense',
+      amount: 799900,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-05-20',
+      ext: {
+        'owned-items': {
+          itemId: 'item_macbook',
+          itemRole: 'buy',
+        },
+      },
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const { getByText } = render(React.createElement(ItemRowBadge, { context: { transaction: tx } }));
+    expect(getByText('购入·MacBoo…')).toBeInTheDocument();
+  });
+
   it('computes metrics and daily cost accurately for digital subscriptions', () => {
     const subItem: Item = {
       id: 'sub_chatgpt',

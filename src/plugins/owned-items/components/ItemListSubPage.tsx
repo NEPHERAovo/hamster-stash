@@ -62,13 +62,13 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
     const isSub = item.kind === 'subscription';
     if (item.status === 'sold' || item.status === 'scrapped') {
       return (
-        <span className="real-stamp rotate-2 text-[9px] text-(--ink-tertiary) select-none">
+        <span className="real-stamp text-[9px] text-(--ink-tertiary) select-none">
           <span>{isSub ? '已退' : '已出'}</span>
         </span>
       );
     }
     return (
-      <span className="real-stamp -rotate-2 text-[9px] text-(--color-income) select-none">
+      <span className="real-stamp text-[9px] text-(--color-income) select-none">
         <span>{isSub ? '在订' : '在用'}</span>
       </span>
     );
