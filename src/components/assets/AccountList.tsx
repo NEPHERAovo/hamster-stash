@@ -57,6 +57,41 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
     }
   };
 
+  const renderAccountMeta = () => {
+    const items: React.ReactNode[] = [];
+    if (account.note) {
+      items.push(<span key="note">{account.note}</span>);
+    }
+    if (isCredit && account.repaymentDay) {
+      items.push(
+        <span key="repay" className="font-semibold text-(--color-accent)">
+          {account.repaymentDay}日还款
+        </span>
+      );
+    }
+    if (availableCreditCents !== undefined) {
+      items.push(
+        <span key="avail">
+          剩余 ¥{centsToYuan(availableCreditCents)}
+        </span>
+      );
+    }
+    if (account.includeInNetWorth === false) {
+      items.push(
+        <span key="networth" className="text-(--ink-faint)">
+          不计净资产
+        </span>
+      );
+    }
+
+    return items.map((item, index) => (
+      <React.Fragment key={index}>
+        {index > 0 && <span>·</span>}
+        {item}
+      </React.Fragment>
+    ));
+  };
+
   return (
     <SwipeableRow
       enabled={canDelete}
@@ -80,19 +115,8 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
           <div className="truncate text-[13px] font-semibold text-(--ink-primary)">
             {account.name}
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-(--ink-tertiary)">
-            {account.note && <span>{account.note}</span>}
-            {isCredit && account.repaymentDay && (
-              <span className="font-semibold text-(--color-accent)">
-                每月{account.repaymentDay}日还款
-              </span>
-            )}
-            {availableCreditCents !== undefined && (
-              <span>剩余可用 ¥{centsToYuan(availableCreditCents)}</span>
-            )}
-            {account.includeInNetWorth === false && (
-              <span className="text-(--ink-faint)">不计净资产</span>
-            )}
+          <div className="flex flex-wrap items-center gap-1 font-mono text-[10px] text-(--ink-tertiary)">
+            {renderAccountMeta()}
           </div>
         </div>
       </div>

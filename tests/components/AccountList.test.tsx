@@ -60,8 +60,8 @@ describe('AccountList Component', () => {
     expect(screen.getByText('招商银行')).toBeInTheDocument();
     expect(screen.getByText('日常工资卡')).toBeInTheDocument();
     expect(screen.getByText('招行信用卡')).toBeInTheDocument();
-    expect(screen.getByText('每月23日还款')).toBeInTheDocument();
-    expect(screen.getByText('剩余可用 ¥18500.00')).toBeInTheDocument();
+    expect(screen.getByText('23日还款')).toBeInTheDocument();
+    expect(screen.getByText('剩余 ¥18500.00')).toBeInTheDocument();
     expect(screen.getByText('-¥ 1500.00')).toBeInTheDocument();
   });
 

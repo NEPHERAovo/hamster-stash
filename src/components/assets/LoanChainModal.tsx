@@ -149,12 +149,10 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
         />
 
         {filteredItems.length === 0 ? (
-          <div className="py-8">
-            <PaperEmptyState
-              title={getEmptyTitle()}
-              variant="dashed"
-            />
-          </div>
+          <PaperEmptyState
+            title={getEmptyTitle()}
+            variant="dashed"
+          />
         ) : (
           <div className="space-y-2.5">
             {filteredItems.map((entry) => (
