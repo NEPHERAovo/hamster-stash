@@ -78,7 +78,7 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
         ) : (
           <>
             {leftIcon && <span className="inline-flex shrink-0 items-center justify-center">{leftIcon}</span>}
-            {children && <span className="inline-flex items-center leading-none">{children}</span>}
+            {children}
             {rightIcon && <span className="inline-flex shrink-0 items-center justify-center">{rightIcon}</span>}
           </>
         )}

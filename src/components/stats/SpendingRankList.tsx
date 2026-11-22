@@ -30,7 +30,7 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
           fullWidth
           size="md"
           onClick={() => onSelectCategory?.(item.categoryId)}
-          className="group justify-start rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] font-normal last:border-b-0 hover:bg-(--paper-sunken)/60"
+          className="group h-auto justify-start gap-0 rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] font-normal last:border-b-0 hover:bg-(--paper-sunken)/60"
           title={`查看「${item.name}」支出明细`}
         >
           <div

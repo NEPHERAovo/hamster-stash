@@ -56,7 +56,7 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
                 size="compact"
                 fullWidth
                 onClick={() => onSelectOffsetExpense(exp)}
-                className="justify-between rounded-[2px] px-2 py-1.5 text-left font-normal"
+                className="h-auto justify-between rounded-[2px] px-2 py-1.5 text-left font-normal"
               >
                 <div className="min-w-0 flex-1 pr-2">
                   <div className="flex items-center gap-1.5">
