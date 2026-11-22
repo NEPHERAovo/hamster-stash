@@ -211,7 +211,11 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         isDark: next.isDark,
       });
     };
-    mediaQuery.addEventListener('change', handleSystemChange);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleSystemChange);
+    } else if (typeof (mediaQuery as unknown as { addListener?: (cb: () => void) => void }).addListener === 'function') {
+      (mediaQuery as unknown as { addListener: (cb: () => void) => void }).addListener(handleSystemChange);
+    }
   }
 
   const syncStateAndPersist = (next: {

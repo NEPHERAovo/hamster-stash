@@ -23,6 +23,27 @@
     <script>
       (function () {
         try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.has('clean') || params.has('reset')) {
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                regs.forEach(function (r) { r.unregister(); });
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                keys.forEach(function (k) { caches.delete(k); });
+              });
+            }
+            if (params.has('reset')) {
+              localStorage.clear();
+              sessionStorage.clear();
+              if ('indexedDB' in window) {
+                try { indexedDB.deleteDatabase('hamsterStash_db'); } catch (e) {}
+                try { indexedDB.deleteDatabase('hamsterStash_sandbox_db'); } catch (e) {}
+              }
+            }
+          }
           var mode = localStorage.getItem('hamsterstash_color_mode_v1');
           var cachedBg = localStorage.getItem('hamsterstash_splash_bg_v1');
           var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -41,6 +62,93 @@
           if (meta) meta.setAttribute('content', bg);
         } catch (e) {}
       })();
+
+      window.__splashErrorDetails = null;
+      function handleSplashCatch(err, source, lineno, colno) {
+        var str = '';
+        if (err && err.stack) {
+          str = err.stack;
+        } else if (err && err.message) {
+          str = (err.name ? err.name + ': ' : '') + err.message;
+        } else {
+          str = String(err || 'Unknown error');
+        }
+        if (source) {
+          str += '\n  at ' + source + ':' + lineno + ':' + colno;
+        }
+        window.__splashErrorDetails = str;
+        var box = document.getElementById('splash-error-box');
+        if (box) {
+          var pre = document.getElementById('splash-error-pre');
+          if (pre) pre.textContent = str;
+          box.style.display = 'block';
+          var track = document.getElementById('splash-track');
+          if (track) track.style.display = 'none';
+          var fallback = document.getElementById('splash-fallback');
+          if (fallback) fallback.style.display = 'none';
+        }
+      }
+
+      window.addEventListener('error', function (e) {
+        handleSplashCatch(e.error || e.message, e.filename, e.lineno, e.colno);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        handleSplashCatch(e.reason);
+      });
+
+      async function forceRepairAndReload(resetDb) {
+        var status = document.getElementById('splash-status-text');
+        if (status) status.textContent = '正在清理缓存与离线服务...';
+        try {
+          if ('serviceWorker' in navigator) {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            for (var i = 0; i < regs.length; i++) {
+              await regs[i].unregister();
+            }
+          }
+          if ('caches' in window) {
+            var keys = await caches.keys();
+            for (var j = 0; j < keys.length; j++) {
+              await caches.delete(keys[j]);
+            }
+          }
+          sessionStorage.clear();
+          if (resetDb) {
+            localStorage.clear();
+            if ('indexedDB' in window) {
+              try { indexedDB.deleteDatabase('hamsterStash_db'); } catch (e) {}
+              try { indexedDB.deleteDatabase('hamsterStash_sandbox_db'); } catch (e) {}
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+        if (status) status.textContent = '清理完成，正在拉取最新版本...';
+        var u = new URL(window.location.origin + window.location.pathname);
+        u.searchParams.set('_v', Date.now().toString());
+        window.location.replace(u.toString());
+      }
+
+      function copySplashDiagnostics() {
+        var err = window.__splashErrorDetails || '无捕获到的错误信息';
+        var info = [
+          'Error: ' + err,
+          'UserAgent: ' + (navigator.userAgent || 'unknown'),
+          'URL: ' + window.location.href,
+          'Time: ' + new Date().toISOString(),
+          'Screen: ' + window.innerWidth + 'x' + window.innerHeight,
+        ].join('\n\n');
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(info).then(function () {
+            alert('运行诊断与报错信息已复制');
+          }).catch(function () {
+            prompt('请手动长按复制报错信息：', info);
+          });
+        } else {
+          prompt('请手动长按复制报错信息：', info);
+        }
+      }
     </script>
     <style>
       html, body {
@@ -103,13 +211,33 @@
       <div class="app-splash" aria-label="应用加载中">
         <img class="app-splash-icon" src="/pwa-192x192.png" alt="仓鼠囤囤" width="58" height="58" />
         <div class="app-splash-title">仓鼠囤囤</div>
-        <div class="app-splash-track">
+        <div class="app-splash-track" id="splash-track">
           <div class="app-splash-bar"></div>
         </div>
-        <div id="splash-fallback" style="display:none;margin-top:16px;text-align:center;font-size:12px;opacity:0.85;">
+
+        <div id="splash-error-box" style="display:none;max-width:340px;width:90%;margin-top:14px;padding:12px;border:1px solid rgba(239,68,68,0.3);border-radius:12px;background:rgba(239,68,68,0.06);color:inherit;font-size:12px;text-align:left;">
+          <div style="font-weight:bold;color:#ef4444;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            <span>⚠️</span>
+            <span>启动异常拦截</span>
+          </div>
+          <pre id="splash-error-pre" style="max-height:120px;overflow:auto;font-size:10px;line-height:1.4;background:rgba(0,0,0,0.05);padding:6px;border-radius:6px;margin:6px 0;word-break:break-all;white-space:pre-wrap;user-select:text;-webkit-user-select:text;"></pre>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <button type="button" onclick="copySplashDiagnostics()" style="flex:1;background:rgba(0,0,0,0.06);border:1px solid currentColor;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;color:inherit;">复制错误信息</button>
+            <button type="button" onclick="forceRepairAndReload(false)" style="flex:1;background:#1677ff;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;font-weight:600;">清除缓存重试</button>
+          </div>
+          <button type="button" onclick="forceRepairAndReload(true)" style="width:100%;margin-top:6px;background:transparent;border:1px dashed #ef4444;color:#ef4444;border-radius:6px;padding:5px 8px;font-size:10px;cursor:pointer;">清空数据库并重置</button>
+        </div>
+
+        <div id="splash-fallback" style="display:none;margin-top:16px;text-align:center;font-size:12px;opacity:0.9;">
           <div style="margin-bottom:8px;">加载时间较长？</div>
-          <button type="button" onclick="window.location.reload(true)" style="background:transparent;border:1px solid currentColor;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;color:inherit;margin-right:8px;">重新加载</button>
-          <button type="button" onclick="if('caches' in window)caches.keys().then(function(k){k.forEach(function(i){caches.delete(i)})});if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(i){i.unregister()})});setTimeout(function(){location.reload(true)},100);" style="background:transparent;border:1px solid currentColor;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;color:inherit;">修复缓存</button>
+          <div id="splash-status-text" style="font-size:11px;margin-bottom:8px;color:#1677ff;"></div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button type="button" onclick="forceRepairAndReload(false)" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;color:inherit;">强制清缓存并重载</button>
+            <button type="button" onclick="copySplashDiagnostics()" style="background:transparent;border:1px solid currentColor;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:inherit;">复制诊断</button>
+          </div>
+          <div style="margin-top:8px;">
+            <button type="button" onclick="forceRepairAndReload(true)" style="background:transparent;border:none;color:#ef4444;font-size:10px;cursor:pointer;text-decoration:underline;">清空本地数据库重置</button>
+          </div>
         </div>
       </div>
     </div>
@@ -117,8 +245,11 @@
       (function () {
         setTimeout(function () {
           var fb = document.getElementById('splash-fallback');
-          if (fb) fb.style.display = 'block';
-        }, 5000);
+          var errBox = document.getElementById('splash-error-box');
+          if (fb && (!errBox || errBox.style.display === 'none')) {
+            fb.style.display = 'block';
+          }
+        }, 4000);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>

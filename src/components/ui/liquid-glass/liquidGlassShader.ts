@@ -6,7 +6,11 @@ export const VERTEX_SHADER_SOURCE = `
 `;
 
 export const FRAGMENT_SHADER_SOURCE = `
+  #ifdef GL_FRAGMENT_PRECISION_HIGH
   precision highp float;
+  #else
+  precision mediump float;
+  #endif
 
   uniform vec2 uResolution;
   uniform vec2 uCanvasSize;
