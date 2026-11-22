@@ -198,4 +198,47 @@ describe('Period Statistics Domain Logic', () => {
     expect(decStats.items[0].name).toBe('房租');
     expect(decStats.items[0].amount).toBe(100000);
   });
+
+  it('平滑分摊支出：启用分期后，年度环形图准确按年计算摊销总额', () => {
+    const rentCat: Category = {
+      id: 'cat_rent',
+      name: '房租',
+      type: 'expense',
+      icon: 'home',
+      color: '#fff',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const rentTx: Transaction = {
+      id: 'tx_rent',
+      type: 'expense',
+      amount: 1200000,
+      categoryId: 'cat_rent',
+      accountId: 'a1',
+      date: '2026-11-01',
+      ext: { amortize: { enabled: true, months: 12 } },
+      createdAt: '2026-11-01T10:00:00Z',
+      updatedAt: '2026-11-01T10:00:00Z',
+    };
+
+    const stats2026 = computeCategoryDonutStats(
+      [],
+      [rentCat],
+      [rentTx],
+      true,
+      '2026',
+      'year'
+    );
+    expect(stats2026.totalExpense).toBe(200000);
+
+    const stats2027 = computeCategoryDonutStats(
+      [],
+      [rentCat],
+      [rentTx],
+      true,
+      '2027',
+      'year'
+    );
+    expect(stats2027.totalExpense).toBe(1000000);
+  });
 });

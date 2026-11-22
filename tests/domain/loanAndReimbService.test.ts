@@ -282,13 +282,13 @@ describe('Loan Linking & Reimbursement Settlement Business Logic', () => {
     it('allows toggling amortization feature switch on and off in preference store', async () => {
       const { usePreferenceStore } = await import('../../src/stores/usePreferenceStore');
       const store = usePreferenceStore.getState();
-      expect(store.isAmortizationEnabled).toBe(false);
-
-      store.setAmortizationEnabled(true);
-      expect(usePreferenceStore.getState().isAmortizationEnabled).toBe(true);
+      expect(store.isAmortizationEnabled).toBe(true);
 
       store.setAmortizationEnabled(false);
       expect(usePreferenceStore.getState().isAmortizationEnabled).toBe(false);
+
+      store.setAmortizationEnabled(true);
+      expect(usePreferenceStore.getState().isAmortizationEnabled).toBe(true);
     });
   });
 });

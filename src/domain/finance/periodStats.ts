@@ -140,6 +140,21 @@ export function computeCategoryDonutStats(
         }
       }
     }
+  } else if (isAmortizationEnabled && allTransactions && mode === 'year' && periodKey) {
+    for (const t of allTransactions) {
+      if (t.type === 'expense') {
+        let amt = 0;
+        if (getAmortizeConfig(t)) {
+          amt = computeAmortizedYearlyAmount(t, periodKey, offsetMap);
+        } else if (t.date.startsWith(periodKey)) {
+          amt = computeEffectiveExpenseAmount(t, offsetMap);
+        }
+        if (amt > 0) {
+          totalExpense += amt;
+          catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);
+        }
+      }
+    }
   } else {
     for (const t of transactions) {
       if (t.type === 'expense') {

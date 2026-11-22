@@ -27,7 +27,7 @@ interface PreferencesPayload {
 const getInitialPreferences = (): PreferencesPayload => {
   let majorThresholdYuan = DEFAULT_MAJOR_THRESHOLD_YUAN;
   let isReimbursementEnabled = true;
-  let isAmortizationEnabled = false;
+  let isAmortizationEnabled = true;
   try {
     const raw = localStorage.getItem(PREFS_STORAGE_KEY);
     if (raw) {
