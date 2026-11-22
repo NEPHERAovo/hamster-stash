@@ -87,7 +87,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <>
                 {showBackToToday && onBackToToday && (
                   <PaperButton
-                    variant="accent"
+                    variant="secondary"
                     size="compact"
                     onClick={onBackToToday}
                     title="回到本月"
