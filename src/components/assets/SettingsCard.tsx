@@ -405,22 +405,11 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
                     </div>
                   </div>
 
-                  <div
-                    className={cn(
-                      'relative h-4.5 w-8 shrink-0 cursor-pointer rounded-full border transition-colors select-none',
-                      isEnabled
-                        ? 'border-(--ink-primary) bg-(--ink-primary)'
-                        : 'border-(--rule-hairline) bg-(--paper-sunken)'
-                    )}
-                    onClick={() => handleTogglePlugin(p.manifest.id, isEnabled)}
-                  >
-                    <div
-                      className={cn(
-                        'absolute top-0.5 size-3 rounded-full bg-(--paper-sheet) shadow-2xs transition-transform duration-200',
-                        isEnabled ? 'left-4' : 'left-0.5'
-                      )}
-                    />
-                  </div>
+                  <PaperSwitch
+                    checked={isEnabled}
+                    onChange={() => handleTogglePlugin(p.manifest.id, isEnabled)}
+                    aria-label={p.manifest.name}
+                  />
                 </div>
               );
             })}
