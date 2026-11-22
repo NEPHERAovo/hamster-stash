@@ -564,18 +564,17 @@ export const CategoryManageSubPage: React.FC = () => {
 
   return (
     <div className="w-full space-y-4 px-4 pt-2 pb-28 select-none">
-      <div className="flex items-center justify-between gap-3">
-        <div className="max-w-45 flex-1">
-          <SegToggle
-            options={[
-              { value: 'expense', label: '支出' },
-              { value: 'income', label: '收入' },
-            ]}
-            value={activeType}
-            onChange={setActiveType}
-            size="sm"
-          />
-        </div>
+      <div className="w-full">
+        <SegToggle
+          options={[
+            { value: 'expense', label: '支出' },
+            { value: 'income', label: '收入' },
+          ]}
+          value={activeType}
+          onChange={setActiveType}
+          size="sm"
+          fullWidth
+        />
       </div>
 
       <div className="space-y-1.5">
