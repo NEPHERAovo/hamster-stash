@@ -89,3 +89,76 @@ export function computeAmortizedYearlyAmount(
   }
   return yearTotal;
 }
+
+export interface ActiveInstallment {
+  transaction: Transaction;
+  totalAmount: number;
+  months: number;
+  startMonth: string;
+  elapsedMonths: number;
+  remainingMonths: number;
+  monthlyAmount: number;
+  remainingDebt: number;
+}
+
+export function computePendingInstallments(
+  transactions: Transaction[],
+  currentYearMonth: string,
+  offsetMap?: Map<string, number>
+): {
+  totalRemainingDebt: number;
+  installments: ActiveInstallment[];
+} {
+  const installments: ActiveInstallment[] = [];
+  let totalRemainingDebt = 0;
+
+  for (const tx of transactions) {
+    if (tx.type !== 'expense') continue;
+    const config = getAmortizeConfig(tx);
+    if (!config) continue;
+
+    const totalAmount = offsetMap ? computeEffectiveExpenseAmount(tx, offsetMap) : tx.amount;
+    if (totalAmount <= 0) continue;
+
+    const startMonth = config.startMonth || tx.date.slice(0, 7);
+    const monthDelta = diffInMonths(startMonth, currentYearMonth);
+
+    if (monthDelta >= config.months) continue;
+
+    const baseMonthly = Math.floor(totalAmount / config.months);
+    let remainingMonths = 0;
+    let elapsedMonths = 0;
+    let remainingDebt = 0;
+
+    if (monthDelta < 0) {
+      elapsedMonths = 0;
+      remainingMonths = config.months;
+      remainingDebt = totalAmount;
+    } else {
+      elapsedMonths = monthDelta + 1;
+      remainingMonths = config.months - elapsedMonths;
+      remainingDebt = remainingMonths * baseMonthly;
+    }
+
+    if (remainingMonths > 0 && remainingDebt > 0) {
+      totalRemainingDebt += remainingDebt;
+      installments.push({
+        transaction: tx,
+        totalAmount,
+        months: config.months,
+        startMonth,
+        elapsedMonths,
+        remainingMonths,
+        monthlyAmount: baseMonthly,
+        remainingDebt,
+      });
+    }
+  }
+
+  installments.sort((a, b) => b.remainingDebt - a.remainingDebt);
+
+  return {
+    totalRemainingDebt,
+    installments,
+  };
+}

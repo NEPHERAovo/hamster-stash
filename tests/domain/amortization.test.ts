@@ -5,6 +5,7 @@ import {
   diffInMonths,
   computeAmortizedMonthlyAmount,
   computeAmortizedYearlyAmount,
+  computePendingInstallments,
 } from '../../src/domain/finance/amortization';
 
 describe('Amortization Domain (分期支出平滑分摊算法)', () => {
@@ -119,5 +120,43 @@ describe('Amortization Domain (分期支出平滑分摊算法)', () => {
     expect(computeAmortizedYearlyAmount(rentTx, '2027')).toBe(400000);
     expect(computeAmortizedYearlyAmount(rentTx, '2025')).toBe(0);
     expect(computeAmortizedYearlyAmount(rentTx, '2028')).toBe(0);
+  });
+
+  it('calculates pending installment liabilities and remaining periods correctly', () => {
+    const tx1: Transaction = {
+      id: 'tx_phone',
+      type: 'expense',
+      amount: 1200000,
+      categoryId: 'cat_digi',
+      accountId: 'acct_credit',
+      date: '2026-06-15',
+      ext: { amortize: { enabled: true, months: 12 } },
+      createdAt: '2026-06-15T10:00:00Z',
+      updatedAt: '2026-06-15T10:00:00Z',
+    };
+
+    const tx2: Transaction = {
+      id: 'tx_normal',
+      type: 'expense',
+      amount: 30000,
+      categoryId: 'cat_food',
+      accountId: 'acct_wx',
+      date: '2026-11-10',
+      createdAt: '2026-11-10T10:00:00Z',
+      updatedAt: '2026-11-10T10:00:00Z',
+    };
+
+    const result = computePendingInstallments([tx1, tx2], '2026-11');
+    expect(result.installments.length).toBe(1);
+    expect(result.installments[0].months).toBe(12);
+    expect(result.installments[0].elapsedMonths).toBe(6);
+    expect(result.installments[0].remainingMonths).toBe(6);
+    expect(result.installments[0].monthlyAmount).toBe(100000);
+    expect(result.installments[0].remainingDebt).toBe(600000);
+    expect(result.totalRemainingDebt).toBe(600000);
+
+    const pastResult = computePendingInstallments([tx1], '2027-06');
+    expect(pastResult.installments.length).toBe(0);
+    expect(pastResult.totalRemainingDebt).toBe(0);
   });
 });

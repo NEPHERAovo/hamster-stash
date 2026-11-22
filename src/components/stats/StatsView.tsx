@@ -24,6 +24,8 @@ import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
+import { centsToYuan, buildOffsetMap } from '../../domain/finance/balanceCalculator';
+import { computePendingInstallments } from '../../domain/finance/amortization';
 import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
 
 export interface CategoryDrilldownData {
@@ -106,6 +108,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
       mode
     );
   }, [periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
+
+  const pendingInstallments = useMemo(() => {
+    if (mode !== 'month') return { totalRemainingDebt: 0, installments: [] };
+    const offsetMap = buildOffsetMap(allTransactions);
+    return computePendingInstallments(allTransactions, periodInfo.key, offsetMap);
+  }, [allTransactions, mode, periodInfo.key]);
 
   const prevExpenseRef = useRef(totalExpense);
   const wasEmptyExpense = prevExpenseRef.current === 0;
@@ -305,6 +313,21 @@ export const StatsView: React.FC<StatsViewProps> = ({
           canStepNext={canStepTrendNext}
         />
       </div>
+
+      {pendingInstallments.installments.length > 0 && (
+        <div className="tab-stagger-2.5 paper-card rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none">
+          <div className="flex items-center justify-between">
+            <span className="font-serif text-sm text-(--ink-secondary)">待还分期欠款</span>
+            <span className="font-mono text-sm font-bold text-(--color-expense) tabular-nums">
+              -¥ {centsToYuan(pendingInstallments.totalRemainingDebt)}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between font-mono text-[11px] text-(--ink-tertiary)">
+            <span>共 {pendingInstallments.installments.length} 项未结清分期</span>
+            <span>后续按月计入当期账单</span>
+          </div>
+        </div>
+      )}
 
       <div className="tab-stagger-3 space-y-1.5 pt-1">
         <div className="flex items-center justify-between px-1 select-none">

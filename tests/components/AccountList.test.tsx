@@ -75,4 +75,39 @@ describe('AccountList Component', () => {
     expect(handleSelect).toHaveBeenCalledTimes(1);
     expect(handleSelect).toHaveBeenCalledWith(mockAccounts[0]);
   });
+
+  it('renders pending installment liabilities section when active installments exist', () => {
+    const handleSelect = vi.fn();
+    const handleSelectTx = vi.fn();
+    const mockTxs = [
+      {
+        id: 'tx_phone',
+        type: 'expense' as const,
+        amount: 1200000,
+        categoryId: 'cat_digi',
+        accountId: 'acct-3',
+        date: '2026-06-15',
+        note: 'iPhone 16 Pro',
+        ext: { amortize: { enabled: true, months: 12 } },
+        createdAt: '2026-06-15T10:00:00Z',
+        updatedAt: '2026-06-15T10:00:00Z',
+      },
+    ];
+
+    render(
+      <AccountList
+        accounts={mockAccounts}
+        allTransactions={mockTxs}
+        onSelectAccount={handleSelect}
+        onSelectTransaction={handleSelectTx}
+      />
+    );
+
+    expect(screen.getByText('待还分期')).toBeInTheDocument();
+    expect(screen.getByText('iPhone 16 Pro')).toBeInTheDocument();
+    expect(screen.getByText(/每月约 ¥1000\.00/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('iPhone 16 Pro'));
+    expect(handleSelectTx).toHaveBeenCalledWith(mockTxs[0]);
+  });
 });
