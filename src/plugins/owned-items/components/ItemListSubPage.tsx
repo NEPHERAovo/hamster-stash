@@ -7,7 +7,7 @@ import {
   getCategoryIcon,
   cn,
   PaperIconButton,
-  PaperChip,
+  SegToggle,
 } from '../../../plugin-sdk';
 import type { Item } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
@@ -148,39 +148,31 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
         <div className="tab-stagger-2 w-full space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              {[
-                { key: 'all', label: '全部' },
-                { key: 'physical', label: '物品' },
-                { key: 'subscription', label: '订阅' },
-              ].map((k) => (
-                <PaperChip
-                  key={k.key}
-                  size="sm"
-                  selected={kindFilter === k.key}
-                  onClick={() => setKindFilter(k.key as KindTab)}
-                >
-                  {k.label}
-                </PaperChip>
-              ))}
-            </div>
+            <SegToggle
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'physical', label: '物品' },
+                { value: 'subscription', label: '订阅' },
+              ]}
+              value={kindFilter}
+              onChange={(val) => setKindFilter(val as KindTab)}
+              size="sm"
+              fullWidth={false}
+            />
           </div>
 
-          <div className="flex items-center gap-2 border-b border-(--rule-hairline) pb-2 font-mono text-xs">
-            {[
-              { key: 'using', label: `在用 (${overallSummary.usingCount})` },
-              { key: 'sold', label: `已出 (${overallSummary.soldCount})` },
-              { key: 'all', label: `全部 (${overallSummary.totalCount})` },
-            ].map((tab) => (
-              <PaperChip
-                key={tab.key}
-                size="sm"
-                selected={activeTab === tab.key}
-                onClick={() => setActiveTab(tab.key as FilterTab)}
-              >
-                {tab.label}
-              </PaperChip>
-            ))}
+          <div className="flex items-center border-b border-(--rule-hairline) pb-2 font-mono text-xs">
+            <SegToggle
+              options={[
+                { value: 'using', label: `在用 (${overallSummary.usingCount})` },
+                { value: 'sold', label: `已出 (${overallSummary.soldCount})` },
+                { value: 'all', label: `全部 (${overallSummary.totalCount})` },
+              ]}
+              value={activeTab}
+              onChange={(val) => setActiveTab(val as FilterTab)}
+              size="sm"
+              fullWidth={false}
+            />
           </div>
 
           {filteredItems.length > 0 ? (

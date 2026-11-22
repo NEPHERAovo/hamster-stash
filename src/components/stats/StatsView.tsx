@@ -216,7 +216,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
   return (
     <div className="space-y-3.5 py-2 pb-6">
       {!controlledMode && (
-        <div className="mx-auto max-w-50">
+        <div className="flex justify-center">
           <SegToggle
             options={[
               { value: 'week', label: '周' },
@@ -226,6 +226,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
             value={mode}
             onChange={setMode}
             size="sm"
+            fullWidth={false}
           />
         </div>
       )}
