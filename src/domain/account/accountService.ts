@@ -14,7 +14,6 @@ export interface CreateAccountInput {
   color?: string;
   includeInNetWorth?: boolean;
   creditLimit?: number;
-  billDay?: number;
   repaymentDay?: number;
   repaymentAccountId?: string;
   autoRepay?: boolean;
@@ -28,7 +27,6 @@ export interface UpdateAccountInput {
   color?: string;
   includeInNetWorth?: boolean;
   creditLimit?: number;
-  billDay?: number;
   repaymentDay?: number;
   repaymentAccountId?: string;
   autoRepay?: boolean;
@@ -64,7 +62,6 @@ export class AccountService {
       color: input.color,
       includeInNetWorth: input.includeInNetWorth ?? true,
       creditLimit: input.creditLimit,
-      billDay: input.billDay,
       repaymentDay: input.repaymentDay,
       repaymentAccountId: input.repaymentAccountId,
       autoRepay: input.autoRepay,
@@ -117,7 +114,6 @@ export class AccountService {
     if (patch.color !== undefined) updates.color = patch.color;
     if (patch.includeInNetWorth !== undefined) updates.includeInNetWorth = patch.includeInNetWorth;
     if (patch.creditLimit !== undefined) updates.creditLimit = patch.creditLimit;
-    if (patch.billDay !== undefined) updates.billDay = patch.billDay;
     if (patch.repaymentDay !== undefined) updates.repaymentDay = patch.repaymentDay;
     if (patch.repaymentAccountId !== undefined) updates.repaymentAccountId = patch.repaymentAccountId;
     if (patch.autoRepay !== undefined) updates.autoRepay = patch.autoRepay;

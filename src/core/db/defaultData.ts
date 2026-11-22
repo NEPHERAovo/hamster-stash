@@ -67,7 +67,7 @@ export function getSandboxSeedData(now: string = new Date().toISOString()): {
     { id: 'acct_cash', name: '日常活钱', type: 'savings', balance: 125000, currency: 'CNY', icon: 'wallet', sortOrder: 1, createdAt: now, updatedAt: now },
     { id: 'acct_bank', name: '招商银行', type: 'savings', balance: 5860000, currency: 'CNY', icon: 'landmark', sortOrder: 2, createdAt: now, updatedAt: now },
     { id: 'acct_wx', name: '微信钱包', type: 'savings', balance: 64200, currency: 'CNY', icon: 'credit-card', sortOrder: 3, createdAt: now, updatedAt: now },
-    { id: 'acct_credit', name: '招商信用卡', type: 'credit', balance: -150000, creditLimit: 2000000, billDay: 5, repaymentDay: 23, repaymentAccountId: 'acct_bank', autoRepay: true, currency: 'CNY', icon: 'credit-card', sortOrder: 4, createdAt: now, updatedAt: now },
+    { id: 'acct_credit', name: '招商信用卡', type: 'credit', balance: -150000, creditLimit: 2000000, repaymentDay: 23, repaymentAccountId: 'acct_bank', autoRepay: true, currency: 'CNY', icon: 'credit-card', sortOrder: 4, createdAt: now, updatedAt: now },
   ];
 
   const sampleTransactions: Transaction[] = [

@@ -30,7 +30,6 @@ export interface CreateAccountModalProps {
     icon: string;
     includeInNetWorth: boolean;
     creditLimit?: number;
-    billDay?: number;
     repaymentDay?: number;
     repaymentAccountId?: string;
     autoRepay?: boolean;
@@ -64,7 +63,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [icon, setIcon] = useState('landmark');
   const [balanceStr, setBalanceStr] = useState('');
   const [creditLimitStr, setCreditLimitStr] = useState('');
-  const [billDay, setBillDay] = useState<number | undefined>(undefined);
   const [repaymentDay, setRepaymentDay] = useState<number | undefined>(undefined);
   const [repaymentAccountId, setRepaymentAccountId] = useState<string | undefined>(undefined);
   const [autoRepay, setAutoRepay] = useState(false);
@@ -86,7 +84,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     setIcon('landmark');
     setBalanceStr('');
     setCreditLimitStr('');
-    setBillDay(undefined);
     setRepaymentDay(undefined);
     setRepaymentAccountId(undefined);
     setAutoRepay(false);
@@ -105,7 +102,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       setCreditLimitStr(
         editingAccount.creditLimit ? centsToYuan(editingAccount.creditLimit) : ''
       );
-      setBillDay(editingAccount.billDay);
       setRepaymentDay(editingAccount.repaymentDay);
       setRepaymentAccountId(editingAccount.repaymentAccountId);
       setAutoRepay(Boolean(editingAccount.autoRepay));
@@ -150,7 +146,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           icon,
           includeInNetWorth,
           creditLimit: parsedCreditLimit,
-          billDay,
           repaymentDay,
           repaymentAccountId,
           autoRepay,
@@ -179,7 +174,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         icon,
         includeInNetWorth,
         creditLimit: parsedCreditLimit,
-        billDay,
         repaymentDay,
         repaymentAccountId,
         autoRepay,

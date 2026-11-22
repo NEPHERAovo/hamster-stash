@@ -30,7 +30,6 @@ describe('Credit Account Features', () => {
     sortOrder: 2,
     includeInNetWorth: true,
     creditLimit: 5000000,
-    billDay: 7,
     repaymentDay: 25,
     repaymentAccountId: 'acct-debit',
     autoRepay: true,
@@ -106,7 +105,7 @@ describe('Credit Account Features', () => {
     expect(screen.getByText('信用账户 · 海淘专用')).toBeInTheDocument();
     expect(screen.getByText('额度 ¥50000.00 · 剩余可用 ¥47200.00')).toBeInTheDocument();
     expect(screen.getByText('每月 25 日')).toBeInTheDocument();
-    expect(screen.getByText('每月 7 日')).toBeInTheDocument();
+    expect(screen.queryByText('每月账单日')).not.toBeInTheDocument();
     expect(screen.getByText('招商银行储蓄卡')).toBeInTheDocument();
     expect(screen.getByText('已开启')).toBeInTheDocument();
     expect(screen.getByText('账户还款')).toBeInTheDocument();

@@ -318,12 +318,6 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
                 </span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-(--ink-tertiary)">每月账单日</span>
-                <span className="font-medium text-(--ink-primary)">
-                  {account.billDay ? `每月 ${account.billDay} 日` : '未设置'}
-                </span>
-              </div>
-              <div className="flex justify-between py-2">
                 <span className="text-(--ink-tertiary)">关联还款账户</span>
                 <span className="font-medium text-(--ink-primary)">
                   {linkedRepaymentAccount ? linkedRepaymentAccount.name : '未关联'}

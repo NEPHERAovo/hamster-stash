@@ -40,7 +40,6 @@ const mockAccounts: Account[] = [
     icon: 'credit-card',
     includeInNetWorth: true,
     creditLimit: 2000000,
-    billDay: 5,
     repaymentDay: 23,
     repaymentAccountId: 'acct-2',
     autoRepay: true,

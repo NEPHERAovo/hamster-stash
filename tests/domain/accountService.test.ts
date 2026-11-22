@@ -180,7 +180,6 @@ describe('AccountService', () => {
       type: 'credit',
       initialBalance: -150000,
       creditLimit: 2000000,
-      billDay: 5,
       repaymentDay: 23,
       repaymentAccountId: debit.id,
       autoRepay: true,
@@ -188,7 +187,6 @@ describe('AccountService', () => {
 
     expect(credit.type).toBe('credit');
     expect(credit.creditLimit).toBe(2000000);
-    expect(credit.billDay).toBe(5);
     expect(credit.repaymentDay).toBe(23);
     expect(credit.repaymentAccountId).toBe(debit.id);
     expect(credit.autoRepay).toBe(true);

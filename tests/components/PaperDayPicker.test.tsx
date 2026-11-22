@@ -40,7 +40,7 @@ describe('PaperDayPicker Component', () => {
 
     render(
       <PaperDayPicker
-        title="选择每月账单日"
+        title="选择每月还款日"
         selectedDay={undefined}
         onSelectDay={handleSelect}
         onClear={handleClear}

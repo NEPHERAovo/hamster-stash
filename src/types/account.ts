@@ -13,7 +13,6 @@ export interface Account {
   includeInNetWorth?: boolean;
   isArchived?: boolean;
   creditLimit?: number;
-  billDay?: number;
   repaymentDay?: number;
   repaymentAccountId?: string;
   autoRepay?: boolean;
