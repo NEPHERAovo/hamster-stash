@@ -76,10 +76,13 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     setMounted(true);
   }, []);
 
+  if (isOpen && !shouldRender) {
+    setShouldRender(true);
+  }
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setShouldRender(true);
     } else if (shouldRender && !isClosingRef.current) {
       closeWithAnimation(240);
     }
@@ -267,7 +270,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     >
       <div
         ref={backdropRef}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] will-change-[opacity]"
+        className="fixed inset-0 bg-black/40 opacity-0 backdrop-blur-[2px] will-change-[opacity]"
         onClick={() => closeWithAnimation(240)}
         aria-hidden="true"
       />
@@ -275,7 +278,7 @@ export const PaperModal: React.FC<PaperModalProps> = ({
       <div
         ref={sheetRef}
         className={cn(
-          'paper-modal-sheet relative flex max-h-[92dvh] w-full max-w-full flex-col overflow-hidden will-change-transform sm:max-w-lg md:max-w-xl',
+          'paper-modal-sheet relative flex max-h-[92dvh] w-full max-w-full translate-y-full flex-col overflow-hidden will-change-transform sm:max-w-lg md:max-w-xl',
           'rounded-t-(--radius-lg) rounded-b-none border-t border-(--rule-hairline) bg-(--paper-sheet) shadow-2xl sm:rounded-b-(--radius-lg) sm:border',
           className
         )}
