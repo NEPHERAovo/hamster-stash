@@ -221,7 +221,7 @@ export function App() {
   const displayTransactions = allTransactions.length > 0 ? allTransactions : transactions;
 
   const currentMonthTransactions = useMemo(
-    () => displayTransactions.filter((t) => t.date.startsWith(currentMonth)),
+    () => displayTransactions.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth)),
     [displayTransactions, currentMonth]
   );
 

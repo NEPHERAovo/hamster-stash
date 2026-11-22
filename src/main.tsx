@@ -8,6 +8,7 @@ import '@fontsource/instrument-serif/latin-400-italic.css';
 import './index.css';
 import './core/plugin/setup';
 import App from './App.tsx';
+import { RootErrorBoundary } from './components/ui/RootErrorBoundary';
 import { usePwaStore, type BeforeInstallPromptEvent } from './stores/usePwaStore';
 
 if (typeof window !== 'undefined') {
@@ -69,6 +70,8 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <RootErrorBoundary>
+      <App />
+    </RootErrorBoundary>
   </StrictMode>,
 );

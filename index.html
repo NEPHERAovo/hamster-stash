@@ -106,8 +106,21 @@
         <div class="app-splash-track">
           <div class="app-splash-bar"></div>
         </div>
+        <div id="splash-fallback" style="display:none;margin-top:16px;text-align:center;font-size:12px;opacity:0.85;">
+          <div style="margin-bottom:8px;">加载时间较长？</div>
+          <button type="button" onclick="window.location.reload(true)" style="background:transparent;border:1px solid currentColor;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;color:inherit;margin-right:8px;">重新加载</button>
+          <button type="button" onclick="if('caches' in window)caches.keys().then(function(k){k.forEach(function(i){caches.delete(i)})});if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(i){i.unregister()})});setTimeout(function(){location.reload(true)},100);" style="background:transparent;border:1px solid currentColor;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;color:inherit;">修复缓存</button>
+        </div>
       </div>
     </div>
+    <script>
+      (function () {
+        setTimeout(function () {
+          var fb = document.getElementById('splash-fallback');
+          if (fb) fb.style.display = 'block';
+        }, 5000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

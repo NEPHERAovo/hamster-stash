@@ -81,7 +81,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
     const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
     const currentMonth = get().currentMonth || currentYearMonth();
-    const monthTxs = all.filter((t) => t.date.startsWith(currentMonth));
+    const monthTxs = all.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth));
     const summary = computeMonthSummary(monthTxs, all);
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 
@@ -101,7 +101,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     await core.init();
 
     const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
-    const monthTxs = all.filter((tx) => tx.date.startsWith(month));
+    const monthTxs = all.filter((tx) => typeof tx.date === 'string' && tx.date.startsWith(month));
     const summary = computeMonthSummary(monthTxs, all);
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 

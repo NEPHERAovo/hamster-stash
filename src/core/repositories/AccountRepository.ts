@@ -10,14 +10,25 @@ export class AccountRepository {
   }
 
   async findById(id: string): Promise<Account | null> {
-    return this.adapter.read<Account>(STORES.ACCOUNTS, id);
+    const acct = await this.adapter.read<Account>(STORES.ACCOUNTS, id);
+    if (!acct) return null;
+    return {
+      ...acct,
+      type: acct.type === 'credit' ? 'credit' : 'savings',
+      balance: Number.isFinite(acct.balance) ? acct.balance : 0,
+    };
   }
 
   async findAll(): Promise<Account[]> {
-    return this.adapter.query<Account>(STORES.ACCOUNTS, {
+    const items = await this.adapter.query<Account>(STORES.ACCOUNTS, {
       orderBy: 'sortOrder',
       orderDirection: 'asc',
     });
+    return items.map((acct) => ({
+      ...acct,
+      type: acct.type === 'credit' ? 'credit' : 'savings',
+      balance: Number.isFinite(acct.balance) ? acct.balance : 0,
+    }));
   }
 
   async create(data: Omit<Account, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Account> {

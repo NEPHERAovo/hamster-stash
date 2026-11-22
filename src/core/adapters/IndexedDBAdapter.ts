@@ -15,6 +15,7 @@ export class IndexedDBAdapter implements DataAdapter {
   readonly id = 'indexeddb';
   private db: IDBPDatabase | null = null;
   private dbName: string;
+  private initPromise: Promise<void> | null = null;
 
   constructor(dbName?: string) {
     this.dbName = dbName || getActiveDbName();
@@ -22,59 +23,67 @@ export class IndexedDBAdapter implements DataAdapter {
 
   async initialize(): Promise<void> {
     if (this.db) return;
+    if (!this.initPromise) {
+      this.initPromise = (async () => {
+        try {
+          this.db = await openDB(this.dbName, DB_VERSION, {
+            upgrade(db, _oldVersion, _newVersion, _transaction) {
+              if (!db.objectStoreNames.contains(STORES.TRANSACTIONS)) {
+                const txStore = db.createObjectStore(STORES.TRANSACTIONS, { keyPath: 'id' });
+                txStore.createIndex('by_date', 'date');
+                txStore.createIndex('by_account', 'accountId');
+                txStore.createIndex('by_category', 'categoryId');
+                txStore.createIndex('by_offset', 'offsetTransactionId');
+              } else if (_transaction) {
+                const txStore = _transaction.objectStore(STORES.TRANSACTIONS);
+                if (!txStore.indexNames.contains('by_offset')) {
+                  txStore.createIndex('by_offset', 'offsetTransactionId');
+                }
+              }
 
-    this.db = await openDB(this.dbName, DB_VERSION, {
-      upgrade(db, _oldVersion, _newVersion, _transaction) {
-        if (!db.objectStoreNames.contains(STORES.TRANSACTIONS)) {
-          const txStore = db.createObjectStore(STORES.TRANSACTIONS, { keyPath: 'id' });
-          txStore.createIndex('by_date', 'date');
-          txStore.createIndex('by_account', 'accountId');
-          txStore.createIndex('by_category', 'categoryId');
-          txStore.createIndex('by_offset', 'offsetTransactionId');
-        } else if (_transaction) {
-          const txStore = _transaction.objectStore(STORES.TRANSACTIONS);
-          if (!txStore.indexNames.contains('by_offset')) {
-            txStore.createIndex('by_offset', 'offsetTransactionId');
-          }
+              if (!db.objectStoreNames.contains(STORES.ACCOUNTS)) {
+                const acctStore = db.createObjectStore(STORES.ACCOUNTS, { keyPath: 'id' });
+                acctStore.createIndex('by_sortOrder', 'sortOrder');
+              }
+
+              if (!db.objectStoreNames.contains(STORES.CATEGORIES)) {
+                const catStore = db.createObjectStore(STORES.CATEGORIES, { keyPath: 'id' });
+                catStore.createIndex('by_type', 'type');
+                catStore.createIndex('by_sortOrder', 'sortOrder');
+              }
+
+              if (!db.objectStoreNames.contains(STORES.PLUGIN_DATA)) {
+                const pDataStore = db.createObjectStore(STORES.PLUGIN_DATA, { keyPath: 'id' });
+                pDataStore.createIndex('by_plugin', 'pluginId');
+                pDataStore.createIndex('by_plugin_collection', ['pluginId', 'collection']);
+              }
+
+              if (!db.objectStoreNames.contains(STORES.PLUGIN_SETTINGS)) {
+                db.createObjectStore(STORES.PLUGIN_SETTINGS, { keyPath: 'id' });
+              }
+
+              if (!db.objectStoreNames.contains(STORES.ATTACHMENTS)) {
+                db.createObjectStore(STORES.ATTACHMENTS, { keyPath: 'id' });
+              }
+
+              if (_oldVersion < 4) {
+                if (db.objectStoreNames.contains(STORES.SETTINGS)) {
+                  db.deleteObjectStore(STORES.SETTINGS);
+                }
+                db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
+              } else if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+                db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
+              }
+            },
+          });
+
+          await this.seedDefaultsIfEmpty();
+        } finally {
+          this.initPromise = null;
         }
-
-        if (!db.objectStoreNames.contains(STORES.ACCOUNTS)) {
-          const acctStore = db.createObjectStore(STORES.ACCOUNTS, { keyPath: 'id' });
-          acctStore.createIndex('by_sortOrder', 'sortOrder');
-        }
-
-        if (!db.objectStoreNames.contains(STORES.CATEGORIES)) {
-          const catStore = db.createObjectStore(STORES.CATEGORIES, { keyPath: 'id' });
-          catStore.createIndex('by_type', 'type');
-          catStore.createIndex('by_sortOrder', 'sortOrder');
-        }
-
-        if (!db.objectStoreNames.contains(STORES.PLUGIN_DATA)) {
-          const pDataStore = db.createObjectStore(STORES.PLUGIN_DATA, { keyPath: 'id' });
-          pDataStore.createIndex('by_plugin', 'pluginId');
-          pDataStore.createIndex('by_plugin_collection', ['pluginId', 'collection']);
-        }
-
-        if (!db.objectStoreNames.contains(STORES.PLUGIN_SETTINGS)) {
-          db.createObjectStore(STORES.PLUGIN_SETTINGS, { keyPath: 'id' });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.ATTACHMENTS)) {
-          db.createObjectStore(STORES.ATTACHMENTS, { keyPath: 'id' });
-        }
-
-        if (_oldVersion < 4) {
-          if (db.objectStoreNames.contains(STORES.SETTINGS)) {
-            db.deleteObjectStore(STORES.SETTINGS);
-          }
-          db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
-        } else if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-          db.createObjectStore(STORES.SETTINGS, { keyPath: 'id' });
-        }
-      },
-    });
-
-    await this.seedDefaultsIfEmpty();
+      })();
+    }
+    await this.initPromise;
   }
 
   private async seedDefaultsIfEmpty(): Promise<void> {
@@ -104,7 +113,11 @@ export class IndexedDBAdapter implements DataAdapter {
             updatedAt: now,
           });
         } else if (existing.isSystem) {
-          const shouldUpdateName = existing.name !== cat.name && existing.name.length > 2;
+          const shouldUpdateName =
+            existing.name &&
+            typeof existing.name === 'string' &&
+            existing.name !== cat.name &&
+            existing.name.length > 2;
           if (shouldUpdateName) {
             await tx.store.put({
               ...existing,

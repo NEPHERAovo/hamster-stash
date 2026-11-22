@@ -14,6 +14,7 @@ class CoreContext {
   public txService: TransactionService;
   public acctService: AccountService;
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   constructor(customAdapter?: DataAdapter) {
     this.adapter = customAdapter || new IndexedDBAdapter();
@@ -27,8 +28,17 @@ class CoreContext {
 
   async init(): Promise<void> {
     if (this.initialized) return;
-    await this.adapter.initialize();
-    this.initialized = true;
+    if (!this.initPromise) {
+      this.initPromise = (async () => {
+        try {
+          await this.adapter.initialize();
+          this.initialized = true;
+        } finally {
+          this.initPromise = null;
+        }
+      })();
+    }
+    await this.initPromise;
   }
 }
 

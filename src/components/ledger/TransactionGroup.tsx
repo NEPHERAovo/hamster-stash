@@ -129,8 +129,13 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   }, [transactions, searchTransactions, effectiveFilter, searchQuery, catMap, acctMap, majorThresholdYuan]);
 
   const groups = useMemo(() => {
-    const grouped = Object.groupBy(filteredTransactions, (tx) => tx.date);
-    return (grouped as Record<string, Transaction[]>) || {};
+    const acc: Record<string, Transaction[]> = {};
+    for (const tx of filteredTransactions) {
+      const dateKey = typeof tx.date === 'string' && tx.date ? tx.date : 'unknown';
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(tx);
+    }
+    return acc;
   }, [filteredTransactions]);
 
   const sortedDates = useMemo(() => {

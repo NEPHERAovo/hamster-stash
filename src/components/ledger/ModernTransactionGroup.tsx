@@ -22,7 +22,7 @@ export const ModernTransactionGroup: React.FC<SkinTransactionGroupProps> = ({
   return (
     <>
       {visibleDates.map((date) => {
-        const txList = groups[date];
+        const txList = groups[date] || [];
 
         let dayNet = 0;
         for (const t of txList) {
