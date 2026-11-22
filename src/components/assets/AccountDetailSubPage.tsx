@@ -381,15 +381,17 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
         </div>
       </div>
 
-      <MonthlyTrendBar
-        title="月度资产走势"
-        trends={accountTrends}
-        barColor="var(--color-income)"
-        onStepPrev={handleStepTrendPrev}
-        onStepNext={handleStepTrendNext}
-        canStepNext={canStepTrendNext}
-        className="mb-4"
-      />
+      {account.type !== 'credit' && (
+        <MonthlyTrendBar
+          title="月度资产走势"
+          trends={accountTrends}
+          barColor="var(--color-income)"
+          onStepPrev={handleStepTrendPrev}
+          onStepNext={handleStepTrendNext}
+          canStepNext={canStepTrendNext}
+          className="mb-4"
+        />
+      )}
 
       <div className="mb-4 space-y-2">
         <div className="flex items-center justify-between px-1">
