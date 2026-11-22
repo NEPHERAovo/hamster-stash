@@ -48,7 +48,7 @@ export const NetWorthHeader: React.FC<NetWorthHeaderProps> = ({
               <ArrowLeftRight className="stroke-1.8 size-3.5" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-(--ink-primary)">往来借贷与分期</div>
+              <div className="text-xs font-semibold text-(--ink-primary)">借贷与分期</div>
               <div className="font-mono text-[10px] text-(--ink-tertiary)">
                 待收款 ¥{centsToYuan(summary.lendPendingAmount + summary.reimbPendingAmount)} · 待还款 ¥{centsToYuan(summary.borrowPendingAmount + (summary.installmentPendingAmount || 0))}
               </div>
