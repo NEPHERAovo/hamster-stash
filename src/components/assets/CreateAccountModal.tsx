@@ -70,7 +70,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [autoRepay, setAutoRepay] = useState(false);
   const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeDayPicker, setActiveDayPicker] = useState<'repayment' | 'bill' | null>(null);
+  const [isRepaymentDayPickerOpen, setIsRepaymentDayPickerOpen] = useState(false);
 
   const isCredit = type === 'credit';
 
@@ -79,7 +79,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   }, [accounts, editingAccount?.id]);
 
   const resetForm = () => {
-    setActiveDayPicker(null);
+    setIsRepaymentDayPickerOpen(false);
     setType('savings');
     setName('');
     setNote('');
@@ -248,7 +248,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
         <div className="space-y-1.5">
           <label className="font-mono text-xs text-(--ink-tertiary)">账户图标</label>
-          <div className="grid grid-cols-8 gap-1.5">
+          <div className="flex items-center justify-between">
             {ACCOUNT_ICONS.map((iconName) => {
               const IconComp = getCategoryIcon(iconName);
               const isSelected = icon === iconName;
@@ -267,89 +267,46 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
         {isCredit && (
           <div className="picker-fade-enter space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="font-mono text-xs text-(--ink-tertiary)">每月还款日</label>
-                <PaperButton
-                  variant="sunken"
-                  size="compact"
-                  fullWidth
-                  onClick={() =>
-                    setActiveDayPicker((curr) => (curr === 'repayment' ? null : 'repayment'))
-                  }
-                  className="justify-between"
-                  leftIcon={<CalendarBlank className="size-3.5 text-(--ink-tertiary)" />}
-                  rightIcon={
-                    <CaretDown
-                      className={cn(
-                        'size-3 text-(--ink-tertiary) transition-transform',
-                        activeDayPicker === 'repayment' && 'rotate-180'
-                      )}
-                    />
-                  }
-                >
-                  <span
+            <div className="space-y-1">
+              <label className="font-mono text-xs text-(--ink-tertiary)">每月还款日</label>
+              <PaperButton
+                variant="sunken"
+                size="compact"
+                fullWidth
+                onClick={() => setIsRepaymentDayPickerOpen((curr) => !curr)}
+                className="justify-between"
+                leftIcon={<CalendarBlank className="size-3.5 text-(--ink-tertiary)" />}
+                rightIcon={
+                  <CaretDown
                     className={cn(
-                      'truncate',
-                      repaymentDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
+                      'size-3 text-(--ink-tertiary) transition-transform',
+                      isRepaymentDayPickerOpen && 'rotate-180'
                     )}
-                  >
-                    {repaymentDay ? `每月 ${repaymentDay} 日` : '未设置'}
-                  </span>
-                </PaperButton>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-mono text-xs text-(--ink-tertiary)">每月账单日</label>
-                <PaperButton
-                  variant="sunken"
-                  size="compact"
-                  fullWidth
-                  onClick={() =>
-                    setActiveDayPicker((curr) => (curr === 'bill' ? null : 'bill'))
-                  }
-                  className="justify-between"
-                  leftIcon={<CalendarBlank className="size-3.5 text-(--ink-tertiary)" />}
-                  rightIcon={
-                    <CaretDown
-                      className={cn(
-                        'size-3 text-(--ink-tertiary) transition-transform',
-                        activeDayPicker === 'bill' && 'rotate-180'
-                      )}
-                    />
-                  }
+                  />
+                }
+              >
+                <span
+                  className={cn(
+                    'truncate',
+                    repaymentDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
+                  )}
                 >
-                  <span
-                    className={cn(
-                      'truncate',
-                      billDay ? 'font-mono text-(--ink-primary)' : 'text-(--ink-tertiary)'
-                    )}
-                  >
-                    {billDay ? `每月 ${billDay} 日` : '未设置'}
-                  </span>
-                </PaperButton>
-              </div>
+                  {repaymentDay ? `每月 ${repaymentDay} 日` : '未设置'}
+                </span>
+              </PaperButton>
             </div>
 
-            {activeDayPicker && (
+            {isRepaymentDayPickerOpen && (
               <PaperDayPicker
-                title={activeDayPicker === 'repayment' ? '选择每月还款日' : '选择每月账单日'}
-                selectedDay={activeDayPicker === 'repayment' ? repaymentDay : billDay}
+                title="选择每月还款日"
+                selectedDay={repaymentDay}
                 onSelectDay={(d) => {
-                  if (activeDayPicker === 'repayment') {
-                    setRepaymentDay(d);
-                  } else {
-                    setBillDay(d);
-                  }
-                  setActiveDayPicker(null);
+                  setRepaymentDay(d);
+                  setIsRepaymentDayPickerOpen(false);
                 }}
                 onClear={() => {
-                  if (activeDayPicker === 'repayment') {
-                    setRepaymentDay(undefined);
-                  } else {
-                    setBillDay(undefined);
-                  }
-                  setActiveDayPicker(null);
+                  setRepaymentDay(undefined);
+                  setIsRepaymentDayPickerOpen(false);
                 }}
               />
             )}
@@ -389,7 +346,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="font-mono text-xs text-(--ink-tertiary)">信用额度 (元)</label>
+              <label className="font-mono text-xs text-(--ink-tertiary)">信用额度</label>
               <AmountInput
                 value={creditLimitStr}
                 onChange={setCreditLimitStr}
@@ -405,7 +362,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         {!isEditing && (
           <div className="space-y-1.5">
             <label className="font-mono text-xs text-(--ink-tertiary)">
-              {isCredit ? '当前欠款 (元)' : '初始余额 (元)'}
+              {isCredit ? '当前欠款' : '初始余额'}
             </label>
             <AmountInput
               value={balanceStr}

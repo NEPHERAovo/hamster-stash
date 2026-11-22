@@ -67,10 +67,6 @@ describe('Credit Account Features', () => {
     fireEvent.click(repaymentDayBtn);
     fireEvent.click(screen.getByRole('button', { name: '18' }));
 
-    const billDayBtn = screen.getByText('每月账单日').closest('div')!.querySelector('button')!;
-    fireEvent.click(billDayBtn);
-    fireEvent.click(screen.getByRole('button', { name: '2' }));
-
     fireEvent.click(screen.getByRole('button', { name: mockDebitAccount.name }));
 
     const autoRepaySwitch = screen.getByRole('switch', { name: '自动还款' });
@@ -86,7 +82,6 @@ describe('Credit Account Features', () => {
           note: '出差专用卡',
           type: 'credit',
           repaymentDay: 18,
-          billDay: 2,
           repaymentAccountId: 'acct-debit',
           autoRepay: true,
         })
