@@ -646,6 +646,9 @@ export function App() {
         }}
         onSubmit={async (input) => {
           await createAccount(input);
+          if (input.initialBalance && input.initialBalance !== 0) {
+            await loadTransactions();
+          }
         }}
         onUpdate={async (id, patch) => {
           await updateAccount(id, patch);

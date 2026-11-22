@@ -142,7 +142,7 @@ describe('AccountService', () => {
     const acct1 = await acctService.createAccount({
       name: '零钱',
       type: 'savings',
-      initialBalance: 1000,
+      initialBalance: 0,
     });
     await acctService.createAccount({
       name: '备用账户',
@@ -202,5 +202,31 @@ describe('AccountService', () => {
     expect(updated.repaymentDay).toBe(25);
     expect(updated.autoRepay).toBe(false);
     expect(updated.creditLimit).toBe(3000000);
+  });
+
+  it('automatically records an initial balance transaction when initialBalance is positive or negative', async () => {
+    const savingsAcct = await acctService.createAccount({
+      name: '理财卡',
+      type: 'savings',
+      initialBalance: 500000,
+    });
+
+    const txs1 = await txRepo.findByAccount(savingsAcct.id);
+    expect(txs1.length).toBe(1);
+    expect(txs1[0].type).toBe('income');
+    expect(txs1[0].amount).toBe(500000);
+    expect(txs1[0].note).toBe('初始余额');
+
+    const creditAcct = await acctService.createAccount({
+      name: '花呗',
+      type: 'credit',
+      initialBalance: -200000,
+    });
+
+    const txs2 = await txRepo.findByAccount(creditAcct.id);
+    expect(txs2.length).toBe(1);
+    expect(txs2[0].type).toBe('expense');
+    expect(txs2[0].amount).toBe(200000);
+    expect(txs2[0].note).toBe('初始欠款');
   });
 });

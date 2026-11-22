@@ -2,6 +2,7 @@ import type { Account, AccountType } from '../../types/account';
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { TransactionRepository } from '../../core/repositories/TransactionRepository';
 import { pluginManager } from '../../core/plugin/PluginManager';
+import { todayDate } from '../../utils/date';
 
 export interface CreateAccountInput {
   name: string;
@@ -53,7 +54,7 @@ export class AccountService {
     const all = await this.acctRepo.findAll();
     const sortOrder = all.length > 0 ? Math.max(...all.map((a) => a.sortOrder)) + 1 : 1;
 
-    return this.acctRepo.create({
+    const created = await this.acctRepo.create({
       name: input.name.trim(),
       note: input.note?.trim() || undefined,
       type: input.type,
@@ -69,6 +70,31 @@ export class AccountService {
       autoRepay: input.autoRepay,
       sortOrder,
     });
+
+    if (this.txRepo && input.initialBalance && input.initialBalance !== 0) {
+      const today = todayDate();
+      if (input.initialBalance > 0) {
+        await this.txRepo.create({
+          type: 'income',
+          amount: input.initialBalance,
+          accountId: created.id,
+          categoryId: 'cat_other_in',
+          date: today,
+          note: '初始余额',
+        });
+      } else {
+        await this.txRepo.create({
+          type: 'expense',
+          amount: Math.abs(input.initialBalance),
+          accountId: created.id,
+          categoryId: 'cat_other',
+          date: today,
+          note: '初始欠款',
+        });
+      }
+    }
+
+    return created;
   }
 
   async updateAccount(id: string, patch: UpdateAccountInput): Promise<Account> {
