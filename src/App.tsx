@@ -327,7 +327,7 @@ export function App() {
           </div>
         </div>
       )}
-      <div key={currentTab} className="tab-header-enter w-full">
+      <div key={currentTab === 'ledger' ? `${currentTab}-${currentMonth}` : currentTab} className="tab-header-enter w-full">
         {renderHeader()}
       </div>
 
@@ -335,7 +335,7 @@ export function App() {
         ref={mainScrollRef}
         className="main-scroll-content min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-0 pb-[calc(76px+var(--dock-bottom))]"
       >
-        <div key={currentTab} className="tab-page-enter w-full">
+        <div key={currentTab === 'ledger' ? `${currentTab}-${currentMonth}` : currentTab} className="tab-page-enter w-full">
           {currentTab === 'ledger' && (
             <div className="w-full">
               <div className="tab-stagger-1 w-full">

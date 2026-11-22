@@ -317,6 +317,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
 
         <TransactionGroup
+          key={periodInfo.key}
           transactions={periodTransactions}
           categories={categories}
           accounts={accounts}
