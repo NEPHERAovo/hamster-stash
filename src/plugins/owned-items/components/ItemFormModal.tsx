@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XIcon as X, CheckIcon as Check } from '@phosphor-icons/react';
+import { CheckIcon as Check } from '@phosphor-icons/react';
 import {
   useHostAccounts,
   useHostTransactionActions,
@@ -7,12 +7,16 @@ import {
   centsToYuan,
   getCategoryIcon,
   toast,
+  dayjs,
+  todayDate,
   SegToggle,
   PaperButton,
   PaperIconButton,
   PaperInput,
   PaperSelect,
   PaperSwitch,
+  PaperModal,
+  AmountInput,
 } from '../../../plugin-sdk';
 import type { Item, ItemStatus, ItemKind, SubscriptionCycle } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
@@ -21,7 +25,28 @@ export interface ItemFormModalProps {
   onClose: () => void;
   params?: {
     item?: Item | null;
+    prefillName?: string;
+    prefillCostYuan?: string;
+    prefillKind?: ItemKind;
+    prefillBuyDate?: string;
   };
+}
+
+function calculateNextRenewalDate(startDate: string, cycle: SubscriptionCycle): string {
+  if (!startDate) return '';
+  const d = dayjs(startDate);
+  if (!d.isValid()) return '';
+  switch (cycle) {
+    case 'yearly':
+      return d.add(1, 'year').format('YYYY-MM-DD');
+    case 'quarterly':
+      return d.add(3, 'month').format('YYYY-MM-DD');
+    case 'weekly':
+      return d.add(1, 'week').format('YYYY-MM-DD');
+    case 'monthly':
+    default:
+      return d.add(1, 'month').format('YYYY-MM-DD');
+  }
 }
 
 const POPULAR_ITEM_ICONS = [
@@ -91,21 +116,24 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       setSelectedAcctId('');
       setIsHistorical(false);
     } else {
-      const today = new Date().toISOString().split('T')[0];
-      setKind('physical');
-      setName('');
-      setIcon('box');
-      setBuyDate(today);
+      const today = todayDate();
+      const initialKind = params?.prefillKind || 'physical';
+      const initialCost = params?.prefillCostYuan || '';
+      const initialDate = params?.prefillBuyDate || today;
+      setKind(initialKind);
+      setName(params?.prefillName || '');
+      setIcon(initialKind === 'subscription' ? 'credit-card' : 'box');
+      setBuyDate(initialDate);
       setNote('');
       setStatus('using');
       setBillingCycle('monthly');
-      setRenewalAmountYuan('');
-      setNextRenewalDate('');
-      setCostYuan('');
+      setCostYuan(initialCost);
+      setRenewalAmountYuan(initialCost);
+      setNextRenewalDate(calculateNextRenewalDate(initialDate, 'monthly'));
       setSelectedAcctId(accounts[0]?.id || '');
       setIsHistorical(false);
     }
-  }, [editingItem, accounts]);
+  }, [editingItem, accounts, params]);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -182,229 +210,234 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
   };
 
   const currentIconChoices = kind === 'subscription' ? POPULAR_SUB_ICONS : POPULAR_ITEM_ICONS;
+  const getModalTitle = () => {
+    if (editingItem) {
+      if (editingItem.kind === 'subscription') return '编辑订阅';
+      return '编辑物品';
+    }
+    if (kind === 'subscription') return '新建订阅';
+    return '新建物品';
+  };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center select-none"
-      role="dialog"
-      aria-modal="true"
+    <PaperModal
+      isOpen={true}
+      onClose={onClose}
+      title={getModalTitle()}
     >
-      <div
-        className="modal-backdrop-fade fixed inset-0 bg-stone-900/25 backdrop-blur-[2px] will-change-[opacity]"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        className="transaction-sheet sheet-slide-up paper-sawtooth-top relative flex max-h-[90dvh] w-full max-w-[430px] flex-col overflow-visible overflow-y-auto rounded-t-[2px] border-t border-(--rule-hairline) bg-(--paper-sheet) shadow-[0_-6px_22px_rgba(0,0,0,0.09)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="washi-tape absolute -top-3 left-1/2 z-30 -translate-x-1/2 shadow-xs" />
-
-        <div className="flex items-center justify-between border-b border-dashed border-(--rule-hairline) px-4 pt-3.5 pb-2">
-          <div className="flex items-center gap-1.5">
-            <span className="font-serif text-lg font-bold text-(--ink-solid)">
-              {editingItem ? '编辑' : '新建'}
-            </span>
-          </div>
-          <PaperIconButton
-            icon={X}
+      <form onSubmit={handleSubmit} className="space-y-3.5 p-4 text-xs">
+        <div>
+          <label className="mb-1.5 block font-mono text-[11px] text-(--ink-tertiary)">
+            类型
+          </label>
+          <SegToggle
+            options={[
+              { value: 'physical', label: '物品' },
+              { value: 'subscription', label: '订阅' },
+            ]}
+            value={kind}
+            onChange={(nextKind) => {
+              setKind(nextKind);
+              if (!editingItem) {
+                setIcon(nextKind === 'subscription' ? 'credit-card' : 'box');
+                if (nextKind === 'subscription') {
+                  if (!nextRenewalDate) {
+                    setNextRenewalDate(calculateNextRenewalDate(buyDate, billingCycle));
+                  }
+                  if (!renewalAmountYuan && costYuan) {
+                    setRenewalAmountYuan(costYuan);
+                  }
+                }
+              }
+            }}
             size="sm"
-            variant="ghost"
-            onClick={onClose}
-            aria-label="关闭"
           />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 p-4 text-xs">
-          <div>
-            <label className="mb-1.5 block font-mono text-[11px] text-(--ink-tertiary)">
-              类型
-            </label>
-            <SegToggle
-              options={[
-                { value: 'physical', label: '物品' },
-                { value: 'subscription', label: '订阅' },
-              ]}
-              value={kind}
-              onChange={(nextKind) => {
-                setKind(nextKind);
-                if (!editingItem) {
-                  setIcon(nextKind === 'subscription' ? 'credit-card' : 'box');
-                }
-              }}
-              size="sm"
-            />
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+            {kind === 'subscription' ? '服务名称' : '物品名称'}
+          </label>
+          <PaperInput
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={kind === 'subscription' ? '输入服务名称' : '输入物品名称'}
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block font-mono text-[11px] text-(--ink-tertiary)">
+            图标
+          </label>
+          <div className="grid grid-cols-6 justify-items-center gap-2">
+            {currentIconChoices.map((ic) => {
+              const IconComp = getCategoryIcon(ic);
+              const isSelected = icon === ic;
+              return (
+                <PaperIconButton
+                  key={ic}
+                  icon={IconComp}
+                  size="md"
+                  variant={isSelected ? 'primary' : 'sunken'}
+                  className="flex size-9 items-center justify-center"
+                  onClick={() => setIcon(ic)}
+                  title={ic}
+                  aria-label={ic}
+                />
+              );
+            })}
           </div>
+        </div>
 
-          <div>
-            <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-              {kind === 'subscription' ? '服务名称' : '物品名称'}
-            </label>
-            <PaperInput
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={kind === 'subscription' ? '输入服务名称' : '输入物品名称'}
-              autoFocus
-            />
-          </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+            {kind === 'subscription' ? '起始日期' : '购入日期'}
+          </label>
+          <PaperInput
+            type="date"
+            value={buyDate}
+            onChange={(e) => {
+              const nextDate = e.target.value;
+              setBuyDate(nextDate);
+              if (!editingItem && kind === 'subscription') {
+                setNextRenewalDate(calculateNextRenewalDate(nextDate, billingCycle));
+              }
+            }}
+          />
+        </div>
 
-          <div>
-            <label className="mb-1.5 block font-mono text-[11px] text-(--ink-tertiary)">
-              图标
-            </label>
-            <div className="grid grid-cols-6 gap-1.5">
-              {currentIconChoices.map((ic) => {
-                const IconComp = getCategoryIcon(ic);
-                const isSelected = icon === ic;
-                return (
-                  <PaperIconButton
-                    key={ic}
-                    icon={IconComp}
-                    size="md"
-                    variant={isSelected ? 'primary' : 'sunken'}
-                    onClick={() => setIcon(ic)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-              {kind === 'subscription' ? '起始日期' : '购入日期'}
-            </label>
-            <PaperInput
-              type="date"
-              value={buyDate}
-              onChange={(e) => setBuyDate(e.target.value)}
-            />
-          </div>
-
-          {kind === 'subscription' && (
-            <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                    续费周期
-                  </label>
-                  <PaperSelect
-                    value={billingCycle}
-                    onChange={(e) => setBillingCycle(e.target.value as SubscriptionCycle)}
-                  >
-                    <option value="monthly">按月</option>
-                    <option value="yearly">按年</option>
-                    <option value="quarterly">按季</option>
-                    <option value="weekly">按周</option>
-                  </PaperSelect>
-                </div>
-
-                <div>
-                  <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                    续费金额
-                  </label>
-                  <PaperInput
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={renewalAmountYuan}
-                    onChange={(e) => setRenewalAmountYuan(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
+        {kind === 'subscription' && (
+          <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  续费周期
+                </label>
+                <PaperSelect
+                  value={billingCycle}
+                  onChange={(e) => {
+                    const nextCycle = e.target.value as SubscriptionCycle;
+                    setBillingCycle(nextCycle);
+                    if (!editingItem) {
+                      setNextRenewalDate(calculateNextRenewalDate(buyDate, nextCycle));
+                    }
+                  }}
+                >
+                  <option value="monthly">按月</option>
+                  <option value="yearly">按年</option>
+                  <option value="quarterly">按季</option>
+                  <option value="weekly">按周</option>
+                </PaperSelect>
               </div>
 
               <div>
                 <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                  下次续费日
+                  续费金额
                 </label>
-                <PaperInput
-                  type="date"
-                  value={nextRenewalDate}
-                  onChange={(e) => setNextRenewalDate(e.target.value)}
+                <AmountInput
+                  value={renewalAmountYuan}
+                  onChange={setRenewalAmountYuan}
+                  placeholder="0.00"
                 />
               </div>
             </div>
-          )}
 
-          {!editingItem && (
-            <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                    {kind === 'subscription' ? '首次支出' : '购入金额'}
-                  </label>
-                  <PaperInput
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={costYuan}
-                    onChange={(e) => setCostYuan(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                下次续费日
+              </label>
+              <PaperInput
+                type="date"
+                value={nextRenewalDate}
+                onChange={(e) => setNextRenewalDate(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
 
-                <div>
-                  <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                    支出账户
-                  </label>
-                  <PaperSelect
-                    value={selectedAcctId}
-                    onChange={(e) => setSelectedAcctId(e.target.value)}
-                    disabled={!costYuan || parseFloat(costYuan) <= 0}
-                  >
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </PaperSelect>
-                </div>
+        {!editingItem && (
+          <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  {kind === 'subscription' ? '首次支出' : '购入金额'}
+                </label>
+                <AmountInput
+                  value={costYuan}
+                  onChange={(val) => {
+                    setCostYuan(val);
+                    if (!editingItem && (renewalAmountYuan === '' || renewalAmountYuan === costYuan)) {
+                      setRenewalAmountYuan(val);
+                    }
+                  }}
+                  placeholder="0.00"
+                />
               </div>
 
-              {costYuan && parseFloat(costYuan) > 0 && (
-                <div className="flex items-center justify-between pt-0.5 select-none">
-                  <span className="text-[11px] text-(--ink-secondary)">录入历史记录（仅建流水，不扣除当前余额）</span>
-                  <PaperSwitch
-                    checked={isHistorical}
-                    onChange={(val) => setIsHistorical(val)}
-                    aria-label="录入历史记录"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  支出账户
+                </label>
+                <PaperSelect
+                  value={selectedAcctId}
+                  onChange={(e) => setSelectedAcctId(e.target.value)}
+                  disabled={!costYuan || parseFloat(costYuan) <= 0}
+                >
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </PaperSelect>
+              </div>
             </div>
-          )}
 
-          <div>
-            <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-              备注
-            </label>
-            <PaperInput
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="添加备注"
-            />
+            {costYuan && parseFloat(costYuan) > 0 && (
+              <div className="flex items-center justify-between pt-0.5 select-none">
+                <span className="text-[11px] text-(--ink-secondary)">录入历史记录（仅建流水，不扣除当前余额）</span>
+                <PaperSwitch
+                  checked={isHistorical}
+                  onChange={(val) => setIsHistorical(val)}
+                  aria-label="录入历史记录"
+                />
+              </div>
+            )}
           </div>
+        )}
 
-          <div className="flex items-center justify-end gap-2 pt-2 pb-(--safe-bottom)">
-            <PaperButton
-              variant="secondary"
-              size="compact"
-              onClick={onClose}
-            >
-              取消
-            </PaperButton>
-            <PaperButton
-              variant="primary"
-              size="compact"
-              type="submit"
-              disabled={isSubmitting}
-              leftIcon={<Check className="size-3.5 stroke-2" />}
-            >
-              {editingItem ? '保存修改' : '确认添加'}
-            </PaperButton>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+            备注
+          </label>
+          <PaperInput
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="添加备注"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2 pb-(--safe-bottom)">
+          <PaperButton
+            variant="secondary"
+            size="compact"
+            onClick={onClose}
+          >
+            取消
+          </PaperButton>
+          <PaperButton
+            variant="primary"
+            size="compact"
+            type="submit"
+            disabled={isSubmitting}
+            leftIcon={<Check className="size-3.5 stroke-2" />}
+          >
+            {editingItem ? '保存修改' : '确认添加'}
+          </PaperButton>
+        </div>
+      </form>
+    </PaperModal>
   );
 };
+
+export default ItemFormModal;

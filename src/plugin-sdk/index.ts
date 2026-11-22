@@ -55,4 +55,5 @@ export { toast } from '../stores/useToastStore';
 export { confirmAction, type ConfirmOptions } from '../stores/useConfirmStore';
 export { centsToYuan, yuanToCents } from '../domain/finance/balanceCalculator';
 export { getCategoryIcon } from '../utils/categoryIcons';
+export { dayjs, todayDate } from '../utils/date';
 export { cn } from '../utils/cn';

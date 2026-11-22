@@ -5,6 +5,7 @@ import { PluginManager } from '../../src/core/plugin/PluginManager';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
 import { OwnedItemsPlugin } from '../../src/plugins/owned-items';
 import { ItemRowBadge } from '../../src/plugins/owned-items/components/ItemRowBadge';
+import { ItemFormModal } from '../../src/plugins/owned-items/components/ItemFormModal';
 import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
@@ -303,5 +304,24 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(overall.subscriptionCount).toBe(1);
     expect(overall.physicalCount).toBe(0);
     expect(overall.totalUsingNetCost).toBe(28000);
+  });
+
+  it('ItemFormModal initializes next renewal date and auto-syncs renewal amount on subscription creation', () => {
+    const { getByDisplayValue, getByText } = render(
+      React.createElement(ItemFormModal, {
+        onClose: () => {},
+        params: {
+          prefillKind: 'subscription',
+          prefillBuyDate: '2026-03-15',
+          prefillCostYuan: '20.00',
+          prefillName: 'iCloud 200GB',
+        },
+      })
+    );
+
+    expect(getByDisplayValue('iCloud 200GB')).toBeInTheDocument();
+    expect(getByDisplayValue('2026-03-15')).toBeInTheDocument();
+    expect(getByDisplayValue('2026-04-15')).toBeInTheDocument();
+    expect(getByText('新建订阅')).toBeInTheDocument();
   });
 });
