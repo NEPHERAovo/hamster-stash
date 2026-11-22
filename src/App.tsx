@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { GearIcon as Settings, PencilSimpleIcon as Pencil, ArrowsLeftRightIcon as ArrowLeftRight } from '@phosphor-icons/react';
+import { GearIcon as Settings, PencilSimpleIcon as Pencil } from '@phosphor-icons/react';
 import {
   AppShell,
   PageHeader,
@@ -288,31 +288,14 @@ export function App() {
       <PageHeader
         title={isModern ? '资产' : 'Assets'}
         rightAction={
-          <div className="flex items-center gap-1.5">
-            {accounts.length >= 2 && (
-              <PaperButton
-                variant="secondary"
-                size="compact"
-                leftIcon={<ArrowLeftRight className="size-3.5" />}
-                onClick={() => {
-                  setEditingTransferTx(null);
-                  setTransferDefaultFromId(undefined);
-                  setIsTransferOpen(true);
-                }}
-                title="资金划转"
-              >
-                划转
-              </PaperButton>
-            )}
-            <PaperIconButton
-              icon={Settings}
-              size="md"
-              variant="surface"
-              onClick={() => setIsSettingsOpen(true)}
-              title="设置"
-              aria-label="设置"
-            />
-          </div>
+          <PaperIconButton
+            icon={Settings}
+            size="md"
+            variant="surface"
+            onClick={() => setIsSettingsOpen(true)}
+            title="设置"
+            aria-label="设置"
+          />
         }
       />
     );
