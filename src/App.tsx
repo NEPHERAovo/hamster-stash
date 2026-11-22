@@ -32,7 +32,7 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { PwaUpdateBanner } from './components/ui/PwaUpdateBanner';
 import { PaperButton } from './components/ui/PaperButton';
 import { PaperIconButton } from './components/ui/PaperIconButton';
-import { PaperChip } from './components/ui/PaperChip';
+import { SegToggle } from './components/ui/SegToggle';
 import { toast } from './stores/useToastStore';
 import { useLedgerStore } from './stores/useLedgerStore';
 import { useAccountStore } from './stores/useAccountStore';
@@ -246,27 +246,21 @@ export function App() {
     }
 
     if (currentTab === 'stats') {
-      const modeLabels: Record<'week' | 'month' | 'year', string> = {
-        week: '周',
-        month: '月',
-        year: '年',
-      };
       return (
         <PageHeader
           title={isModern ? '统计' : 'Statistics'}
           rightAction={
-            <div className="flex items-center gap-1">
-              {(['week', 'month', 'year'] as const).map((m) => (
-                <PaperChip
-                  key={m}
-                  size="sm"
-                  selected={statsMode === m}
-                  onClick={() => setStatsMode(m)}
-                >
-                  {modeLabels[m]}
-                </PaperChip>
-              ))}
-            </div>
+            <SegToggle
+              options={[
+                { value: 'week', label: '周' },
+                { value: 'month', label: '月' },
+                { value: 'year', label: '年' },
+              ]}
+              value={statsMode}
+              onChange={(val) => setStatsMode(val as 'week' | 'month' | 'year')}
+              size="sm"
+              fullWidth={false}
+            />
           }
         />
       );
