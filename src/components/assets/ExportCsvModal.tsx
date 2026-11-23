@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
+import { CalendarBlankIcon as CalendarIcon } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
-import { PaperInput } from '../ui/PaperInput';
 import { PaperChip } from '../ui/PaperChip';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperDatePickerModal } from '../ui/PaperDatePickerModal';
 import { core } from '../../core';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
@@ -32,6 +33,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
   );
   const [customEnd, setCustomEnd] = useState(() => todayDate());
   const [isExporting, setIsExporting] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const resolvedBounds = useMemo(() => {
     const today = dayjs();
@@ -135,27 +137,19 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
         </div>
 
         {rangeMode === 'custom' && (
-          <div className="picker-fade-enter grid grid-cols-2 gap-2.5">
-            <div className="space-y-1">
-              <label className="font-mono text-[11px] text-(--ink-tertiary)">开始日期</label>
-              <PaperInput
-                type="date"
-                size="sm"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                inputClassName="font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="font-mono text-[11px] text-(--ink-tertiary)">结束日期</label>
-              <PaperInput
-                type="date"
-                size="sm"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                inputClassName="font-mono text-xs"
-              />
-            </div>
+          <div className="picker-fade-enter space-y-1">
+            <label className="font-mono text-[11px] text-(--ink-tertiary)">自定义范围</label>
+            <PaperButton
+              type="button"
+              variant="secondary"
+              size="md"
+              fullWidth
+              onClick={() => setIsDatePickerOpen(true)}
+              className="justify-between font-mono text-xs font-normal"
+              rightIcon={<CalendarIcon className="size-4 text-(--ink-tertiary)" />}
+            >
+              <span>{customStart} 至 {customEnd}</span>
+            </PaperButton>
           </div>
         )}
 
@@ -191,6 +185,17 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
           </PaperButton>
         </div>
       </div>
+
+      <PaperDatePickerModal
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        mode="range"
+        rangeValue={{ start: customStart, end: customEnd }}
+        onRangeChange={(range) => {
+          setCustomStart(range.start);
+          setCustomEnd(range.end);
+        }}
+      />
     </PaperModal>
   );
 };

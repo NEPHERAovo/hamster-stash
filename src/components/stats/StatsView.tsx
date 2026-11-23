@@ -1,5 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ChartPieIcon as PieChart } from '@phosphor-icons/react';
+import {
+  CaretLeftIcon as ChevronLeft,
+  CaretRightIcon as ChevronRight,
+  CaretDownIcon,
+  ChartPieIcon as PieChart,
+} from '@phosphor-icons/react';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
@@ -8,6 +13,7 @@ import {
   getWeekPeriod,
   getMonthPeriod,
   getYearPeriod,
+  getCustomPeriod,
   filterTransactionsByPeriod,
   computeCategoryDonutStats,
   computePeriodTrends,
@@ -24,11 +30,20 @@ import { CategoryDetailSubPage } from './CategoryDetailSubPage';
 import { SubPageShell, SubPageBackButton } from '../layout/SubPageShell';
 import { PageHeader } from '../layout/PageHeader';
 import { SegToggle } from '../ui/SegToggle';
+import { PaperButton } from '../ui/PaperButton';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
+import { PaperDatePickerModal, type DateRangeValue } from '../ui/PaperDatePickerModal';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
-import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
+import {
+  dayjs,
+  type Dayjs,
+  stepYearMonth,
+  parseLocalDate,
+  todayDate,
+  addDaysToToday,
+} from '../../utils/date';
 
 export type StatsDimension = 'expense' | 'income' | 'balance';
 
@@ -101,6 +116,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const isModern = uiStyle === 'modern';
 
   const [currentDate, setCurrentDate] = useState<Dayjs>(() => dayjs());
+  const [customRange, setCustomRange] = useState<DateRangeValue>(() => ({
+    start: addDaysToToday(-29),
+    end: todayDate(),
+  }));
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const periodInfo = useMemo(() => {
     if (mode === 'week') {
@@ -109,14 +129,41 @@ export const StatsView: React.FC<StatsViewProps> = ({
     if (mode === 'year') {
       return getYearPeriod(currentDate.format('YYYY'));
     }
+    if (mode === 'custom') {
+      return getCustomPeriod(customRange.start, customRange.end);
+    }
     return getMonthPeriod(currentDate.format('YYYY-MM'));
-  }, [mode, currentDate]);
+  }, [mode, currentDate, customRange]);
 
   const handlePrevPeriod = () => {
+    if (mode === 'custom') {
+      const s = parseLocalDate(customRange.start);
+      const e = parseLocalDate(customRange.end);
+      const spanDays = Math.max(1, e.diff(s, 'day') + 1);
+      const prevEnd = s.subtract(1, 'day');
+      const prevStart = prevEnd.subtract(spanDays - 1, 'day');
+      setCustomRange({
+        start: prevStart.format('YYYY-MM-DD'),
+        end: prevEnd.format('YYYY-MM-DD'),
+      });
+      return;
+    }
     setCurrentDate((prev) => prev.subtract(1, mode));
   };
 
   const handleNextPeriod = () => {
+    if (mode === 'custom') {
+      const s = parseLocalDate(customRange.start);
+      const e = parseLocalDate(customRange.end);
+      const spanDays = Math.max(1, e.diff(s, 'day') + 1);
+      const nextStart = e.add(1, 'day');
+      const nextEnd = nextStart.add(spanDays - 1, 'day');
+      setCustomRange({
+        start: nextStart.format('YYYY-MM-DD'),
+        end: nextEnd.format('YYYY-MM-DD'),
+      });
+      return;
+    }
     setCurrentDate((prev) => prev.add(1, mode));
   };
 
@@ -205,6 +252,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
   }, [periodInfo.key, mode, trendDimension]);
 
   const trendTargetKey = useMemo(() => {
+    if (mode === 'custom') return periodInfo.key;
     if (trendOffset === 0) return periodInfo.key;
     if (mode === 'month') return stepYearMonth(periodInfo.key, trendOffset);
     if (mode === 'year') {
@@ -227,19 +275,22 @@ export const StatsView: React.FC<StatsViewProps> = ({
   }, [allTransactions, mode, trendTargetKey, isAmortizationEnabled, trendDimension]);
 
   const handleStepTrendPrev = () => {
+    if (mode === 'custom') return;
     setTrendOffset((prev) => prev - 1);
   };
 
   const handleStepTrendNext = () => {
+    if (mode === 'custom') return;
     setTrendOffset((prev) => Math.min(0, prev + 1));
   };
 
-  const canStepTrendNext = trendOffset < 0;
+  const canStepTrendNext = mode !== 'custom' && trendOffset < 0;
 
   const trendTitle = useMemo(() => {
     let prefix = '月度';
     if (mode === 'week') prefix = '周度';
     else if (mode === 'year') prefix = '年度';
+    else if (mode === 'custom') prefix = '自定义';
 
     let suffix = '支出趋势';
     if (trendDimension === 'income') suffix = '收入趋势';
@@ -299,6 +350,14 @@ export const StatsView: React.FC<StatsViewProps> = ({
       }
       return `${sy} · ${sm}.${sd} – ${em}.${ed}`;
     }
+    if (mode === 'custom') {
+      const [sy, sm, sd] = periodInfo.start.split('-');
+      const [ey, em, ed] = periodInfo.end.split('-');
+      if (sy !== ey) {
+        return `${sy}.${sm}.${sd} – ${ey}.${em}.${ed}`;
+      }
+      return `${sm}.${sd} – ${em}.${ed}`;
+    }
     return periodInfo.label;
   }, [mode, periodInfo, isModern]);
 
@@ -333,9 +392,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
               { value: 'week', label: '周' },
               { value: 'month', label: '月' },
               { value: 'year', label: '年' },
+              { value: 'custom', label: '自定义' },
             ]}
             value={mode}
-            onChange={setMode}
+            onChange={(val) => setMode(val as PeriodMode)}
             size="sm"
             fullWidth={false}
           />
@@ -344,7 +404,20 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
       <div className="tab-stagger-1 space-y-2">
         <div className="flex items-center justify-between px-1 select-none">
-          <div className="flex min-w-0 items-center gap-2">
+          <PaperIconButton
+            icon={ChevronLeft}
+            onClick={handlePrevPeriod}
+            title="上一期"
+            aria-label="上一期"
+          />
+
+          <PaperButton
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsDatePickerOpen(true)}
+            className="group h-auto max-w-[calc(100%-88px)] min-w-0 gap-1.5 border-0 px-2.5 py-1 font-normal hover:bg-(--paper-sunken)/70"
+            title="点击选择日期"
+          >
             <span className="truncate font-serif text-lg tracking-tight text-(--ink-solid) not-italic sm:text-xl">
               {formattedPeriodTitle}
             </span>
@@ -353,21 +426,15 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 {weekBadge}
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <PaperIconButton
-              icon={ChevronLeft}
-              onClick={handlePrevPeriod}
-              title="上个周期"
-              aria-label="上个周期"
-            />
-            <PaperIconButton
-              icon={ChevronRight}
-              onClick={handleNextPeriod}
-              title="下个周期"
-              aria-label="下个周期"
-            />
-          </div>
+            <CaretDownIcon className="size-3.5 shrink-0 text-(--ink-tertiary) transition-transform group-hover:text-(--ink-primary)" />
+          </PaperButton>
+
+          <PaperIconButton
+            icon={ChevronRight}
+            onClick={handleNextPeriod}
+            title="下一期"
+            aria-label="下一期"
+          />
         </div>
 
         <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-colors duration-200 select-none sm:p-5">
@@ -570,6 +637,20 @@ export const StatsView: React.FC<StatsViewProps> = ({
           />
         )}
       </SubPageShell>
+      <PaperDatePickerModal
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        mode={mode === 'custom' ? 'range' : 'date'}
+        value={currentDate.format('YYYY-MM-DD')}
+        onChange={(val) => {
+          const d = parseLocalDate(val);
+          if (d.isValid()) setCurrentDate(d);
+        }}
+        rangeValue={customRange}
+        onRangeChange={(range) => {
+          setCustomRange(range);
+        }}
+      />
     </div>
   );
 };

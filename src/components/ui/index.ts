@@ -18,4 +18,5 @@ export * from './PaperIconButton';
 export * from './PaperChip';
 export * from './PaperEmptyState';
 export * from './PaperSelect';
+export * from './PaperDatePickerModal';
 export * from './RootErrorBoundary';

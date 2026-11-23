@@ -9,13 +9,14 @@ import {
 } from './amortization';
 import {
   dayjs,
+  todayDate,
   getIsoWeekBounds,
   parseLocalDate,
   stepYearMonth,
   type ConfigType,
 } from '../../utils/date';
 
-export type PeriodMode = 'week' | 'month' | 'year';
+export type PeriodMode = 'week' | 'month' | 'year' | 'custom';
 
 export interface PeriodInfo {
   start: string; // YYYY-MM-DD
@@ -97,6 +98,17 @@ export function getYearPeriod(year: string): PeriodInfo {
   };
 }
 
+export function getCustomPeriod(startDate: string, endDate: string): PeriodInfo {
+  const start = startDate <= endDate ? startDate : endDate;
+  const end = startDate <= endDate ? endDate : startDate;
+  return {
+    start,
+    end,
+    key: `${start}_${end}`,
+    label: `${start} ~ ${end}`,
+  };
+}
+
 /**
  * 过滤指定起止日期内的流水
  */
@@ -138,6 +150,21 @@ export function getPreviousPeriodBounds(
     const prevKey = (parseInt(currentKey, 10) - 1).toString();
     const p = getYearPeriod(prevKey);
     return { key: prevKey, start: p.start, end: p.end };
+  }
+  if (mode === 'custom') {
+    const [sStr = '', eStr = ''] = currentKey.split('_');
+    const start = parseLocalDate(sStr || todayDate());
+    const end = parseLocalDate(eStr || sStr || todayDate());
+    const spanDays = Math.max(1, end.diff(start, 'day') + 1);
+    const prevEnd = start.subtract(1, 'day');
+    const prevStart = prevEnd.subtract(spanDays - 1, 'day');
+    const prevStartStr = prevStart.format('YYYY-MM-DD');
+    const prevEndStr = prevEnd.format('YYYY-MM-DD');
+    return {
+      key: `${prevStartStr}_${prevEndStr}`,
+      start: prevStartStr,
+      end: prevEndStr,
+    };
   }
   const curStart = parseLocalDate(currentKey);
   const prevWeek = getWeekPeriod(curStart.subtract(1, 'week'));
@@ -378,6 +405,73 @@ export function computePeriodTrends(
       else if (dimension === 'balance') amount = income - expense;
 
       trends.push({ label: `${y}年`, amount, percentage: 0, income, expense });
+    }
+  } else if (mode === 'custom') {
+    const [sStr = '', eStr = ''] = currentKey.split('_');
+    const start = parseLocalDate(sStr || todayDate());
+    const end = parseLocalDate(eStr || sStr || todayDate());
+    const spanDays = Math.max(1, end.diff(start, 'day') + 1);
+
+    if (spanDays <= 14) {
+      for (let i = 0; i < spanDays; i++) {
+        const d = start.add(i, 'day');
+        const dStr = d.format('YYYY-MM-DD');
+        let expense = 0;
+        let income = 0;
+        for (const t of allTransactions) {
+          if (t.date === dStr) {
+            if (t.type === 'expense') {
+              expense += computeEffectiveExpenseAmount(t, offsetMap);
+            } else if (t.type === 'income' && !t.offsetTransactionId) {
+              income += t.amount;
+            }
+          }
+        }
+        let amount = expense;
+        if (dimension === 'income') amount = income;
+        else if (dimension === 'balance') amount = income - expense;
+        trends.push({
+          label: `${d.month() + 1}.${d.date()}`,
+          amount,
+          percentage: 0,
+          income,
+          expense,
+        });
+      }
+    } else {
+      const sliceCount = Math.min(count, spanDays);
+      const sliceDays = Math.ceil(spanDays / sliceCount);
+      for (let i = 0; i < sliceCount; i++) {
+        const sliceStart = start.add(i * sliceDays, 'day');
+        if (sliceStart.isAfter(end)) break;
+        let sliceEnd = sliceStart.add(sliceDays - 1, 'day');
+        if (sliceEnd.isAfter(end)) sliceEnd = end;
+
+        const sliceStartStr = sliceStart.format('YYYY-MM-DD');
+        const sliceEndStr = sliceEnd.format('YYYY-MM-DD');
+
+        let expense = 0;
+        let income = 0;
+        for (const t of allTransactions) {
+          if (t.date >= sliceStartStr && t.date <= sliceEndStr) {
+            if (t.type === 'expense') {
+              expense += computeEffectiveExpenseAmount(t, offsetMap);
+            } else if (t.type === 'income' && !t.offsetTransactionId) {
+              income += t.amount;
+            }
+          }
+        }
+        let amount = expense;
+        if (dimension === 'income') amount = income;
+        else if (dimension === 'balance') amount = income - expense;
+        trends.push({
+          label: `${sliceStart.month() + 1}.${sliceStart.date()}`,
+          amount,
+          percentage: 0,
+          income,
+          expense,
+        });
+      }
     }
   } else {
     const curDate = parseLocalDate(currentKey);

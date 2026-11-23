@@ -3,6 +3,8 @@ import {
   getWeekPeriod,
   getMonthPeriod,
   getYearPeriod,
+  getCustomPeriod,
+  getPreviousPeriodBounds,
   filterTransactionsByPeriod,
   computeCategoryDonutStats,
   computePeriodTrends,
@@ -336,6 +338,30 @@ describe('Period Statistics Domain Logic', () => {
       const balanceTrends = computePeriodTrends(allTxs, 'month', '2026-11', 2, false, 'balance');
       expect(balanceTrends[0].amount).toBe(400000);  // 10月: +4000
       expect(balanceTrends[1].amount).toBe(-300000); // 11月: -3000
+    });
+
+    it('supports custom period range calculation and previous period shift', () => {
+      const customP = getCustomPeriod('2026-11-01', '2026-11-10');
+      expect(customP.start).toBe('2026-11-01');
+      expect(customP.end).toBe('2026-11-10');
+      expect(customP.key).toBe('2026-11-01_2026-11-10');
+      expect(customP.label).toBe('2026-11-01 ~ 2026-11-10');
+
+      const prev = getPreviousPeriodBounds('custom', customP.key);
+      expect(prev.end).toBe('2026-10-31');
+      expect(prev.start).toBe('2026-10-22');
+    });
+
+    it('computes daily trends for short custom period', () => {
+      const allTxs: Transaction[] = [
+        { id: '1', type: 'expense', amount: 10000, categoryId: 'cat_food', accountId: 'a1', date: '2026-11-01', createdAt: '', updatedAt: '' },
+        { id: '2', type: 'expense', amount: 20000, categoryId: 'cat_food', accountId: 'a1', date: '2026-11-02', createdAt: '', updatedAt: '' },
+      ];
+      const trends = computePeriodTrends(allTxs, 'custom', '2026-11-01_2026-11-03', 6, false, 'expense');
+      expect(trends.length).toBe(3);
+      expect(trends[0].amount).toBe(10000);
+      expect(trends[1].amount).toBe(20000);
+      expect(trends[2].amount).toBe(0);
     });
   });
 });

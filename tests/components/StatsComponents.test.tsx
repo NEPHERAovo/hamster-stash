@@ -419,4 +419,40 @@ describe('Modular Stats & UI Components', () => {
     const badge = container.querySelector('.category-badge');
     expect(badge).not.toBeNull();
   });
+
+  it('supports custom date range mode and opens date picker modal on center date click', () => {
+    const mockTxs = [
+      {
+        id: 'tx_exp',
+        type: 'expense' as const,
+        amount: 50000,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-15',
+        createdAt: '',
+        updatedAt: '',
+      },
+    ];
+
+    render(
+      <StatsView
+        allTransactions={mockTxs}
+        categories={[
+          { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', color: 'var(--cat-food)', sortOrder: 1, createdAt: '', updatedAt: '' },
+        ]}
+        accounts={[
+          { id: 'acct_1', name: '招商银行', type: 'savings', balance: 500000, sortOrder: 1, createdAt: '', updatedAt: '' },
+        ]}
+      />
+    );
+
+    const customModeBtn = screen.getByRole('button', { name: '自定义' });
+    fireEvent.click(customModeBtn);
+
+    const centerDateBtn = screen.getByTitle('点击选择日期');
+    expect(centerDateBtn).toBeInTheDocument();
+
+    fireEvent.click(centerDateBtn);
+    expect(screen.getByText('选择日期范围')).toBeInTheDocument();
+  });
 });

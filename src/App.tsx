@@ -255,9 +255,10 @@ export function App() {
                 { value: 'week', label: '周' },
                 { value: 'month', label: '月' },
                 { value: 'year', label: '年' },
+                { value: 'custom', label: '自定义' },
               ]}
               value={statsMode}
-              onChange={(val) => setStatsMode(val as 'week' | 'month' | 'year')}
+              onChange={(val) => setStatsMode(val as PeriodMode)}
               size="sm"
               fullWidth={false}
             />
