@@ -297,7 +297,6 @@ body {
   color: var(--stamp-red, #B83426);
   border: 1.5px solid currentColor;
   border-radius: var(--radius-xs);
-  transform: rotate(-2deg);
   opacity: 0.92;
   position: relative;
   user-select: none;
