@@ -10,7 +10,6 @@ import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator
 import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
-import { DrumWheelPicker } from './DrumWheelPicker';
 import { TransactionKeypad } from './TransactionKeypad';
 import { OffsetTrayPanel } from './OffsetTrayPanel';
 import { AmortizeTrayPanel } from './AmortizeTrayPanel';
@@ -22,6 +21,7 @@ import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperChip } from '../ui/PaperChip';
 import { PaperSelect } from '../ui/PaperSelect';
 import { PaperInput } from '../ui/PaperInput';
+import { PaperDatePickerModal } from '../ui/PaperDatePickerModal';
 import { cn } from '../../utils/cn';
 import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 import { readVoucherFile } from '../../utils/voucherFile';
@@ -35,7 +35,6 @@ import {
 } from '../../utils/gesturePhysics';
 import {
   addDaysToDate,
-  addDaysToToday,
   combineLocalDateTimeToIso,
   formatTime,
   nowTime,
@@ -120,7 +119,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isCustomAmortize, setIsCustomAmortize] = useState(false);
   const [customAmortizeInput, setCustomAmortizeInput] = useState('');
 
-  const [isDtTrayOpen, setIsDtTrayOpen] = useState(false);
+  const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false);
   const [isAcctTrayOpen, setIsAcctTrayOpen] = useState(false);
   const [isOffsetTrayOpen, setIsOffsetTrayOpen] = useState(false);
   const [isVoucherTrayOpen, setIsVoucherTrayOpen] = useState(false);
@@ -240,14 +239,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setIsOffsetTrayOpen(false);
   };
 
-  const setDateDelta = (daysFromToday: number) => {
-    setDateStr(addDaysToToday(daysFromToday));
-  };
-
-  const todayStr = todayDate();
-  const yesterdayStr = addDaysToToday(-1);
-  const beforeYesterdayStr = addDaysToToday(-2);
-
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
@@ -260,7 +251,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setIsDtTrayOpen(false);
+      setIsDateTimePickerOpen(false);
       setIsAcctTrayOpen(false);
       setIsVoucherTrayOpen(false);
       setIsVoucherPreviewOpen(false);
@@ -623,7 +614,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const isInsideScrollable = (target: EventTarget | null): boolean => {
       let node = target as HTMLElement | null;
       while (node && node !== el) {
-        if (node.dataset?.drumWheel === 'true') return true;
         const style = window.getComputedStyle(node);
         const canScrollY =
           (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
@@ -741,7 +731,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const formattedDateStr = dateStr ? dateStr.slice(5) : '';
 
   const isAnyTrayOpen =
-    isDtTrayOpen ||
+    isDateTimePickerOpen ||
     isAcctTrayOpen ||
     (isVoucherTrayOpen && Boolean(voucher)) ||
     (txType === 'expense' && isAmortizeTrayOpen) ||
@@ -767,7 +757,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     selectedCatId,
     closeOtherTrays: () => {
       setIsAcctTrayOpen(false);
-      setIsDtTrayOpen(false);
+      setIsDateTimePickerOpen(false);
       setIsOffsetTrayOpen(false);
       setIsVoucherTrayOpen(false);
     },
@@ -962,7 +952,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
               onClick={() => {
                 setIsAcctTrayOpen((prev) => !prev);
-                setIsDtTrayOpen(false);
+                setIsDateTimePickerOpen(false);
                 setIsAmortizeTrayOpen(false);
                 setIsVoucherTrayOpen(false);
                 setIsOffsetTrayOpen(false);
@@ -974,10 +964,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
 
             <PaperChip
-              selected={isDtTrayOpen}
+              selected={isDateTimePickerOpen}
               rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
               onClick={() => {
-                setIsDtTrayOpen((prev) => !prev);
+                setIsDateTimePickerOpen(true);
                 setIsAcctTrayOpen(false);
                 setIsAmortizeTrayOpen(false);
                 setIsVoucherTrayOpen(false);
@@ -1020,7 +1010,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         if (voucher) {
                           setIsVoucherTrayOpen((prev) => !prev);
                           setIsAcctTrayOpen(false);
-                          setIsDtTrayOpen(false);
+                          setIsDateTimePickerOpen(false);
                           setIsAmortizeTrayOpen(false);
                         } else {
                           fileInputRef.current?.click();
@@ -1041,7 +1031,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       onClick={() => {
                         setIsAmortizeTrayOpen((prev) => !prev);
                         setIsAcctTrayOpen(false);
-                        setIsDtTrayOpen(false);
+                        setIsDateTimePickerOpen(false);
                         setIsVoucherTrayOpen(false);
                       }}
                     >
@@ -1062,7 +1052,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   onClick={() => {
                     setIsOffsetTrayOpen((prev) => !prev);
                     setIsAcctTrayOpen(false);
-                    setIsDtTrayOpen(false);
+                    setIsDateTimePickerOpen(false);
                   }}
                 >
                   <span className="max-w-22 truncate">
@@ -1168,41 +1158,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             />
           )}
 
-          {isDtTrayOpen && (
-            <div className="space-y-1.5 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs select-none">
-              <div className="flex items-center gap-1.5 px-0.5 text-[11px] text-(--ink-tertiary)">
-                <PaperChip
-                  size="sm"
-                  selected={dateStr === todayStr}
-                  onClick={() => setDateDelta(0)}
-                >
-                  今天
-                </PaperChip>
-                <PaperChip
-                  size="sm"
-                  selected={dateStr === yesterdayStr}
-                  onClick={() => setDateDelta(-1)}
-                >
-                  昨天
-                </PaperChip>
-                <PaperChip
-                  size="sm"
-                  selected={dateStr === beforeYesterdayStr}
-                  onClick={() => setDateDelta(-2)}
-                >
-                  前天
-                </PaperChip>
-              </div>
-
-              <DrumWheelPicker
-                dateStr={dateStr}
-                timeStr={timeStr}
-                onChangeDate={(d) => setDateStr(d)}
-                onChangeTime={(t) => setTimeStr(t)}
-              />
-            </div>
-          )}
-
           {txType === 'income' && isOffsetTrayOpen && (
             <OffsetTrayPanel
               candidateExpenses={candidateExpenses}
@@ -1269,6 +1224,18 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           onClose={() => setIsVoucherPreviewOpen(false)}
         />
       )}
+
+      <PaperDatePickerModal
+        isOpen={isDateTimePickerOpen}
+        onClose={() => setIsDateTimePickerOpen(false)}
+        mode="datetime"
+        value={dateStr && timeStr ? `${dateStr} ${timeStr}` : (dateStr || '')}
+        onChange={(val) => {
+          const parts = val.split(' ');
+          if (parts[0]) setDateStr(parts[0]);
+          if (parts[1]) setTimeStr(parts[1]);
+        }}
+      />
     </div>
   );
 };
