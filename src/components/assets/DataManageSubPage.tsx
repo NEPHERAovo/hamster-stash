@@ -8,6 +8,7 @@ import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { toast } from '../../stores/useToastStore';
+import { confirmAction } from '../../stores/useConfirmStore';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
 import { ExportCsvModal } from './ExportCsvModal';
@@ -30,8 +31,6 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
   const [isExportCsvOpen, setIsExportCsvOpen] = useState(false);
   const [isBackupConfirmOpen, setIsBackupConfirmOpen] = useState(false);
   const [isExportingBackup, setIsExportingBackup] = useState(false);
-  const [pendingRestore, setPendingRestore] = useState<{ fileName: string; data: ExportData } | null>(null);
-  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
 
   const handleExportJson = async () => {
     setIsExportingBackup(true);
@@ -65,20 +64,19 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
       if (!Array.isArray(data.transactions) || !Array.isArray(data.accounts)) {
         throw new Error('无效的备份文件结构');
       }
-      setPendingRestore({ fileName: file.name, data });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '备份文件解析失败');
-    } finally {
-      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
-    }
-  };
 
-  const handleConfirmRestoreJson = async () => {
-    if (!pendingRestore) return;
-    setIsRestoringBackup(true);
-    try {
+      const confirmed = await confirmAction({
+        title: '确认恢复备份',
+        message: `确认从文件「${file.name}」恢复数据吗？恢复将覆盖当前账本中的所有流水与账户数据，此操作不可撤销。`,
+        confirmText: '确认覆盖恢复',
+        cancelText: '取消',
+        isDestructive: true,
+      });
+
+      if (!confirmed) return;
+
       await core.init();
-      await core.adapter.import(pendingRestore.data);
+      await core.adapter.import(data);
 
       await loadAccounts();
       await loadCategories();
@@ -88,12 +86,11 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
       await useThemeStore.getState().loadThemeFromDB();
       await usePreferenceStore.getState().loadPreferencesFromDB();
 
-      setPendingRestore(null);
       toast.success('JSON 数据恢复成功');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '恢复备份数据失败');
     } finally {
-      setIsRestoringBackup(false);
+      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
     }
   };
 
@@ -210,36 +207,6 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
               disabled={isExportingBackup}
             >
               {isExportingBackup ? '导出中...' : '确认导出'}
-            </PaperButton>
-          </div>
-        </div>
-      </PaperModal>
-
-      <PaperModal
-        isOpen={Boolean(pendingRestore)}
-        onClose={() => setPendingRestore(null)}
-        title="确认恢复备份"
-      >
-        <div className="space-y-4 p-4">
-          <p className="text-xs leading-relaxed text-(--ink-secondary)">
-            确认从文件「{pendingRestore?.fileName}」恢复数据吗？恢复将覆盖当前账本中的所有流水与账户数据，此操作不可撤销。
-          </p>
-          <div className="flex items-center justify-end gap-2 border-t border-dashed border-(--rule-hairline) pt-2">
-            <PaperButton
-              variant="ghost"
-              size="sm"
-              onClick={() => setPendingRestore(null)}
-              disabled={isRestoringBackup}
-            >
-              取消
-            </PaperButton>
-            <PaperButton
-              variant="danger"
-              size="sm"
-              onClick={handleConfirmRestoreJson}
-              disabled={isRestoringBackup}
-            >
-              {isRestoringBackup ? '恢复中...' : '确认覆盖恢复'}
             </PaperButton>
           </div>
         </div>
