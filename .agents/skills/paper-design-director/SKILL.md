@@ -93,6 +93,17 @@ description: >-
     - 所有卡片使用 `bg-(--paper-sheet)`，微胶囊使用 `bg-(--paper-sunken)`，虚线使用 `1px dashed border-(--rule-hairline)`；
     - 插件子页与弹窗必须挂载和纸胶带（`.washi-tape`）、锯齿边缘（`.paper-sawtooth-top` / `.paper-deckle-bottom`）与实体印泥印章（`.real-stamp`），保持与主应用一致的手帐呼吸感；
     - 插件内严禁直接引用主应用非 SDK 相对路径，所有手帐原子组件必须经由 `plugin-sdk` 复用。
+15. **双端系统返回手势与浮层关闭规范 (Android CloseWatcher + iOS 物理手势 TDD 逻辑)**：
+    - **逻辑行为与 UI 表现严格解耦**：模态弹窗与全屏子页拒绝强行使用原生 `<dialog>`（规避 iOS Safari PWA 视口高度崩塌、滚动锁死及顶层 Top Layer 破坏锯齿小票 `.paper-sawtooth-top` 的问题）。维持 `createPortal` / 定位壳层与物理弹簧动效；
+    - **安卓端系统级返回接管**：通过 `useCloseWatcher` 统一接入 `window.CloseWatcher`，将 Android 全面屏屏幕边缘侧滑手势、物理返回键以及 Android 14+ 预测性返回精准映射至浮层平滑退场动画，彻底杜绝返回手势直接退出 PWA；支持多层浮层后进先出（LIFO）逐层回退；
+    - **iOS 端既有手势保全**：
+      - 全屏二级菜单（`SubPageShell`）：边缘防误触阈值精确收拢至 `edgeThreshold: 36px`，保持 iOS 经典原味左滑跟随与阻尼回弹动效；
+      - 底部便签抽屉（`PaperModal` / `AddTransactionModal`）：保持单指下拉阻尼拖拽（`GestureSmoother`）与点击遮罩退场；
+    - **桌面与旧端优雅降级**：无 `CloseWatcher` 环境平滑降级至 `Escape` 快捷键监听；
+    - **TDD 自动化测试闭环（测试优先准则）**：
+      1. 单元测试必须覆盖 `CloseWatcher.onclose` 触发各浮层平滑退场；
+      2. 覆盖无 `CloseWatcher` 环境下的 `Escape` 键盘回退；
+      3. 覆盖组件卸载与 `isOpen: false` 时的 `watcher.destroy()` 资源清理。
 
 ---
 

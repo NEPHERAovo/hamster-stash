@@ -125,6 +125,22 @@ The application supports two distinct aesthetic skins (`paper` and `modern`), go
 5. **Lifecycle & Resource Cleanup**:
    - WebGL context loss is explicitly triggered on unmount via the `WEBGL_lose_context` extension, safely releasing GPU textures, shaders, buffers, and animation frames.
 
+### 4.4 Dual-Platform Gesture & Close Request Architecture
+
+To ensure optimal navigation on both Android and iOS without gesture collisions:
+1. **Decoupled Close Intent via `CloseWatcher`**:
+   - Modals (`PaperModal`, `AddTransactionModal`, `ConfirmDialog`, `VoucherPreviewModal`) and subpage shells (`SubPageShell`) must not force native `<dialog>` wrappers. Native `<dialog>` introduces WebKit standalone viewport freezing, virtual keyboard misplacement, and top-layer clipping of physical paper teeth (`.paper-sawtooth-top`).
+   - Close signals are managed by `useCloseWatcher`, binding directly to `window.CloseWatcher` (Chrome 120+, Android WebView, and PWA standalone). Android edge-swipe back navigation, hardware/software back buttons, and Android 14+ predictive back gestures trigger component exit animations without exiting the PWA or popping external browser history.
+   - Multiple overlay layers follow automatic LIFO (last-in-first-out) dismissal.
+2. **iOS Touch Gesture Preservation**:
+   - Subpages (`SubPageShell`) calibrate edge touch interception to a disciplined `edgeThreshold: 36px` (narrowed from legacy over-wide bounds), preserving iOS native-feeling edge-swipe dismissing while avoiding accidental triggers during vertical content reading.
+   - Bottom sheets preserve downward touch dragging via `GestureSmoother` and `rubberBand`.
+3. **TDD Quality Gate for Overlays**:
+   - Every floating overlay component must maintain automated unit tests covering:
+     1. Platform close trigger via `CloseWatcher.onclose` with smooth exit settlement.
+     2. Keyboard `Escape` fallback in non-supported environments.
+     3. Lifecycle cleanup invoking `watcher.destroy()`.
+
 ---
 
 ## 5. Micro-Kernel Plugin System (`src/plugin-sdk/`)
