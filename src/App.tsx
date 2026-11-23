@@ -545,7 +545,7 @@ export function App() {
         className="z-50"
         header={
           <PageHeader
-            title="账本导入向导"
+            title="账本导入"
             centerTitle={true}
             leftAction={<SubPageBackButton label="返回" />}
           />

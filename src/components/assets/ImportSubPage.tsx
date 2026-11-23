@@ -345,7 +345,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     <div className="w-full space-y-4 px-4 pt-1 pb-12 text-(--ink-primary)">
       <div className="rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 shadow-xs">
         <div className="relative flex items-center justify-between px-2">
-          <div className="absolute inset-x-6 top-1/2 z-0 h-px -translate-y-1/2 bg-(--rule-hairline)" />
+          <div className="absolute inset-x-6 top-3 z-0 h-px -translate-y-1/2 bg-(--rule-hairline)" />
           {[
             { num: 1, label: '上传文件' },
             { num: 2, label: '字段列' },
@@ -483,9 +483,6 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
                 </div>
                 <div className="text-xs font-semibold text-(--ink-primary)">
                   点击选择 CSV 文件
-                </div>
-                <div className="text-[11px] text-(--ink-tertiary)">
-                  支持 UTF-8 / GBK 编码
                 </div>
               </div>
             )}
