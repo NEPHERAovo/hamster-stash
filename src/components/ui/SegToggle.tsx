@@ -45,10 +45,10 @@ export function SegToggle<T extends string | number>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--toggle-item-radius) font-medium whitespace-nowrap transition-all duration-150',
+              'inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--toggle-item-radius) font-medium whitespace-nowrap tabular-nums transition-[color,background-color,box-shadow] duration-150',
               sizeStyles[size],
               isSelected
-                ? 'bg-(--toggle-active-bg) font-semibold text-(--toggle-active-fg) shadow-xs'
+                ? 'bg-(--toggle-active-bg) text-(--toggle-active-fg) shadow-xs'
                 : 'text-(--ink-tertiary) hover:text-(--ink-primary)'
             )}
           >
