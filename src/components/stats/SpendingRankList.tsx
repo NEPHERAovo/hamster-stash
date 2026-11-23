@@ -62,39 +62,35 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
               fullWidth
               size="md"
               onClick={() => onSelectCategory?.(item.categoryId)}
-              className="group flex h-auto flex-col rounded-(--radius-sm) px-1 py-2.5 text-left font-normal hover:bg-(--paper-sunken)/60"
+              className="group flex h-auto items-center justify-between gap-1.5 rounded-(--radius-sm) px-1 py-2 text-left font-normal hover:bg-(--paper-sunken)/60"
               title={`查看「${item.name}」明细`}
             >
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <div
-                    className="size-2.5 shrink-0 rounded-(--badge-radius)"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="truncate text-[13px] font-medium text-(--ink-primary)">
-                    {item.name}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span className="font-mono text-[13px] font-semibold text-(--ink-primary) tabular-nums">
-                    ¥{centsToYuan(item.amount)}
-                  </span>
-                  <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
-                </div>
-              </div>
-
-              <div className="flex w-full items-center justify-between pt-1">
-                <span className="pl-4.5 font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
+              <div className="flex min-w-0 items-center gap-2">
+                <div
+                  className="size-2.5 shrink-0 rounded-(--badge-radius)"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="w-14 shrink-0 truncate text-[13px] font-medium text-(--ink-primary)">
+                  {item.name}
+                </span>
+                <span className="w-8 shrink-0 text-right font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
                   {item.percentage}%
                 </span>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
                 <span
                   className={cn(
-                    'pr-5 font-mono text-[11px] font-medium tabular-nums',
+                    'w-18 text-right font-mono text-[11px] font-medium tabular-nums',
                     diffColor
                   )}
                 >
                   {diffText}
                 </span>
+                <span className="w-18 text-right font-mono text-[13px] font-semibold text-(--ink-primary) tabular-nums">
+                  ¥{centsToYuan(item.amount)}
+                </span>
+                <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
               </div>
             </PaperButton>
           );
@@ -109,9 +105,7 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
             onClick={() => setIsExpanded((prev) => !prev)}
             className="h-auto gap-1 py-1 text-xs text-(--ink-tertiary) hover:text-(--ink-primary)"
           >
-            <span>
-              {isExpanded ? '收起' : `展开其余 ${items.length - 5} 个分类`}
-            </span>
+            <span>{isExpanded ? '收起' : '展开'}</span>
             {isExpanded ? (
               <CaretUpIcon className="size-3.5" />
             ) : (

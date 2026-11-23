@@ -319,16 +319,16 @@ describe('Modular Stats & UI Components', () => {
     expect(screen.getByText('分类5')).toBeInTheDocument();
     expect(screen.queryByText('分类6')).not.toBeInTheDocument();
     expect(screen.queryByText('分类7')).not.toBeInTheDocument();
-    expect(screen.getByText('展开其余 2 个分类')).toBeInTheDocument();
+    expect(screen.getByText('展开')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('展开其余 2 个分类'));
+    fireEvent.click(screen.getByText('展开'));
     expect(screen.getByText('分类6')).toBeInTheDocument();
     expect(screen.getByText('分类7')).toBeInTheDocument();
     expect(screen.getByText('收起')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('收起'));
     expect(screen.queryByText('分类6')).not.toBeInTheDocument();
-    expect(screen.getByText('展开其余 2 个分类')).toBeInTheDocument();
+    expect(screen.getByText('展开')).toBeInTheDocument();
   });
 
   it('StatsView switches dimensions smoothly inside separate chart cards', () => {
