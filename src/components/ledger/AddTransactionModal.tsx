@@ -23,6 +23,7 @@ import { PaperChip } from '../ui/PaperChip';
 import { PaperSelect } from '../ui/PaperSelect';
 import { PaperInput } from '../ui/PaperInput';
 import { cn } from '../../utils/cn';
+import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 import { readVoucherFile } from '../../utils/voucherFile';
 import {
   GestureSmoother,
@@ -558,15 +559,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     };
   }, [shouldRender, isOpen]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        closeWithAnimation(240);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeWithAnimation]);
+  useCloseWatcher({
+    isOpen: shouldRender && isOpen && !isClosingRef.current,
+    onClose: () => closeWithAnimation(240),
+  });
 
   useEffect(() => {
     const el = sheetRef.current;

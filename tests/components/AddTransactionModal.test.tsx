@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { AddTransactionModal } from '../../src/components/ledger/AddTransactionModal';
 import { usePreferenceStore } from '../../src/stores/usePreferenceStore';
 import { useAccountStore } from '../../src/stores/useAccountStore';
@@ -127,5 +127,47 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
         })
       );
     });
+  });
+
+  it('triggers smooth close on CloseWatcher onclose event (Android system back)', () => {
+    vi.useFakeTimers();
+    let watcherInstance: { onclose: (() => void) | null; destroy: () => void } | null = null;
+    class MockCloseWatcher {
+      onclose: (() => void) | null = null;
+      destroy = vi.fn();
+      constructor() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        watcherInstance = this;
+      }
+    }
+    const origCloseWatcher = window.CloseWatcher;
+    window.CloseWatcher = MockCloseWatcher as unknown as typeof window.CloseWatcher;
+
+    try {
+      const handleClose = vi.fn();
+      render(<AddTransactionModal isOpen={true} onClose={handleClose} />);
+
+      expect(watcherInstance).not.toBeNull();
+      expect(handleClose).not.toHaveBeenCalled();
+
+      act(() => {
+        watcherInstance?.onclose?.();
+      });
+
+      expect(handleClose).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(250);
+      });
+
+      expect(handleClose).toHaveBeenCalledTimes(1);
+    } finally {
+      if (origCloseWatcher) {
+        window.CloseWatcher = origCloseWatcher;
+      } else {
+        delete (window as unknown as { CloseWatcher?: unknown }).CloseWatcher;
+      }
+      vi.useRealTimers();
+    }
   });
 });

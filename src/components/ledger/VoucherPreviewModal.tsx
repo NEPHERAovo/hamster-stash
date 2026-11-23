@@ -5,6 +5,7 @@ import type { VoucherAttachment } from '../../types/transaction';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { attachmentStore } from '../../core/attachments/attachmentStore';
 import { syncService } from '../../domain/sync/syncService';
+import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 
 export interface VoucherPreviewModalProps {
   voucher: VoucherAttachment | null;
@@ -102,14 +103,10 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
     };
   }, [pdfBlobUrl]);
 
-  useEffect(() => {
-    if (!voucher) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [voucher, onClose]);
+  useCloseWatcher({
+    isOpen: Boolean(voucher),
+    onClose,
+  });
 
   const renderContent = () => {
     if (isLoading) {
