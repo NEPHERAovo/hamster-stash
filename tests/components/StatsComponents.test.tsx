@@ -244,4 +244,100 @@ describe('Modular Stats & UI Components', () => {
     expect(titleEl).toBeInTheDocument();
     expect(titleEl.classList.contains('italic')).toBe(false);
   });
+
+  it('renders SpendingRankList with MoM (环比) change and 新增 badge', () => {
+    const itemsWithMom: CategoryStatItem[] = [
+      {
+        categoryId: 'c1',
+        name: '餐饮',
+        color: 'var(--cat-food)',
+        amount: 32000,
+        percentage: 60,
+        dashLength: 196,
+        dashOffset: 0,
+        previousAmount: 20000,
+        momRate: 60,
+        isNew: false,
+      },
+      {
+        categoryId: 'c2',
+        name: '交通',
+        color: 'var(--cat-transit)',
+        amount: 15000,
+        percentage: 30,
+        dashLength: 90,
+        dashOffset: 196,
+        previousAmount: 0,
+        momRate: null,
+        isNew: true,
+      },
+    ];
+
+    render(<SpendingRankList items={itemsWithMom} totalExpense={47000} txType="expense" />);
+
+    expect(screen.getByText('餐饮')).toBeInTheDocument();
+    expect(screen.getByText('+60%')).toBeInTheDocument();
+    expect(screen.getByText('交通')).toBeInTheDocument();
+    expect(screen.getByText('新增')).toBeInTheDocument();
+  });
+
+  it('StatsView switches dimensions smoothly between 支出, 收入, and 结余', () => {
+    const mockTxs = [
+      {
+        id: 'tx_exp',
+        type: 'expense' as const,
+        amount: 50000,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-15',
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'tx_inc',
+        type: 'income' as const,
+        amount: 120000,
+        categoryId: 'cat_sal',
+        accountId: 'acct_1',
+        date: '2026-11-10',
+        createdAt: '',
+        updatedAt: '',
+      },
+    ];
+
+    render(
+      <StatsView
+        allTransactions={mockTxs}
+        categories={[
+          { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', color: 'var(--cat-food)', sortOrder: 1, createdAt: '', updatedAt: '' },
+          { id: 'cat_sal', name: '工资', type: 'income', icon: 'money', color: 'var(--cat-income)', sortOrder: 1, createdAt: '', updatedAt: '' },
+        ]}
+        accounts={[
+          { id: 'acct_1', name: '招商银行', type: 'savings', balance: 500000, sortOrder: 1, createdAt: '', updatedAt: '' },
+        ]}
+      />
+    );
+
+    // Initial default: 支出
+    expect(screen.getByText('支出构成')).toBeInTheDocument();
+    expect(screen.getByText('月度支出趋势')).toBeInTheDocument();
+    expect(screen.getByText('总支出')).toBeInTheDocument();
+
+    // Click 收入 in bottom switcher
+    const incomeToggleBtn = screen.getByRole('button', { name: '收入' });
+    fireEvent.click(incomeToggleBtn);
+
+    expect(screen.getByText('收入构成')).toBeInTheDocument();
+    expect(screen.getByText('月度收入趋势')).toBeInTheDocument();
+    expect(screen.getByText('总收入')).toBeInTheDocument();
+
+    // Click 结余 in bottom switcher
+    const balanceToggleBtn = screen.getByRole('button', { name: '结余' });
+    fireEvent.click(balanceToggleBtn);
+
+    expect(screen.getByText('收支对比与结余')).toBeInTheDocument();
+    expect(screen.getByText('月度结余趋势')).toBeInTheDocument();
+    expect(screen.getAllByText('净结余').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('结余储蓄率')).toBeInTheDocument();
+  });
 });

@@ -11,7 +11,11 @@ import {
   filterTransactionsByPeriod,
   computeCategoryDonutStats,
   computePeriodTrends,
+  computePeriodBalanceSummary,
+  type CategoryStatItem,
 } from '../../domain/finance/periodStats';
+import { centsToYuan } from '../../domain/finance/balanceCalculator';
+import { cn } from '../../utils/cn';
 import { TransactionGroup } from '../ledger/TransactionGroup';
 import { DonutChart } from './DonutChart';
 import { MonthlyTrendBar } from './MonthlyTrendBar';
@@ -26,12 +30,17 @@ import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { dayjs, type Dayjs, stepYearMonth, parseLocalDate } from '../../utils/date';
 
+export type StatsDimension = 'expense' | 'income' | 'balance';
+
 export interface CategoryDrilldownData {
   category: Category;
   periodLabel: string;
   transactions: Transaction[];
   totalExpense: number;
   categoryPercentage: number;
+  previousAmount?: number;
+  momRate?: number | null;
+  isNew?: boolean;
 }
 
 export interface StatsViewProps {
@@ -41,6 +50,8 @@ export interface StatsViewProps {
   onSelectTransaction?: (tx: Transaction) => void;
   mode?: PeriodMode;
   onModeChange?: (mode: PeriodMode) => void;
+  dimension?: StatsDimension;
+  onDimensionChange?: (dimension: StatsDimension) => void;
   onOpenCategoryDrilldown?: (data: CategoryDrilldownData) => void;
 }
 
@@ -60,12 +71,17 @@ export const StatsView: React.FC<StatsViewProps> = ({
   onSelectTransaction,
   mode: controlledMode,
   onModeChange,
+  dimension: controlledDimension,
+  onDimensionChange,
   onOpenCategoryDrilldown,
 }) => {
   const [internalMode, setInternalMode] = useState<PeriodMode>('month');
+  const [internalDimension, setInternalDimension] = useState<StatsDimension>('expense');
   const [internalDrilldown, setInternalDrilldown] = useState<CategoryDrilldownData | null>(null);
   const mode = controlledMode || internalMode;
   const setMode = onModeChange || setInternalMode;
+  const dimension = controlledDimension || internalDimension;
+  const setDimension = onDimensionChange || setInternalDimension;
 
   const uiStyle = useThemeStore((s) => s.uiStyle);
   const isModern = uiStyle === 'modern';
@@ -96,31 +112,83 @@ export const StatsView: React.FC<StatsViewProps> = ({
     return filterTransactionsByPeriod(allTransactions, periodInfo.start, periodInfo.end);
   }, [allTransactions, periodInfo]);
 
-  const { items: donutItems, totalExpense, circumference } = useMemo(() => {
-    return computeCategoryDonutStats(
+  const balanceSummary = useMemo(() => {
+    return computePeriodBalanceSummary(
+      periodTransactions,
+      allTransactions,
+      periodInfo,
+      mode,
+      isAmortizationEnabled
+    );
+  }, [periodTransactions, allTransactions, periodInfo, mode, isAmortizationEnabled]);
+
+  const { items: donutItems, totalAmount, circumference } = useMemo(() => {
+    if (dimension === 'balance') {
+      const CIRCUMFERENCE = 326.73;
+      const total = balanceSummary.income + balanceSummary.expense;
+      if (total === 0) {
+        return { items: [], totalAmount: 0, circumference: CIRCUMFERENCE };
+      }
+      const expDash = parseFloat(((balanceSummary.expense / total) * CIRCUMFERENCE).toFixed(2));
+      const incDash = parseFloat(((balanceSummary.income / total) * CIRCUMFERENCE).toFixed(2));
+      const items: CategoryStatItem[] = [
+        {
+          categoryId: 'balance_inc',
+          name: '总收入',
+          color: 'var(--color-income)',
+          amount: balanceSummary.income,
+          percentage: Math.round((balanceSummary.income / total) * 100),
+          dashLength: incDash,
+          dashOffset: 0,
+          previousAmount: balanceSummary.previousIncome,
+          momRate: balanceSummary.incomeMomRate,
+        },
+        {
+          categoryId: 'balance_exp',
+          name: '净支出',
+          color: 'var(--color-expense)',
+          amount: balanceSummary.expense,
+          percentage: Math.round((balanceSummary.expense / total) * 100),
+          dashLength: expDash,
+          dashOffset: incDash,
+          previousAmount: balanceSummary.previousExpense,
+          momRate: balanceSummary.expenseMomRate,
+        },
+      ];
+      return { items, totalAmount: balanceSummary.netBalance, circumference: CIRCUMFERENCE };
+    }
+
+    const res = computeCategoryDonutStats(
       periodTransactions,
       categories,
       allTransactions,
       isAmortizationEnabled,
       periodInfo.key,
-      mode
+      mode,
+      dimension
     );
-  }, [periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
+    return { items: res.items, totalAmount: res.totalAmount, circumference: res.circumference };
+  }, [dimension, balanceSummary, periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
 
-  const prevExpenseRef = useRef(totalExpense);
-  const wasEmptyExpense = prevExpenseRef.current === 0;
-  const isEmptyExpense = totalExpense === 0;
-  const shouldAnimateEmptyExpense = !wasEmptyExpense && isEmptyExpense;
+  const isEmpty = useMemo(() => {
+    if (dimension === 'balance') {
+      return balanceSummary.income === 0 && balanceSummary.expense === 0;
+    }
+    return totalAmount === 0;
+  }, [dimension, balanceSummary, totalAmount]);
+
+  const prevEmptyRef = useRef(isEmpty);
+  const shouldAnimateEmpty = prevEmptyRef.current !== isEmpty && isEmpty;
 
   useEffect(() => {
-    prevExpenseRef.current = totalExpense;
-  }, [totalExpense]);
+    prevEmptyRef.current = isEmpty;
+  }, [isEmpty]);
 
   const [trendOffset, setTrendOffset] = useState<number>(0);
 
   useEffect(() => {
     setTrendOffset(0);
-  }, [periodInfo.key, mode]);
+  }, [periodInfo.key, mode, dimension]);
 
   const trendTargetKey = useMemo(() => {
     if (trendOffset === 0) return periodInfo.key;
@@ -139,9 +207,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
       mode,
       trendTargetKey,
       mode === 'year' ? 5 : 6,
-      isAmortizationEnabled
+      isAmortizationEnabled,
+      dimension
     );
-  }, [allTransactions, mode, trendTargetKey, isAmortizationEnabled]);
+  }, [allTransactions, mode, trendTargetKey, isAmortizationEnabled, dimension]);
 
   const handleStepTrendPrev = () => {
     setTrendOffset((prev) => prev - 1);
@@ -153,12 +222,37 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
   const canStepTrendNext = trendOffset < 0;
 
-  const trendTitles: Record<string, string> = {
-    week: '周度支出趋势',
-    month: '月度支出趋势',
-    year: '年度支出趋势',
-  };
-  const trendTitle = trendTitles[mode] || '月度支出趋势';
+  const trendTitle = useMemo(() => {
+    let prefix = '月度';
+    if (mode === 'week') prefix = '周度';
+    else if (mode === 'year') prefix = '年度';
+
+    let suffix = '支出趋势';
+    if (dimension === 'income') suffix = '收入趋势';
+    else if (dimension === 'balance') suffix = '结余趋势';
+
+    return `${prefix}${suffix}`;
+  }, [mode, dimension]);
+
+  const compositionTitle = useMemo(() => {
+    if (dimension === 'income') return '收入构成';
+    if (dimension === 'balance') return '收支对比与结余';
+    return '支出构成';
+  }, [dimension]);
+
+  const donutCenterLabel = useMemo(() => {
+    if (dimension === 'income') return '总收入';
+    if (dimension === 'balance') return '净结余';
+    return '总支出';
+  }, [dimension]);
+
+  const barColor = dimension === 'income' ? 'var(--color-income)' : 'var(--color-expense)';
+
+  const emptyTitle = useMemo(() => {
+    if (dimension === 'income') return '本周期暂无收入记录';
+    if (dimension === 'balance') return '本周期暂无收支记录';
+    return '本周期暂无支出记录';
+  }, [dimension]);
 
   const weekBadge = useMemo(() => {
     if (mode !== 'week') return null;
@@ -205,6 +299,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
       transactions: catTxs,
       totalExpense: statItem ? statItem.amount : 0,
       categoryPercentage: statItem ? statItem.percentage : 0,
+      previousAmount: statItem?.previousAmount,
+      momRate: statItem?.momRate,
+      isNew: statItem?.isNew,
     };
     if (onOpenCategoryDrilldown) {
       onOpenCategoryDrilldown(drilldownData);
@@ -212,6 +309,16 @@ export const StatsView: React.FC<StatsViewProps> = ({
       setInternalDrilldown(drilldownData);
     }
   };
+
+  const displayTransactions = useMemo(() => {
+    if (dimension === 'expense') {
+      return periodTransactions.filter((t) => t.type === 'expense');
+    }
+    if (dimension === 'income') {
+      return periodTransactions.filter((t) => t.type === 'income' && !t.offsetTransactionId);
+    }
+    return periodTransactions;
+  }, [periodTransactions, dimension]);
 
   return (
     <div className="space-y-3.5 py-2 pb-6">
@@ -259,36 +366,122 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </div>
         </div>
 
-        {totalExpense === 0 ? (
+        {isEmpty ? (
           <PaperEmptyState
             icon={PieChart}
-            title="本周期暂无支出记录"
+            title={emptyTitle}
             variant="card"
-            animate={shouldAnimateEmptyExpense}
+            animate={shouldAnimateEmpty}
           />
         ) : (
           <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-semibold tracking-tight text-(--ink-primary)">
-                支出构成
+                {compositionTitle}
               </span>
             </div>
 
             <div className="flex items-center justify-center py-1">
               <DonutChart
                 items={donutItems}
-                totalExpense={totalExpense}
+                totalAmount={totalAmount}
                 circumference={circumference}
-                periodKey={periodInfo.key}
+                periodKey={`${periodInfo.key}-${dimension}`}
+                centerLabel={donutCenterLabel}
               />
             </div>
 
             <div className="border-t border-(--rule-hairline)/60 pt-1">
-              <SpendingRankList
-                items={donutItems}
-                totalExpense={totalExpense}
-                onSelectCategory={handleSelectCategory}
-              />
+              {dimension === 'balance' ? (
+                <div className="divide-y divide-dashed divide-(--rule-hairline)/60 pt-0.5 text-xs">
+                  <div className="flex items-center justify-between px-1 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-(--badge-radius) bg-(--color-income)" />
+                      <span className="font-medium text-(--ink-primary)">总收入</span>
+                    </div>
+                    <div className="flex items-center gap-2 font-mono tabular-nums">
+                      <span className="font-semibold text-(--ink-primary)">
+                        ¥{centsToYuan(balanceSummary.income)}
+                      </span>
+                      {balanceSummary.incomeMomRate !== null && (
+                        <span
+                          className={cn(
+                            'text-[10px] font-medium',
+                            balanceSummary.incomeMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                          )}
+                        >
+                          {balanceSummary.incomeMomRate > 0 ? `+${balanceSummary.incomeMomRate}%` : `${balanceSummary.incomeMomRate}%`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between px-1 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-(--badge-radius) bg-(--color-expense)" />
+                      <span className="font-medium text-(--ink-primary)">净支出</span>
+                    </div>
+                    <div className="flex items-center gap-2 font-mono tabular-nums">
+                      <span className="font-semibold text-(--ink-primary)">
+                        ¥{centsToYuan(balanceSummary.expense)}
+                      </span>
+                      {balanceSummary.expenseMomRate !== null && (
+                        <span
+                          className={cn(
+                            'text-[10px] font-medium',
+                            balanceSummary.expenseMomRate <= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                          )}
+                        >
+                          {balanceSummary.expenseMomRate > 0 ? `+${balanceSummary.expenseMomRate}%` : `${balanceSummary.expenseMomRate}%`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between px-1 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-(--badge-radius) bg-(--ink-solid)" />
+                      <span className="font-medium text-(--ink-primary)">净结余</span>
+                    </div>
+                    <div className="flex items-center gap-2 font-mono tabular-nums">
+                      <span
+                        className={cn(
+                          'font-semibold',
+                          balanceSummary.netBalance >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                        )}
+                      >
+                        {balanceSummary.netBalance < 0
+                          ? `-¥${centsToYuan(Math.abs(balanceSummary.netBalance))}`
+                          : `¥${centsToYuan(balanceSummary.netBalance)}`}
+                      </span>
+                      {balanceSummary.balanceMomRate !== null && (
+                        <span
+                          className={cn(
+                            'text-[10px] font-medium',
+                            balanceSummary.balanceMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                          )}
+                        >
+                          {balanceSummary.balanceMomRate > 0 ? `+${balanceSummary.balanceMomRate}%` : `${balanceSummary.balanceMomRate}%`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between px-1 py-2">
+                    <span className="font-medium text-(--ink-secondary)">结余储蓄率</span>
+                    <span className="font-mono text-xs font-semibold text-(--ink-primary) tabular-nums">
+                      {balanceSummary.savingsRate}%
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <SpendingRankList
+                  items={donutItems}
+                  totalExpense={totalAmount}
+                  onSelectCategory={handleSelectCategory}
+                  txType={dimension}
+                />
+              )}
             </div>
           </div>
         )}
@@ -298,10 +491,27 @@ export const StatsView: React.FC<StatsViewProps> = ({
         <MonthlyTrendBar
           title={trendTitle}
           trends={trends}
+          barColor={barColor}
           onStepPrev={handleStepTrendPrev}
           onStepNext={handleStepTrendNext}
           canStepNext={canStepTrendNext}
         />
+      </div>
+
+      <div className="tab-stagger-2.5 pointer-events-none sticky bottom-[calc(56px+var(--dock-bottom))] z-20 flex justify-center py-1 select-none">
+        <div className="pointer-events-auto rounded-(--toggle-radius) border border-(--rule-hairline) bg-(--paper-sheet)/95 p-0.5 shadow-xs backdrop-blur-sm">
+          <SegToggle
+            options={[
+              { value: 'expense', label: '支出' },
+              { value: 'income', label: '收入' },
+              { value: 'balance', label: '结余' },
+            ]}
+            value={dimension}
+            onChange={(dim) => setDimension(dim as StatsDimension)}
+            size="sm"
+            fullWidth={false}
+          />
+        </div>
       </div>
 
       <div className="tab-stagger-3 space-y-1.5 pt-1">
@@ -310,13 +520,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
             周期账单
           </span>
           <span className="font-mono text-[11px] text-(--ink-tertiary)">
-            共 {periodTransactions.length} 笔
+            共 {displayTransactions.length} 笔
           </span>
         </div>
 
         <TransactionGroup
-          key={periodInfo.key}
-          transactions={periodTransactions}
+          key={`${periodInfo.key}-${dimension}`}
+          transactions={displayTransactions}
           categories={categories}
           accounts={accounts}
           onSelectTransaction={onSelectTransaction}
