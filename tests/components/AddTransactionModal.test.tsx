@@ -266,4 +266,26 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
     expect(screen.getByText('800.00')).toBeInTheDocument();
     expect(screen.getByText('抵扣 · 远期出差机酒')).toBeInTheDocument();
   });
+
+  it('dynamically shrinks category container height when a tray is opened', () => {
+    const { container } = render(
+      <AddTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+      />
+    );
+
+    const categoryWrapper = container.querySelector('.category-grid')?.parentElement;
+    expect(categoryWrapper).toBeInTheDocument();
+    expect(categoryWrapper?.className).toContain('max-h-[38vh]');
+    expect(categoryWrapper?.className).not.toContain('max-h-[16vh]');
+
+    // Open account tray
+    const acctChip = screen.getByText('招商银行');
+    fireEvent.click(acctChip);
+
+    // Category wrapper shrinks to 16vh
+    expect(categoryWrapper?.className).toContain('max-h-[16vh]');
+    expect(categoryWrapper?.className).not.toContain('max-h-[38vh]');
+  });
 });

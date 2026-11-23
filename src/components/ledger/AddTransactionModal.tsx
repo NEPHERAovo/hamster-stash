@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { XIcon as X, TrashIcon as Trash2, PaperclipIcon as Paperclip } from '@phosphor-icons/react';
+import { XIcon as X, TrashIcon as Trash2, PaperclipIcon as Paperclip, CaretDownIcon as CaretDown } from '@phosphor-icons/react';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -740,6 +740,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const formattedDateStr = dateStr ? dateStr.slice(5) : '';
 
+  const isAnyTrayOpen =
+    isDtTrayOpen ||
+    isAcctTrayOpen ||
+    (isVoucherTrayOpen && Boolean(voucher)) ||
+    (txType === 'expense' && isAmortizeTrayOpen) ||
+    (txType === 'income' && isOffsetTrayOpen) ||
+    Boolean((ext?.['owned-items'] as { isTrayOpen?: boolean } | undefined)?.isTrayOpen);
+
   const modalContext = {
     txType,
     dateStr,
@@ -892,7 +900,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               })}
             </div>
           ) : (
-            <div className="max-h-[38vh] [scrollbar-width:thin] overflow-x-hidden overflow-y-auto pr-0.5">
+            <div
+              className={cn(
+                '[scrollbar-width:thin] overflow-x-hidden overflow-y-auto pr-0.5 transition-[max-height] duration-200 ease-out',
+                isAnyTrayOpen ? 'max-h-[16vh]' : 'max-h-[38vh]'
+              )}
+            >
               <div className="category-grid grid grid-cols-4 gap-0 py-0.5 select-none">
                 {currentCategories.map((cat, idx) => {
                   const isSelected = selectedCatId === cat.id;
@@ -946,7 +959,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <div className="metadata-bar flex min-w-0 [scrollbar-width:none] flex-nowrap items-center justify-between gap-1 overflow-x-auto font-mono text-xs select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <PaperChip
               selected={isAcctTrayOpen}
-              rightIcon={<span className="text-[9px] opacity-60">▾</span>}
+              rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
               onClick={() => {
                 setIsAcctTrayOpen((prev) => !prev);
                 setIsDtTrayOpen(false);
@@ -962,7 +975,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             <PaperChip
               selected={isDtTrayOpen}
-              rightIcon={<span className="text-[9px] opacity-60">▾</span>}
+              rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
               onClick={() => {
                 setIsDtTrayOpen((prev) => !prev);
                 setIsAcctTrayOpen(false);
@@ -1024,7 +1037,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
                     <PaperChip
                       selected={Boolean(amortizeMonths) || isAmortizeTrayOpen}
-                      rightIcon={<span className="text-[9px] opacity-60">▾</span>}
+                      rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
                       onClick={() => {
                         setIsAmortizeTrayOpen((prev) => !prev);
                         setIsAcctTrayOpen(false);
@@ -1045,7 +1058,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 <PaperChip
                   variant="income"
                   selected={Boolean(offsetTransactionId) || isOffsetTrayOpen}
-                  rightIcon={<span className="text-[9px] opacity-60">▾</span>}
+                  rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
                   onClick={() => {
                     setIsOffsetTrayOpen((prev) => !prev);
                     setIsAcctTrayOpen(false);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PackageIcon as Package } from '@phosphor-icons/react';
+import { PackageIcon as Package, CaretDownIcon as CaretDown } from '@phosphor-icons/react';
 import { PaperChip } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import { getOwnedItemExt } from '../types';
@@ -55,7 +55,7 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
       <PaperChip
         selected={isActive || isTrayOpen}
         leftIcon={<Package className="stroke-1.8 size-3 shrink-0 opacity-75" />}
-        rightIcon={<span className="text-[9px] opacity-60">▾</span>}
+        rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
         onClick={toggleTray}
         title={badgeTitle}
       >
