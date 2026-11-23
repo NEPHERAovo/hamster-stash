@@ -44,6 +44,15 @@ try {
 
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     let lastCheckAt = 0;
+    let isReloading = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!isReloading) {
+        isReloading = true;
+        window.location.reload();
+      }
+    });
+
     const updateSW = registerSW({
       immediate: true,
       onNeedRefresh() {

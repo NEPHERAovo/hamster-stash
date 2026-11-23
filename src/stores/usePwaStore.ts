@@ -64,14 +64,24 @@ export const usePwaStore = create<PwaState>((set, get) => ({
   },
 
   applyUpdate: async () => {
-    const { updateHandler } = get();
-    if (!updateHandler) return;
+    const { updateHandler, registration } = get();
     set({ isUpdating: true });
-    try {
-      await updateHandler(true);
-    } catch {
-      set({ isUpdating: false });
+
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
+
+    if (updateHandler) {
+      try {
+        await updateHandler(true);
+      } catch {
+        // proceed to reload fallback
+      }
+    }
+
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 1200);
   },
 
   checkForUpdates: async () => {
@@ -87,7 +97,30 @@ export const usePwaStore = create<PwaState>((set, get) => ({
     set({ isChecking: true });
     try {
       await registration.update();
-      await new Promise((resolve) => window.setTimeout(resolve, 600));
+      if (registration.installing) {
+        await new Promise<void>((resolve) => {
+          const worker = registration.installing;
+          if (!worker) {
+            resolve();
+            return;
+          }
+          const onStateChange = () => {
+            if (
+              worker.state === 'installed' ||
+              worker.state === 'activated' ||
+              worker.state === 'redundant'
+            ) {
+              worker.removeEventListener('statechange', onStateChange);
+              resolve();
+            }
+          };
+          worker.addEventListener('statechange', onStateChange);
+          window.setTimeout(resolve, 3000);
+        });
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+
       if (get().needRefresh || registration.waiting || registration.installing) {
         set({ needRefresh: true, dismissed: false });
         return 'update_available';
