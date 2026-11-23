@@ -5,7 +5,6 @@ import {
   CaretRightIcon as CaretRight,
   CaretDownIcon as CaretDown,
   XIcon as X,
-  CalendarBlankIcon as CalendarIcon,
   ClockIcon,
 } from '@phosphor-icons/react';
 import { PaperButton } from './PaperButton';
@@ -133,13 +132,12 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
   });
 
   const [isSelectingEnd, setIsSelectingEnd] = useState(false);
-  const [activeTab, setActiveTab] = useState<'date' | 'time'>('date');
 
   const hourListRef = useRef<HTMLDivElement>(null);
   const minuteListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (activeTab === 'time') {
+    if (isOpen && mode === 'datetime' && subView === 'calendar') {
       requestAnimationFrame(() => {
         const curH = hourListRef.current?.querySelector('[data-selected="true"]');
         curH?.scrollIntoView({ block: 'center' });
@@ -147,7 +145,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
         curM?.scrollIntoView({ block: 'center' });
       });
     }
-  }, [activeTab]);
+  }, [isOpen, mode, subView]);
 
   useEffect(() => {
     setMounted(true);
@@ -200,7 +198,6 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
         setYearPageStart(Math.floor(now.year() / 12) * 12);
         setSubView('calendar');
       }
-      setActiveTab('date');
     }
   }, [isOpen, mode, value, rangeValue]);
 
@@ -370,32 +367,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
               {mode === 'month' && <span>{selectedMonth}</span>}
               {mode === 'year' && <span>{selectedYear}年</span>}
               {mode === 'datetime' && (
-                <span className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('date')}
-                    className={cn(
-                      'cursor-pointer underline-offset-2 hover:underline',
-                      activeTab === 'date'
-                        ? 'font-bold text-(--ink-primary)'
-                        : 'text-(--ink-secondary)'
-                    )}
-                  >
-                    {selectedDate}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('time')}
-                    className={cn(
-                      'cursor-pointer underline-offset-2 hover:underline',
-                      activeTab === 'time'
-                        ? 'font-bold text-(--ink-primary)'
-                        : 'text-(--ink-secondary)'
-                    )}
-                  >
-                    {selectedTime}
-                  </button>
-                </span>
+                <span>{selectedDate} {selectedTime}</span>
               )}
             </div>
           </div>
@@ -407,29 +379,6 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
             aria-label="关闭"
           />
         </div>
-
-        {mode === 'datetime' && (
-          <div className="mt-3 flex items-center justify-center gap-1 border-b border-(--rule-hairline)/40 pb-2.5">
-            <PaperButton
-              variant={activeTab === 'date' ? 'primary' : 'ghost'}
-              size="xs"
-              onClick={() => setActiveTab('date')}
-              leftIcon={<CalendarIcon className="size-3.5" />}
-              className="px-3"
-            >
-              日期
-            </PaperButton>
-            <PaperButton
-              variant={activeTab === 'time' ? 'primary' : 'ghost'}
-              size="xs"
-              onClick={() => setActiveTab('time')}
-              leftIcon={<ClockIcon className="size-3.5" />}
-              className="px-3"
-            >
-              时间
-            </PaperButton>
-          </div>
-        )}
 
         {subView === 'calendar' && (
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pb-1">
@@ -675,9 +624,8 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
         )}
 
         {subView === 'calendar' && (
-          <>
-            {activeTab === 'date' ? (
-              <div className="mt-1">
+          <div>
+            <div className="mt-1">
                 <div className="flex items-center justify-between px-1 py-1.5 select-none">
                   <div className="flex items-center gap-1">
                     <button
@@ -785,110 +733,118 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                   })}
                 </div>
               </div>
-            ) : (
-              <div className="mt-2 space-y-3">
-                <div className="flex flex-wrap items-center gap-1.5 border-b border-dashed border-(--rule-hairline)/60 pb-2">
-                  <span className="font-mono text-[10px] text-(--ink-tertiary)">
-                    快捷时间:
-                  </span>
-                  {['现在', '08:00', '12:00', '18:00', '20:00'].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => {
-                        if (preset === '现在') {
-                          setSelectedTime(nowTime());
-                        } else {
-                          setSelectedTime(preset);
-                        }
-                      }}
-                      className={cn(
-                        'cursor-pointer rounded-(--badge-radius) px-2 py-0.5 font-mono text-[11px] transition-colors',
-                        preset !== '现在' && selectedTime === preset
-                          ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                          : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
-                      )}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="mb-1 text-center font-mono text-[11px] text-(--ink-tertiary)">
-                      小时
+              {mode === 'datetime' && (
+                <div className="mt-3.5 border-t border-(--rule-hairline)/60 pt-2.5">
+                  <div className="flex items-center justify-between pb-2 select-none">
+                    <div className="flex items-center gap-1.5 font-mono text-xs">
+                      <ClockIcon className="size-3.5 text-(--ink-tertiary)" />
+                      <span className="font-semibold text-(--ink-solid)">时间</span>
+                      <span className="rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[11px] font-bold text-(--ink-primary)">
+                        {selectedTime}
+                      </span>
                     </div>
-                    <div
-                      ref={hourListRef}
-                      className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1 select-none"
-                    >
-                      {COMMON_HOURS.map((h) => {
-                        const [curH] = selectedTime.split(':');
-                        const isActive = curH === h;
-                        return (
-                          <button
-                            key={h}
-                            type="button"
-                            aria-label={`${h}时`}
-                            data-selected={isActive}
-                            onClick={() => {
-                              const [, curM = '00'] = selectedTime.split(':');
-                              setSelectedTime(`${h}:${curM}`);
-                            }}
-                            className={cn(
-                              'flex h-7 shrink-0 cursor-pointer items-center justify-center rounded-(--radius-xs) font-mono text-xs transition-colors',
-                              isActive
-                                ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                                : 'text-(--ink-secondary) hover:bg-(--paper-sunken)'
-                            )}
-                          >
-                            {h}
-                          </button>
-                        );
-                      })}
+
+                    <div className="flex items-center gap-1">
+                      {['现在', '08:00', '12:00', '18:00', '20:00'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            if (preset === '现在') {
+                              setSelectedTime(nowTime());
+                            } else {
+                              setSelectedTime(preset);
+                            }
+                          }}
+                          className={cn(
+                            'cursor-pointer rounded-(--badge-radius) px-2 py-0.5 font-mono text-[11px] transition-colors',
+                            preset !== '现在' && selectedTime === preset
+                              ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                              : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                          )}
+                        >
+                          {preset}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div>
-                    <div className="mb-1 text-center font-mono text-[11px] text-(--ink-tertiary)">
-                      分钟
+                  <div className="grid grid-cols-2 gap-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken)/30 p-1.5">
+                    <div>
+                      <div className="mb-1 text-center font-mono text-[10px] text-(--ink-tertiary)">
+                        小时
+                      </div>
+                      <div
+                        ref={hourListRef}
+                        className="flex max-h-28 flex-col gap-0.5 overflow-y-auto pr-1 select-none"
+                      >
+                        {COMMON_HOURS.map((h) => {
+                          const [curH] = selectedTime.split(':');
+                          const isActive = curH === h;
+                          return (
+                            <button
+                              key={h}
+                              type="button"
+                              aria-label={`${h}时`}
+                              data-selected={isActive}
+                              onClick={() => {
+                                const [, curM = '00'] = selectedTime.split(':');
+                                setSelectedTime(`${h}:${curM}`);
+                              }}
+                              className={cn(
+                                'flex h-6.5 shrink-0 cursor-pointer items-center justify-center rounded-(--radius-xs) font-mono text-xs transition-colors',
+                                isActive
+                                  ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                                  : 'text-(--ink-secondary) hover:bg-(--paper-sunken)'
+                              )}
+                            >
+                              {h}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div
-                      ref={minuteListRef}
-                      className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1 select-none"
-                    >
-                      {ALL_MINUTES.map((m) => {
-                        const [, curM = '00'] = selectedTime.split(':');
-                        const isActive = curM === m;
-                        return (
-                          <button
-                            key={m}
-                            type="button"
-                            aria-label={`${m}分`}
-                            data-selected={isActive}
-                            onClick={() => {
-                              const [curH = '12'] = selectedTime.split(':');
-                              setSelectedTime(`${curH}:${m}`);
-                            }}
-                            className={cn(
-                              'flex h-7 shrink-0 cursor-pointer items-center justify-center rounded-(--radius-xs) font-mono text-xs transition-colors',
-                              isActive
-                                ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                                : 'text-(--ink-secondary) hover:bg-(--paper-sunken)'
-                            )}
-                          >
-                            {m}
-                          </button>
-                        );
-                      })}
+
+                    <div>
+                      <div className="mb-1 text-center font-mono text-[10px] text-(--ink-tertiary)">
+                        分钟
+                      </div>
+                      <div
+                        ref={minuteListRef}
+                        className="flex max-h-28 flex-col gap-0.5 overflow-y-auto pr-1 select-none"
+                      >
+                        {ALL_MINUTES.map((m) => {
+                          const [, curM = '00'] = selectedTime.split(':');
+                          const isActive = curM === m;
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              aria-label={`${m}分`}
+                              data-selected={isActive}
+                              onClick={() => {
+                                const [curH = '12'] = selectedTime.split(':');
+                                setSelectedTime(`${curH}:${m}`);
+                              }}
+                              className={cn(
+                                'flex h-6.5 shrink-0 cursor-pointer items-center justify-center rounded-(--radius-xs) font-mono text-xs transition-colors',
+                                isActive
+                                  ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                                  : 'text-(--ink-secondary) hover:bg-(--paper-sunken)'
+                              )}
+                            >
+                              {m}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </div>
+          )}
 
         <div className="mt-4 flex items-center justify-end gap-2 border-t border-dashed border-(--rule-hairline)/60 pt-3">
           <PaperButton variant="ghost" size="sm" onClick={onClose}>

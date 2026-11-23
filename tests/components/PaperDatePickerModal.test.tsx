@@ -249,11 +249,7 @@ describe('PaperDatePickerModal', () => {
     expect(screen.getByRole('button', { name: '昨天' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '前天' })).toBeInTheDocument();
 
-    // Switch to time tab
-    const timeTab = screen.getByRole('button', { name: /时间/ });
-    fireEvent.click(timeTab);
-
-    // Pick a preset time such as 18:00
+    // Pick a preset time such as 18:00 directly below calendar
     const preset18 = screen.getByRole('button', { name: '18:00' });
     fireEvent.click(preset18);
 
@@ -264,7 +260,7 @@ describe('PaperDatePickerModal', () => {
     expect(handleChange).toHaveBeenCalledWith('2026-11-15 18:00');
   });
 
-  it('allows selecting specific hour and minute in datetime mode and switching tabs from header', () => {
+  it('allows selecting specific date, hour and minute directly on the unified datetime screen', () => {
     const handleChange = vi.fn();
     const handleClose = vi.fn();
 
@@ -278,26 +274,18 @@ describe('PaperDatePickerModal', () => {
       />
     );
 
-    // Click time in header to switch to time tab
-    const timeHeaderBtn = screen.getByRole('button', { name: '14:30' });
-    fireEvent.click(timeHeaderBtn);
-
-    // Select hour 09 and minute 37
-    const h09 = screen.getByRole('button', { name: '09时' });
-    fireEvent.click(h09);
-    const m37 = screen.getByRole('button', { name: '37分' });
-    fireEvent.click(m37);
-
-    // Click date in header to switch back to date tab
-    const dateHeaderBtn = screen.getByRole('button', { name: '2026-11-15' });
-    fireEvent.click(dateHeaderBtn);
-
-    // Pick day 18
+    // Pick day 18 directly on calendar
     const day18 = screen.getByRole('button', { name: '18' });
     fireEvent.click(day18);
 
     expect(day18.className).toContain('text-(--btn-primary-fg)');
     expect(day18.className).not.toContain('text-(--ink-primary)');
+
+    // Select hour 09 and minute 37 directly on time section below
+    const h09 = screen.getByRole('button', { name: '09时' });
+    fireEvent.click(h09);
+    const m37 = screen.getByRole('button', { name: '37分' });
+    fireEvent.click(m37);
 
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     fireEvent.click(confirmBtn);
