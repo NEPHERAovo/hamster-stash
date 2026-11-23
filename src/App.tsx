@@ -50,6 +50,7 @@ import { pluginManager } from './core/plugin/PluginManager';
 import { syncService } from './domain/sync/syncService';
 import { currentYearMonth, stepYearMonth } from './utils/date';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from './core/db/schema';
+import { useTabSwipeGesture } from './hooks/useTabSwipeGesture';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('ledger');
@@ -217,6 +218,45 @@ export function App() {
       setCurrentTab('ledger');
     }
   }, [currentTab, pluginNavTabs]);
+
+  const allTabs = useMemo(() => {
+    const builtinTabs = [
+      { id: 'ledger', order: 10 },
+      { id: 'stats', order: 20 },
+      { id: 'assets', order: 40 },
+    ];
+    const mappedPluginTabs = pluginNavTabs.map((pt) => ({
+      id: pt.id,
+      order: pt.order ?? 30,
+    }));
+    return [...builtinTabs, ...mappedPluginTabs]
+      .sort((a, b) => a.order - b.order)
+      .map((t) => t.id);
+  }, [pluginNavTabs]);
+
+  const isSwipeBlocked =
+    isAddOpen ||
+    Boolean(editingTx) ||
+    isCreateAccountOpen ||
+    Boolean(editingAccount) ||
+    isLoanHubOpen ||
+    Boolean(activeDetailAccount) ||
+    isImportOpen ||
+    isCategoryManageOpen ||
+    isDataManageOpen ||
+    isSettingsOpen ||
+    Boolean(reconcileAccount) ||
+    isTransferOpen ||
+    Boolean(editingTransferTx) ||
+    Boolean(activeCategoryDrilldown);
+
+  useTabSwipeGesture({
+    currentTab,
+    tabs: allTabs,
+    onTabChange: (tab) => setCurrentTab(tab as NavTab),
+    disabled: isSwipeBlocked,
+    targetRef: mainScrollRef,
+  });
 
   const activeNavTab = pluginNavTabs.find((t) => t.id === currentTab);
 

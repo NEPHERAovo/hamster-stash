@@ -170,6 +170,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
   return (
     <div
       {...rest}
+      data-swipeable="true"
       className={cn('relative overflow-hidden bg-(--bg-surface)', containerClassName)}
     >
       {canSwipe && action && (
