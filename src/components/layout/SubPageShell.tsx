@@ -3,6 +3,7 @@ import { CaretLeftIcon as ChevronLeft } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import { SubPageContext, useSubPage } from './SubPageContext';
 import { PaperButton } from '../ui/PaperButton';
+import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 import {
   GestureSmoother,
   SPRING_OUT_EASE,
@@ -42,7 +43,7 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   header,
   children,
   className,
-  edgeThreshold = 120,
+  edgeThreshold = 36,
   dismissThreshold = 80,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -75,6 +76,11 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       isClosingRef.current = false;
     }, 240);
   }, [onClose]);
+
+  useCloseWatcher({
+    isOpen: shouldRender && !isClosingRef.current,
+    onClose: requestClose,
+  });
 
   useEffect(() => {
     if (!isOpen && shouldRender && !isClosingRef.current) {
