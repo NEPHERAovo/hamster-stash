@@ -14,7 +14,6 @@ import {
   PaperIconButton,
   PaperInput,
   PaperSelect,
-  PaperSwitch,
   PaperModal,
   AmountInput,
   PaperDatePickerModal,
@@ -101,7 +100,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
   const [costYuan, setCostYuan] = useState('');
   const [selectedAcctId, setSelectedAcctId] = useState('');
-  const [isHistorical, setIsHistorical] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -117,7 +115,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       setNextRenewalDate(editingItem.nextRenewalDate || '');
       setCostYuan('');
       setSelectedAcctId('');
-      setIsHistorical(false);
     } else {
       const today = todayDate();
       const initialKind = params?.prefillKind || 'physical';
@@ -134,7 +131,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       setRenewalAmountYuan(initialCost);
       setNextRenewalDate(calculateNextRenewalDate(initialDate, 'monthly'));
       setSelectedAcctId(accounts[0]?.id || '');
-      setIsHistorical(false);
     }
   }, [editingItem, accounts, params]);
 
@@ -197,7 +193,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 itemId: created.id,
                 itemRole: 'buy',
                 kind,
-                skipBalanceDeduction: isHistorical,
               },
             },
           });
@@ -409,7 +404,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 <PaperSelect
                   value={selectedAcctId}
                   onChange={(e) => setSelectedAcctId(e.target.value)}
-                  disabled={!costYuan || parseFloat(costYuan) <= 0}
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -419,17 +413,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 </PaperSelect>
               </div>
             </div>
-
-            {costYuan && parseFloat(costYuan) > 0 && (
-              <div className="flex items-center justify-between pt-0.5 select-none">
-                <span className="text-[11px] text-(--ink-secondary)">录入历史记录（仅建流水，不扣除当前余额）</span>
-                <PaperSwitch
-                  checked={isHistorical}
-                  onChange={(val) => setIsHistorical(val)}
-                  aria-label="录入历史记录"
-                />
-              </div>
-            )}
           </div>
         )}
 
@@ -444,20 +427,22 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 pb-(--safe-bottom)">
+        <div className="flex items-center gap-2 pt-2 pb-(--safe-bottom)">
           <PaperButton
-            variant="secondary"
-            size="compact"
+            type="button"
+            variant="sunken"
+            className="flex-1"
             onClick={onClose}
           >
             取消
           </PaperButton>
           <PaperButton
-            variant="primary"
-            size="compact"
             type="submit"
+            variant="primary"
+            className="flex-1"
             disabled={isSubmitting}
-            leftIcon={<Check className="size-3.5 stroke-2" />}
+            loading={isSubmitting}
+            leftIcon={<Check className="size-4 stroke-2" />}
           >
             {editingItem ? '保存修改' : '确认添加'}
           </PaperButton>

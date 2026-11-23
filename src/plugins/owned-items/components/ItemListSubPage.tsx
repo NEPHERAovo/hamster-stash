@@ -147,7 +147,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
         </div>
 
         <div className="tab-stagger-2 w-full space-y-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="no-scrollbar flex items-center justify-between gap-2 overflow-x-auto border-b border-(--rule-hairline) pb-2.5 font-mono text-xs">
             <SegToggle
               options={[
                 { value: 'all', label: '全部' },
@@ -159,9 +159,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               size="sm"
               fullWidth={false}
             />
-          </div>
 
-          <div className="flex items-center border-b border-(--rule-hairline) pb-2 font-mono text-xs">
             <SegToggle
               options={[
                 { value: 'using', label: `在用 (${overallSummary.usingCount})` },
