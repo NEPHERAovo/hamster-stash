@@ -391,4 +391,27 @@ describe('Modular Stats & UI Components', () => {
     expect(screen.getAllByText('净结余').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('结余储蓄率')).toBeInTheDocument();
   });
+
+  it('renders category icon badge in SpendingRankList rows', () => {
+    const itemsWithIcons: CategoryStatItem[] = [
+      {
+        categoryId: 'cat_food',
+        name: '餐饮',
+        icon: 'utensils',
+        color: 'var(--cat-food)',
+        amount: 30000,
+        percentage: 100,
+        dashLength: 326.7,
+        dashOffset: 0,
+        previousAmount: 20000,
+      },
+    ];
+
+    const { container } = render(<SpendingRankList items={itemsWithIcons} txType="expense" />);
+    expect(screen.getByText('餐饮')).toBeInTheDocument();
+    expect(screen.getByText('¥300.00')).toBeInTheDocument();
+    expect(screen.getByText('+¥100.00')).toBeInTheDocument();
+    const badge = container.querySelector('.category-badge');
+    expect(badge).not.toBeNull();
+  });
 });

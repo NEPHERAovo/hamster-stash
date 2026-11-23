@@ -27,6 +27,7 @@ export interface PeriodInfo {
 export interface CategoryStatItem {
   categoryId: string;
   name: string;
+  icon?: string;
   color: string;
   amount: number;       // 单位：分
   percentage: number;   // 0 ~ 100 整数
@@ -299,6 +300,7 @@ export function computeCategoryDonutStats(
     items.push({
       categoryId: entry.categoryId,
       name: cat?.name || '其他',
+      icon: cat?.icon,
       color: getStatsChartColor(idx),
       amount: entry.amount,
       percentage,
