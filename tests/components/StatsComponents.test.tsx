@@ -271,14 +271,64 @@ describe('Modular Stats & UI Components', () => {
         momRate: null,
         isNew: true,
       },
+      {
+        categoryId: 'c3',
+        name: '居家',
+        color: 'var(--cat-home)',
+        amount: 5000,
+        percentage: 10,
+        dashLength: 30,
+        dashOffset: 286,
+        previousAmount: 5000,
+        momRate: 0,
+        isNew: false,
+      },
     ];
 
-    render(<SpendingRankList items={itemsWithMom} totalExpense={47000} txType="expense" />);
+    render(<SpendingRankList items={itemsWithMom} totalExpense={52000} txType="expense" />);
 
     expect(screen.getByText('餐饮')).toBeInTheDocument();
-    expect(screen.getByText('+60%')).toBeInTheDocument();
+    expect(screen.getByText('¥320.00')).toBeInTheDocument();
+    expect(screen.getByText('60%')).toBeInTheDocument();
+    expect(screen.getByText('+¥120.00')).toBeInTheDocument();
+
     expect(screen.getByText('交通')).toBeInTheDocument();
-    expect(screen.getByText('新增')).toBeInTheDocument();
+    expect(screen.getByText('¥150.00')).toBeInTheDocument();
+    expect(screen.getByText('30%')).toBeInTheDocument();
+    expect(screen.getByText('+¥150.00')).toBeInTheDocument();
+
+    expect(screen.getByText('居家')).toBeInTheDocument();
+    expect(screen.getByText('= ¥0.00')).toBeInTheDocument();
+  });
+
+  it('SpendingRankList truncates to Top 5 items and supports expand/collapse', () => {
+    const sevenItems = Array.from({ length: 7 }, (_, i) => ({
+      categoryId: `cat_${i + 1}`,
+      name: `分类${i + 1}`,
+      color: 'var(--cat-other)',
+      amount: (7 - i) * 1000,
+      percentage: 14,
+      dashLength: 40,
+      dashOffset: i * 40,
+      previousAmount: 1000,
+    }));
+
+    render(<SpendingRankList items={sevenItems} totalExpense={28000} />);
+
+    expect(screen.getByText('分类1')).toBeInTheDocument();
+    expect(screen.getByText('分类5')).toBeInTheDocument();
+    expect(screen.queryByText('分类6')).not.toBeInTheDocument();
+    expect(screen.queryByText('分类7')).not.toBeInTheDocument();
+    expect(screen.getByText('展开其余 2 个分类')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('展开其余 2 个分类'));
+    expect(screen.getByText('分类6')).toBeInTheDocument();
+    expect(screen.getByText('分类7')).toBeInTheDocument();
+    expect(screen.getByText('收起')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('收起'));
+    expect(screen.queryByText('分类6')).not.toBeInTheDocument();
+    expect(screen.getByText('展开其余 2 个分类')).toBeInTheDocument();
   });
 
   it('StatsView switches dimensions smoothly inside separate chart cards', () => {

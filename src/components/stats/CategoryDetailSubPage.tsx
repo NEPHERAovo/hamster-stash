@@ -14,15 +14,20 @@ export interface CategoryDetailSubPageProps {
   onSelectTransaction?: (tx: Transaction) => void;
 }
 
-function getMomTextColor(type: string, momRate: number): string {
+function getDiffColor(type: string, diff: number): string {
+  if (diff === 0) return 'text-(--ink-tertiary)';
   if (type === 'income') {
-    if (momRate > 0) return 'text-(--color-income)';
-    if (momRate < 0) return 'text-(--color-expense)';
-    return 'text-(--ink-solid)';
+    if (diff > 0) return 'text-(--color-income)';
+    return 'text-(--color-expense)';
   }
-  if (momRate > 0) return 'text-(--color-expense)';
-  if (momRate < 0) return 'text-(--color-income)';
-  return 'text-(--ink-solid)';
+  if (diff > 0) return 'text-(--color-expense)';
+  return 'text-(--color-income)';
+}
+
+function formatDiffText(diff: number): string {
+  if (diff > 0) return `+¥${centsToYuan(diff)}`;
+  if (diff < 0) return `-¥${centsToYuan(Math.abs(diff))}`;
+  return '= ¥0.00';
 }
 
 export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
@@ -31,7 +36,8 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
   accounts,
   onSelectTransaction,
 }) => {
-  const { category, periodLabel, transactions, totalExpense, categoryPercentage, momRate, isNew } = data;
+  const { category, periodLabel, transactions, totalExpense, categoryPercentage, previousAmount } = data;
+  const diff = previousAmount !== undefined ? totalExpense - previousAmount : null;
 
   return (
     <div className="space-y-3.5 p-4 pb-12">
@@ -61,19 +67,13 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
           <span>
             共 <strong className="font-mono text-(--ink-solid)">{transactions.length}</strong> 笔
           </span>
-          {isNew && (
-            <>
-              <span className="text-(--rule-hairline)">•</span>
-              <span className="font-mono text-[11px] text-(--ink-tertiary)">本期新增</span>
-            </>
-          )}
-          {momRate !== null && momRate !== undefined && !isNew && (
+          {diff !== null && (
             <>
               <span className="text-(--rule-hairline)">•</span>
               <span className="font-mono text-[11px]">
-                环比{' '}
-                <strong className={getMomTextColor(category.type, momRate)}>
-                  {momRate > 0 ? `+${momRate}%` : `${momRate}%`}
+                较上期{' '}
+                <strong className={getDiffColor(category.type, diff)}>
+                  {formatDiffText(diff)}
                 </strong>
               </span>
             </>

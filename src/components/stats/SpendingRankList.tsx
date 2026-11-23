@@ -1,5 +1,5 @@
-import React from 'react';
-import { CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
+import React, { useState } from 'react';
+import { CaretRightIcon as ChevronRight, CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react';
 import { PaperButton } from '../ui/PaperButton';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { CategoryStatItem } from '../../domain/finance/periodStats';
@@ -13,15 +13,22 @@ export interface SpendingRankListProps {
   txType?: 'expense' | 'income';
 }
 
-function getMomRateColor(txType: 'expense' | 'income', momRate: number): string {
-  if (txType === 'income') {
-    if (momRate > 0) return 'text-(--color-income)';
-    if (momRate < 0) return 'text-(--color-expense)';
+function getDiffColor(txType: 'expense' | 'income', diff: number): string {
+  if (diff === 0) {
     return 'text-(--ink-tertiary)';
   }
-  if (momRate > 0) return 'text-(--color-expense)';
-  if (momRate < 0) return 'text-(--color-income)';
-  return 'text-(--ink-tertiary)';
+  if (txType === 'income') {
+    if (diff > 0) return 'text-(--color-income)';
+    return 'text-(--color-expense)';
+  }
+  if (diff > 0) return 'text-(--color-expense)';
+  return 'text-(--color-income)';
+}
+
+function formatDiffText(diff: number): string {
+  if (diff > 0) return `+¥${centsToYuan(diff)}`;
+  if (diff < 0) return `-¥${centsToYuan(Math.abs(diff))}`;
+  return '= ¥0.00';
 }
 
 export const SpendingRankList: React.FC<SpendingRankListProps> = ({
@@ -30,53 +37,89 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
   className,
   txType = 'expense',
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (items.length === 0) {
     return null;
   }
 
+  const hasMore = items.length > 5;
+  const displayedItems = isExpanded || !hasMore ? items : items.slice(0, 5);
+
   return (
     <div className={cn('pt-0.5', className)}>
-      {items.map((item) => (
-        <PaperButton
-          key={item.categoryId}
-          variant="ghost"
-          fullWidth
-          size="md"
-          onClick={() => onSelectCategory?.(item.categoryId)}
-          className="group h-auto justify-start gap-0 rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] font-normal last:border-b-0 hover:bg-(--paper-sunken)/60"
-          title={`查看「${item.name}」明细`}
-        >
-          <div
-            className="mr-2.5 size-2.5 shrink-0 rounded-(--badge-radius)"
-            style={{ backgroundColor: item.color }}
-          />
-          <span className="flex-1 truncate font-medium text-(--ink-primary)">
-            {item.name}
-          </span>
-          <span className="mr-2 font-mono font-semibold text-(--ink-primary) tabular-nums">
-            ¥{centsToYuan(item.amount)}
-          </span>
-          <span className="mr-1.5 min-w-8 text-right font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
-            {item.percentage}%
-          </span>
-          {item.isNew && (
-            <span className="mr-1.5 min-w-[38px] text-right font-mono text-[10px] text-(--ink-tertiary) tabular-nums">
-              新增
-            </span>
-          )}
-          {!item.isNew && item.momRate !== null && item.momRate !== undefined && (
-            <span
-              className={cn(
-                'mr-1.5 min-w-[46px] text-right font-mono text-[10px] font-medium tabular-nums',
-                getMomRateColor(txType, item.momRate)
-              )}
+      <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
+        {displayedItems.map((item) => {
+          const previousAmount = item.previousAmount ?? 0;
+          const diff = item.amount - previousAmount;
+          const diffText = formatDiffText(diff);
+          const diffColor = getDiffColor(txType, diff);
+
+          return (
+            <PaperButton
+              key={item.categoryId}
+              variant="ghost"
+              fullWidth
+              size="md"
+              onClick={() => onSelectCategory?.(item.categoryId)}
+              className="group flex h-auto flex-col rounded-(--radius-sm) px-1 py-2.5 text-left font-normal hover:bg-(--paper-sunken)/60"
+              title={`查看「${item.name}」明细`}
             >
-              {item.momRate > 0 ? `+${item.momRate}%` : `${item.momRate}%`}
+              <div className="flex w-full items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div
+                    className="size-2.5 shrink-0 rounded-(--badge-radius)"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="truncate text-[13px] font-medium text-(--ink-primary)">
+                    {item.name}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="font-mono text-[13px] font-semibold text-(--ink-primary) tabular-nums">
+                    ¥{centsToYuan(item.amount)}
+                  </span>
+                  <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
+                </div>
+              </div>
+
+              <div className="flex w-full items-center justify-between pt-1">
+                <span className="pl-4.5 font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
+                  {item.percentage}%
+                </span>
+                <span
+                  className={cn(
+                    'pr-5 font-mono text-[11px] font-medium tabular-nums',
+                    diffColor
+                  )}
+                >
+                  {diffText}
+                </span>
+              </div>
+            </PaperButton>
+          );
+        })}
+      </div>
+
+      {hasMore && (
+        <div className="pt-2 text-center">
+          <PaperButton
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="h-auto gap-1 py-1 text-xs text-(--ink-tertiary) hover:text-(--ink-primary)"
+          >
+            <span>
+              {isExpanded ? '收起' : `展开其余 ${items.length - 5} 个分类`}
             </span>
-          )}
-          <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
-        </PaperButton>
-      ))}
+            {isExpanded ? (
+              <CaretUpIcon className="size-3.5" />
+            ) : (
+              <CaretDownIcon className="size-3.5" />
+            )}
+          </PaperButton>
+        </div>
+      )}
     </div>
   );
 };
