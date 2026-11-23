@@ -390,6 +390,11 @@ describe('Modular Stats & UI Components', () => {
     expect(screen.getByText('收支对比')).toBeInTheDocument();
     expect(screen.getAllByText('净结余').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('结余储蓄率')).toBeInTheDocument();
+    expect(screen.getAllByText('+¥1200.00').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('+¥500.00').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('+¥700.00').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('¥500.00')).toBeInTheDocument();
+    expect(screen.getAllByText('¥700.00').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders category icon badge in SpendingRankList rows', () => {

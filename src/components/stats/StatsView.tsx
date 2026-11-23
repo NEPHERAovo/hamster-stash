@@ -370,7 +370,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </div>
         </div>
 
-        <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-5">
+        <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-colors duration-200 select-none sm:p-5">
           <div className="flex items-center justify-between gap-2 select-none">
             <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
               {compositionTitle}
@@ -412,85 +412,95 @@ export const StatsView: React.FC<StatsViewProps> = ({
               <div className="border-t border-(--rule-hairline)/60 pt-1">
                 {compositionDimension === 'balance' ? (
                   <div className="divide-y divide-dashed divide-(--rule-hairline)/60 pt-0.5 text-xs">
-                    <div className="flex items-center justify-between px-1 py-2">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2.5 rounded-(--badge-radius) bg-(--color-income)" />
-                        <span className="font-medium text-(--ink-primary)">总收入</span>
-                      </div>
-                      <div className="flex items-center gap-2 font-mono tabular-nums">
-                        <span className="font-semibold text-(--ink-primary)">
-                          ¥{centsToYuan(balanceSummary.income)}
-                        </span>
-                        {balanceSummary.incomeMomRate !== null && (
-                          <span
-                            className={cn(
-                              'text-[10px] font-medium',
-                              balanceSummary.incomeMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                            )}
-                          >
-                            {balanceSummary.incomeMomRate > 0 ? `+${balanceSummary.incomeMomRate}%` : `${balanceSummary.incomeMomRate}%`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    {(() => {
+                      const incomeDiff = balanceSummary.income - balanceSummary.previousIncome;
+                      const expenseDiff = balanceSummary.expense - balanceSummary.previousExpense;
+                      const balanceDiff = balanceSummary.netBalance - balanceSummary.previousNetBalance;
 
-                    <div className="flex items-center justify-between px-1 py-2">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2.5 rounded-(--badge-radius) bg-(--color-expense)" />
-                        <span className="font-medium text-(--ink-primary)">净支出</span>
-                      </div>
-                      <div className="flex items-center gap-2 font-mono tabular-nums">
-                        <span className="font-semibold text-(--ink-primary)">
-                          ¥{centsToYuan(balanceSummary.expense)}
-                        </span>
-                        {balanceSummary.expenseMomRate !== null && (
-                          <span
-                            className={cn(
-                              'text-[10px] font-medium',
-                              balanceSummary.expenseMomRate <= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                            )}
-                          >
-                            {balanceSummary.expenseMomRate > 0 ? `+${balanceSummary.expenseMomRate}%` : `${balanceSummary.expenseMomRate}%`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                      const formatDiff = (diff: number) => {
+                        if (diff > 0) return `+¥${centsToYuan(diff)}`;
+                        if (diff < 0) return `-¥${centsToYuan(Math.abs(diff))}`;
+                        return '= ¥0.00';
+                      };
 
-                    <div className="flex items-center justify-between px-1 py-2">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2.5 rounded-(--badge-radius) bg-(--ink-solid)" />
-                        <span className="font-medium text-(--ink-primary)">净结余</span>
-                      </div>
-                      <div className="flex items-center gap-2 font-mono tabular-nums">
-                        <span
-                          className={cn(
-                            'font-semibold',
-                            balanceSummary.netBalance >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                          )}
-                        >
-                          {balanceSummary.netBalance < 0
-                            ? `-¥${centsToYuan(Math.abs(balanceSummary.netBalance))}`
-                            : `¥${centsToYuan(balanceSummary.netBalance)}`}
-                        </span>
-                        {balanceSummary.balanceMomRate !== null && (
-                          <span
-                            className={cn(
-                              'text-[10px] font-medium',
-                              balanceSummary.balanceMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                            )}
-                          >
-                            {balanceSummary.balanceMomRate > 0 ? `+${balanceSummary.balanceMomRate}%` : `${balanceSummary.balanceMomRate}%`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                      const getDiffColor = (type: 'income' | 'expense' | 'balance', diff: number) => {
+                        if (diff === 0) return 'text-(--ink-tertiary)';
+                        if (type === 'expense') {
+                          if (diff > 0) return 'text-(--color-expense)';
+                          return 'text-(--color-income)';
+                        }
+                        if (diff > 0) return 'text-(--color-income)';
+                        return 'text-(--color-expense)';
+                      };
 
-                    <div className="flex items-center justify-between px-1 py-2">
-                      <span className="font-medium text-(--ink-secondary)">结余储蓄率</span>
-                      <span className="font-mono text-xs font-semibold text-(--ink-primary) tabular-nums">
-                        {balanceSummary.savingsRate}%
-                      </span>
-                    </div>
+                      return (
+                        <>
+                          <div className="flex items-center justify-between px-1 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2.5 rounded-(--badge-radius) bg-(--color-income)" />
+                              <span className="font-medium text-(--ink-primary)">总收入</span>
+                            </div>
+                            <div className="flex items-center gap-2 font-mono tabular-nums">
+                              <span className={cn('min-w-18 text-right text-[11px] font-medium tabular-nums', getDiffColor('income', incomeDiff))}>
+                                {formatDiff(incomeDiff)}
+                              </span>
+                              <span className="min-w-20 text-right text-[13px] font-semibold text-(--ink-primary) tabular-nums">
+                                ¥{centsToYuan(balanceSummary.income)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between px-1 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2.5 rounded-(--badge-radius) bg-(--color-expense)" />
+                              <span className="font-medium text-(--ink-primary)">净支出</span>
+                            </div>
+                            <div className="flex items-center gap-2 font-mono tabular-nums">
+                              <span className={cn('min-w-18 text-right text-[11px] font-medium tabular-nums', getDiffColor('expense', expenseDiff))}>
+                                {formatDiff(expenseDiff)}
+                              </span>
+                              <span className="min-w-20 text-right text-[13px] font-semibold text-(--ink-primary) tabular-nums">
+                                ¥{centsToYuan(balanceSummary.expense)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between px-1 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2.5 rounded-(--badge-radius) bg-(--ink-solid)" />
+                              <span className="font-medium text-(--ink-primary)">净结余</span>
+                            </div>
+                            <div className="flex items-center gap-2 font-mono tabular-nums">
+                              <span className={cn('min-w-18 text-right text-[11px] font-medium tabular-nums', getDiffColor('balance', balanceDiff))}>
+                                {formatDiff(balanceDiff)}
+                              </span>
+                              <span
+                                className={cn(
+                                  'min-w-20 text-right text-[13px] font-semibold tabular-nums',
+                                  balanceSummary.netBalance >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                                )}
+                              >
+                                {balanceSummary.netBalance < 0
+                                  ? `-¥${centsToYuan(Math.abs(balanceSummary.netBalance))}`
+                                  : `¥${centsToYuan(balanceSummary.netBalance)}`}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between px-1 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2.5" />
+                              <span className="font-medium text-(--ink-secondary)">结余储蓄率</span>
+                            </div>
+                            <div className="flex items-center gap-2 font-mono tabular-nums">
+                              <span className="min-w-20 text-right text-[13px] font-semibold text-(--ink-primary) tabular-nums">
+                                {balanceSummary.savingsRate}%
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <SpendingRankList
