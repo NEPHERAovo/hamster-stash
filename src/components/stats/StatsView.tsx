@@ -33,7 +33,11 @@ import { SegToggle } from '../ui/SegToggle';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
-import { PaperDatePickerModal, type DateRangeValue } from '../ui/PaperDatePickerModal';
+import {
+  PaperDatePickerModal,
+  type DatePickerMode,
+  type DateRangeValue,
+} from '../ui/PaperDatePickerModal';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import {
@@ -361,6 +365,19 @@ export const StatsView: React.FC<StatsViewProps> = ({
     return periodInfo.label;
   }, [mode, periodInfo, isModern]);
 
+  const datePickerMode: DatePickerMode = useMemo(() => {
+    if (mode === 'custom') return 'range';
+    if (mode === 'month') return 'month';
+    if (mode === 'year') return 'year';
+    return 'date';
+  }, [mode]);
+
+  const datePickerValue = useMemo(() => {
+    if (mode === 'month') return currentDate.format('YYYY-MM');
+    if (mode === 'year') return currentDate.format('YYYY');
+    return currentDate.format('YYYY-MM-DD');
+  }, [mode, currentDate]);
+
   const handleSelectCategory = (categoryId: string) => {
     const targetCategory = categories.find((c) => c.id === categoryId);
     if (!targetCategory) return;
@@ -640,11 +657,19 @@ export const StatsView: React.FC<StatsViewProps> = ({
       <PaperDatePickerModal
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
-        mode={mode === 'custom' ? 'range' : 'date'}
-        value={currentDate.format('YYYY-MM-DD')}
+        mode={datePickerMode}
+        value={datePickerValue}
         onChange={(val) => {
-          const d = parseLocalDate(val);
-          if (d.isValid()) setCurrentDate(d);
+          if (mode === 'month') {
+            const d = parseLocalDate(`${val}-01`);
+            if (d.isValid()) setCurrentDate(d);
+          } else if (mode === 'year') {
+            const d = parseLocalDate(`${val}-01-01`);
+            if (d.isValid()) setCurrentDate(d);
+          } else {
+            const d = parseLocalDate(val);
+            if (d.isValid()) setCurrentDate(d);
+          }
         }}
         rangeValue={customRange}
         onRangeChange={(range) => {

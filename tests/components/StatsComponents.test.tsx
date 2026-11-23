@@ -455,4 +455,30 @@ describe('Modular Stats & UI Components', () => {
     fireEvent.click(centerDateBtn);
     expect(screen.getByText('选择日期范围')).toBeInTheDocument();
   });
+
+  it('opens month picker when clicking center date in month mode, and year picker in year mode', () => {
+    render(
+      <StatsView
+        allTransactions={[]}
+        categories={[]}
+        accounts={[]}
+      />
+    );
+
+    // In default month mode, clicking center date opens month picker
+    const centerDateBtn = screen.getByTitle('点击选择日期');
+    fireEvent.click(centerDateBtn);
+    expect(screen.getByText('选择月份')).toBeInTheDocument();
+
+    // Close modal
+    const closeBtn = screen.getByLabelText('关闭');
+    fireEvent.click(closeBtn);
+
+    // Switch to Year mode
+    const yearModeBtn = screen.getByRole('button', { name: '年' });
+    fireEvent.click(yearModeBtn);
+
+    fireEvent.click(centerDateBtn);
+    expect(screen.getByText('选择年份')).toBeInTheDocument();
+  });
 });
