@@ -281,7 +281,7 @@ describe('Modular Stats & UI Components', () => {
     expect(screen.getByText('新增')).toBeInTheDocument();
   });
 
-  it('StatsView switches dimensions smoothly between 支出, 收入, and 结余', () => {
+  it('StatsView switches dimensions smoothly inside separate chart cards', () => {
     const mockTxs = [
       {
         id: 'tx_exp',
@@ -318,25 +318,26 @@ describe('Modular Stats & UI Components', () => {
       />
     );
 
-    // Initial default: 支出
     expect(screen.getByText('支出构成')).toBeInTheDocument();
     expect(screen.getByText('月度支出趋势')).toBeInTheDocument();
     expect(screen.getByText('总支出')).toBeInTheDocument();
 
-    // Click 收入 in bottom switcher
-    const incomeToggleBtn = screen.getByRole('button', { name: '收入' });
-    fireEvent.click(incomeToggleBtn);
+    const incomeButtons = screen.getAllByRole('button', { name: '收入' });
+    expect(incomeButtons.length).toBe(2);
 
+    fireEvent.click(incomeButtons[0]);
     expect(screen.getByText('收入构成')).toBeInTheDocument();
-    expect(screen.getByText('月度收入趋势')).toBeInTheDocument();
     expect(screen.getByText('总收入')).toBeInTheDocument();
+    expect(screen.getByText('月度支出趋势')).toBeInTheDocument();
 
-    // Click 结余 in bottom switcher
-    const balanceToggleBtn = screen.getByRole('button', { name: '结余' });
-    fireEvent.click(balanceToggleBtn);
-
-    expect(screen.getByText('收支对比与结余')).toBeInTheDocument();
+    const balanceButtons = screen.getAllByRole('button', { name: '结余' });
+    expect(balanceButtons.length).toBe(2);
+    fireEvent.click(balanceButtons[1]);
     expect(screen.getByText('月度结余趋势')).toBeInTheDocument();
+    expect(screen.getByText('收入构成')).toBeInTheDocument();
+
+    fireEvent.click(balanceButtons[0]);
+    expect(screen.getByText('收支对比')).toBeInTheDocument();
     expect(screen.getAllByText('净结余').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('结余储蓄率')).toBeInTheDocument();
   });

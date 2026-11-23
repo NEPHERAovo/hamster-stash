@@ -50,8 +50,11 @@ export interface StatsViewProps {
   onSelectTransaction?: (tx: Transaction) => void;
   mode?: PeriodMode;
   onModeChange?: (mode: PeriodMode) => void;
+  compositionDimension?: StatsDimension;
+  onCompositionDimensionChange?: (dimension: StatsDimension) => void;
+  trendDimension?: StatsDimension;
+  onTrendDimensionChange?: (dimension: StatsDimension) => void;
   dimension?: StatsDimension;
-  onDimensionChange?: (dimension: StatsDimension) => void;
   onOpenCategoryDrilldown?: (data: CategoryDrilldownData) => void;
 }
 
@@ -71,17 +74,28 @@ export const StatsView: React.FC<StatsViewProps> = ({
   onSelectTransaction,
   mode: controlledMode,
   onModeChange,
-  dimension: controlledDimension,
-  onDimensionChange,
+  compositionDimension: controlledCompDim,
+  onCompositionDimensionChange,
+  trendDimension: controlledTrendDim,
+  onTrendDimensionChange,
+  dimension: legacyDimension,
   onOpenCategoryDrilldown,
 }) => {
   const [internalMode, setInternalMode] = useState<PeriodMode>('month');
-  const [internalDimension, setInternalDimension] = useState<StatsDimension>('expense');
+  const [internalCompDimension, setInternalCompDimension] = useState<StatsDimension>(
+    controlledCompDim || legacyDimension || 'expense'
+  );
+  const [internalTrendDimension, setInternalTrendDimension] = useState<StatsDimension>(
+    controlledTrendDim || legacyDimension || 'expense'
+  );
   const [internalDrilldown, setInternalDrilldown] = useState<CategoryDrilldownData | null>(null);
+
   const mode = controlledMode || internalMode;
   const setMode = onModeChange || setInternalMode;
-  const dimension = controlledDimension || internalDimension;
-  const setDimension = onDimensionChange || setInternalDimension;
+  const compositionDimension = controlledCompDim || internalCompDimension;
+  const setCompositionDimension = onCompositionDimensionChange || setInternalCompDimension;
+  const trendDimension = controlledTrendDim || internalTrendDimension;
+  const setTrendDimension = onTrendDimensionChange || setInternalTrendDimension;
 
   const uiStyle = useThemeStore((s) => s.uiStyle);
   const isModern = uiStyle === 'modern';
@@ -123,7 +137,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
   }, [periodTransactions, allTransactions, periodInfo, mode, isAmortizationEnabled]);
 
   const { items: donutItems, totalAmount, circumference } = useMemo(() => {
-    if (dimension === 'balance') {
+    if (compositionDimension === 'balance') {
       const CIRCUMFERENCE = 326.73;
       const total = balanceSummary.income + balanceSummary.expense;
       if (total === 0) {
@@ -165,30 +179,30 @@ export const StatsView: React.FC<StatsViewProps> = ({
       isAmortizationEnabled,
       periodInfo.key,
       mode,
-      dimension
+      compositionDimension
     );
     return { items: res.items, totalAmount: res.totalAmount, circumference: res.circumference };
-  }, [dimension, balanceSummary, periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
+  }, [compositionDimension, balanceSummary, periodTransactions, categories, allTransactions, isAmortizationEnabled, periodInfo.key, mode]);
 
-  const isEmpty = useMemo(() => {
-    if (dimension === 'balance') {
+  const isCompositionEmpty = useMemo(() => {
+    if (compositionDimension === 'balance') {
       return balanceSummary.income === 0 && balanceSummary.expense === 0;
     }
     return totalAmount === 0;
-  }, [dimension, balanceSummary, totalAmount]);
+  }, [compositionDimension, balanceSummary, totalAmount]);
 
-  const prevEmptyRef = useRef(isEmpty);
-  const shouldAnimateEmpty = prevEmptyRef.current !== isEmpty && isEmpty;
+  const prevEmptyRef = useRef(isCompositionEmpty);
+  const shouldAnimateEmpty = prevEmptyRef.current !== isCompositionEmpty && isCompositionEmpty;
 
   useEffect(() => {
-    prevEmptyRef.current = isEmpty;
-  }, [isEmpty]);
+    prevEmptyRef.current = isCompositionEmpty;
+  }, [isCompositionEmpty]);
 
   const [trendOffset, setTrendOffset] = useState<number>(0);
 
   useEffect(() => {
     setTrendOffset(0);
-  }, [periodInfo.key, mode, dimension]);
+  }, [periodInfo.key, mode, trendDimension]);
 
   const trendTargetKey = useMemo(() => {
     if (trendOffset === 0) return periodInfo.key;
@@ -208,9 +222,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
       trendTargetKey,
       mode === 'year' ? 5 : 6,
       isAmortizationEnabled,
-      dimension
+      trendDimension
     );
-  }, [allTransactions, mode, trendTargetKey, isAmortizationEnabled, dimension]);
+  }, [allTransactions, mode, trendTargetKey, isAmortizationEnabled, trendDimension]);
 
   const handleStepTrendPrev = () => {
     setTrendOffset((prev) => prev - 1);
@@ -228,31 +242,31 @@ export const StatsView: React.FC<StatsViewProps> = ({
     else if (mode === 'year') prefix = '年度';
 
     let suffix = '支出趋势';
-    if (dimension === 'income') suffix = '收入趋势';
-    else if (dimension === 'balance') suffix = '结余趋势';
+    if (trendDimension === 'income') suffix = '收入趋势';
+    else if (trendDimension === 'balance') suffix = '结余趋势';
 
     return `${prefix}${suffix}`;
-  }, [mode, dimension]);
+  }, [mode, trendDimension]);
 
   const compositionTitle = useMemo(() => {
-    if (dimension === 'income') return '收入构成';
-    if (dimension === 'balance') return '收支对比与结余';
+    if (compositionDimension === 'income') return '收入构成';
+    if (compositionDimension === 'balance') return '收支对比';
     return '支出构成';
-  }, [dimension]);
+  }, [compositionDimension]);
 
   const donutCenterLabel = useMemo(() => {
-    if (dimension === 'income') return '总收入';
-    if (dimension === 'balance') return '净结余';
+    if (compositionDimension === 'income') return '总收入';
+    if (compositionDimension === 'balance') return '净结余';
     return '总支出';
-  }, [dimension]);
+  }, [compositionDimension]);
 
-  const barColor = dimension === 'income' ? 'var(--color-income)' : 'var(--color-expense)';
+  const trendBarColor = trendDimension === 'income' ? 'var(--color-income)' : 'var(--color-expense)';
 
   const emptyTitle = useMemo(() => {
-    if (dimension === 'income') return '本周期暂无收入记录';
-    if (dimension === 'balance') return '本周期暂无收支记录';
+    if (compositionDimension === 'income') return '本周期暂无收入记录';
+    if (compositionDimension === 'balance') return '本周期暂无收支记录';
     return '本周期暂无支出记录';
-  }, [dimension]);
+  }, [compositionDimension]);
 
   const weekBadge = useMemo(() => {
     if (mode !== 'week') return null;
@@ -310,16 +324,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
     }
   };
 
-  const displayTransactions = useMemo(() => {
-    if (dimension === 'expense') {
-      return periodTransactions.filter((t) => t.type === 'expense');
-    }
-    if (dimension === 'income') {
-      return periodTransactions.filter((t) => t.type === 'income' && !t.offsetTransactionId);
-    }
-    return periodTransactions;
-  }, [periodTransactions, dimension]);
-
   return (
     <div className="space-y-3.5 py-2 pb-6">
       {!controlledMode && (
@@ -366,152 +370,153 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </div>
         </div>
 
-        {isEmpty ? (
-          <PaperEmptyState
-            icon={PieChart}
-            title={emptyTitle}
-            variant="card"
-            animate={shouldAnimateEmpty}
-          />
-        ) : (
-          <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold tracking-tight text-(--ink-primary)">
-                {compositionTitle}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-center py-1">
-              <DonutChart
-                items={donutItems}
-                totalAmount={totalAmount}
-                circumference={circumference}
-                periodKey={`${periodInfo.key}-${dimension}`}
-                centerLabel={donutCenterLabel}
+        <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-5">
+          <div className="flex items-center justify-between gap-2 select-none">
+            <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
+              {compositionTitle}
+            </span>
+            <div className="shrink-0">
+              <SegToggle
+                options={[
+                  { value: 'expense', label: '支出' },
+                  { value: 'income', label: '收入' },
+                  { value: 'balance', label: '结余' },
+                ]}
+                value={compositionDimension}
+                onChange={(dim) => setCompositionDimension(dim as StatsDimension)}
+                size="sm"
+                fullWidth={false}
               />
             </div>
-
-            <div className="border-t border-(--rule-hairline)/60 pt-1">
-              {dimension === 'balance' ? (
-                <div className="divide-y divide-dashed divide-(--rule-hairline)/60 pt-0.5 text-xs">
-                  <div className="flex items-center justify-between px-1 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-(--badge-radius) bg-(--color-income)" />
-                      <span className="font-medium text-(--ink-primary)">总收入</span>
-                    </div>
-                    <div className="flex items-center gap-2 font-mono tabular-nums">
-                      <span className="font-semibold text-(--ink-primary)">
-                        ¥{centsToYuan(balanceSummary.income)}
-                      </span>
-                      {balanceSummary.incomeMomRate !== null && (
-                        <span
-                          className={cn(
-                            'text-[10px] font-medium',
-                            balanceSummary.incomeMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                          )}
-                        >
-                          {balanceSummary.incomeMomRate > 0 ? `+${balanceSummary.incomeMomRate}%` : `${balanceSummary.incomeMomRate}%`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between px-1 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-(--badge-radius) bg-(--color-expense)" />
-                      <span className="font-medium text-(--ink-primary)">净支出</span>
-                    </div>
-                    <div className="flex items-center gap-2 font-mono tabular-nums">
-                      <span className="font-semibold text-(--ink-primary)">
-                        ¥{centsToYuan(balanceSummary.expense)}
-                      </span>
-                      {balanceSummary.expenseMomRate !== null && (
-                        <span
-                          className={cn(
-                            'text-[10px] font-medium',
-                            balanceSummary.expenseMomRate <= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                          )}
-                        >
-                          {balanceSummary.expenseMomRate > 0 ? `+${balanceSummary.expenseMomRate}%` : `${balanceSummary.expenseMomRate}%`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between px-1 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-(--badge-radius) bg-(--ink-solid)" />
-                      <span className="font-medium text-(--ink-primary)">净结余</span>
-                    </div>
-                    <div className="flex items-center gap-2 font-mono tabular-nums">
-                      <span
-                        className={cn(
-                          'font-semibold',
-                          balanceSummary.netBalance >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                        )}
-                      >
-                        {balanceSummary.netBalance < 0
-                          ? `-¥${centsToYuan(Math.abs(balanceSummary.netBalance))}`
-                          : `¥${centsToYuan(balanceSummary.netBalance)}`}
-                      </span>
-                      {balanceSummary.balanceMomRate !== null && (
-                        <span
-                          className={cn(
-                            'text-[10px] font-medium',
-                            balanceSummary.balanceMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
-                          )}
-                        >
-                          {balanceSummary.balanceMomRate > 0 ? `+${balanceSummary.balanceMomRate}%` : `${balanceSummary.balanceMomRate}%`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between px-1 py-2">
-                    <span className="font-medium text-(--ink-secondary)">结余储蓄率</span>
-                    <span className="font-mono text-xs font-semibold text-(--ink-primary) tabular-nums">
-                      {balanceSummary.savingsRate}%
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <SpendingRankList
-                  items={donutItems}
-                  totalExpense={totalAmount}
-                  onSelectCategory={handleSelectCategory}
-                  txType={dimension}
-                />
-              )}
-            </div>
           </div>
-        )}
+
+          {isCompositionEmpty ? (
+            <PaperEmptyState
+              icon={PieChart}
+              title={emptyTitle}
+              variant="plain"
+              animate={shouldAnimateEmpty}
+            />
+          ) : (
+            <>
+              <div className="flex items-center justify-center py-1">
+                <DonutChart
+                  items={donutItems}
+                  totalAmount={totalAmount}
+                  circumference={circumference}
+                  periodKey={`${periodInfo.key}-${compositionDimension}`}
+                  centerLabel={donutCenterLabel}
+                />
+              </div>
+
+              <div className="border-t border-(--rule-hairline)/60 pt-1">
+                {compositionDimension === 'balance' ? (
+                  <div className="divide-y divide-dashed divide-(--rule-hairline)/60 pt-0.5 text-xs">
+                    <div className="flex items-center justify-between px-1 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-(--badge-radius) bg-(--color-income)" />
+                        <span className="font-medium text-(--ink-primary)">总收入</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono tabular-nums">
+                        <span className="font-semibold text-(--ink-primary)">
+                          ¥{centsToYuan(balanceSummary.income)}
+                        </span>
+                        {balanceSummary.incomeMomRate !== null && (
+                          <span
+                            className={cn(
+                              'text-[10px] font-medium',
+                              balanceSummary.incomeMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                            )}
+                          >
+                            {balanceSummary.incomeMomRate > 0 ? `+${balanceSummary.incomeMomRate}%` : `${balanceSummary.incomeMomRate}%`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between px-1 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-(--badge-radius) bg-(--color-expense)" />
+                        <span className="font-medium text-(--ink-primary)">净支出</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono tabular-nums">
+                        <span className="font-semibold text-(--ink-primary)">
+                          ¥{centsToYuan(balanceSummary.expense)}
+                        </span>
+                        {balanceSummary.expenseMomRate !== null && (
+                          <span
+                            className={cn(
+                              'text-[10px] font-medium',
+                              balanceSummary.expenseMomRate <= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                            )}
+                          >
+                            {balanceSummary.expenseMomRate > 0 ? `+${balanceSummary.expenseMomRate}%` : `${balanceSummary.expenseMomRate}%`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between px-1 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-(--badge-radius) bg-(--ink-solid)" />
+                        <span className="font-medium text-(--ink-primary)">净结余</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono tabular-nums">
+                        <span
+                          className={cn(
+                            'font-semibold',
+                            balanceSummary.netBalance >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                          )}
+                        >
+                          {balanceSummary.netBalance < 0
+                            ? `-¥${centsToYuan(Math.abs(balanceSummary.netBalance))}`
+                            : `¥${centsToYuan(balanceSummary.netBalance)}`}
+                        </span>
+                        {balanceSummary.balanceMomRate !== null && (
+                          <span
+                            className={cn(
+                              'text-[10px] font-medium',
+                              balanceSummary.balanceMomRate >= 0 ? 'text-(--color-income)' : 'text-(--color-expense)'
+                            )}
+                          >
+                            {balanceSummary.balanceMomRate > 0 ? `+${balanceSummary.balanceMomRate}%` : `${balanceSummary.balanceMomRate}%`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between px-1 py-2">
+                      <span className="font-medium text-(--ink-secondary)">结余储蓄率</span>
+                      <span className="font-mono text-xs font-semibold text-(--ink-primary) tabular-nums">
+                        {balanceSummary.savingsRate}%
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <SpendingRankList
+                    items={donutItems}
+                    totalExpense={totalAmount}
+                    onSelectCategory={handleSelectCategory}
+                    txType={compositionDimension}
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="tab-stagger-2">
         <MonthlyTrendBar
           title={trendTitle}
           trends={trends}
-          barColor={barColor}
+          barColor={trendBarColor}
+          dimension={trendDimension}
+          onDimensionChange={setTrendDimension}
           onStepPrev={handleStepTrendPrev}
           onStepNext={handleStepTrendNext}
           canStepNext={canStepTrendNext}
         />
-      </div>
-
-      <div className="tab-stagger-2.5 pointer-events-none sticky bottom-[calc(56px+var(--dock-bottom))] z-20 flex justify-center py-1 select-none">
-        <div className="pointer-events-auto rounded-(--toggle-radius) border border-(--rule-hairline) bg-(--paper-sheet)/95 p-0.5 shadow-xs backdrop-blur-sm">
-          <SegToggle
-            options={[
-              { value: 'expense', label: '支出' },
-              { value: 'income', label: '收入' },
-              { value: 'balance', label: '结余' },
-            ]}
-            value={dimension}
-            onChange={(dim) => setDimension(dim as StatsDimension)}
-            size="sm"
-            fullWidth={false}
-          />
-        </div>
       </div>
 
       <div className="tab-stagger-3 space-y-1.5 pt-1">
@@ -520,13 +525,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
             周期账单
           </span>
           <span className="font-mono text-[11px] text-(--ink-tertiary)">
-            共 {displayTransactions.length} 笔
+            共 {periodTransactions.length} 笔
           </span>
         </div>
 
         <TransactionGroup
-          key={`${periodInfo.key}-${dimension}`}
-          transactions={displayTransactions}
+          key={periodInfo.key}
+          transactions={periodTransactions}
           categories={categories}
           accounts={accounts}
           onSelectTransaction={onSelectTransaction}

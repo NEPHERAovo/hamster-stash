@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { PaperIconButton } from '../ui/PaperIconButton';
+import { SegToggle } from '../ui/SegToggle';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
 
@@ -18,6 +19,8 @@ export interface MonthlyTrendBarProps {
   onStepNext?: () => void;
   canStepNext?: boolean;
   barColor?: string;
+  dimension?: 'expense' | 'income' | 'balance';
+  onDimensionChange?: (dim: 'expense' | 'income' | 'balance') => void;
 }
 
 export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
@@ -28,6 +31,8 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   onStepNext,
   canStepNext = false,
   barColor = 'var(--color-expense)',
+  dimension,
+  onDimensionChange,
 }) => {
   const [selectedIdx, setSelectedIdx] = useState<number>(() => Math.max(0, trends.length - 1));
   const touchStartXRef = useRef<number | null>(null);
@@ -124,13 +129,13 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
         className
       )}
     >
-      <div className="mb-2 flex items-center justify-between select-none">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold tracking-tight text-(--ink-primary)">
+      <div className="mb-2 flex items-center justify-between gap-2 select-none">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
             {title}
           </span>
           {(onStepPrev || onStepNext) && (
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-0.5">
               <PaperIconButton
                 size="sm"
                 icon={ChevronLeft}
@@ -149,6 +154,22 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
             </div>
           )}
         </div>
+
+        {onDimensionChange && dimension && (
+          <div className="shrink-0">
+            <SegToggle
+              options={[
+                { value: 'expense', label: '支出' },
+                { value: 'income', label: '收入' },
+                { value: 'balance', label: '结余' },
+              ]}
+              value={dimension}
+              onChange={(d) => onDimensionChange(d as 'expense' | 'income' | 'balance')}
+              size="sm"
+              fullWidth={false}
+            />
+          </div>
+        )}
       </div>
 
       <div
