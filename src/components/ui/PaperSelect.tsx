@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { CaretDownIcon as CaretDown, CheckIcon as Check } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
 import { useCloseWatcher } from '../../hooks/useCloseWatcher';
@@ -56,6 +56,8 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
     ref
   ) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
+    const [maxListHeight, setMaxListHeight] = useState<number>(224);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const parsedOptions = useMemo<PaperSelectOption[]>(() => {
@@ -92,6 +94,30 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
       if (parsedOptions.length > 0) return parsedOptions[0]?.label ?? '';
       return '';
     }, [selectedOption, placeholder, parsedOptions]);
+
+    const updatePlacement = useCallback(() => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom - 12;
+      const spaceAbove = rect.top - 12;
+
+      if (spaceBelow < 180 && spaceAbove > spaceBelow) {
+        setPlacement('top');
+        setMaxListHeight(Math.min(224, Math.max(100, Math.floor(spaceAbove))));
+      } else {
+        setPlacement('bottom');
+        setMaxListHeight(Math.min(224, Math.max(100, Math.floor(spaceBelow))));
+      }
+    }, []);
+
+    const toggleOpen = () => {
+      if (disabled) return;
+      if (!isOpen) {
+        updatePlacement();
+      }
+      setIsOpen((prev) => !prev);
+    };
 
     const handleSelect = (val: string) => {
       setIsOpen(false);
@@ -169,7 +195,7 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           disabled={disabled}
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={toggleOpen}
           className={cn(
             'flex w-full cursor-pointer items-center justify-between rounded-(--input-radius) border text-left font-mono transition-colors focus-visible:ring-1 focus-visible:ring-(--ink-primary) focus-visible:outline-none',
             sizeStyles[size],
@@ -203,7 +229,11 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
         {isOpen && (
           <div
             role="listbox"
-            className="paper-card absolute top-full left-0 z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-1 shadow-lg select-none"
+            style={{ maxHeight: `${maxListHeight}px` }}
+            className={cn(
+              'paper-card absolute left-0 z-50 w-full overflow-y-auto rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-1 shadow-lg select-none',
+              placement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+            )}
           >
             {parsedOptions.map((opt) => {
               const isSelected = opt.value === String(value);

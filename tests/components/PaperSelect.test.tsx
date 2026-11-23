@@ -82,4 +82,36 @@ describe('PaperSelect', () => {
 
     expect(screen.queryByRole('listbox')).toBeNull();
   });
+
+  it('adapts popup placement to top when bottom space is constrained', () => {
+    const { container } = render(
+      <PaperSelect
+        value="opt1"
+        options={[
+          { value: 'opt1', label: '选项一' },
+          { value: 'opt2', label: '选项二' },
+        ]}
+      />
+    );
+
+    const wrapper = container.firstElementChild as HTMLElement;
+    vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+      top: 500,
+      bottom: 540,
+      left: 0,
+      right: 200,
+      width: 200,
+      height: 40,
+      x: 0,
+      y: 500,
+      toJSON: () => {},
+    });
+    vi.stubGlobal('innerHeight', 600);
+
+    const combobox = screen.getByRole('combobox');
+    fireEvent.click(combobox);
+
+    const listbox = screen.getByRole('listbox');
+    expect(listbox.className).toContain('bottom-full');
+  });
 });
