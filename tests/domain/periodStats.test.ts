@@ -241,4 +241,101 @@ describe('Period Statistics Domain Logic', () => {
     );
     expect(stats2027.totalExpense).toBe(1000000);
   });
+
+  describe('Period-over-Period (环比) & Multi-Dimension Stats', () => {
+    const categories: Category[] = [
+      { id: 'cat_food', name: '餐饮', type: 'expense', icon: 'utensils', color: 'var(--cat-food)', sortOrder: 1, createdAt: '', updatedAt: '' },
+      { id: 'cat_shopping', name: '购物', type: 'expense', icon: 'shopping-cart', color: 'var(--cat-shop)', sortOrder: 2, createdAt: '', updatedAt: '' },
+      { id: 'cat_salary', name: '工资', type: 'income', icon: 'money', color: 'var(--cat-income)', sortOrder: 1, createdAt: '', updatedAt: '' },
+    ];
+
+    it('computes category MoM (环比) comparison correctly for expenses', () => {
+      const allTxs: Transaction[] = [
+        // October (prev month): food 2000, shopping 4000
+        { id: '1', type: 'expense', amount: 200000, categoryId: 'cat_food', accountId: 'a1', date: '2026-10-15', createdAt: '', updatedAt: '' },
+        { id: '2', type: 'expense', amount: 400000, categoryId: 'cat_shopping', accountId: 'a1', date: '2026-10-20', createdAt: '', updatedAt: '' },
+        // November (current month): food 3000 (+50%), shopping 2000 (-50%), entertainment 1000 (new)
+        { id: '3', type: 'expense', amount: 300000, categoryId: 'cat_food', accountId: 'a1', date: '2026-11-05', createdAt: '', updatedAt: '' },
+        { id: '4', type: 'expense', amount: 200000, categoryId: 'cat_shopping', accountId: 'a1', date: '2026-11-10', createdAt: '', updatedAt: '' },
+        { id: '5', type: 'expense', amount: 100000, categoryId: 'cat_ent', accountId: 'a1', date: '2026-11-12', createdAt: '', updatedAt: '' },
+      ];
+
+      const currentPeriodTxs = allTxs.filter((t) => t.date.startsWith('2026-11'));
+      const stats = computeCategoryDonutStats(
+        currentPeriodTxs,
+        categories,
+        allTxs,
+        false,
+        '2026-11',
+        'month',
+        'expense'
+      );
+
+      expect(stats.totalExpense).toBe(600000);
+      expect(stats.items.length).toBe(3);
+
+      const foodItem = stats.items.find((i) => i.categoryId === 'cat_food')!;
+      expect(foodItem.amount).toBe(300000);
+      expect(foodItem.previousAmount).toBe(200000);
+      expect(foodItem.momRate).toBe(50); // +50%
+      expect(foodItem.isNew).toBe(false);
+
+      const shopItem = stats.items.find((i) => i.categoryId === 'cat_shopping')!;
+      expect(shopItem.amount).toBe(200000);
+      expect(shopItem.previousAmount).toBe(400000);
+      expect(shopItem.momRate).toBe(-50); // -50%
+      expect(shopItem.isNew).toBe(false);
+
+      const entItem = stats.items.find((i) => i.categoryId === 'cat_ent')!;
+      expect(entItem.amount).toBe(100000);
+      expect(entItem.previousAmount).toBe(0);
+      expect(entItem.isNew).toBe(true);
+      expect(entItem.momRate).toBeNull();
+    });
+
+    it('computes category stats and trends for income dimension', () => {
+      const allTxs: Transaction[] = [
+        // October: salary 10000
+        { id: '1', type: 'income', amount: 1000000, categoryId: 'cat_salary', accountId: 'a1', date: '2026-10-10', createdAt: '', updatedAt: '' },
+        // November: salary 12000 (+20%) + offset reimbursement 500 (should be excluded from income)
+        { id: '2', type: 'income', amount: 1200000, categoryId: 'cat_salary', accountId: 'a1', date: '2026-11-10', createdAt: '', updatedAt: '' },
+        { id: '3', type: 'income', amount: 50000, categoryId: 'cat_salary', accountId: 'a1', date: '2026-11-15', offsetTransactionId: 'exp_1', createdAt: '', updatedAt: '' },
+      ];
+
+      const currentPeriodTxs = allTxs.filter((t) => t.date.startsWith('2026-11'));
+      const incomeStats = computeCategoryDonutStats(
+        currentPeriodTxs,
+        categories,
+        allTxs,
+        false,
+        '2026-11',
+        'month',
+        'income'
+      );
+
+      expect(incomeStats.totalAmount).toBe(1200000); // 50000 reimbursement excluded
+      expect(incomeStats.items.length).toBe(1);
+      expect(incomeStats.items[0].previousAmount).toBe(1000000);
+      expect(incomeStats.items[0].momRate).toBe(20);
+
+      const incomeTrends = computePeriodTrends(allTxs, 'month', '2026-11', 2, false, 'income');
+      expect(incomeTrends[0].amount).toBe(1000000); // 10月
+      expect(incomeTrends[1].amount).toBe(1200000); // 11月
+    });
+
+    it('computes net balance trends supporting positive and negative amounts', () => {
+      const allTxs: Transaction[] = [
+        // October: Income 10000, Expense 6000 -> Net +4000
+        { id: '1', type: 'income', amount: 1000000, categoryId: 'cat_salary', accountId: 'a1', date: '2026-10-10', createdAt: '', updatedAt: '' },
+        { id: '2', type: 'expense', amount: 600000, categoryId: 'cat_food', accountId: 'a1', date: '2026-10-15', createdAt: '', updatedAt: '' },
+        // November: Income 5000, Expense 8000 -> Net -3000
+        { id: '3', type: 'income', amount: 500000, categoryId: 'cat_salary', accountId: 'a1', date: '2026-11-10', createdAt: '', updatedAt: '' },
+        { id: '4', type: 'expense', amount: 800000, categoryId: 'cat_food', accountId: 'a1', date: '2026-11-15', createdAt: '', updatedAt: '' },
+      ];
+
+      const balanceTrends = computePeriodTrends(allTxs, 'month', '2026-11', 2, false, 'balance');
+      expect(balanceTrends[0].amount).toBe(400000);  // 10月: +4000
+      expect(balanceTrends[1].amount).toBe(-300000); // 11月: -3000
+    });
+  });
 });

@@ -32,12 +32,30 @@ export interface CategoryStatItem {
   percentage: number;   // 0 ~ 100 整数
   dashLength: number;   // 用于 SVG dasharray
   dashOffset: number;   // 用于 SVG dashoffset
+  previousAmount?: number;     // 上期金额 (单位：分)
+  momRate?: number | null;     // 环比增长率 (如 15.2 表示 +15.2%, -8.4 表示 -8.4%, null 表示新增或无法比对)
+  isNew?: boolean;             // 上期为 0 本期新增
 }
 
 export interface TrendItem {
   label: string;
   amount: number; // 单位：分
-  percentage: number; // 0 ~ 100 (相对于这几期中的最大值)
+  percentage: number; // 0 ~ 100 (相对于这几期中的最大绝对值)
+  income?: number;
+  expense?: number;
+}
+
+export interface PeriodBalanceSummary {
+  income: number;              // 本期总收入 (分)
+  expense: number;             // 本期净支出 (分)
+  netBalance: number;          // 本期净结余 (分) = income - expense
+  savingsRate: number;         // 结余率 / 储蓄率 (0 ~ 100 整数)
+  previousIncome: number;      // 上期总收入 (分)
+  previousExpense: number;     // 上期净支出 (分)
+  previousNetBalance: number;  // 上期净结余 (分)
+  incomeMomRate: number | null;
+  expenseMomRate: number | null;
+  balanceMomRate: number | null;
 }
 
 export function getWeekPeriod(targetDate: ConfigType): PeriodInfo {
@@ -106,67 +124,151 @@ export function getStatsChartColor(rankIndex: number): string {
   return STATS_CHART_PALETTE[rankIndex % STATS_CHART_PALETTE.length];
 }
 
+export function getPreviousPeriodBounds(
+  mode: PeriodMode,
+  currentKey: string
+): { key: string; start: string; end: string } {
+  if (mode === 'month') {
+    const prevKey = stepYearMonth(currentKey, -1);
+    const p = getMonthPeriod(prevKey);
+    return { key: prevKey, start: p.start, end: p.end };
+  }
+  if (mode === 'year') {
+    const prevKey = (parseInt(currentKey, 10) - 1).toString();
+    const p = getYearPeriod(prevKey);
+    return { key: prevKey, start: p.start, end: p.end };
+  }
+  const curStart = parseLocalDate(currentKey);
+  const prevWeek = getWeekPeriod(curStart.subtract(1, 'week'));
+  return { key: prevWeek.key, start: prevWeek.start, end: prevWeek.end };
+}
+
 export function computeCategoryDonutStats(
   transactions: Transaction[],
   categories: Category[],
   allTransactions?: Transaction[],
   isAmortizationEnabled: boolean = false,
   periodKey?: string,
-  mode?: PeriodMode
+  mode?: PeriodMode,
+  txType: 'expense' | 'income' = 'expense'
 ): {
   items: CategoryStatItem[];
   totalExpense: number;
+  totalAmount: number;
   circumference: number;
 } {
   const CIRCUMFERENCE = 326.73;
   const catMap = new Map(categories.map((c) => [c.id, c]));
   const offsetMap = buildOffsetMap(allTransactions || transactions);
 
-  let totalExpense = 0;
+  let totalAmount = 0;
   const catTotals = new Map<string, number>();
 
-  if (isAmortizationEnabled && allTransactions && mode === 'month' && periodKey) {
-    for (const t of allTransactions) {
-      if (t.type === 'expense') {
-        let amt = 0;
-        if (getAmortizeConfig(t)) {
-          amt = computeAmortizedMonthlyAmount(t, periodKey, offsetMap);
-        } else if (t.date.startsWith(periodKey)) {
-          amt = computeEffectiveExpenseAmount(t, offsetMap);
-        }
-        if (amt > 0) {
-          totalExpense += amt;
-          catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);
+  if (txType === 'expense') {
+    if (isAmortizationEnabled && allTransactions && mode === 'month' && periodKey) {
+      for (const t of allTransactions) {
+        if (t.type === 'expense') {
+          let amt = 0;
+          if (getAmortizeConfig(t)) {
+            amt = computeAmortizedMonthlyAmount(t, periodKey, offsetMap);
+          } else if (t.date.startsWith(periodKey)) {
+            amt = computeEffectiveExpenseAmount(t, offsetMap);
+          }
+          if (amt > 0) {
+            totalAmount += amt;
+            catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);
+          }
         }
       }
-    }
-  } else if (isAmortizationEnabled && allTransactions && mode === 'year' && periodKey) {
-    for (const t of allTransactions) {
-      if (t.type === 'expense') {
-        let amt = 0;
-        if (getAmortizeConfig(t)) {
-          amt = computeAmortizedYearlyAmount(t, periodKey, offsetMap);
-        } else if (t.date.startsWith(periodKey)) {
-          amt = computeEffectiveExpenseAmount(t, offsetMap);
+    } else if (isAmortizationEnabled && allTransactions && mode === 'year' && periodKey) {
+      for (const t of allTransactions) {
+        if (t.type === 'expense') {
+          let amt = 0;
+          if (getAmortizeConfig(t)) {
+            amt = computeAmortizedYearlyAmount(t, periodKey, offsetMap);
+          } else if (t.date.startsWith(periodKey)) {
+            amt = computeEffectiveExpenseAmount(t, offsetMap);
+          }
+          if (amt > 0) {
+            totalAmount += amt;
+            catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);
+          }
         }
-        if (amt > 0) {
-          totalExpense += amt;
-          catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + amt);
+      }
+    } else {
+      for (const t of transactions) {
+        if (t.type === 'expense') {
+          const effective = computeEffectiveExpenseAmount(t, offsetMap);
+          totalAmount += effective;
+          catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + effective);
         }
       }
     }
   } else {
+    // txType === 'income': strictly exclude offset reimbursements
     for (const t of transactions) {
-      if (t.type === 'expense') {
-        const effective = computeEffectiveExpenseAmount(t, offsetMap);
-        totalExpense += effective;
-        catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + effective);
+      if (t.type === 'income' && !t.offsetTransactionId) {
+        totalAmount += t.amount;
+        catTotals.set(t.categoryId, (catTotals.get(t.categoryId) || 0) + t.amount);
       }
     }
   }
 
-  if (totalExpense === 0) {
-    return { items: [], totalExpense: 0, circumference: CIRCUMFERENCE };
+  // Calculate previous period category totals if allTransactions and periodKey are available
+  const prevCatTotals = new Map<string, number>();
+  if (allTransactions && periodKey && mode) {
+    const prevBounds = getPreviousPeriodBounds(mode, periodKey);
+    if (txType === 'expense') {
+      if (isAmortizationEnabled && mode === 'month') {
+        for (const t of allTransactions) {
+          if (t.type === 'expense') {
+            let amt = 0;
+            if (getAmortizeConfig(t)) {
+              amt = computeAmortizedMonthlyAmount(t, prevBounds.key, offsetMap);
+            } else if (t.date.startsWith(prevBounds.key)) {
+              amt = computeEffectiveExpenseAmount(t, offsetMap);
+            }
+            if (amt > 0) {
+              prevCatTotals.set(t.categoryId, (prevCatTotals.get(t.categoryId) || 0) + amt);
+            }
+          }
+        }
+      } else if (isAmortizationEnabled && mode === 'year') {
+        for (const t of allTransactions) {
+          if (t.type === 'expense') {
+            let amt = 0;
+            if (getAmortizeConfig(t)) {
+              amt = computeAmortizedYearlyAmount(t, prevBounds.key, offsetMap);
+            } else if (t.date.startsWith(prevBounds.key)) {
+              amt = computeEffectiveExpenseAmount(t, offsetMap);
+            }
+            if (amt > 0) {
+              prevCatTotals.set(t.categoryId, (prevCatTotals.get(t.categoryId) || 0) + amt);
+            }
+          }
+        }
+      } else {
+        for (const t of allTransactions) {
+          if (t.type === 'expense' && t.date >= prevBounds.start && t.date <= prevBounds.end) {
+            const effective = computeEffectiveExpenseAmount(t, offsetMap);
+            prevCatTotals.set(t.categoryId, (prevCatTotals.get(t.categoryId) || 0) + effective);
+          }
+        }
+      }
+    } else {
+      // Income previous period
+      for (const t of allTransactions) {
+        if (t.type === 'income' && !t.offsetTransactionId) {
+          if (t.date >= prevBounds.start && t.date <= prevBounds.end) {
+            prevCatTotals.set(t.categoryId, (prevCatTotals.get(t.categoryId) || 0) + t.amount);
+          }
+        }
+      }
+    }
+  }
+
+  if (totalAmount === 0) {
+    return { items: [], totalExpense: 0, totalAmount: 0, circumference: CIRCUMFERENCE };
   }
 
   const sorted = Array.from(catTotals.entries())
@@ -178,9 +280,21 @@ export function computeCategoryDonutStats(
 
   for (const [idx, entry] of sorted.entries()) {
     const cat = catMap.get(entry.categoryId);
-    const percentage = Math.round((entry.amount / totalExpense) * 100);
-    const fraction = entry.amount / totalExpense;
+    const percentage = Math.round((entry.amount / totalAmount) * 100);
+    const fraction = entry.amount / totalAmount;
     const dashLength = parseFloat((fraction * CIRCUMFERENCE).toFixed(2));
+    const previousAmount = prevCatTotals.get(entry.categoryId) || 0;
+
+    let momRate: number | null = null;
+    let isNew = false;
+    if (previousAmount === 0 && entry.amount > 0) {
+      isNew = true;
+    } else if (previousAmount > 0) {
+      const rate = ((entry.amount - previousAmount) / previousAmount) * 100;
+      momRate = Math.round(rate * 10) / 10;
+    } else if (previousAmount === 0 && entry.amount === 0) {
+      momRate = 0;
+    }
 
     items.push({
       categoryId: entry.categoryId,
@@ -190,12 +304,15 @@ export function computeCategoryDonutStats(
       percentage,
       dashLength,
       dashOffset: parseFloat(accumulatedOffset.toFixed(2)),
+      previousAmount,
+      momRate,
+      isNew,
     });
 
     accumulatedOffset += dashLength;
   }
 
-  return { items, totalExpense, circumference: CIRCUMFERENCE };
+  return { items, totalExpense: totalAmount, totalAmount, circumference: CIRCUMFERENCE };
 }
 
 /**
@@ -206,7 +323,8 @@ export function computePeriodTrends(
   mode: PeriodMode,
   currentKey: string,
   count: number = mode === 'year' ? 5 : 6,
-  isAmortizationEnabled: boolean = false
+  isAmortizationEnabled: boolean = false,
+  dimension: 'expense' | 'income' | 'balance' = 'expense'
 ): TrendItem[] {
   const trends: TrendItem[] = [];
   const offsetMap = buildOffsetMap(allTransactions);
@@ -216,6 +334,7 @@ export function computePeriodTrends(
       const ym = stepYearMonth(currentKey, -i);
       const monthNum = dayjs(`${ym}-01`, 'YYYY-MM-DD', true).month() + 1;
       let expense = 0;
+      let income = 0;
       for (const t of allTransactions) {
         if (t.type === 'expense') {
           if (isAmortizationEnabled && getAmortizeConfig(t)) {
@@ -223,15 +342,23 @@ export function computePeriodTrends(
           } else if (t.date.startsWith(ym)) {
             expense += computeEffectiveExpenseAmount(t, offsetMap);
           }
+        } else if (t.type === 'income' && !t.offsetTransactionId && t.date.startsWith(ym)) {
+          income += t.amount;
         }
       }
-      trends.push({ label: `${monthNum}月`, amount: expense, percentage: 0 });
+
+      let amount = expense;
+      if (dimension === 'income') amount = income;
+      else if (dimension === 'balance') amount = income - expense;
+
+      trends.push({ label: `${monthNum}月`, amount, percentage: 0, income, expense });
     }
   } else if (mode === 'year') {
     const curY = parseInt(currentKey, 10);
     for (let i = count - 1; i >= 0; i--) {
       const y = (curY - i).toString();
       let expense = 0;
+      let income = 0;
       for (const t of allTransactions) {
         if (t.type === 'expense') {
           if (isAmortizationEnabled && getAmortizeConfig(t)) {
@@ -239,9 +366,16 @@ export function computePeriodTrends(
           } else if (t.date.startsWith(y)) {
             expense += computeEffectiveExpenseAmount(t, offsetMap);
           }
+        } else if (t.type === 'income' && !t.offsetTransactionId && t.date.startsWith(y)) {
+          income += t.amount;
         }
       }
-      trends.push({ label: `${y}年`, amount: expense, percentage: 0 });
+
+      let amount = expense;
+      if (dimension === 'income') amount = income;
+      else if (dimension === 'balance') amount = income - expense;
+
+      trends.push({ label: `${y}年`, amount, percentage: 0, income, expense });
     }
   } else {
     const curDate = parseLocalDate(currentKey);
@@ -249,26 +383,153 @@ export function computePeriodTrends(
       const week = getWeekPeriod(curDate.subtract(i, 'week'));
 
       let expense = 0;
+      let income = 0;
       for (const t of allTransactions) {
-        if (t.type === 'expense' && t.date >= week.start && t.date <= week.end) {
-          expense += computeEffectiveExpenseAmount(t, offsetMap);
+        if (t.date >= week.start && t.date <= week.end) {
+          if (t.type === 'expense') {
+            expense += computeEffectiveExpenseAmount(t, offsetMap);
+          } else if (t.type === 'income' && !t.offsetTransactionId) {
+            income += t.amount;
+          }
         }
       }
+
+      let amount = expense;
+      if (dimension === 'income') amount = income;
+      else if (dimension === 'balance') amount = income - expense;
+
       const weekStart = parseLocalDate(week.start);
       trends.push({
         label: `${weekStart.month() + 1}.${weekStart.date()}`,
-        amount: expense,
+        amount,
         percentage: 0,
+        income,
+        expense,
       });
     }
   }
 
-  const maxAmount = Math.max(...trends.map((t) => t.amount), 1);
+  const maxAbsAmount = Math.max(...trends.map((t) => Math.abs(t.amount)), 1);
   for (const t of trends) {
-    t.percentage = Math.round((t.amount / maxAmount) * 100);
+    t.percentage = Math.round((t.amount / maxAbsAmount) * 100);
   }
 
   return trends;
+}
+
+/**
+ * 计算周期收支结构与结余总括 (含上期环比)
+ */
+export function computePeriodBalanceSummary(
+  transactions: Transaction[],
+  allTransactions: Transaction[],
+  periodInfo: PeriodInfo,
+  mode: PeriodMode,
+  isAmortizationEnabled: boolean = false
+): PeriodBalanceSummary {
+  const offsetMap = buildOffsetMap(allTransactions);
+
+  let income = 0;
+  for (const t of transactions) {
+    if (t.type === 'income' && !t.offsetTransactionId) {
+      income += t.amount;
+    }
+  }
+
+  let expense = 0;
+  if (isAmortizationEnabled && mode === 'month') {
+    for (const t of allTransactions) {
+      if (t.type === 'expense') {
+        if (getAmortizeConfig(t)) {
+          expense += computeAmortizedMonthlyAmount(t, periodInfo.key, offsetMap);
+        } else if (t.date.startsWith(periodInfo.key)) {
+          expense += computeEffectiveExpenseAmount(t, offsetMap);
+        }
+      }
+    }
+  } else if (isAmortizationEnabled && mode === 'year') {
+    for (const t of allTransactions) {
+      if (t.type === 'expense') {
+        if (getAmortizeConfig(t)) {
+          expense += computeAmortizedYearlyAmount(t, periodInfo.key, offsetMap);
+        } else if (t.date.startsWith(periodInfo.key)) {
+          expense += computeEffectiveExpenseAmount(t, offsetMap);
+        }
+      }
+    }
+  } else {
+    for (const t of transactions) {
+      if (t.type === 'expense') {
+        expense += computeEffectiveExpenseAmount(t, offsetMap);
+      }
+    }
+  }
+
+  const netBalance = income - expense;
+  const savingsRate = income > 0 ? Math.max(0, Math.round((netBalance / income) * 100)) : 0;
+
+  // Previous period calculations
+  const prevBounds = getPreviousPeriodBounds(mode, periodInfo.key);
+  let prevIncome = 0;
+  let prevExpense = 0;
+
+  if (isAmortizationEnabled && mode === 'month') {
+    for (const t of allTransactions) {
+      if (t.type === 'income' && !t.offsetTransactionId && t.date.startsWith(prevBounds.key)) {
+        prevIncome += t.amount;
+      } else if (t.type === 'expense') {
+        if (getAmortizeConfig(t)) {
+          prevExpense += computeAmortizedMonthlyAmount(t, prevBounds.key, offsetMap);
+        } else if (t.date.startsWith(prevBounds.key)) {
+          prevExpense += computeEffectiveExpenseAmount(t, offsetMap);
+        }
+      }
+    }
+  } else if (isAmortizationEnabled && mode === 'year') {
+    for (const t of allTransactions) {
+      if (t.type === 'income' && !t.offsetTransactionId && t.date.startsWith(prevBounds.key)) {
+        prevIncome += t.amount;
+      } else if (t.type === 'expense') {
+        if (getAmortizeConfig(t)) {
+          prevExpense += computeAmortizedYearlyAmount(t, prevBounds.key, offsetMap);
+        } else if (t.date.startsWith(prevBounds.key)) {
+          prevExpense += computeEffectiveExpenseAmount(t, offsetMap);
+        }
+      }
+    }
+  } else {
+    for (const t of allTransactions) {
+      if (t.date >= prevBounds.start && t.date <= prevBounds.end) {
+        if (t.type === 'income' && !t.offsetTransactionId) {
+          prevIncome += t.amount;
+        } else if (t.type === 'expense') {
+          prevExpense += computeEffectiveExpenseAmount(t, offsetMap);
+        }
+      }
+    }
+  }
+
+  const prevNetBalance = prevIncome - prevExpense;
+
+  const calcRate = (cur: number, prev: number): number | null => {
+    if (prev === 0 && cur > 0) return null; // new / baseline 0
+    if (prev === 0 && cur === 0) return 0;
+    const r = ((cur - prev) / Math.abs(prev)) * 100;
+    return Math.round(r * 10) / 10;
+  };
+
+  return {
+    income,
+    expense,
+    netBalance,
+    savingsRate,
+    previousIncome: prevIncome,
+    previousExpense: prevExpense,
+    previousNetBalance: prevNetBalance,
+    incomeMomRate: calcRate(income, prevIncome),
+    expenseMomRate: calcRate(expense, prevExpense),
+    balanceMomRate: calcRate(netBalance, prevNetBalance),
+  };
 }
 
 /**
