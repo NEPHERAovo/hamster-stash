@@ -5,19 +5,31 @@ import { cn } from '../../utils/cn';
 
 export interface DonutChartProps {
   items: CategoryStatItem[];
-  totalExpense: number;
+  totalExpense?: number;
+  totalAmount?: number;
   circumference: number;
   className?: string;
   periodKey?: string;
+  centerLabel?: string;
+}
+
+function getDonutAmountColor(isBalanceMode: boolean, amount: number): string {
+  if (!isBalanceMode) return 'text-(--ink-primary)';
+  return amount < 0 ? 'text-(--color-expense)' : 'text-(--color-income)';
 }
 
 export const DonutChart: React.FC<DonutChartProps> = ({
   items,
-  totalExpense,
+  totalExpense = 0,
+  totalAmount,
   circumference,
   className,
   periodKey,
+  centerLabel = '总支出',
 }) => {
+  const displayAmount = totalAmount !== undefined ? totalAmount : totalExpense;
+  const isBalanceMode = centerLabel === '净结余';
+
   return (
     <div className={cn('relative size-[130px] shrink-0', className)}>
       <svg key={periodKey} viewBox="0 0 130 130" className="donut-ring-spin size-full -rotate-90">
@@ -40,10 +52,17 @@ export const DonutChart: React.FC<DonutChartProps> = ({
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center select-none">
         <span className="text-[10px] font-medium text-(--ink-tertiary)">
-          总支出
+          {centerLabel}
         </span>
-        <span className="font-mono text-[15px] font-bold tracking-tight text-(--ink-primary) tabular-nums">
-          ¥{centsToYuan(totalExpense)}
+        <span
+          className={cn(
+            'font-mono text-[15px] font-bold tracking-tight tabular-nums',
+            getDonutAmountColor(isBalanceMode, displayAmount)
+          )}
+        >
+          {displayAmount < 0
+            ? `-¥${centsToYuan(Math.abs(displayAmount))}`
+            : `¥${centsToYuan(displayAmount)}`}
         </span>
       </div>
     </div>

@@ -39,7 +39,9 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
 
   const activeIdx = Math.min(Math.max(0, selectedIdx), trends.length - 1);
 
-  const maxAmount = Math.max(...trends.map((t) => t.amount), 1);
+  const maxAmount = Math.max(...trends.map((t) => t.amount), 0);
+  const minAmount = Math.min(...trends.map((t) => t.amount), 0);
+  const hasNegative = minAmount < 0;
 
   const svgWidth = 360;
   const svgHeight = 144;
@@ -50,19 +52,44 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
 
   const plotW = svgWidth - paddingLeft - paddingRight;
   const plotH = svgHeight - paddingTop - paddingBottom;
-  const baseY = svgHeight - paddingBottom;
+  
+  const totalRange = hasNegative ? (maxAmount - minAmount) || 1 : maxAmount || 1;
+  const baseY = hasNegative
+    ? paddingTop + (maxAmount / totalRange) * (plotH - 6)
+    : svgHeight - paddingBottom;
 
   const colW = plotW / trends.length;
   const barW = Math.min(20, Math.max(12, Math.round(colW * 0.38)));
 
   const pointsData = trends.map((t, idx) => {
     const cx = paddingLeft + (idx + 0.5) * colW;
-    const ratio = maxAmount > 0 ? t.amount / maxAmount : 0;
-    const barH = t.amount > 0 ? Math.max(4, Math.round(ratio * (plotH - 10))) : 2;
-    const barY = baseY - barH;
-    const barX = cx - barW / 2;
-    const cy = t.amount > 0 ? barY : baseY;
-    return { cx, cy, barX, barY, barH, item: t, idx };
+    let barH = 2;
+    let barY = baseY;
+    let pointColor = barColor;
+
+    if (hasNegative) {
+      if (t.amount > 0) {
+        barH = Math.max(3, Math.round((t.amount / totalRange) * (plotH - 6)));
+        barY = baseY - barH;
+        pointColor = 'var(--color-income)';
+      } else if (t.amount < 0) {
+        barH = Math.max(3, Math.round((Math.abs(t.amount) / totalRange) * (plotH - 6)));
+        barY = baseY;
+        pointColor = 'var(--color-expense)';
+      }
+    } else {
+      const ratio = maxAmount > 0 ? t.amount / maxAmount : 0;
+      barH = t.amount > 0 ? Math.max(4, Math.round(ratio * (plotH - 10))) : 2;
+      barY = baseY - barH;
+    }
+
+    let cy = baseY;
+    if (t.amount > 0) {
+      cy = barY;
+    } else if (t.amount < 0) {
+      cy = barY + barH;
+    }
+    return { cx, cy, barX: cx - barW / 2, barY, barH, item: t, idx, pointColor };
   });
 
   const polylinePoints = pointsData.map((p) => `${p.cx},${p.cy}`).join(' ');
@@ -141,17 +168,20 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
             y2={baseY}
             stroke="var(--rule-hairline)"
             strokeWidth="1"
+            strokeDasharray={hasNegative ? '3 3' : undefined}
           />
-          <line
-            x1={paddingLeft - 6}
-            y1={baseY - (plotH - 10) * 0.5}
-            x2={svgWidth - paddingRight + 6}
-            y2={baseY - (plotH - 10) * 0.5}
-            stroke="var(--rule-hairline)"
-            strokeWidth="1"
-            strokeDasharray="3 3"
-            opacity="0.5"
-          />
+          {!hasNegative && (
+            <line
+              x1={paddingLeft - 6}
+              y1={baseY - (plotH - 10) * 0.5}
+              x2={svgWidth - paddingRight + 6}
+              y2={baseY - (plotH - 10) * 0.5}
+              stroke="var(--rule-hairline)"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+              opacity="0.5"
+            />
+          )}
 
           {/* Background sunken slots & vertical bars */}
           {pointsData.map((p) => {
@@ -173,7 +203,7 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
                   width={barW}
                   height={p.barH}
                   rx="4"
-                  fill={barColor}
+                  fill={hasNegative ? p.pointColor : barColor}
                   opacity={isSelected ? 1 : 0.45}
                   className="transition-all duration-200"
                 />
@@ -226,7 +256,9 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
                     isSelected ? 'fill-(--ink-solid) font-bold' : 'fill-(--ink-tertiary) font-normal'
                   )}
                 >
-                  ¥{centsToYuan(p.item.amount)}
+                  {p.item.amount < 0
+                    ? `-¥${centsToYuan(Math.abs(p.item.amount))}`
+                    : `¥${centsToYuan(p.item.amount)}`}
                 </text>
                 <text
                   x={p.cx}

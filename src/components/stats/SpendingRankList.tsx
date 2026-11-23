@@ -10,12 +10,25 @@ export interface SpendingRankListProps {
   totalExpense?: number;
   onSelectCategory?: (categoryId: string) => void;
   className?: string;
+  txType?: 'expense' | 'income';
+}
+
+function getMomRateColor(txType: 'expense' | 'income', momRate: number): string {
+  if (txType === 'income') {
+    if (momRate > 0) return 'text-(--color-income)';
+    if (momRate < 0) return 'text-(--color-expense)';
+    return 'text-(--ink-tertiary)';
+  }
+  if (momRate > 0) return 'text-(--color-expense)';
+  if (momRate < 0) return 'text-(--color-income)';
+  return 'text-(--ink-tertiary)';
 }
 
 export const SpendingRankList: React.FC<SpendingRankListProps> = ({
   items,
   onSelectCategory,
   className,
+  txType = 'expense',
 }) => {
   if (items.length === 0) {
     return null;
@@ -31,7 +44,7 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
           size="md"
           onClick={() => onSelectCategory?.(item.categoryId)}
           className="group h-auto justify-start gap-0 rounded-(--radius-sm) border-b border-dashed border-(--rule-hairline)/60 px-1 py-2 text-left text-[13px] font-normal last:border-b-0 hover:bg-(--paper-sunken)/60"
-          title={`查看「${item.name}」支出明细`}
+          title={`查看「${item.name}」明细`}
         >
           <div
             className="mr-2.5 size-2.5 shrink-0 rounded-(--badge-radius)"
@@ -43,9 +56,24 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
           <span className="mr-2 font-mono font-semibold text-(--ink-primary) tabular-nums">
             ¥{centsToYuan(item.amount)}
           </span>
-          <span className="mr-1.5 min-w-[34px] text-right font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
+          <span className="mr-1.5 min-w-8 text-right font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
             {item.percentage}%
           </span>
+          {item.isNew && (
+            <span className="mr-1.5 min-w-[38px] text-right font-mono text-[10px] text-(--ink-tertiary) tabular-nums">
+              新增
+            </span>
+          )}
+          {!item.isNew && item.momRate !== null && item.momRate !== undefined && (
+            <span
+              className={cn(
+                'mr-1.5 min-w-[46px] text-right font-mono text-[10px] font-medium tabular-nums',
+                getMomRateColor(txType, item.momRate)
+              )}
+            >
+              {item.momRate > 0 ? `+${item.momRate}%` : `${item.momRate}%`}
+            </span>
+          )}
           <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
         </PaperButton>
       ))}

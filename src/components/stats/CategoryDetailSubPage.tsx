@@ -14,13 +14,24 @@ export interface CategoryDetailSubPageProps {
   onSelectTransaction?: (tx: Transaction) => void;
 }
 
+function getMomTextColor(type: string, momRate: number): string {
+  if (type === 'income') {
+    if (momRate > 0) return 'text-(--color-income)';
+    if (momRate < 0) return 'text-(--color-expense)';
+    return 'text-(--ink-solid)';
+  }
+  if (momRate > 0) return 'text-(--color-expense)';
+  if (momRate < 0) return 'text-(--color-income)';
+  return 'text-(--ink-solid)';
+}
+
 export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
   data,
   categories,
   accounts,
   onSelectTransaction,
 }) => {
-  const { category, periodLabel, transactions, totalExpense, categoryPercentage } = data;
+  const { category, periodLabel, transactions, totalExpense, categoryPercentage, momRate, isNew } = data;
 
   return (
     <div className="space-y-3.5 p-4 pb-12">
@@ -34,13 +45,15 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
         </div>
 
         <div>
-          <div className="mb-0.5 text-[11px] text-(--ink-tertiary)">本期消费合计</div>
+          <div className="mb-0.5 text-[11px] text-(--ink-tertiary)">
+            {category.type === 'income' ? '本期收入合计' : '本期消费合计'}
+          </div>
           <div className="font-mono text-2xl font-bold text-(--ink-solid) tabular-nums">
             ¥{centsToYuan(totalExpense)}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 border-t border-(--rule-hairline)/60 pt-1 text-xs text-(--ink-secondary)">
+        <div className="flex flex-wrap items-center gap-3 border-t border-(--rule-hairline)/60 pt-1 text-xs text-(--ink-secondary)">
           <span>
             占比 <strong className="font-mono text-(--ink-solid)">{categoryPercentage}%</strong>
           </span>
@@ -48,6 +61,23 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
           <span>
             共 <strong className="font-mono text-(--ink-solid)">{transactions.length}</strong> 笔
           </span>
+          {isNew && (
+            <>
+              <span className="text-(--rule-hairline)">•</span>
+              <span className="font-mono text-[11px] text-(--ink-tertiary)">本期新增</span>
+            </>
+          )}
+          {momRate !== null && momRate !== undefined && !isNew && (
+            <>
+              <span className="text-(--rule-hairline)">•</span>
+              <span className="font-mono text-[11px]">
+                环比{' '}
+                <strong className={getMomTextColor(category.type, momRate)}>
+                  {momRate > 0 ? `+${momRate}%` : `${momRate}%`}
+                </strong>
+              </span>
+            </>
+          )}
         </div>
       </div>
 
