@@ -55,6 +55,12 @@ export function addDaysToToday(offsetDays: number): string {
   return dayjs().add(offsetDays, 'day').format('YYYY-MM-DD');
 }
 
+export function addDaysToDate(baseDate: string, offsetDays: number): string {
+  const d = dayjs(baseDate, 'YYYY-MM-DD', true);
+  const valid = d.isValid() ? d : dayjs(baseDate);
+  return (valid.isValid() ? valid : dayjs()).add(offsetDays, 'day').format('YYYY-MM-DD');
+}
+
 export function stepYearMonth(yearMonth: string, offsetMonths: number): string {
   const base = dayjs(`${yearMonth}-01`, 'YYYY-MM-DD', true);
   if (!base.isValid()) return currentYearMonth();

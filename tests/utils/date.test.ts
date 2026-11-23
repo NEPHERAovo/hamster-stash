@@ -6,6 +6,7 @@ import {
   formatTime,
   formatMonthDayTime,
   stepYearMonth,
+  addDaysToDate,
   parseLocalDate,
   combineLocalDateTimeToIso,
   parseCsvDateTime,
@@ -32,6 +33,12 @@ describe('Date utility wrapper (dayjs)', () => {
     expect(stepYearMonth('2026-12', 1)).toBe('2027-01');
     expect(stepYearMonth('2026-03', -1)).toBe('2026-02');
     expect(stepYearMonth('2026-10', -3)).toBe('2026-07');
+  });
+
+  it('calculates shifted dates from a specified base date safely', () => {
+    expect(addDaysToDate('2026-09-15', -30)).toBe('2026-08-16');
+    expect(addDaysToDate('2026-09-15', 30)).toBe('2026-10-15');
+    expect(addDaysToDate('2026-01-05', -10)).toBe('2025-12-26');
   });
 
   it('combines local date and time into an ISO timestamp without UTC shift', () => {
