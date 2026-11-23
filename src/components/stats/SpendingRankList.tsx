@@ -57,54 +57,55 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
           const diffColor = getDiffColor(txType, diff);
 
           return (
-            <PaperButton
-              key={item.categoryId}
-              variant="ghost"
-              fullWidth
-              size="sm"
-              onClick={() => onSelectCategory?.(item.categoryId)}
-              className="group flex h-auto cursor-pointer items-center justify-between rounded-(--radius-sm) !px-1 py-2 text-left font-normal hover:bg-(--paper-sunken)/60"
-              title={`查看「${item.name}」明细`}
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                <CategoryBadge
-                  iconName={item.icon}
-                  type={txType}
-                  size="md"
-                />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className="size-2 shrink-0 rounded-(--badge-radius)"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="truncate text-[13px] font-medium text-(--ink-primary)">
-                      {item.name}
+            <div key={item.categoryId}>
+              <PaperButton
+                variant="ghost"
+                fullWidth
+                size="sm"
+                onClick={() => onSelectCategory?.(item.categoryId)}
+                className="group flex h-auto cursor-pointer items-center justify-between rounded-(--radius-sm) border-0 !px-1 py-2 text-left font-normal transition-colors hover:bg-(--paper-sunken)/60"
+                title={`查看「${item.name}」明细`}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <CategoryBadge
+                    iconName={item.icon}
+                    type={txType}
+                    size="md"
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="size-2 shrink-0 rounded-(--badge-radius)"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="truncate text-[13px] font-medium text-(--ink-primary)">
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
+                      {item.percentage}%
                     </span>
                   </div>
-                  <span className="font-mono text-[11px] text-(--ink-tertiary) tabular-nums">
-                    {item.percentage}%
-                  </span>
                 </div>
-              </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="flex flex-col items-end gap-0.5 font-mono tabular-nums">
-                  <span className="text-[13px] font-semibold text-(--ink-primary) tabular-nums">
-                    ¥{centsToYuan(item.amount)}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-[11px] font-medium tabular-nums',
-                      diffColor
-                    )}
-                  >
-                    {diffText}
-                  </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex flex-col items-end gap-0.5 font-mono tabular-nums">
+                    <span className="text-[13px] font-semibold text-(--ink-primary) tabular-nums">
+                      ¥{centsToYuan(item.amount)}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-[11px] font-medium tabular-nums',
+                        diffColor
+                      )}
+                    >
+                      {diffText}
+                    </span>
+                  </div>
+                  <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
                 </div>
-                <ChevronRight className="size-3.5 shrink-0 text-(--ink-faint) transition-colors group-hover:text-(--ink-secondary)" />
-              </div>
-            </PaperButton>
+              </PaperButton>
+            </div>
           );
         })}
       </div>

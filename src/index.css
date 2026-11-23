@@ -371,7 +371,7 @@ body {
   z-index: 10;
 }
 
-.paper-btn { display: inline-flex; cursor: pointer; align-items: center; justify-content: center; white-space: nowrap; font-weight: 500; user-select: none; outline: none; -webkit-tap-highlight-color: transparent; transition-property: color, background-color, border-color, box-shadow, transform; transition-duration: 150ms; }
+.paper-btn { display: inline-flex; cursor: pointer; align-items: center; justify-content: center; white-space: nowrap; font-weight: 500; user-select: none; outline: none; -webkit-tap-highlight-color: transparent; border-color: transparent; transition-property: color, background-color, border-color, box-shadow, transform; transition-duration: 150ms; }
 .paper-btn:focus, .paper-btn:focus-visible { outline: none; }
 .paper-btn:disabled { pointer-events: none; cursor: not-allowed; opacity: 0.4; }
 .paper-chip { display: inline-flex; cursor: pointer; align-items: center; justify-content: center; white-space: nowrap; border-radius: var(--btn-radius); border-width: 1px; border-style: solid; font-weight: 500; user-select: none; transition-property: color, background-color, border-color, box-shadow; transition-duration: 150ms; }
