@@ -226,7 +226,6 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 : '输入储蓄账户名称'
             }
             maxLength={24}
-            autoFocus
           />
         </div>
 

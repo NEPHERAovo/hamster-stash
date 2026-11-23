@@ -493,7 +493,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   value={maintPriceYuan}
                   onChange={(e) => setMaintPriceYuan(e.target.value)}
                   placeholder="0.00"
-                  autoFocus
                 />
               </div>
 
@@ -578,7 +577,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   value={sellPriceYuan}
                   onChange={(e) => setSellPriceYuan(e.target.value)}
                   placeholder="0.00"
-                  autoFocus
                 />
               </div>
 

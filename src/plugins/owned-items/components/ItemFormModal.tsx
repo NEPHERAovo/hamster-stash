@@ -262,7 +262,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={kind === 'subscription' ? '输入服务名称' : '输入物品名称'}
-            autoFocus
           />
         </div>
 
@@ -336,6 +335,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   续费金额
                 </label>
                 <AmountInput
+                  size="sm"
                   value={renewalAmountYuan}
                   onChange={setRenewalAmountYuan}
                   placeholder="0.00"
@@ -364,6 +364,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   {kind === 'subscription' ? '首次支出' : '购入金额'}
                 </label>
                 <AmountInput
+                  size="sm"
                   value={costYuan}
                   onChange={(val) => {
                     setCostYuan(val);

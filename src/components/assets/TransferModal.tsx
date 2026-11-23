@@ -203,7 +203,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             placeholder="0.00"
             variant="surface"
             size="lg"
-            autoFocus={!isEditing}
             aria-label="划转金额"
           />
         </div>

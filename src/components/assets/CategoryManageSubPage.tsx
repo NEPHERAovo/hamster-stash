@@ -669,7 +669,6 @@ export const CategoryManageSubPage: React.FC = () => {
               onChange={(e) => setNameInput(e.target.value)}
               placeholder="输入分类名称"
               maxLength={12}
-              autoFocus
             />
           </div>
 
