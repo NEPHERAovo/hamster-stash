@@ -19,6 +19,7 @@ export const SubPageBackButton: React.FC<{ label?: string }> = ({ label = 'è¿”å›
     <PaperButton
       variant="nav"
       size="compact"
+      className="h-auto gap-1 p-0 px-0"
       leftIcon={<ChevronLeft className="size-4.5 stroke-2" />}
       onClick={() => subPage?.requestClose()}
     >
