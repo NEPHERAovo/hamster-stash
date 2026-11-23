@@ -61,13 +61,15 @@ describe('PaperBottomNav component', () => {
     expect(screen.getByTitle('新建账户')).toBeInTheDocument();
   });
 
-  it('renders persistent sliding accent indicator bar for active tab', () => {
+  it('renders accent indicator bar for active tab with fade transition', () => {
     const { rerender } = render(<PaperBottomNav currentTab="ledger" onTabChange={vi.fn()} />);
     const bar = screen.getByTestId('paper-nav-active-bar');
     expect(bar).toBeInTheDocument();
-    expect(bar.style.left).toBe('0%');
+    expect(bar.classList.contains('opacity-100')).toBe(true);
 
     rerender(<PaperBottomNav currentTab="stats" onTabChange={vi.fn()} />);
-    expect(screen.getByTestId('paper-nav-active-bar')).toBeInTheDocument();
+    const activeBar = screen.getByTestId('paper-nav-active-bar');
+    expect(activeBar).toBeInTheDocument();
+    expect(activeBar.classList.contains('opacity-100')).toBe(true);
   });
 });
