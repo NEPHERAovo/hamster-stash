@@ -34,6 +34,10 @@ describe('PaperDatePickerModal', () => {
     const day20 = screen.getByRole('button', { name: '20' });
     fireEvent.click(day20);
 
+    // Selected date must have inverted foreground color and must not collide with text-(--ink-primary)
+    expect(day20.className).toContain('text-(--btn-primary-fg)');
+    expect(day20.className).not.toContain('text-(--ink-primary)');
+
     // Click confirm
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     fireEvent.click(confirmBtn);
@@ -187,6 +191,9 @@ describe('PaperDatePickerModal', () => {
     const day18 = screen.getByRole('button', { name: '18' });
     fireEvent.click(day18);
 
+    expect(day18.className).toContain('text-(--btn-primary-fg)');
+    expect(day18.className).not.toContain('text-(--ink-primary)');
+
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     fireEvent.click(confirmBtn);
 
@@ -288,6 +295,9 @@ describe('PaperDatePickerModal', () => {
     // Pick day 18
     const day18 = screen.getByRole('button', { name: '18' });
     fireEvent.click(day18);
+
+    expect(day18.className).toContain('text-(--btn-primary-fg)');
+    expect(day18.className).not.toContain('text-(--ink-primary)');
 
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     fireEvent.click(confirmBtn);

@@ -493,7 +493,12 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                     setSelectedDate(todayDate());
                     setViewMonth(dayjs());
                   }}
-                  className="cursor-pointer rounded-(--badge-radius) bg-(--paper-sunken)/70 px-2.5 py-0.5 font-mono text-[11px] text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
+                  className={cn(
+                    'cursor-pointer rounded-(--badge-radius) px-2.5 py-0.5 font-mono text-[11px] transition-colors',
+                    selectedDate === todayDate()
+                      ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                      : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                  )}
                 >
                   今天
                 </button>
@@ -504,7 +509,12 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                     setSelectedDate(y);
                     setViewMonth(parseLocalDate(y));
                   }}
-                  className="cursor-pointer rounded-(--badge-radius) bg-(--paper-sunken)/70 px-2.5 py-0.5 font-mono text-[11px] text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
+                  className={cn(
+                    'cursor-pointer rounded-(--badge-radius) px-2.5 py-0.5 font-mono text-[11px] transition-colors',
+                    selectedDate === addDaysToToday(-1)
+                      ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                      : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                  )}
                 >
                   昨天
                 </button>
@@ -516,7 +526,12 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                       setSelectedDate(beforeY);
                       setViewMonth(parseLocalDate(beforeY));
                     }}
-                    className="cursor-pointer rounded-(--badge-radius) bg-(--paper-sunken)/70 px-2.5 py-0.5 font-mono text-[11px] text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
+                    className={cn(
+                      'cursor-pointer rounded-(--badge-radius) px-2.5 py-0.5 font-mono text-[11px] transition-colors',
+                      selectedDate === addDaysToToday(-2)
+                        ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                        : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                    )}
                   >
                     前天
                   </button>
@@ -715,6 +730,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                     const isSelected = mode !== 'range' && selectedDate === dateStr;
                     const isRangeStart = mode === 'range' && range.start === dateStr;
                     const isRangeEnd = mode === 'range' && range.end === dateStr;
+                    const isHighlighted = isSelected || isRangeStart || isRangeEnd;
                     const isInRange =
                       mode === 'range' &&
                       range.start &&
@@ -725,6 +741,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                     const isDisabled =
                       Boolean(minDate && dateStr < minDate) ||
                       Boolean(maxDate && dateStr > maxDate);
+                    const isToday = dateStr === todayDate();
 
                     return (
                       <button
@@ -734,20 +751,35 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                         onClick={() => handleSelectDay(dateStr)}
                         className={cn(
                           'relative flex h-8 w-full cursor-pointer items-center justify-center font-mono text-xs transition-all duration-150',
-                          !isCurrentMonth && 'text-(--ink-faint) opacity-40',
-                          isCurrentMonth && 'text-(--ink-primary)',
-                          isSelected &&
-                            'rounded-(--radius-sm) bg-(--btn-primary-bg) font-bold text-(--btn-primary-fg) shadow-2xs',
-                          isRangeStart &&
-                            'rounded-l-(--radius-sm) bg-(--btn-primary-bg) font-bold text-(--btn-primary-fg) shadow-2xs',
-                          isRangeEnd &&
-                            'rounded-r-(--radius-sm) bg-(--btn-primary-bg) font-bold text-(--btn-primary-fg) shadow-2xs',
-                          isRangeStart && isRangeEnd && 'rounded-(--radius-sm)',
-                          isInRange && 'bg-(--paper-sunken) font-medium text-(--ink-solid)',
+                          isHighlighted &&
+                            'bg-(--btn-primary-bg) font-bold text-(--btn-primary-fg) shadow-2xs hover:opacity-95',
+                          isHighlighted && isRangeStart && isRangeEnd && 'rounded-(--radius-sm)',
+                          isHighlighted && isRangeStart && !isRangeEnd && 'rounded-l-(--radius-sm)',
+                          isHighlighted && isRangeEnd && !isRangeStart && 'rounded-r-(--radius-sm)',
+                          isHighlighted && isSelected && 'rounded-(--radius-sm)',
+                          !isHighlighted &&
+                            isInRange &&
+                            'bg-(--paper-sunken) font-medium text-(--ink-solid)',
+                          !isHighlighted &&
+                            !isInRange &&
+                            isCurrentMonth &&
+                            'text-(--ink-primary) hover:bg-(--paper-sunken)/70',
+                          !isHighlighted &&
+                            !isInRange &&
+                            isCurrentMonth &&
+                            isToday &&
+                            'font-bold',
+                          !isHighlighted &&
+                            !isInRange &&
+                            !isCurrentMonth &&
+                            'text-(--ink-faint) opacity-40 hover:bg-(--paper-sunken)/40',
                           isDisabled && 'pointer-events-none opacity-20'
                         )}
                       >
                         {dayNum}
+                        {isToday && !isHighlighted && (
+                          <span className="absolute bottom-0.5 size-1 rounded-full bg-(--color-accent)" />
+                        )}
                       </button>
                     );
                   })}
@@ -770,7 +802,12 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                           setSelectedTime(preset);
                         }
                       }}
-                      className="cursor-pointer rounded-(--badge-radius) bg-(--paper-sunken)/70 px-2 py-0.5 font-mono text-[11px] text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)"
+                      className={cn(
+                        'cursor-pointer rounded-(--badge-radius) px-2 py-0.5 font-mono text-[11px] transition-colors',
+                        preset !== '现在' && selectedTime === preset
+                          ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                          : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                      )}
                     >
                       {preset}
                     </button>
