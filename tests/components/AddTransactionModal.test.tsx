@@ -8,6 +8,8 @@ import { useCategoryStore } from '../../src/stores/useCategoryStore';
 import { useLedgerStore } from '../../src/stores/useLedgerStore';
 import type { Account } from '../../src/types/account';
 import type { Category } from '../../src/types/category';
+import type { Transaction } from '../../src/types/transaction';
+import { todayDate, addDaysToToday } from '../../src/utils/date';
 
 describe('AddTransactionModal - Amortization (分期支出)', () => {
   const mockAccount: Account = {
@@ -169,5 +171,99 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
       }
       vi.useRealTimers();
     }
+  });
+
+  it('filters offset candidates for income based on record date [-30d, +30d] and long-cycle reimbursables', async () => {
+    const today = todayDate();
+    const mockTxs: Transaction[] = [
+      {
+        id: 'tx_old_reimb',
+        type: 'expense',
+        amount: 80000,
+        categoryId: 'cat_rent',
+        accountId: 'acct_1',
+        date: addDaysToToday(-75), // 75 days before today
+        note: '远期出差机酒',
+        isReimbursable: true,
+        createdAt: `${addDaysToToday(-75)}T00:00:00.000Z`,
+        updatedAt: `${addDaysToToday(-75)}T00:00:00.000Z`,
+      },
+      {
+        id: 'tx_near_meal',
+        type: 'expense',
+        amount: 15000,
+        categoryId: 'cat_rent',
+        accountId: 'acct_1',
+        date: addDaysToToday(-5), // 5 days before today (within 30d)
+        note: '周末聚餐',
+        createdAt: `${addDaysToToday(-5)}T00:00:00.000Z`,
+        updatedAt: `${addDaysToToday(-5)}T00:00:00.000Z`,
+      },
+      {
+        id: 'tx_far_routine',
+        type: 'expense',
+        amount: 20000,
+        categoryId: 'cat_rent',
+        accountId: 'acct_1',
+        date: addDaysToToday(-61), // 61 days before today (outside 30d, non-reimbursable)
+        note: '旧日用采购',
+        createdAt: `${addDaysToToday(-61)}T00:00:00.000Z`,
+        updatedAt: `${addDaysToToday(-61)}T00:00:00.000Z`,
+      },
+      {
+        id: 'tx_fully_offset',
+        type: 'expense',
+        amount: 10000,
+        categoryId: 'cat_rent',
+        accountId: 'acct_1',
+        date: addDaysToToday(-3),
+        note: '已平账聚餐',
+        createdAt: `${addDaysToToday(-3)}T00:00:00.000Z`,
+        updatedAt: `${addDaysToToday(-3)}T00:00:00.000Z`,
+      },
+      {
+        id: 'tx_offsetting_income',
+        type: 'income',
+        amount: 10000,
+        categoryId: 'cat_rent',
+        accountId: 'acct_1',
+        offsetTransactionId: 'tx_fully_offset',
+        date: today,
+        createdAt: `${today}T00:00:00.000Z`,
+        updatedAt: `${today}T00:00:00.000Z`,
+      },
+    ];
+
+    useLedgerStore.setState({ allTransactions: mockTxs });
+
+    render(
+      <AddTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+      />
+    );
+
+    // Switch to income
+    fireEvent.click(screen.getByText('收入'));
+
+    // Open offset tray
+    const offsetChip = screen.getByText('抵扣支出');
+    fireEvent.click(offsetChip);
+
+    // Reimbursable expense from 75 days ago should be visible
+    expect(screen.getByText('远期出差机酒')).toBeInTheDocument();
+    // Near routine meal (5 days ago) should be visible
+    expect(screen.getByText('周末聚餐')).toBeInTheDocument();
+    // Far routine expense (>30 days ago, non-reimbursable) should be filtered out
+    expect(screen.queryByText('旧日用采购')).not.toBeInTheDocument();
+    // Fully offset expense should be filtered out
+    expect(screen.queryByText('已平账聚餐')).not.toBeInTheDocument();
+
+    // Selecting the reimbursable expense should auto-fill remaining amount and note
+    fireEvent.click(screen.getByText('远期出差机酒'));
+
+    // The display expression should be 800.00 (80000 cents = 800 yuan)
+    expect(screen.getByText('800.00')).toBeInTheDocument();
+    expect(screen.getByText('抵扣 · 远期出差机酒')).toBeInTheDocument();
   });
 });

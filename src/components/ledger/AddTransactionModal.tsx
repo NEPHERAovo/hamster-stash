@@ -34,6 +34,7 @@ import {
   shouldDismissGesture,
 } from '../../utils/gesturePhysics';
 import {
+  addDaysToDate,
   addDaysToToday,
   combineLocalDateTimeToIso,
   formatTime,
@@ -175,11 +176,40 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     return map;
   }, [allTransactions, editingTransaction]);
 
-  const recentExpenses = useMemo(() => {
+  const candidateExpenses = useMemo(() => {
+    if (txType !== 'income') return [];
+
+    const baseDate = dateStr || todayDate();
+    const startDate = addDaysToDate(baseDate, -30);
+    const endDate = addDaysToDate(baseDate, 30);
+
     return allTransactions
-      .filter((t) => t.type === 'expense')
-      .slice(0, 30);
-  }, [allTransactions]);
+      .filter((t) => {
+        if (t.type !== 'expense') return false;
+
+        if (offsetTransactionId && t.id === offsetTransactionId) return true;
+
+        const alreadyOffset = offsetSummaryMap.get(t.id) || 0;
+        const remaining = Math.max(0, t.amount - alreadyOffset);
+
+        if (remaining <= 0) return false;
+
+        if (t.isReimbursable) return true;
+
+        return typeof t.date === 'string' && t.date >= startDate && t.date <= endDate;
+      })
+      .sort((a, b) => {
+        if (offsetTransactionId) {
+          if (a.id === offsetTransactionId) return -1;
+          if (b.id === offsetTransactionId) return 1;
+        }
+
+        if (a.isReimbursable && !b.isReimbursable) return -1;
+        if (!a.isReimbursable && b.isReimbursable) return 1;
+
+        return (b.date || '').localeCompare(a.date || '');
+      });
+  }, [allTransactions, txType, dateStr, offsetTransactionId, offsetSummaryMap]);
 
   const selectedOffsetTx = useMemo(() => {
     if (!offsetTransactionId) return null;
@@ -193,7 +223,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const expenseCat = categories.find((c) => c.id === expenseTx.categoryId);
     const originTitle = expenseTx.note || expenseCat?.name || '支出';
     if (!note.trim()) {
-      setNote(`AA回款 · ${originTitle}`);
+      setNote(expenseTx.isReimbursable ? `报销回款 · ${originTitle}` : `AA回款 · ${originTitle}`);
     }
 
     const alreadyOffset = offsetSummaryMap.get(expenseTx.id) || 0;
@@ -1162,7 +1192,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           {txType === 'income' && isOffsetTrayOpen && (
             <OffsetTrayPanel
-              recentExpenses={recentExpenses}
+              candidateExpenses={candidateExpenses}
               categories={categories}
               offsetTransactionId={offsetTransactionId}
               offsetSummaryMap={offsetSummaryMap}
