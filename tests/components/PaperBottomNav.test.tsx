@@ -60,4 +60,14 @@ describe('PaperBottomNav component', () => {
     );
     expect(screen.getByTitle('新建账户')).toBeInTheDocument();
   });
+
+  it('renders persistent sliding accent indicator bar for active tab', () => {
+    const { rerender } = render(<PaperBottomNav currentTab="ledger" onTabChange={vi.fn()} />);
+    const bar = screen.getByTestId('paper-nav-active-bar');
+    expect(bar).toBeInTheDocument();
+    expect(bar.style.left).toBe('0%');
+
+    rerender(<PaperBottomNav currentTab="stats" onTabChange={vi.fn()} />);
+    expect(screen.getByTestId('paper-nav-active-bar')).toBeInTheDocument();
+  });
 });

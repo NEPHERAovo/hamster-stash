@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BookBookmarkIcon as NotebookText, ChartBarIcon as BarChart3, WalletIcon as Wallet, PlusIcon as Plus, type Icon as LucideIcon } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { getCategoryIcon } from '../../utils/categoryIcons';
@@ -51,6 +51,42 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
     return [...builtinTabs, ...mappedPluginTabs].sort((a, b) => a.order - b.order);
   }, [pluginTabs]);
 
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = useState<{ left: string; width: string } | null>(null);
+
+  const updateIndicator = useCallback(() => {
+    const activeIdx = allTabs.findIndex((t) => t.id === currentTab);
+    const resolvedIdx = activeIdx >= 0 ? activeIdx : 0;
+    const el = tabRefs.current[resolvedIdx];
+    if (el && el.offsetWidth > 0) {
+      setIndicatorStyle({
+        left: `${el.offsetLeft}px`,
+        width: `${el.offsetWidth}px`,
+      });
+    } else if (allTabs.length > 0) {
+      const pct = 100 / allTabs.length;
+      setIndicatorStyle({
+        left: `${resolvedIdx * pct}%`,
+        width: `${pct}%`,
+      });
+    }
+  }, [allTabs, currentTab]);
+
+  useEffect(() => {
+    updateIndicator();
+  }, [updateIndicator]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      updateIndicator();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateIndicator]);
+
   return (
     <>
       <div
@@ -83,7 +119,18 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
             className="absolute inset-x-0 bottom-0 h-13 rounded-[5px] border border-(--rule-hairline) bg-(--paper-sunken) shadow-[0_2px_6px_rgba(0,0,0,0.04)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
             aria-hidden="true"
           />
-          <div className="relative z-10 flex items-end gap-1 px-1 pb-1">
+          <div ref={containerRef} className="relative z-10 flex items-end gap-1 px-1 pb-1">
+            {indicatorStyle && (
+              <span
+                data-testid="paper-nav-active-bar"
+                className="pointer-events-none absolute top-0 z-20 h-[3px] rounded-t-[1px] bg-(--color-accent) transition-[left,width] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                style={{
+                  left: indicatorStyle.left,
+                  width: indicatorStyle.width,
+                }}
+                aria-hidden="true"
+              />
+            )}
             {allTabs.map((tab, idx) => {
               const Icon = tab.icon;
               const isActive = currentTab === tab.id;
@@ -96,21 +143,18 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
                     />
                   )}
                   <button
+                    ref={(el) => {
+                      tabRefs.current[idx] = el;
+                    }}
                     type="button"
                     onClick={() => onTabChange(tab.id)}
                     className={cn(
-                      'flex min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-t-[3.5px] rounded-b-[2px] border border-b-0 transition-[height,background-color,box-shadow,color] duration-200 ease-[cubic-bezier(0.22,1.2,0.36,1)] select-none',
+                      'relative flex h-[51px] min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-t-[3.5px] rounded-b-[2px] border border-b-0 pt-[3px] transition-[background-color,border-color,box-shadow,color] duration-200 select-none',
                       isActive
-                        ? 'relative z-10 h-[51px] border-(--rule-hairline) bg-(--paper-sheet) pt-[3px] text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
-                        : 'relative z-1 h-11 border-transparent bg-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
+                        ? 'z-10 border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-solid) shadow-[0_-1px_3px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.03)]'
+                        : 'z-1 border-transparent bg-transparent text-(--ink-tertiary) hover:text-(--ink-secondary)'
                     )}
                   >
-                    {isActive && (
-                      <span
-                        className="absolute inset-x-0 top-0 h-[3px] bg-(--color-accent)"
-                        aria-hidden="true"
-                      />
-                    )}
                     <Icon
                       size={17}
                       strokeWidth={isActive ? 2.1 : 1.75}
