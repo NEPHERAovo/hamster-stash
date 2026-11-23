@@ -60,9 +60,10 @@ export const SpendingRankList: React.FC<SpendingRankListProps> = ({
               key={item.categoryId}
               variant="ghost"
               fullWidth
-              size="md"
+              size="sm"
               onClick={() => onSelectCategory?.(item.categoryId)}
-              className="group flex h-auto items-center justify-between gap-1.5 rounded-(--radius-sm) px-1 py-2 text-left font-normal hover:bg-(--paper-sunken)/60"
+              style={{ justifyContent: 'space-between' }}
+              className="group flex h-auto items-center !justify-between !px-0 py-2 text-left font-normal hover:bg-(--paper-sunken)/60"
               title={`查看「${item.name}」明细`}
             >
               <div className="flex min-w-0 items-center gap-2">
