@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { XIcon as X } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
+import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 import {
   GestureSmoother,
   SHEET_SPRING_EASE,
@@ -119,15 +120,10 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     };
   }, [shouldRender, isOpen]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        closeWithAnimation(240);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeWithAnimation]);
+  useCloseWatcher({
+    isOpen: shouldRender && isOpen && !isClosingRef.current,
+    onClose: () => closeWithAnimation(240),
+  });
 
   useEffect(() => {
     const el = sheetRef.current;

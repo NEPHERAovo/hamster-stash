@@ -4,6 +4,7 @@ import { useConfirmStore } from '../../stores/useConfirmStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { PaperButton } from './PaperButton';
 import { cn } from '../../utils/cn';
+import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 
 export const ConfirmDialog: React.FC = () => {
   const [mounted, setMounted] = useState(false);
@@ -17,14 +18,16 @@ export const ConfirmDialog: React.FC = () => {
     setMounted(true);
   }, []);
 
+  useCloseWatcher({
+    isOpen: mounted && isOpen,
+    onClose: () => handleResolve(false),
+  });
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleResolve(false);
-      } else if (e.key === 'Enter') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         handleResolve(true);
       }

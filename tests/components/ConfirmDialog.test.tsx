@@ -80,4 +80,45 @@ describe('ConfirmDialog component and confirmAction store', () => {
     expect(promiseResult).toBe(false);
     expect(useConfirmStore.getState().isOpen).toBe(false);
   });
+
+  it('resolves false upon CloseWatcher onclose event (Android system back)', async () => {
+    let watcherInstance: { onclose: (() => void) | null; destroy: () => void } | null = null;
+    class MockCloseWatcher {
+      onclose: (() => void) | null = null;
+      destroy = vi.fn();
+      constructor() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        watcherInstance = this;
+      }
+    }
+    const origCloseWatcher = window.CloseWatcher;
+    window.CloseWatcher = MockCloseWatcher as unknown as typeof window.CloseWatcher;
+
+    try {
+      render(<ConfirmDialog />);
+
+      let promiseResult: boolean | undefined;
+      act(() => {
+        confirmAction('安卓关闭测试').then((res) => {
+          promiseResult = res;
+        });
+      });
+
+      expect(watcherInstance).not.toBeNull();
+      expect(screen.getByText('安卓关闭测试')).toBeInTheDocument();
+
+      await act(async () => {
+        watcherInstance?.onclose?.();
+      });
+
+      expect(promiseResult).toBe(false);
+      expect(useConfirmStore.getState().isOpen).toBe(false);
+    } finally {
+      if (origCloseWatcher) {
+        window.CloseWatcher = origCloseWatcher;
+      } else {
+        delete (window as unknown as { CloseWatcher?: unknown }).CloseWatcher;
+      }
+    }
+  });
 });
