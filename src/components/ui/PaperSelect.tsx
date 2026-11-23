@@ -176,7 +176,7 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
           disabled={disabled}
           onClick={() => setIsOpen((prev) => !prev)}
           className={cn(
-            'flex w-full cursor-pointer items-center justify-between rounded-(--input-radius) border text-left font-mono transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--ink-primary)',
+            'flex w-full cursor-pointer items-center justify-between rounded-(--input-radius) border text-left font-mono transition-colors focus-visible:ring-1 focus-visible:ring-(--ink-primary) focus-visible:outline-none',
             sizeStyles[size],
             variantStyles[variant],
             disabled && 'cursor-not-allowed opacity-50',

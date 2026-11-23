@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckIcon as Check } from '@phosphor-icons/react';
+import { CheckIcon as Check, CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react';
 import {
   useHostAccounts,
   useHostTransactionActions,
@@ -17,6 +17,7 @@ import {
   PaperSwitch,
   PaperModal,
   AmountInput,
+  PaperDatePickerModal,
 } from '../../../plugin-sdk';
 import type { Item, ItemStatus, ItemKind, SubscriptionCycle } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
@@ -95,6 +96,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
   const [billingCycle, setBillingCycle] = useState<SubscriptionCycle>('monthly');
   const [renewalAmountYuan, setRenewalAmountYuan] = useState('');
   const [nextRenewalDate, setNextRenewalDate] = useState('');
+  const [isBuyDateOpen, setIsBuyDateOpen] = useState(false);
+  const [isNextRenewalDateOpen, setIsNextRenewalDateOpen] = useState(false);
 
   const [costYuan, setCostYuan] = useState('');
   const [selectedAcctId, setSelectedAcctId] = useState('');
@@ -293,14 +296,25 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
             {kind === 'subscription' ? '起始日期' : '购入日期'}
           </label>
-          <PaperInput
-            type="date"
+          <PaperButton
+            variant="sunken"
+            size="md"
+            fullWidth
+            onClick={() => setIsBuyDateOpen(true)}
+            className="justify-start gap-2 border-(--rule-hairline) px-3 font-mono text-sm text-(--ink-primary) hover:border-(--border-strong)"
+            leftIcon={<CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />}
+          >
+            <span>{buyDate || '选择日期'}</span>
+          </PaperButton>
+          <PaperDatePickerModal
+            isOpen={isBuyDateOpen}
+            onClose={() => setIsBuyDateOpen(false)}
+            mode="date"
             value={buyDate}
-            onChange={(e) => {
-              const nextDate = e.target.value;
-              setBuyDate(nextDate);
+            onChange={(val) => {
+              setBuyDate(val);
               if (!editingItem && kind === 'subscription') {
-                setNextRenewalDate(calculateNextRenewalDate(nextDate, billingCycle));
+                setNextRenewalDate(calculateNextRenewalDate(val, billingCycle));
               }
             }}
           />
@@ -347,10 +361,22 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                 下次续费日
               </label>
-              <PaperInput
-                type="date"
+              <PaperButton
+                variant="sunken"
+                size="md"
+                fullWidth
+                onClick={() => setIsNextRenewalDateOpen(true)}
+                className="justify-start gap-2 border-(--rule-hairline) px-3 font-mono text-sm text-(--ink-primary) hover:border-(--border-strong)"
+                leftIcon={<CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />}
+              >
+                <span>{nextRenewalDate || '选择日期'}</span>
+              </PaperButton>
+              <PaperDatePickerModal
+                isOpen={isNextRenewalDateOpen}
+                onClose={() => setIsNextRenewalDateOpen(false)}
+                mode="date"
                 value={nextRenewalDate}
-                onChange={(e) => setNextRenewalDate(e.target.value)}
+                onChange={(val) => setNextRenewalDate(val)}
               />
             </div>
           </div>

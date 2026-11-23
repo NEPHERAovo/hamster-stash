@@ -356,8 +356,8 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     );
 
     expect(getByDisplayValue('iCloud 200GB')).toBeInTheDocument();
-    expect(getByDisplayValue('2026-03-15')).toBeInTheDocument();
-    expect(getByDisplayValue('2026-04-15')).toBeInTheDocument();
+    expect(getByText('2026-03-15')).toBeInTheDocument();
+    expect(getByText('2026-04-15')).toBeInTheDocument();
     expect(getByText('新建订阅')).toBeInTheDocument();
   });
 });

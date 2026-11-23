@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, TrashIcon as Trash2, PencilSimpleIcon as Edit2, CoinsIcon as DollarSign, CheckIcon as Check, ArrowCounterClockwiseIcon as RotateCcw } from '@phosphor-icons/react';
+import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, TrashIcon as Trash2, PencilSimpleIcon as Edit2, CoinsIcon as DollarSign, CheckIcon as Check, ArrowCounterClockwiseIcon as RotateCcw, CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   useHostAccounts,
@@ -15,6 +15,7 @@ import {
   PaperIconButton,
   PaperInput,
   PaperSelect,
+  PaperDatePickerModal,
 } from '../../../plugin-sdk';
 import { type ItemStatus, getOwnedItemExt } from '../types';
 import type { Transaction } from '../../../plugin-sdk';
@@ -41,6 +42,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const [sellPriceYuan, setSellPriceYuan] = useState('');
   const [sellAccountId, setSellAccountId] = useState(accounts[0]?.id || '');
   const [sellDate, setSellDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isSellDateOpen, setIsSellDateOpen] = useState(false);
   const [sellNote, setSellNote] = useState('');
   const [isSubmittingSell, setIsSubmittingSell] = useState(false);
 
@@ -48,6 +50,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const [maintPriceYuan, setMaintPriceYuan] = useState('');
   const [maintAccountId, setMaintAccountId] = useState(accounts[0]?.id || '');
   const [maintDate, setMaintDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isMaintDateOpen, setIsMaintDateOpen] = useState(false);
   const [maintNote, setMaintNote] = useState('');
   const [isSubmittingMaint, setIsSubmittingMaint] = useState(false);
 
@@ -518,10 +521,22 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   记账日期
                 </label>
-                <PaperInput
-                  type="date"
+                <PaperButton
+                  variant="sunken"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setIsMaintDateOpen(true)}
+                  className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
+                >
+                  <span>{maintDate || '选择日期'}</span>
+                </PaperButton>
+                <PaperDatePickerModal
+                  isOpen={isMaintDateOpen}
+                  onClose={() => setIsMaintDateOpen(false)}
+                  mode="date"
                   value={maintDate}
-                  onChange={(e) => setMaintDate(e.target.value)}
+                  onChange={(val) => setMaintDate(val)}
                 />
               </div>
 
@@ -602,10 +617,22 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   售出日期
                 </label>
-                <PaperInput
-                  type="date"
+                <PaperButton
+                  variant="sunken"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setIsSellDateOpen(true)}
+                  className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
+                >
+                  <span>{sellDate || '选择日期'}</span>
+                </PaperButton>
+                <PaperDatePickerModal
+                  isOpen={isSellDateOpen}
+                  onClose={() => setIsSellDateOpen(false)}
+                  mode="date"
                   value={sellDate}
-                  onChange={(e) => setSellDate(e.target.value)}
+                  onChange={(val) => setSellDate(val)}
                 />
               </div>
 
