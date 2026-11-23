@@ -14,9 +14,7 @@ export interface PaperSelectProps
   extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'onChange'> {
   options?: PaperSelectOption[];
   value?: string;
-  onChange?:
-    | ((event: React.ChangeEvent<HTMLSelectElement>, value: string) => void)
-    | ((event: React.ChangeEvent<HTMLSelectElement>) => void);
+  onChange?: (event: React.ChangeEvent<HTMLSelectElement>, value?: string) => void;
   placeholder?: string;
   size?: 'sm' | 'md';
   variant?: 'sunken' | 'surface';
@@ -102,10 +100,7 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
           target: { value: val, name: props.name },
           currentTarget: { value: val, name: props.name },
         } as React.ChangeEvent<HTMLSelectElement>;
-        (onChange as (e: React.ChangeEvent<HTMLSelectElement>, v: string) => void)(
-          fakeEvent,
-          val
-        );
+        onChange(fakeEvent, val);
       }
     };
 
