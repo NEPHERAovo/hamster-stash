@@ -22,7 +22,7 @@ describe('WebDavClient', () => {
 
     const connected = await client.testConnection(config);
     expect(connected).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
 
     const [calledUrl, calledInit] = fetchMock.mock.calls[0];
     expect(calledUrl).toBe('/api/webdav');
@@ -30,6 +30,12 @@ describe('WebDavClient', () => {
     expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav');
     expect(headers.get('X-Requested-With')).toBe('XMLHttpRequest');
     expect(headers.get('Authorization')).toContain('Basic ');
+
+    const [mkcolUrl, mkcolInit] = fetchMock.mock.calls[1];
+    expect(mkcolUrl).toBe('/api/webdav');
+    expect(mkcolInit.method).toBe('MKCOL');
+    const mkcolHeaders = mkcolInit.headers as Headers;
+    expect(mkcolHeaders.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav/hamsterstash/');
   });
 
   it('routes directly to target server when proxyMode is direct', async () => {
@@ -153,5 +159,34 @@ describe('WebDavClient', () => {
     };
 
     await expect(client.testConnection(config)).rejects.toThrow('CORS');
+  });
+
+  it('automatically creates parent directory with MKCOL and retries PUT when initial PUT fails', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('AncestorsNotFound', { status: 409 }))
+      .mockResolvedValueOnce(new Response('', { status: 201 }))
+      .mockResolvedValueOnce(new Response('', { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const config: WebDavConfig = {
+      url: 'https://dav.jianguoyun.com/dav/',
+      username: 'user@example.com',
+      password: 'token-password',
+      syncPath: 'hamsterstash',
+      proxyMode: 'builtin',
+    };
+
+    await client.putFile(config, 'manifest.json', '{"version": 1}');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    const [, firstPutInit] = fetchMock.mock.calls[0];
+    expect(firstPutInit.method).toBe('PUT');
+
+    const [, mkcolInit] = fetchMock.mock.calls[1];
+    expect(mkcolInit.method).toBe('MKCOL');
+
+    const [, retryPutInit] = fetchMock.mock.calls[2];
+    expect(retryPutInit.method).toBe('PUT');
   });
 });

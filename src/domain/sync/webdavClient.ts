@@ -22,7 +22,16 @@ export class WebDavClient {
 
   private resolveUrl(config: WebDavConfig, filename: string): string {
     const baseUrl = config.url.trim().replace(/\/+$/, '');
-    const dir = (config.syncPath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+    let dir = (config.syncPath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+
+    if (dir && baseUrl.toLowerCase().endsWith(`/${dir.toLowerCase()}`)) {
+      dir = '';
+    }
+
+    if (!dir && (baseUrl.endsWith('/dav') || !baseUrl.includes('/dav/'))) {
+      dir = 'hamsterstash';
+    }
+
     const file = filename.trim().replace(/^\/+/, '');
     if (dir) {
       return `${baseUrl}/${dir}/${file}`;
@@ -44,7 +53,11 @@ export class WebDavClient {
     return false;
   }
 
-  private handleHttpError(resp: Response, action: string): never {
+  private async handleHttpError(resp: Response, action: string, errorBody?: string): Promise<never> {
+    const body = errorBody !== undefined ? errorBody : await resp.text().catch(() => '');
+    if (body.includes('AncestorsNotFound')) {
+      throw new Error(`WebDAV ${action}失败：目标网盘上层文件夹不存在 (AncestorsNotFound)。已尝试自动创建但未能成功，请检查服务器地址与路径设置。`);
+    }
     if (resp.status === 401) {
       throw new Error(`WebDAV ${action}失败 (401 Unauthorized)：账号或密码错误，请检查授权凭据`);
     }
@@ -145,10 +158,12 @@ export class WebDavClient {
       }
 
       if (resp.ok || resp.status === 207) {
+        await this.ensureParentDir(config);
         return true;
       }
 
-      this.handleHttpError(resp, '连接');
+      await this.handleHttpError(resp, '连接');
+      return false;
     } catch (e) {
       this.handleNetworkError(e, config, '连接');
     }
@@ -171,7 +186,12 @@ export class WebDavClient {
       }
 
       if (!resp.ok) {
-        this.handleHttpError(resp, '读取');
+        const errorText = await resp.text().catch(() => '');
+        if (errorText.includes('AncestorsNotFound') || resp.status === 409) {
+          return null;
+        }
+        await this.handleHttpError(resp, '读取', errorText);
+        return null;
       }
 
       return await resp.text();
@@ -223,7 +243,7 @@ export class WebDavClient {
       this.handleNetworkError(e, config, '写入');
     }
 
-    if (resp.status === 409) {
+    if (!resp.ok && resp.status !== 201 && resp.status !== 204) {
       await this.ensureParentDir(config, filename);
       let retryResp: Response;
       try {
@@ -235,20 +255,26 @@ export class WebDavClient {
       } catch (e) {
         this.handleNetworkError(e, config, '写入');
       }
-      if (!retryResp.ok && retryResp.status !== 201 && retryResp.status !== 204) {
-        this.handleHttpError(retryResp, '写入');
+      if (retryResp.ok || retryResp.status === 201 || retryResp.status === 204) {
+        return;
       }
+      await this.handleHttpError(retryResp, '写入');
       return;
-    }
-
-    if (!resp.ok && resp.status !== 201 && resp.status !== 204) {
-      this.handleHttpError(resp, '写入');
     }
   }
 
-  private async ensureParentDir(config: WebDavConfig, filename?: string): Promise<void> {
+  async ensureParentDir(config: WebDavConfig, filename?: string): Promise<void> {
     const baseUrl = config.url.trim().replace(/\/+$/, '');
-    const dir = (config.syncPath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+    let dir = (config.syncPath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+
+    if (dir && baseUrl.toLowerCase().endsWith(`/${dir.toLowerCase()}`)) {
+      dir = '';
+    }
+
+    if (!dir && (baseUrl.endsWith('/dav') || !baseUrl.includes('/dav/'))) {
+      dir = 'hamsterstash';
+    }
+
     const fileDir = filename
       ? filename
           .trim()
@@ -265,7 +291,7 @@ export class WebDavClient {
     for (const part of parts) {
       current = `${current}/${part}`;
       try {
-        await this.executeFetch(config, current, {
+        await this.executeFetch(config, `${current}/`, {
           method: 'MKCOL',
           headers: { Authorization: this.getAuthHeader(config) },
         });
