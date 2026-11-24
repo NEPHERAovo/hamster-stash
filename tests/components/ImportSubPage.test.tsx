@@ -164,4 +164,36 @@ describe('ImportSubPage - Category Mapping', () => {
       );
     });
   });
+
+  it('renders dropdown listbox via portal outside the table container when expanding category selection', async () => {
+    const csvContent = `"日期","分类名称","收支","金额"\r\n"2026-11-20","打车","支出","20.00"`;
+    const file = new File([csvContent], 'small.csv', { type: 'text/csv' });
+
+    const { container } = render(<ImportSubPage onClose={vi.fn()} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText('small.csv')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/下一步：确认字段/));
+    fireEvent.click(screen.getByText(/下一步：分类匹配/));
+
+    await waitFor(() => {
+      expect(screen.getByText('打车')).toBeInTheDocument();
+    });
+
+    const categorySelect = screen.getAllByRole('combobox')[0];
+    fireEvent.click(categorySelect);
+
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+
+    // The listbox is rendered under document.body via portal and not inside the table card
+    expect(listbox.parentElement).toBe(document.body);
+    expect(container.contains(listbox)).toBe(false);
+    expect(listbox.style.position).toBe('fixed');
+  });
 });
