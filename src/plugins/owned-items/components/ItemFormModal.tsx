@@ -52,6 +52,7 @@ function calculateNextRenewalDate(startDate: string, cycle: SubscriptionCycle): 
 }
 
 const POPULAR_ITEM_ICONS = [
+  'box',
   'smartphone',
   'laptop',
   'camera',
@@ -65,7 +66,6 @@ const POPULAR_ITEM_ICONS = [
   'gift',
   'shirt',
   'bag',
-  'box',
   'wrench',
 ];
 

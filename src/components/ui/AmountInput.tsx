@@ -36,15 +36,15 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   };
 
   const sizeContainerStyles = {
-    sm: 'h-8 px-2.5 rounded-(--input-radius)',
-    md: 'h-12 px-3.5 rounded-(--radius-md)',
-    lg: 'h-14 px-4 rounded-(--radius-md)',
+    sm: 'h-8 px-2.5 rounded-(--input-radius) box-border',
+    md: 'h-12 px-3.5 rounded-(--radius-md) box-border',
+    lg: 'h-14 px-4 rounded-(--radius-md) box-border',
   };
 
   const sizeSymbolStyles = {
-    sm: 'text-xs font-semibold mr-1.5',
-    md: 'text-lg font-bold mr-2',
-    lg: 'text-2xl font-bold mr-2.5',
+    sm: 'text-xs font-semibold mr-1.5 leading-none',
+    md: 'text-lg font-bold mr-2 leading-none',
+    lg: 'text-2xl font-bold mr-2.5 leading-none',
   };
 
   const sizeInputStyles = {
@@ -88,7 +88,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={cn(
-          'w-full flex-1 bg-transparent font-mono text-(--ink-primary) tabular-nums outline-none placeholder:text-(--ink-faint)',
+          'size-full flex-1 border-none bg-transparent py-0 font-mono leading-none text-(--ink-primary) tabular-nums outline-none placeholder:text-(--ink-faint)',
           sizeInputStyles[size]
         )}
       />
