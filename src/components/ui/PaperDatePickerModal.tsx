@@ -64,6 +64,9 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isMountRef = useRef(true);
+  const isUserScrollingRef = useRef(false);
+  const isProgrammaticScrollRef = useRef(false);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedIndex = useMemo(() => {
     const idx = items.indexOf(selectedValue);
@@ -71,6 +74,14 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   }, [items, selectedValue]);
 
   const [activeIdx, setActiveIdx] = useState<number>(selectedIndex);
+
+  useEffect(() => {
+    return () => {
+      if (scrollEndTimerRef.current) {
+        clearTimeout(scrollEndTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -81,21 +92,83 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
       isMountRef.current = false;
       setActiveIdx(selectedIndex);
       container.scrollTop = targetTop;
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = targetTop;
+        }
+      });
       return;
     }
 
+    if (isUserScrollingRef.current) return;
+
     setActiveIdx(selectedIndex);
 
-    if (Math.abs(container.scrollTop - targetTop) > 16) {
+    if (Math.abs(container.scrollTop - targetTop) > 2) {
+      isProgrammaticScrollRef.current = true;
       if (typeof container.scrollTo === 'function') {
         container.scrollTo({ top: targetTop, behavior: 'smooth' });
       } else {
         container.scrollTop = targetTop;
+        isProgrammaticScrollRef.current = false;
       }
     }
   }, [selectedIndex]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScrollEnd = () => {
+      if (scrollEndTimerRef.current) {
+        clearTimeout(scrollEndTimerRef.current);
+      }
+      isUserScrollingRef.current = false;
+      isProgrammaticScrollRef.current = false;
+      const finalIdx = Math.max(
+        0,
+        Math.min(items.length - 1, Math.round(container.scrollTop / TIME_ITEM_HEIGHT))
+      );
+      setActiveIdx(finalIdx);
+      const finalVal = items[finalIdx];
+      if (finalVal && finalVal !== selectedValue) {
+        onChange(finalVal);
+      }
+    };
+
+    container.addEventListener('scrollend', handleScrollEnd);
+    return () => {
+      container.removeEventListener('scrollend', handleScrollEnd);
+    };
+  }, [items, selectedValue, onChange]);
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!isProgrammaticScrollRef.current) {
+      isUserScrollingRef.current = true;
+    }
+
+    if (scrollEndTimerRef.current) {
+      clearTimeout(scrollEndTimerRef.current);
+    }
+    scrollEndTimerRef.current = setTimeout(() => {
+      isUserScrollingRef.current = false;
+      isProgrammaticScrollRef.current = false;
+      const c = containerRef.current;
+      if (c) {
+        const finalIdx = Math.max(
+          0,
+          Math.min(items.length - 1, Math.round(c.scrollTop / TIME_ITEM_HEIGHT))
+        );
+        setActiveIdx(finalIdx);
+        const finalVal = items[finalIdx];
+        if (finalVal && finalVal !== selectedValue) {
+          onChange(finalVal);
+        }
+      }
+    }, 120);
+
+    if (isProgrammaticScrollRef.current) return;
+
     const scrollTop = e.currentTarget.scrollTop;
     const centerIdx = Math.max(
       0,
@@ -110,9 +183,21 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     }
   };
 
+  const handlePointerDown = () => {
+    isProgrammaticScrollRef.current = false;
+    isUserScrollingRef.current = true;
+  };
+
+  const handleWheel = () => {
+    isProgrammaticScrollRef.current = false;
+    isUserScrollingRef.current = true;
+  };
+
   const handleItemClick = (idx: number) => {
     const targetVal = items[idx];
     if (!targetVal) return;
+    isUserScrollingRef.current = false;
+    isProgrammaticScrollRef.current = true;
     setActiveIdx(idx);
     onChange(targetVal);
     const container = containerRef.current;
@@ -122,6 +207,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
         container.scrollTo({ top: targetTop, behavior: 'smooth' });
       } else {
         container.scrollTop = targetTop;
+        isProgrammaticScrollRef.current = false;
       }
     }
   };
@@ -130,6 +216,8 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     <div
       ref={containerRef}
       onScroll={handleScroll}
+      onPointerDown={handlePointerDown}
+      onWheel={handleWheel}
       className="h-24 flex-1 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto overscroll-contain select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
     >
       <div className="pointer-events-none h-8 shrink-0" aria-hidden="true" />
@@ -143,10 +231,10 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
             data-selected={isSelected}
             onClick={() => handleItemClick(idx)}
             className={cn(
-              'flex h-8 w-full cursor-pointer snap-center items-center justify-center font-mono text-sm',
+              'flex h-8 w-full cursor-pointer snap-center items-center justify-center font-mono transition-colors duration-100',
               isSelected
-                ? 'font-bold text-(--ink-solid)'
-                : 'font-normal text-(--ink-tertiary)/60 hover:text-(--ink-primary)'
+                ? 'text-base font-bold text-(--ink-solid)'
+                : 'text-sm font-normal text-(--ink-tertiary)/60 hover:text-(--ink-primary)'
             )}
           >
             {item}
@@ -870,7 +958,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
                       labelSuffix="时"
                     />
 
-                    <div className="flex h-full w-4 shrink-0 items-center justify-center font-mono text-sm font-bold text-(--ink-tertiary) select-none">
+                    <div className="flex h-full w-4 shrink-0 items-center justify-center font-mono text-base font-bold text-(--ink-solid) select-none">
                       :
                     </div>
 

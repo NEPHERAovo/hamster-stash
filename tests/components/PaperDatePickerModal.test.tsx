@@ -342,6 +342,36 @@ describe('PaperDatePickerModal', () => {
     expect(handleChange).toHaveBeenCalledWith('2026-11-15 07:30');
   });
 
+  it('does not trigger programmatic scrollTo during user scrolling gestures', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <PaperDatePickerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        mode="datetime"
+        value="2026-11-24 08:00"
+        onChange={handleChange}
+      />
+    );
+
+    const h08 = screen.getByRole('button', { name: '08时' });
+    const hourContainer = h08.closest('.overflow-y-auto') as HTMLDivElement;
+    const scrollToSpy = vi.fn();
+    hourContainer.scrollTo = scrollToSpy;
+
+    fireEvent.pointerDown(hourContainer);
+    fireEvent.scroll(hourContainer, { target: { scrollTop: 12 * 32 } });
+    fireEvent.scroll(hourContainer, { target: { scrollTop: 18 * 32 } });
+
+    expect(scrollToSpy).not.toHaveBeenCalled();
+
+    const confirmBtn = screen.getByRole('button', { name: '确定' });
+    fireEvent.click(confirmBtn);
+
+    expect(handleChange).toHaveBeenCalledWith('2026-11-24 18:00');
+  });
+
   it('preserves initial datetime value when opened and does not reset to 00:00', () => {
     const handleChange = vi.fn();
 
