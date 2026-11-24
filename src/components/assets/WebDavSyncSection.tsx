@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { CloudIcon as Cloud, ArrowsClockwiseIcon as RefreshCw, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, CheckIcon as Check, PlugsConnectedIcon as PlugZap } from '@phosphor-icons/react';
+import {
+  CloudIcon as Cloud,
+  ArrowsClockwiseIcon as RefreshCw,
+  CaretDownIcon as ChevronDown,
+  CaretUpIcon as ChevronUp,
+  CheckIcon as Check,
+  PlugsConnectedIcon as PlugZap,
+  EyeIcon as Eye,
+  EyeSlashIcon as EyeSlash,
+} from '@phosphor-icons/react';
 import { syncService } from '../../domain/sync/syncService';
 import { webdavClient, type WebDavConfig, type WebDavProxyMode } from '../../domain/sync/webdavClient';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -89,6 +98,7 @@ export const WebDavSyncSection: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [syncPath, setSyncPath] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [proxyMode, setProxyMode] = useState<WebDavProxyMode>('builtin');
   const [customProxyUrl, setCustomProxyUrl] = useState('');
   const [customHeadersText, setCustomHeadersText] = useState('');
@@ -458,11 +468,23 @@ export const WebDavSyncSection: React.FC = () => {
               <div className="space-y-1">
                 <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">应用密码</label>
                 <PaperInput
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="授权密码"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-9 text-xs"
+                  rightIcon={
+                    <PaperIconButton
+                      type="button"
+                      icon={showPassword ? EyeSlash : Eye}
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? '隐藏密码' : '显示密码'}
+                      aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                      className="-mr-1 size-5.5"
+                    />
+                  }
                 />
               </div>
             </div>
