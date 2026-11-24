@@ -60,8 +60,14 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
     return `抵扣·¥${centsToYuan(offsetAmount)}`;
   };
 
+  const amortizeExt = transaction.ext?.amortize as Record<string, unknown> | undefined;
+  const fullAmount =
+    typeof amortizeExt?.originalTotalAmount === 'number'
+      ? amortizeExt.originalTotalAmount
+      : transaction.amount;
+
   const amortizeLabel = amortizeConfig
-    ? `${amortizeConfig.months}期·¥${centsToYuan(Math.floor(transaction.amount / amortizeConfig.months))}/月`
+    ? `${amortizeConfig.months}期·全款¥${centsToYuan(fullAmount)}`
     : '';
 
   return (
