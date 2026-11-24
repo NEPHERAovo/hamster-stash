@@ -11,6 +11,7 @@ import type {
   PendingSettlementSummary,
 } from '../domain/transaction/transactionService';
 import { useAccountStore } from './useAccountStore';
+import { usePreferenceStore } from './usePreferenceStore';
 import { currentYearMonth } from '../utils/date';
 
 interface LedgerState {
@@ -88,7 +89,12 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     const includedAccountIds = accounts.length > 0
       ? new Set(accounts.filter((a) => !a.isArchived && a.includeInNetWorth !== false).map((a) => a.id))
       : undefined;
-    const summary = computeMonthSummary(monthTxs, all, includedAccountIds ? { includedAccountIds } : undefined);
+    const isAmortizationEnabled = usePreferenceStore.getState().isAmortizationEnabled;
+    const summary = computeMonthSummary(monthTxs, all, {
+      includedAccountIds,
+      currentMonth,
+      isAmortizationEnabled,
+    });
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 
     set({
@@ -112,7 +118,12 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     const includedAccountIds = accounts.length > 0
       ? new Set(accounts.filter((a) => !a.isArchived && a.includeInNetWorth !== false).map((a) => a.id))
       : undefined;
-    const summary = computeMonthSummary(monthTxs, all, includedAccountIds ? { includedAccountIds } : undefined);
+    const isAmortizationEnabled = usePreferenceStore.getState().isAmortizationEnabled;
+    const summary = computeMonthSummary(monthTxs, all, {
+      includedAccountIds,
+      currentMonth: month,
+      isAmortizationEnabled,
+    });
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 
     set({

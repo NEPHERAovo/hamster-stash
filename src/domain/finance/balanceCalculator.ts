@@ -1,4 +1,5 @@
 import type { Transaction } from '../../types/transaction';
+import { getAmortizeConfig, computeAmortizedMonthlyAmount } from './amortization';
 
 export interface MonthSummary {
   totalIncome: number;    // 单位：分
@@ -41,7 +42,11 @@ export function computeEffectiveExpenseAmount(
 export function computeMonthSummary(
   transactions: Transaction[],
   allTransactions?: Transaction[],
-  options?: { includedAccountIds?: Set<string> }
+  options?: {
+    includedAccountIds?: Set<string>;
+    currentMonth?: string;
+    isAmortizationEnabled?: boolean;
+  }
 ): MonthSummary {
   const allTxs = allTransactions || transactions;
   const filteredAll = options?.includedAccountIds
@@ -60,8 +65,26 @@ export function computeMonthSummary(
       if (!tx.offsetTransactionId) {
         totalIncome += tx.amount;
       }
-    } else if (tx.type === 'expense') {
-      totalExpense += computeEffectiveExpenseAmount(tx, offsetMap);
+    }
+  }
+
+  const targetMonth = options?.currentMonth || (transactions.length > 0 ? transactions[0].date.slice(0, 7) : undefined);
+
+  if (options?.isAmortizationEnabled && targetMonth) {
+    for (const t of filteredAll) {
+      if (t.type === 'expense') {
+        if (getAmortizeConfig(t)) {
+          totalExpense += computeAmortizedMonthlyAmount(t, targetMonth, offsetMap);
+        } else if (t.date.startsWith(targetMonth)) {
+          totalExpense += computeEffectiveExpenseAmount(t, offsetMap);
+        }
+      }
+    }
+  } else {
+    for (const tx of filteredCurrent) {
+      if (tx.type === 'expense') {
+        totalExpense += computeEffectiveExpenseAmount(tx, offsetMap);
+      }
     }
   }
 

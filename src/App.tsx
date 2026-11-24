@@ -40,6 +40,7 @@ import { useCategoryStore } from './stores/useCategoryStore';
 import { useThemeStore } from './stores/useThemeStore';
 import { usePreferenceStore } from './stores/usePreferenceStore';
 import { computeMonthSummary } from './domain/finance/balanceCalculator';
+import { projectTransactionsForMonth } from './domain/finance/amortization';
 import type { PeriodMode } from './domain/finance/periodStats';
 import type { Account } from './types/account';
 import type { Transaction } from './types/transaction';
@@ -73,15 +74,20 @@ export function App() {
   const [activeCategoryDrilldown, setActiveCategoryDrilldown] = useState<CategoryDrilldownData | null>(null);
 
   const handleSelectTransaction = (tx: Transaction) => {
-    if (tx.type === 'transfer') {
-      setEditingTransferTx(tx);
+    const originalTxId = (tx.ext?.amortize as Record<string, unknown> | undefined)?.originalTxId as string | undefined;
+    const targetTx = originalTxId
+      ? allTransactions.find((t) => t.id === originalTxId) || tx
+      : tx;
+
+    if (targetTx.type === 'transfer') {
+      setEditingTransferTx(targetTx);
       setTransferDefaultFromId(undefined);
       setIsTransferOpen(true);
-    } else if (tx.type === 'reconcile') {
-      const acct = accounts.find((a) => a.id === tx.accountId) || null;
+    } else if (targetTx.type === 'reconcile') {
+      const acct = accounts.find((a) => a.id === targetTx.accountId) || null;
       if (acct) setReconcileAccount(acct);
     } else {
-      setEditingTx(tx);
+      setEditingTx(targetTx);
       setIsAddOpen(true);
     }
   };
@@ -274,14 +280,22 @@ export function App() {
     [displayTransactions, includedAccountIds]
   );
 
-  const currentMonthTransactions = useMemo(
-    () => displayTransactions.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth)),
-    [displayTransactions, currentMonth]
-  );
+  const isAmortizationEnabled = usePreferenceStore((s) => s.isAmortizationEnabled);
+
+  const currentMonthTransactions = useMemo(() => {
+    if (isAmortizationEnabled) {
+      return projectTransactionsForMonth(displayTransactions, currentMonth);
+    }
+    return displayTransactions.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth));
+  }, [displayTransactions, currentMonth, isAmortizationEnabled]);
 
   const displayMonthSummary = useMemo(() => {
-    return computeMonthSummary(currentMonthTransactions, displayTransactions, { includedAccountIds });
-  }, [currentMonthTransactions, displayTransactions, includedAccountIds]);
+    return computeMonthSummary(currentMonthTransactions, displayTransactions, {
+      includedAccountIds,
+      currentMonth,
+      isAmortizationEnabled,
+    });
+  }, [currentMonthTransactions, displayTransactions, includedAccountIds, currentMonth, isAmortizationEnabled]);
 
   const handleScrollToTop = () => {
     mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });

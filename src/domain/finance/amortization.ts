@@ -1,5 +1,6 @@
 import type { Transaction } from '../../types/transaction';
 import { computeEffectiveExpenseAmount } from './balanceCalculator';
+import { dayjs } from '../../utils/date';
 
 export interface AmortizeConfig {
   enabled: boolean;
@@ -161,4 +162,68 @@ export function computePendingInstallments(
     totalRemainingDebt,
     installments,
   };
+}
+
+export function projectTransactionsForMonth(
+  allTransactions: Transaction[],
+  targetYearMonth: string,
+  offsetMap?: Map<string, number>
+): Transaction[] {
+  const result: Transaction[] = [];
+
+  for (const tx of allTransactions) {
+    if (tx.type !== 'expense') {
+      if (tx.date.startsWith(targetYearMonth)) {
+        result.push(tx);
+      }
+      continue;
+    }
+
+    const config = getAmortizeConfig(tx);
+    if (!config) {
+      if (tx.date.startsWith(targetYearMonth)) {
+        result.push(tx);
+      }
+      continue;
+    }
+
+    const monthlyAmount = computeAmortizedMonthlyAmount(tx, targetYearMonth, offsetMap);
+    if (monthlyAmount > 0) {
+      const startMonth = config.startMonth || tx.date.slice(0, 7);
+      const monthDelta = diffInMonths(startMonth, targetYearMonth);
+      const periodIndex = monthDelta + 1;
+
+      const origDay = tx.date.slice(8, 10);
+      const daysInTargetMonth = dayjs(`${targetYearMonth}-01`).daysInMonth();
+      const targetDay = String(Math.min(parseInt(origDay, 10) || 1, daysInTargetMonth)).padStart(2, '0');
+      const projectedDate = `${targetYearMonth}-${targetDay}`;
+
+      const noteSuffix = `(分期 ${periodIndex}/${config.months}期)`;
+      let projectedNote = `分期 ${periodIndex}/${config.months}期`;
+      if (tx.note) {
+        projectedNote = tx.note.includes('分期') ? tx.note : `${tx.note} ${noteSuffix}`;
+      }
+
+      result.push({
+        ...tx,
+        id: monthDelta === 0 ? tx.id : `${tx.id}_amort_${targetYearMonth}`,
+        amount: monthlyAmount,
+        date: projectedDate,
+        note: projectedNote,
+        ext: {
+          ...tx.ext,
+          amortize: {
+            ...config,
+            currentPeriod: periodIndex,
+            periodAmount: monthlyAmount,
+            originalTotalAmount: tx.amount,
+            originalTxId: tx.id,
+          },
+        },
+      });
+    }
+  }
+
+  result.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  return result;
 }

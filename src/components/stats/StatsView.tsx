@@ -21,6 +21,7 @@ import {
   type CategoryStatItem,
 } from '../../domain/finance/periodStats';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
+import { projectTransactionsForMonth } from '../../domain/finance/amortization';
 import { cn } from '../../utils/cn';
 import { TransactionGroup } from '../ledger/TransactionGroup';
 import { DonutChart } from './DonutChart';
@@ -174,8 +175,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const isAmortizationEnabled = usePreferenceStore((s) => s.isAmortizationEnabled);
 
   const periodTransactions = useMemo(() => {
+    if (mode === 'month' && isAmortizationEnabled) {
+      return projectTransactionsForMonth(allTransactions, periodInfo.key);
+    }
     return filterTransactionsByPeriod(allTransactions, periodInfo.start, periodInfo.end);
-  }, [allTransactions, periodInfo]);
+  }, [allTransactions, periodInfo, mode, isAmortizationEnabled]);
 
   const balanceSummary = useMemo(() => {
     return computePeriodBalanceSummary(
@@ -401,9 +405,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
   };
 
   return (
-    <div className="space-y-3.5 py-2 pb-6">
+    <div className="pb-6">
       {!controlledMode && (
-        <div className="flex justify-center">
+        <div className="flex justify-center pb-3.5">
           <SegToggle
             options={[
               { value: 'week', label: '周' },
@@ -453,7 +457,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
         />
       </div>
 
-      <div className="tab-stagger-1 space-y-2">
+      <div className="tab-stagger-1 mt-3.5 space-y-2">
         <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-colors duration-200 select-none sm:p-5">
           <div className="flex items-center justify-between gap-2 select-none">
             <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
