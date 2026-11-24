@@ -5,7 +5,6 @@ import {
   CaretRightIcon as CaretRight,
   CaretDownIcon as CaretDown,
   XIcon as X,
-  ClockIcon,
 } from '@phosphor-icons/react';
 import { PaperButton } from './PaperButton';
 import { PaperIconButton } from './PaperIconButton';
@@ -62,9 +61,9 @@ function getItemScaleClass(dist: number, isSelected: boolean): string {
     return 'scale-100 text-sm font-bold text-(--ink-solid)';
   }
   if (dist === 1) {
-    return 'scale-90 text-xs font-normal text-(--ink-tertiary) opacity-50';
+    return 'scale-90 text-xs font-normal text-(--ink-tertiary) opacity-60';
   }
-  return 'scale-80 text-[11px] font-normal text-(--ink-faint) opacity-20';
+  return 'scale-80 text-[11px] font-normal text-(--ink-faint) opacity-25';
 }
 
 const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
@@ -74,17 +73,45 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   labelSuffix,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<number | null>(null);
+  const lastEmittedValueRef = useRef<string>(selectedValue);
+  const hasMountedRef = useRef(false);
 
   const selectedIndex = useMemo(() => {
     const idx = items.indexOf(selectedValue);
     return idx >= 0 ? idx : 0;
   }, [items, selectedValue]);
 
+  const [activeIdx, setActiveIdx] = useState<number>(selectedIndex);
+
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || isScrollingRef.current) return;
+    if (!container) return;
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      lastEmittedValueRef.current = selectedValue;
+      setActiveIdx(selectedIndex);
+      const targetTop = selectedIndex * TIME_ITEM_HEIGHT;
+      const startTop = selectedIndex > 0 ? 0 : TIME_ITEM_HEIGHT * 2;
+      container.scrollTop = startTop;
+
+      const timer = window.setTimeout(() => {
+        if (typeof container.scrollTo === 'function') {
+          container.scrollTo({ top: targetTop, behavior: 'smooth' });
+        } else {
+          container.scrollTop = targetTop;
+        }
+      }, 40);
+      return () => window.clearTimeout(timer);
+    }
+
+    if (selectedValue === lastEmittedValueRef.current) {
+      return;
+    }
+
+    lastEmittedValueRef.current = selectedValue;
+    setActiveIdx(selectedIndex);
     const targetTop = selectedIndex * TIME_ITEM_HEIGHT;
     if (Math.abs(container.scrollTop - targetTop) > 1) {
       if (typeof container.scrollTo === 'function') {
@@ -93,45 +120,39 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
         container.scrollTop = targetTop;
       }
     }
-  }, [selectedIndex]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    container.scrollTop = selectedIndex * TIME_ITEM_HEIGHT;
-  }, [selectedIndex]);
+  }, [selectedIndex, selectedValue]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    isScrollingRef.current = true;
-    if (scrollTimeoutRef.current !== null) {
-      window.clearTimeout(scrollTimeoutRef.current);
-    }
-
     const currentScrollTop = e.currentTarget.scrollTop;
     const centerIndex = Math.max(
       0,
       Math.min(items.length - 1, Math.round(currentScrollTop / TIME_ITEM_HEIGHT))
     );
+    setActiveIdx(centerIndex);
+
     const centerValue = items[centerIndex];
-    if (centerValue && centerValue !== selectedValue) {
+    if (centerValue && centerValue !== lastEmittedValueRef.current) {
+      lastEmittedValueRef.current = centerValue;
       onChange(centerValue);
     }
 
+    if (scrollTimeoutRef.current !== null) {
+      window.clearTimeout(scrollTimeoutRef.current);
+    }
+
     scrollTimeoutRef.current = window.setTimeout(() => {
-      isScrollingRef.current = false;
-      const finalContainer = containerRef.current;
-      if (finalContainer) {
-        const finalIndex = Math.max(
-          0,
-          Math.min(items.length - 1, Math.round(finalContainer.scrollTop / TIME_ITEM_HEIGHT))
-        );
-        const finalTop = finalIndex * TIME_ITEM_HEIGHT;
-        if (Math.abs(finalContainer.scrollTop - finalTop) > 1) {
-          if (typeof finalContainer.scrollTo === 'function') {
-            finalContainer.scrollTo({ top: finalTop, behavior: 'smooth' });
-          } else {
-            finalContainer.scrollTop = finalTop;
-          }
+      const container = containerRef.current;
+      if (!container) return;
+      const finalIndex = Math.max(
+        0,
+        Math.min(items.length - 1, Math.round(container.scrollTop / TIME_ITEM_HEIGHT))
+      );
+      const finalTop = finalIndex * TIME_ITEM_HEIGHT;
+      if (Math.abs(container.scrollTop - finalTop) > 1) {
+        if (typeof container.scrollTo === 'function') {
+          container.scrollTo({ top: finalTop, behavior: 'smooth' });
+        } else {
+          container.scrollTop = finalTop;
         }
       }
     }, 120);
@@ -140,15 +161,16 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   const handleItemClick = (idx: number) => {
     const container = containerRef.current;
     if (!container) return;
-    isScrollingRef.current = false;
-    if (typeof container.scrollTo === 'function') {
-      container.scrollTo({ top: idx * TIME_ITEM_HEIGHT, behavior: 'smooth' });
-    } else {
-      container.scrollTop = idx * TIME_ITEM_HEIGHT;
-    }
     const targetValue = items[idx];
-    if (targetValue && targetValue !== selectedValue) {
-      onChange(targetValue);
+    if (!targetValue) return;
+    lastEmittedValueRef.current = targetValue;
+    setActiveIdx(idx);
+    onChange(targetValue);
+    const targetTop = idx * TIME_ITEM_HEIGHT;
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: targetTop, behavior: 'smooth' });
+    } else {
+      container.scrollTop = targetTop;
     }
   };
 
@@ -156,10 +178,11 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="h-24 flex-1 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto overscroll-contain py-8 select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      className="h-24 flex-1 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto overscroll-contain select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
     >
+      <div className="pointer-events-none h-8 shrink-0" aria-hidden="true" />
       {items.map((item, idx) => {
-        const dist = Math.abs(idx - selectedIndex);
+        const dist = Math.abs(idx - activeIdx);
         const isSelected = dist === 0;
         return (
           <button
@@ -169,7 +192,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
             data-selected={isSelected}
             onClick={() => handleItemClick(idx)}
             className={cn(
-              'flex h-8 w-full cursor-pointer snap-center items-center justify-center font-mono transition-all duration-150',
+              'flex h-8 w-full cursor-pointer snap-center items-center justify-center font-mono transition-all duration-100',
               getItemScaleClass(dist, isSelected)
             )}
           >
@@ -177,6 +200,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
           </button>
         );
       })}
+      <div className="pointer-events-none h-8 shrink-0" aria-hidden="true" />
     </div>
   );
 };
@@ -819,66 +843,63 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
 
             {mode === 'datetime' && (
               <div className="mt-3.5 border-t border-(--rule-hairline)/60 pt-2.5">
-                <div className="flex items-center justify-between pb-2 select-none">
-                  <div className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-(--ink-solid)">
-                    <ClockIcon className="size-3.5 text-(--ink-tertiary)" />
-                    <span className="font-semibold">时间</span>
-                  </div>
-
-                  <div className="flex shrink-0 [scrollbar-width:none] items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {['现在', '08:00', '12:00', '18:00', '20:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => {
-                          if (preset === '现在') {
-                            setSelectedTime(nowTime());
-                          } else {
-                            setSelectedTime(preset);
-                          }
-                        }}
-                        className={cn(
-                          'shrink-0 cursor-pointer rounded-(--badge-radius) px-2 py-0.5 font-mono text-[11px] transition-colors',
-                          preset !== '现在' && selectedTime === preset
-                            ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
-                            : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
-                        )}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex [scrollbar-width:none] items-center gap-1 overflow-x-auto pb-2 select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  {['现在', '08:00', '12:00', '18:00', '20:00'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        if (preset === '现在') {
+                          setSelectedTime(nowTime());
+                        } else {
+                          setSelectedTime(preset);
+                        }
+                      }}
+                      className={cn(
+                        'shrink-0 cursor-pointer rounded-(--badge-radius) px-2.5 py-0.5 font-mono text-[11px] transition-colors',
+                        preset !== '现在' && selectedTime === preset
+                          ? 'bg-(--btn-primary-bg) font-semibold text-(--btn-primary-fg)'
+                          : 'bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)'
+                      )}
+                    >
+                      {preset}
+                    </button>
+                  ))}
                 </div>
 
-                <div
-                  className="relative flex h-24 w-full items-center overflow-hidden rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken)/30"
-                  style={{
-                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
-                  }}
-                >
+                <div className="relative flex h-24 w-full items-center overflow-hidden rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken)/30 select-none">
                   <div
-                    className="pointer-events-none absolute inset-x-1.5 top-8 h-8 rounded-(--radius-xs) border-y border-dashed border-(--rule-hairline) bg-(--paper-sheet)/60 shadow-2xs"
+                    className="pointer-events-none absolute inset-x-0 top-8 h-8 border-y border-dashed border-(--rule-hairline) bg-(--paper-sheet)/40"
                     aria-hidden="true"
                   />
 
-                  <TimeWheelColumn
-                    items={COMMON_HOURS}
-                    selectedValue={curH}
-                    onChange={(newH) => setSelectedTime(`${newH}:${curM}`)}
-                    labelSuffix="时"
-                  />
+                  <div
+                    className="flex size-full items-center"
+                    style={{
+                      maskImage:
+                        'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
+                      WebkitMaskImage:
+                        'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
+                    }}
+                  >
+                    <TimeWheelColumn
+                      items={COMMON_HOURS}
+                      selectedValue={curH}
+                      onChange={(newH) => setSelectedTime(`${newH}:${curM}`)}
+                      labelSuffix="时"
+                    />
 
-                  <div className="flex h-full w-4 shrink-0 items-center justify-center font-mono text-sm font-bold text-(--ink-tertiary) select-none">
-                    :
+                    <div className="flex h-full w-4 shrink-0 items-center justify-center font-mono text-sm font-bold text-(--ink-tertiary) select-none">
+                      :
+                    </div>
+
+                    <TimeWheelColumn
+                      items={ALL_MINUTES}
+                      selectedValue={curM}
+                      onChange={(newM) => setSelectedTime(`${curH}:${newM}`)}
+                      labelSuffix="分"
+                    />
                   </div>
-
-                  <TimeWheelColumn
-                    items={ALL_MINUTES}
-                    selectedValue={curM}
-                    onChange={(newM) => setSelectedTime(`${curH}:${newM}`)}
-                    labelSuffix="分"
-                  />
                 </div>
               </div>
             )}
@@ -888,7 +909,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
         <div className="mt-3.5 flex items-center gap-2 border-t border-dashed border-(--rule-hairline)/60 pt-3">
           <PaperButton
             type="button"
-            variant="ghost"
+            variant="sunken"
             size="md"
             className="flex-1"
             onClick={onClose}

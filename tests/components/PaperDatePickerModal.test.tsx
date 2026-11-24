@@ -43,10 +43,12 @@ describe('PaperDatePickerModal', () => {
     expect(day20.className).toContain('text-(--btn-primary-fg)');
     expect(day20.className).not.toContain('text-(--ink-primary)');
 
-    // Buttons are standard full-width (flex-1)
+    // Buttons are standard full-width (flex-1) and cancel button has color and border (sunken)
     const cancelBtn = screen.getByRole('button', { name: '取消' });
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     expect(cancelBtn.className).toContain('flex-1');
+    expect(cancelBtn.className).toContain('bg-(--paper-sunken)');
+    expect(cancelBtn.className).toContain('border-(--rule-hairline)');
     expect(confirmBtn.className).toContain('flex-1');
 
     fireEvent.click(confirmBtn);
@@ -259,9 +261,10 @@ describe('PaperDatePickerModal', () => {
     expect(screen.getByRole('button', { name: '昨天' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '前天' })).toBeInTheDocument();
 
-    // Time section header has no redundant selected time text on title right
-    expect(screen.getByText('时间')).toBeInTheDocument();
-    expect(screen.queryByText('14:30')).not.toBeInTheDocument();
+    // Time presets are directly left-aligned without redundant "时间" title/icon
+    expect(screen.queryByText('时间')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '现在' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '08:00' })).toBeInTheDocument();
 
     // Pick a preset time such as 18:00
     const preset18 = screen.getByRole('button', { name: '18:00' });
@@ -301,10 +304,42 @@ describe('PaperDatePickerModal', () => {
     const m37 = screen.getByRole('button', { name: '37分' });
     fireEvent.click(m37);
 
+    // Verify center highlight lens has identical top and bottom hairline borders without shadow
+    const centerLens = document.querySelector('.border-y.border-dashed');
+    expect(centerLens).toBeInTheDocument();
+    expect(centerLens?.className).toContain('border-(--rule-hairline)');
+    expect(centerLens?.className).not.toContain('shadow-2xs');
+
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     fireEvent.click(confirmBtn);
 
     expect(handleChange).toHaveBeenCalledWith('2026-11-18 09:37');
+  });
+
+  it('updates selected value continuously when scrolling drum wheel columns', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <PaperDatePickerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        mode="datetime"
+        value="2026-11-15 14:30"
+        onChange={handleChange}
+      />
+    );
+
+    const h09 = screen.getByRole('button', { name: '09时' });
+    const hourContainer = h09.closest('.overflow-y-auto');
+    expect(hourContainer).toBeInTheDocument();
+
+    // Scroll hour wheel to index 7 (07:00)
+    fireEvent.scroll(hourContainer!, { target: { scrollTop: 7 * 32 } });
+
+    const confirmBtn = screen.getByRole('button', { name: '确定' });
+    fireEvent.click(confirmBtn);
+
+    expect(handleChange).toHaveBeenCalledWith('2026-11-15 07:30');
   });
 
   it('allows returning from year or month subview back to calendar', () => {
