@@ -15,6 +15,7 @@ import {
   PaperIconButton,
   PaperInput,
   PaperSelect,
+  AmountInput,
   PaperDatePickerModal,
 } from '../../../plugin-sdk';
 import { type ItemStatus, getOwnedItemExt } from '../types';
@@ -489,12 +490,10 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   支出金额
                 </label>
-                <PaperInput
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                <AmountInput
+                  size="sm"
                   value={maintPriceYuan}
-                  onChange={(e) => setMaintPriceYuan(e.target.value)}
+                  onChange={setMaintPriceYuan}
                   placeholder="0.00"
                 />
               </div>
@@ -504,6 +503,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   支付账户
                 </label>
                 <PaperSelect
+                  size="sm"
                   value={maintAccountId}
                   onChange={(e) => setMaintAccountId(e.target.value)}
                 >
@@ -545,6 +545,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   支出备注
                 </label>
                 <PaperInput
+                  size="sm"
                   type="text"
                   value={maintNote}
                   onChange={(e) => setMaintNote(e.target.value)}
@@ -585,12 +586,10 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
                   售出金额
                 </label>
-                <PaperInput
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <AmountInput
+                  size="sm"
                   value={sellPriceYuan}
-                  onChange={(e) => setSellPriceYuan(e.target.value)}
+                  onChange={setSellPriceYuan}
                   placeholder="0.00"
                 />
               </div>
@@ -600,6 +599,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   入账账户
                 </label>
                 <PaperSelect
+                  size="sm"
                   value={sellAccountId}
                   onChange={(e) => setSellAccountId(e.target.value)}
                 >
@@ -641,10 +641,11 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                   售出备注
                 </label>
                 <PaperInput
+                  size="sm"
                   type="text"
                   value={sellNote}
                   onChange={(e) => setSellNote(e.target.value)}
-                  placeholder="输入转出或退订说明"
+                  placeholder="输入转出说明"
                 />
               </div>
             </div>
