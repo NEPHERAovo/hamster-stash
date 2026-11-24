@@ -33,7 +33,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   const [kindFilter, setKindFilter] = useState<KindTab>('all');
 
   const overallSummary = useMemo(() => {
-    const soldItems = items.filter((i) => i.status === 'sold' || i.status === 'scrapped');
+    const soldItems = items.filter((i) => i.status === 'sold' || i.status === 'scrapped' || i.status === 'gifted');
 
     const m = computeOverallItemMetrics(items, transactions);
     return {
@@ -52,18 +52,33 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
       if (!matchKind) return false;
 
+      const isEnded = i.status === 'sold' || i.status === 'scrapped' || i.status === 'gifted';
       if (activeTab === 'all') return true;
-      if (activeTab === 'sold') return i.status === 'sold' || i.status === 'scrapped';
-      return i.status !== 'sold' && i.status !== 'scrapped';
+      if (activeTab === 'sold') return isEnded;
+      return !isEnded;
     });
   }, [items, activeTab, kindFilter]);
 
   const getStatusStamp = (item: Item) => {
     const isSub = item.kind === 'subscription';
-    if (item.status === 'sold' || item.status === 'scrapped') {
+    if (item.status === 'sold') {
       return (
         <span className="real-stamp text-[9px] text-(--ink-tertiary) select-none">
           <span>{isSub ? '已退' : '已出'}</span>
+        </span>
+      );
+    }
+    if (item.status === 'gifted') {
+      return (
+        <span className="real-stamp text-[9px] text-(--color-income) select-none">
+          <span>已转赠</span>
+        </span>
+      );
+    }
+    if (item.status === 'scrapped') {
+      return (
+        <span className="real-stamp text-[9px] text-(--color-expense) select-none">
+          <span>已报废</span>
         </span>
       );
     }

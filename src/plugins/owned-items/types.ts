@@ -1,4 +1,4 @@
-export type ItemStatus = 'using' | 'idle' | 'sold' | 'scrapped';
+export type ItemStatus = 'using' | 'idle' | 'sold' | 'gifted' | 'scrapped';
 
 export type ItemKind = 'physical' | 'subscription';
 

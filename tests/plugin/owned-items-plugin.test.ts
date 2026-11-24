@@ -407,4 +407,39 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(truncateSpan).toBeInTheDocument();
     expect(truncateSpan?.textContent).toBe(longSubName);
   });
+
+  it('calculates correct holding days and metrics for gifted and scrapped items without recovered income', () => {
+    const giftedItem: Item = {
+      id: 'item_gift',
+      name: 'Kindle',
+      icon: 'book-open',
+      status: 'gifted',
+      buyDate: '2026-01-01',
+      endDate: '2026-01-11',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-11T00:00:00.000Z',
+    };
+
+    const transactions: Transaction[] = [
+      {
+        id: 'tx_buy_kindle',
+        type: 'expense',
+        amount: 88000, // 880 元
+        accountId: 'acct_1',
+        categoryId: 'cat_shop',
+        date: '2026-01-01',
+        ext: { 'owned-items': { itemId: 'item_gift', itemRole: 'buy' } },
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+
+    const metrics = computeItemMetrics(giftedItem, transactions);
+    expect(metrics.grossCost).toBe(88000);
+    expect(metrics.recoveredAmount).toBe(0);
+    expect(metrics.netCost).toBe(88000);
+    expect(metrics.holdingDays).toBe(11);
+    expect(metrics.dailyCost).toBe(Math.round(88000 / 11));
+    expect(metrics.retentionRate).toBeNull();
+  });
 });
