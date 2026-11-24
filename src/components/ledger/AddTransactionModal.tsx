@@ -7,6 +7,7 @@ import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { evaluateArithmetic } from '../../utils/math';
 import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator';
+import { predictFrequentCategory } from '../../domain/category/categoryPredictor';
 import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
@@ -105,7 +106,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [selectedCatId, setSelectedCatId] = useState<string>('');
   const [selectedAcctId, setSelectedAcctId] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
-  const [timeStr, setTimeStr] = useState<string>('12:00');
+  const [timeStr, setTimeStr] = useState<string>(nowTime);
   const [note, setNote] = useState<string>('');
   const [isReimbursable, setIsReimbursable] = useState(false);
   const [offsetTransactionId, setOffsetTransactionId] = useState<string | undefined>(undefined);
@@ -288,6 +289,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       } else {
         setDateStr(todayDate());
         setTimeStr(nowTime());
+        setTxType('expense');
         setExpr('0');
         setNote('');
         setIsReimbursable(false);
@@ -299,6 +301,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setIsCustomAmortize(false);
         setCustomAmortizeInput('');
         setExt({ ...(initialExt || {}) });
+        setSelectedCatId('');
       }
     }
   }, [isOpen, editingTransaction, accounts, initialExt]);
@@ -326,10 +329,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (currentCategories.length > 0) {
       const exists = currentCategories.some((c) => c.id === selectedCatId);
       if (!exists && (!editingTransaction || editingTransaction.type !== txType)) {
-        setSelectedCatId(currentCategories[0].id);
+        const predictedCatId = predictFrequentCategory({
+          transactions: allTransactions,
+          categories: currentCategories,
+          txType,
+          targetTime: timeStr,
+        });
+        setSelectedCatId(predictedCatId || currentCategories[0].id);
       }
     }
-  }, [txType, currentCategories, selectedCatId, editingTransaction]);
+  }, [txType, currentCategories, selectedCatId, editingTransaction, allTransactions, timeStr]);
 
   useEffect(() => {
     if (txType !== 'expense') {

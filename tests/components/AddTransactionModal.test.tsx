@@ -9,7 +9,7 @@ import { useLedgerStore } from '../../src/stores/useLedgerStore';
 import type { Account } from '../../src/types/account';
 import type { Category } from '../../src/types/category';
 import type { Transaction } from '../../src/types/transaction';
-import { todayDate, addDaysToToday } from '../../src/utils/date';
+import { todayDate, addDaysToToday, combineLocalDateTimeToIso } from '../../src/utils/date';
 
 describe('AddTransactionModal - Amortization (分期支出)', () => {
   const mockAccount: Account = {
@@ -287,5 +287,232 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
     // Category wrapper shrinks to 16vh
     expect(categoryWrapper?.className).toContain('max-h-[16vh]');
     expect(categoryWrapper?.className).not.toContain('max-h-[38vh]');
+  });
+
+  describe('Time-based Frequent Category Prediction', () => {
+    const expenseTransit: Category = {
+      id: 'cat_transit',
+      name: '交通',
+      type: 'expense',
+      icon: 'bus',
+      color: '#fff',
+      sortOrder: 1,
+      createdAt: '',
+      updatedAt: '',
+    };
+    const expenseFood: Category = {
+      id: 'cat_food',
+      name: '餐饮',
+      type: 'expense',
+      icon: 'fork-knife',
+      color: '#fff',
+      sortOrder: 2,
+      createdAt: '',
+      updatedAt: '',
+    };
+    const incomeSalary: Category = {
+      id: 'cat_salary',
+      name: '工资',
+      type: 'income',
+      icon: 'money',
+      color: '#fff',
+      sortOrder: 1,
+      createdAt: '',
+      updatedAt: '',
+    };
+    const incomePartTime: Category = {
+      id: 'cat_parttime',
+      name: '兼职',
+      type: 'income',
+      icon: 'laptop',
+      color: '#fff',
+      sortOrder: 2,
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    beforeEach(() => {
+      useCategoryStore.setState({
+        categories: [expenseTransit, expenseFood, incomeSalary, incomePartTime],
+      });
+      useAccountStore.setState({ accounts: [mockAccount] });
+      usePreferenceStore.setState({ isAmortizationEnabled: false, isReimbursementEnabled: false });
+    });
+
+    it('defaults to high-frequency category predicted for current time slot when creating a new transaction', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date(2026, 10, 24, 8, 20, 0));
+
+      const morningDate = '2026-11-20';
+      const noonDate = '2026-11-20';
+      const historicalTxs: Transaction[] = [
+        {
+          id: 'tx_transit_1',
+          type: 'expense',
+          amount: 500,
+          categoryId: 'cat_transit',
+          accountId: 'acct_1',
+          date: morningDate,
+          createdAt: combineLocalDateTimeToIso(morningDate, '08:15'),
+          updatedAt: combineLocalDateTimeToIso(morningDate, '08:15'),
+        },
+        {
+          id: 'tx_transit_2',
+          type: 'expense',
+          amount: 600,
+          categoryId: 'cat_transit',
+          accountId: 'acct_1',
+          date: morningDate,
+          createdAt: combineLocalDateTimeToIso(morningDate, '08:25'),
+          updatedAt: combineLocalDateTimeToIso(morningDate, '08:25'),
+        },
+        {
+          id: 'tx_food_1',
+          type: 'expense',
+          amount: 3500,
+          categoryId: 'cat_food',
+          accountId: 'acct_1',
+          date: noonDate,
+          createdAt: combineLocalDateTimeToIso(noonDate, '12:30'),
+          updatedAt: combineLocalDateTimeToIso(noonDate, '12:30'),
+        },
+        {
+          id: 'tx_food_2',
+          type: 'expense',
+          amount: 4000,
+          categoryId: 'cat_food',
+          accountId: 'acct_1',
+          date: noonDate,
+          createdAt: combineLocalDateTimeToIso(noonDate, '12:45'),
+          updatedAt: combineLocalDateTimeToIso(noonDate, '12:45'),
+        },
+      ];
+
+      useLedgerStore.setState({ allTransactions: historicalTxs });
+      const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
+      useLedgerStore.setState({ recordTransaction: recordSpy });
+
+      try {
+        render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+        fireEvent.click(screen.getByText('5'));
+        fireEvent.click(screen.getByText('完成'));
+
+        await waitFor(() => {
+          expect(recordSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              type: 'expense',
+              categoryId: 'cat_transit',
+            })
+          );
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('defaults to high-frequency income category when switching to income type', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date(2026, 10, 24, 20, 15, 0));
+
+      const eveningDate = '2026-11-20';
+      const morningDate = '2026-11-20';
+      const historicalTxs: Transaction[] = [
+        {
+          id: 'tx_income_salary_1',
+          type: 'income',
+          amount: 1000000,
+          categoryId: 'cat_salary',
+          accountId: 'acct_1',
+          date: morningDate,
+          createdAt: combineLocalDateTimeToIso(morningDate, '10:00'),
+          updatedAt: combineLocalDateTimeToIso(morningDate, '10:00'),
+        },
+        {
+          id: 'tx_income_parttime_1',
+          type: 'income',
+          amount: 50000,
+          categoryId: 'cat_parttime',
+          accountId: 'acct_1',
+          date: eveningDate,
+          createdAt: combineLocalDateTimeToIso(eveningDate, '20:10'),
+          updatedAt: combineLocalDateTimeToIso(eveningDate, '20:10'),
+        },
+      ];
+
+      useLedgerStore.setState({ allTransactions: historicalTxs });
+      const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
+      useLedgerStore.setState({ recordTransaction: recordSpy });
+
+      try {
+        render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+        fireEvent.click(screen.getByText('收入'));
+        fireEvent.click(screen.getByText('5'));
+        fireEvent.click(screen.getByText('完成'));
+
+        await waitFor(() => {
+          expect(recordSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              type: 'income',
+              categoryId: 'cat_parttime',
+            })
+          );
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('retains existing transaction category when opening in edit mode', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date(2026, 10, 24, 8, 20, 0));
+
+      const historicalTxs: Transaction[] = [
+        {
+          id: 'tx_transit_1',
+          type: 'expense',
+          amount: 500,
+          categoryId: 'cat_transit',
+          accountId: 'acct_1',
+          date: '2026-11-20',
+          createdAt: combineLocalDateTimeToIso('2026-11-20', '08:15'),
+          updatedAt: combineLocalDateTimeToIso('2026-11-20', '08:15'),
+        },
+      ];
+
+      useLedgerStore.setState({ allTransactions: historicalTxs });
+      const updateSpy = vi.fn().mockResolvedValue({ id: 'edit_tx' });
+      useLedgerStore.setState({ updateTransaction: updateSpy });
+
+      const editingTx: Transaction = {
+        id: 'edit_tx',
+        type: 'expense',
+        amount: 2500,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-20',
+        createdAt: combineLocalDateTimeToIso('2026-11-20', '08:20'),
+        updatedAt: combineLocalDateTimeToIso('2026-11-20', '08:20'),
+      };
+
+      try {
+        render(<AddTransactionModal isOpen={true} onClose={vi.fn()} editingTransaction={editingTx} />);
+
+        fireEvent.click(screen.getByText('保存'));
+
+        await waitFor(() => {
+          expect(updateSpy).toHaveBeenCalledWith(
+            'edit_tx',
+            expect.objectContaining({
+              type: 'expense',
+              categoryId: 'cat_food',
+            })
+          );
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });
