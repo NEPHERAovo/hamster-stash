@@ -361,10 +361,40 @@ describe('PaperDatePickerModal', () => {
     expect(h10.getAttribute('data-selected')).toBe('true');
     expect(m35.getAttribute('data-selected')).toBe('true');
 
+    // Container scroll positions are immediately aligned
+    const hourContainer = h10.closest('.overflow-y-auto') as HTMLDivElement;
+    const minuteContainer = m35.closest('.overflow-y-auto') as HTMLDivElement;
+    expect(hourContainer.scrollTop).toBe(10 * 32);
+    expect(minuteContainer.scrollTop).toBe(35 * 32);
+
     const confirmBtn = screen.getByRole('button', { name: '确定' });
     fireEvent.click(confirmBtn);
 
     expect(handleChange).toHaveBeenCalledWith('2026-11-24 10:35');
+  });
+
+  it('normalizes single-digit hour and minute inputs (e.g. 8:5) to two-digit format', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <PaperDatePickerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        mode="datetime"
+        value="2026-11-24 8:5"
+        onChange={handleChange}
+      />
+    );
+
+    const h08 = screen.getByRole('button', { name: '08时' });
+    const m05 = screen.getByRole('button', { name: '05分' });
+    expect(h08.getAttribute('data-selected')).toBe('true');
+    expect(m05.getAttribute('data-selected')).toBe('true');
+
+    const confirmBtn = screen.getByRole('button', { name: '确定' });
+    fireEvent.click(confirmBtn);
+
+    expect(handleChange).toHaveBeenCalledWith('2026-11-24 08:05');
   });
 
   it('clicking 现在 preset accurately updates time without reverting hour to 00', () => {

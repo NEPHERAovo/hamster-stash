@@ -74,9 +74,8 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
-  const programmaticTimerRef = useRef<number | null>(null);
   const isProgrammaticRef = useRef(false);
-  const lastEmittedValueRef = useRef<string>(selectedValue);
+  const isUserInteractingRef = useRef(false);
   const hasMountedRef = useRef(false);
 
   const selectedIndex = useMemo(() => {
@@ -90,51 +89,39 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const performProgrammaticScroll = (targetTop: number) => {
+    const targetTop = selectedIndex * TIME_ITEM_HEIGHT;
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      setActiveIdx(selectedIndex);
+      container.scrollTop = targetTop;
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = targetTop;
+        }
+      });
+      return;
+    }
+
+    if (isUserInteractingRef.current) {
+      return;
+    }
+
+    setActiveIdx(selectedIndex);
+
+    if (Math.abs(container.scrollTop - targetTop) > 1) {
       isProgrammaticRef.current = true;
-      if (programmaticTimerRef.current !== null) {
-        window.clearTimeout(programmaticTimerRef.current);
-      }
       if (typeof container.scrollTo === 'function') {
         container.scrollTo({ top: targetTop, behavior: 'smooth' });
       } else {
         container.scrollTop = targetTop;
       }
-      programmaticTimerRef.current = window.setTimeout(() => {
-        isProgrammaticRef.current = false;
-      }, 400);
-    };
-
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      lastEmittedValueRef.current = selectedValue;
-      setActiveIdx(selectedIndex);
-      const targetTop = selectedIndex * TIME_ITEM_HEIGHT;
-      const startTop = selectedIndex > 0 ? 0 : TIME_ITEM_HEIGHT * 2;
-      container.scrollTop = startTop;
-
       const timer = window.setTimeout(() => {
-        performProgrammaticScroll(targetTop);
-      }, 50);
-      return () => {
-        window.clearTimeout(timer);
-        if (programmaticTimerRef.current !== null) {
-          window.clearTimeout(programmaticTimerRef.current);
-        }
-      };
+        isProgrammaticRef.current = false;
+      }, 350);
+      return () => window.clearTimeout(timer);
     }
-
-    if (selectedValue === lastEmittedValueRef.current) {
-      return;
-    }
-
-    lastEmittedValueRef.current = selectedValue;
-    setActiveIdx(selectedIndex);
-    const targetTop = selectedIndex * TIME_ITEM_HEIGHT;
-    if (Math.abs(container.scrollTop - targetTop) > 1) {
-      performProgrammaticScroll(targetTop);
-    }
-  }, [selectedIndex, selectedValue]);
+  }, [selectedIndex]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const currentScrollTop = e.currentTarget.scrollTop;
@@ -149,8 +136,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     }
 
     const centerValue = items[centerIndex];
-    if (centerValue && centerValue !== lastEmittedValueRef.current) {
-      lastEmittedValueRef.current = centerValue;
+    if (centerValue && centerValue !== selectedValue) {
       onChange(centerValue);
     }
 
@@ -159,6 +145,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     }
 
     scrollTimeoutRef.current = window.setTimeout(() => {
+      isUserInteractingRef.current = false;
       if (isProgrammaticRef.current) return;
       const c = containerRef.current;
       if (!c) return;
@@ -178,33 +165,27 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   };
 
   const handleItemClick = (idx: number) => {
-    const container = containerRef.current;
-    if (!container) return;
     const targetValue = items[idx];
     if (!targetValue) return;
-    lastEmittedValueRef.current = targetValue;
     setActiveIdx(idx);
     onChange(targetValue);
 
+    const container = containerRef.current;
+    if (!container) return;
     isProgrammaticRef.current = true;
-    if (programmaticTimerRef.current !== null) {
-      window.clearTimeout(programmaticTimerRef.current);
-    }
     const targetTop = idx * TIME_ITEM_HEIGHT;
     if (typeof container.scrollTo === 'function') {
       container.scrollTo({ top: targetTop, behavior: 'smooth' });
     } else {
       container.scrollTop = targetTop;
     }
-    programmaticTimerRef.current = window.setTimeout(() => {
+    window.setTimeout(() => {
       isProgrammaticRef.current = false;
-    }, 400);
+    }, 350);
   };
 
-  const handleTouchOrMouseDown = () => {
-    if (programmaticTimerRef.current !== null) {
-      window.clearTimeout(programmaticTimerRef.current);
-    }
+  const handleStartInteraction = () => {
+    isUserInteractingRef.current = true;
     isProgrammaticRef.current = false;
   };
 
@@ -212,9 +193,9 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      onTouchStart={handleTouchOrMouseDown}
-      onMouseDown={handleTouchOrMouseDown}
-      onWheel={handleTouchOrMouseDown}
+      onTouchStart={handleStartInteraction}
+      onMouseDown={handleStartInteraction}
+      onWheel={handleStartInteraction}
       className="h-24 flex-1 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto overscroll-contain select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
     >
       <div className="pointer-events-none h-8 shrink-0" aria-hidden="true" />
@@ -241,6 +222,12 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
     </div>
   );
 };
+
+function normalizeTimeString(rawTime?: string): string {
+  if (!rawTime) return nowTime();
+  const [h = '00', m = '00'] = rawTime.slice(0, 5).split(':');
+  return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+}
 
 export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
   isOpen,
@@ -304,7 +291,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
 
   const [selectedTime, setSelectedTime] = useState<string>(() => {
     if (value && value.includes(' ')) {
-      return value.split(' ')[1] || nowTime();
+      return normalizeTimeString(value.split(' ')[1]);
     }
     return nowTime();
   });
@@ -354,7 +341,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
         const parts = value.split(' ');
         setSelectedDate(parts[0] || todayDate());
         if (parts[1]) {
-          setSelectedTime(parts[1].slice(0, 5));
+          setSelectedTime(normalizeTimeString(parts[1]));
         } else {
           setSelectedTime(nowTime());
         }
@@ -499,21 +486,23 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
     return null;
   }
 
-  const [curH = '00', curM = '00'] = selectedTime.split(':');
+  const [rawH = '00', rawM = '00'] = selectedTime.split(':');
+  const curH = rawH.padStart(2, '0');
+  const curM = rawM.padStart(2, '0');
 
   const handleSelectHour = (newH: string) => {
     setSelectedTime((prev) => {
       const parts = prev.split(':');
-      const minute = parts[1] || '00';
-      return `${newH}:${minute}`;
+      const minute = (parts[1] || '00').padStart(2, '0');
+      return `${newH.padStart(2, '0')}:${minute}`;
     });
   };
 
   const handleSelectMinute = (newM: string) => {
     setSelectedTime((prev) => {
       const parts = prev.split(':');
-      const hour = parts[0] || '00';
-      return `${hour}:${newM}`;
+      const hour = (parts[0] || '00').padStart(2, '0');
+      return `${hour}:${newM.padStart(2, '0')}`;
     });
   };
 
