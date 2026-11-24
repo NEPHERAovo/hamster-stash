@@ -312,10 +312,7 @@ export const WebDavSyncSection: React.FC = () => {
         {isOpen && (
           <div className="mt-3 space-y-2.5 border-t border-dashed border-(--rule-hairline)/60 pt-3.5">
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
-                <span className="text-[10px] text-(--ink-tertiary)">点击快速填入常用服务</span>
-              </div>
+              <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
               <div className="flex flex-wrap gap-1 pb-0.5">
                 {WEBDAV_PRESETS.map((preset) => {
                   const rootPart = preset.url.replace(/ACCOUNT|USER|cloud\.example\.com|nas-ip/g, '');
@@ -354,7 +351,7 @@ export const WebDavSyncSection: React.FC = () => {
                 value={proxyMode}
                 onChange={(val) => setProxyMode(val as WebDavProxyMode)}
                 options={[
-                  { value: 'builtin', label: '内置代理 (免跨域)' },
+                  { value: 'builtin', label: '内置代理' },
                   { value: 'direct', label: '直连模式' },
                   { value: 'custom', label: '自建代理' },
                 ]}
@@ -374,39 +371,34 @@ export const WebDavSyncSection: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">自定义请求头 (可选，如凭据)</label>
-                    <span className="text-[10px] text-(--ink-tertiary)">Key: Value 格式</span>
-                  </div>
-                  <PaperInput
-                    placeholder="CF-Access-Client-Id: xxx"
+                  <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">自定义请求头</label>
+                  <textarea
+                    rows={2}
+                    placeholder="CF-Access-Client-Id: xxx&#10;CF-Access-Client-Secret: yyy"
                     value={customHeadersText}
                     onChange={(e) => setCustomHeadersText(e.target.value)}
-                    className="h-9 font-mono text-xs"
+                    className="w-full resize-y rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken) p-2 font-mono text-xs text-(--ink-primary) transition-all outline-none placeholder:text-(--ink-faint) focus:border-(--border-strong)"
                   />
                 </div>
               </div>
             )}
 
             <div className="rounded-(--radius-sm) border border-dashed border-(--rule-hairline) bg-(--paper-sunken)/60 p-2.5 text-[11px] leading-relaxed text-(--ink-secondary)">
-              <div className="mb-0.5 font-semibold text-(--ink-primary)">数据安全与隐私声明</div>
+              <div className="mb-1 font-semibold text-(--ink-primary)">数据安全与隐私</div>
               {proxyMode === 'builtin' && (
                 <div>
-                  • <strong>流式中转</strong>：请求经当前站点的 Cloudflare Pages 边缘函数透传，不落盘、不留存任何账本数据与授权密码。<br />
-                  • <strong>隐私提示</strong>：若访问他人托管的公有实例，密码及账本数据中途会流经该站点的 Cloudflare Edge。注重极致隐私建议自建 Pages 实例、自建 Worker 或使用局域网 Alist 直连。
+                  请求经当前站点的 Cloudflare Pages 边缘函数透传，本站点不存储任何数据。
                 </div>
               )}
               {proxyMode === 'direct' && (
                 <div>
-                  • <strong>完全直连</strong>：浏览器直接请求目标 WebDAV，数据绝不经过任何第三方。<br />
-                  • <strong>跨域要求</strong>：目标服务器必须配置 CORS 跨域允许头（如 Alist / Nextcloud / 自建 NAS），坚果云等公网云盘直连会被浏览器拦截。
+                  浏览器直接请求目标 WebDAV，数据不经过任何第三方；目标服务器需支持 CORS 跨域。
                 </div>
               )}
               {proxyMode === 'custom' && (
                 <div className="space-y-1.5">
                   <div>
-                    • <strong>自建代理</strong>：请求将转发至你指定的私有反代网关（如绑定的私人域名或私人 Worker）。客户端已自动附加 <code>X-Requested-With</code>、<code>X-Target-URL</code> 与 <code>?url=</code> 双通道转发参数。<br />
-                    • <strong>跨域说明</strong>：浏览器跨域由服务端返回的响应头决定，前端无需且无法在请求中伪造跨域头；自建服务需在响应中返回允许跨域头与 WebDAV 动词（包括 PROPFIND、MKCOL、PUT 等）。
+                    请求将转发至你指定的私有反代网关，数据仅在私有节点流转；自建服务需返回允许跨域头与 WebDAV 动词。
                   </div>
                   <div>
                     <PaperButton
@@ -466,10 +458,10 @@ export const WebDavSyncSection: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">应用密码</label>
+                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">密码</label>
                 <PaperInput
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="授权密码"
+                  placeholder="密码"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-9 text-xs"

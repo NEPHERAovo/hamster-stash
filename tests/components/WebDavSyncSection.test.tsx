@@ -58,7 +58,7 @@ describe('WebDavSyncSection', () => {
     const expandBtn = screen.getByRole('button', { name: '展开配置' });
     fireEvent.click(expandBtn);
 
-    const passwordInput = await screen.findByPlaceholderText('授权密码');
+    const passwordInput = await screen.findByPlaceholderText('密码');
     expect(passwordInput).toHaveAttribute('type', 'password');
 
     const toggleEyeBtn = screen.getByRole('button', { name: '显示密码' });
@@ -82,5 +82,38 @@ describe('WebDavSyncSection', () => {
 
     const urlInput = screen.getByPlaceholderText('https://dav.jianguoyun.com/dav/');
     expect(urlInput).toHaveValue('http://localhost:5244/dav/');
+  });
+
+  it('allows multiline custom headers input when custom proxy mode is active', async () => {
+    render(<WebDavSyncSection />);
+
+    const expandBtn = screen.getByRole('button', { name: '展开配置' });
+    fireEvent.click(expandBtn);
+
+    await screen.findByDisplayValue('https://dav.jianguoyun.com/dav/');
+
+    const customProxyOption = screen.getByText('自建代理');
+    fireEvent.click(customProxyOption);
+
+    const textarea = screen.getByPlaceholderText(/CF-Access-Client-Id: xxx/);
+    expect(textarea.tagName).toBe('TEXTAREA');
+
+    fireEvent.change(textarea, {
+      target: { value: 'CF-Access-Client-Id: key1\nCF-Access-Client-Secret: secret2' },
+    });
+
+    const saveBtn = screen.getByRole('button', { name: '保存配置' });
+    fireEvent.click(saveBtn);
+
+    expect(syncService.saveWebDavConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        proxyMode: 'custom',
+        customHeaders: {
+          'CF-Access-Client-Id': 'key1',
+          'CF-Access-Client-Secret': 'secret2',
+        },
+      }),
+      expect.any(Object)
+    );
   });
 });
