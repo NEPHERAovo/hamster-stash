@@ -67,7 +67,7 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
       : transaction.amount;
 
   const amortizeLabel = amortizeConfig
-    ? `${amortizeConfig.months}期·全款¥${centsToYuan(fullAmount)}`
+    ? `${amortizeConfig.months}期·共¥${centsToYuan(fullAmount)}`
     : '';
 
   return (

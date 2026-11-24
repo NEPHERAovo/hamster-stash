@@ -170,7 +170,7 @@ describe('TransactionItem Polymorphic Rows', () => {
       />
     );
 
-    expect(screen.getByText('12期·全款¥12000.00')).toBeInTheDocument();
+    expect(screen.getByText('12期·共¥12000.00')).toBeInTheDocument();
 
     const offsetIncomeTx: Transaction = {
       id: 'tx_offset_in',

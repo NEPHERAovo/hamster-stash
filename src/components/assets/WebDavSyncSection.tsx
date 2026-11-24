@@ -219,11 +219,16 @@ export const WebDavSyncSection: React.FC = () => {
             <div className="space-y-1">
               <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
               <PaperInput
-                placeholder="https://dav.jianguoyun.com/dav/"
+                placeholder="https://dav.your-server.com/"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="h-9 text-xs"
               />
+              {url.includes('jianguoyun.com') && (
+                <div className="mt-1.5 rounded-(--radius-sm) border border-dashed border-(--color-expense)/40 bg-(--color-expense-bg)/40 p-2 text-[11px] leading-relaxed text-(--color-expense)">
+                  坚果云未配置浏览器 CORS 跨域头，纯前端直连会被浏览器拦截。建议通过 Cloudflare Worker / Nginx 反向代理中转，或改用支持 CORS 的 Alist / Nextcloud。
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">

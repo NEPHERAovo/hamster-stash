@@ -25,6 +25,20 @@ export class WebDavClient {
     return `${baseUrl}/${file}`;
   }
 
+  private isCorsOrNetworkError(e: unknown): boolean {
+    if (e instanceof TypeError) {
+      const msg = e.message.toLowerCase();
+      return (
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror') ||
+        msg.includes('network error') ||
+        msg.includes('cors') ||
+        msg.includes('load failed')
+      );
+    }
+    return false;
+  }
+
   async testConnection(config: WebDavConfig): Promise<boolean> {
     const baseUrl = config.url.trim().replace(/\/+$/, '');
     const headers = {
@@ -47,6 +61,9 @@ export class WebDavClient {
 
       return resp.ok || resp.status === 207;
     } catch (e) {
+      if (this.isCorsOrNetworkError(e)) {
+        throw new Error('WebDAV 连接失败：跨域请求受阻 (CORS Error)。坚果云等公有网盘未配置浏览器跨域允许头，纯前端 PWA 无法直接连接。建议配置 Cloudflare Worker 反向代理或改用支持 CORS 的 WebDAV（如 Alist / Nextcloud）。', { cause: e });
+      }
       throw new Error(`连接 WebDAV 失败：${e instanceof Error ? e.message : '网络或跨域受阻'}`, { cause: e });
     }
   }
@@ -75,6 +92,9 @@ export class WebDavClient {
     } catch (e) {
       if (e instanceof Error && e.message.includes('404')) {
         return null;
+      }
+      if (this.isCorsOrNetworkError(e)) {
+        throw new Error('WebDAV 读取失败：跨域限制 (CORS Error)。服务器未开放浏览器跨域响应头，请通过反向代理中转或使用支持 CORS 的 WebDAV 服务。', { cause: e });
       }
       throw e;
     }
@@ -109,11 +129,19 @@ export class WebDavClient {
       'Content-Type': 'application/json; charset=utf-8',
     };
 
-    const resp = await fetch(targetUrl, {
-      method: 'PUT',
-      headers,
-      body: content,
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(targetUrl, {
+        method: 'PUT',
+        headers,
+        body: content,
+      });
+    } catch (e) {
+      if (this.isCorsOrNetworkError(e)) {
+        throw new Error('WebDAV 写入失败：跨域限制 (CORS Error)。服务器未开放浏览器跨域响应头，请通过反向代理中转或使用支持 CORS 的 WebDAV 服务。', { cause: e });
+      }
+      throw e;
+    }
 
     if (resp.status === 409) {
       await this.ensureParentDir(config, filename);
