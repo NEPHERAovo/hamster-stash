@@ -181,7 +181,7 @@ export const PaperIconPickerModal: React.FC<PaperIconPickerModalProps> = ({
                 <div className="font-mono text-[10px] font-semibold tracking-wider text-(--ink-tertiary) uppercase">
                   {group.title}
                 </div>
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-8 gap-1.5">
                   {group.icons.map((ic) => {
                     const IconComp = getCategoryIcon(ic.name);
                     const isSelected = selectedIcon === ic.name;
@@ -205,16 +205,6 @@ export const PaperIconPickerModal: React.FC<PaperIconPickerModalProps> = ({
               </div>
             ))
           )}
-        </div>
-
-        <div className="pt-2 pb-(--safe-bottom)">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full rounded-(--btn-radius) border border-(--rule-hairline) bg-(--paper-sunken)/70 py-2 font-mono text-xs text-(--ink-secondary) hover:bg-(--paper-sunken)"
-          >
-            取消
-          </button>
         </div>
       </div>
     </PaperModal>

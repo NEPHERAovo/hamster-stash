@@ -36,19 +36,19 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   };
 
   const sizeContainerStyles = {
-    sm: 'h-10 px-3 rounded-(--input-radius)',
+    sm: 'h-8 px-2.5 rounded-(--input-radius)',
     md: 'h-12 px-3.5 rounded-(--radius-md)',
     lg: 'h-14 px-4 rounded-(--radius-md)',
   };
 
   const sizeSymbolStyles = {
-    sm: 'text-sm font-semibold mr-1.5',
+    sm: 'text-xs font-semibold mr-1.5',
     md: 'text-lg font-bold mr-2',
     lg: 'text-2xl font-bold mr-2.5',
   };
 
   const sizeInputStyles = {
-    sm: 'text-sm font-semibold',
+    sm: 'text-xs font-semibold',
     md: 'text-xl font-bold',
     lg: 'text-3xl font-bold tracking-tight',
   };

@@ -63,6 +63,10 @@ const POPULAR_ITEM_ICONS = [
   'bike',
   'armchair',
   'gift',
+  'shirt',
+  'bag',
+  'box',
+  'wrench',
 ];
 
 const POPULAR_SUB_ICONS = [
@@ -70,13 +74,17 @@ const POPULAR_SUB_ICONS = [
   'receipt',
   'sparkles',
   'clapperboard',
-  'music-notes',
+  'music',
   'cloud',
   'shield-check',
   'globe',
   'book-open',
   'graduation-cap',
   'wrench',
+  'tv',
+  'gamepad',
+  'lightning',
+  'smartphone',
 ];
 
 export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params }) => {
@@ -212,9 +220,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
   const baseIcons = kind === 'subscription' ? POPULAR_SUB_ICONS : POPULAR_ITEM_ICONS;
   const currentIconChoices = useMemo(() => {
     if (icon && !baseIcons.includes(icon)) {
-      return [icon, ...baseIcons.slice(0, 10)];
+      return [icon, ...baseIcons.slice(0, 14)];
     }
-    return baseIcons;
+    return baseIcons.slice(0, 15);
   }, [baseIcons, icon]);
 
   const getModalTitle = () => {
@@ -276,7 +284,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           <label className="mb-1.5 block font-mono text-[11px] text-(--ink-tertiary)">
             图标
           </label>
-          <div className="grid grid-cols-6 gap-2">
+          <div className="grid grid-cols-8 gap-1.5">
             {currentIconChoices.map((ic) => {
               const IconComp = getCategoryIcon(ic);
               const isSelected = icon === ic;
