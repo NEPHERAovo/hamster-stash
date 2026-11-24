@@ -232,7 +232,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-2 pt-2 pb-(--safe-bottom)">
           {isEditing && onDelete && (
             <PaperButton
               type="button"

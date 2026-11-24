@@ -28,14 +28,15 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
   className,
 }) => {
   return (
-    <div className={cn('keypad-tray grid touch-manipulation grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px] select-none', className)}>
-      <button
-        type="button"
-        onClick={() => onDigit('7')}
-        className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
-      >
-        7
-      </button>
+    <div className={cn('keypad-container w-full bg-(--paper-sheet) select-none', className)}>
+      <div className="keypad-tray grid touch-manipulation grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px]">
+        <button
+          type="button"
+          onClick={() => onDigit('7')}
+          className="flex h-11 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-base font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+        >
+          7
+        </button>
       <button
         type="button"
         onClick={() => onDigit('8')}
@@ -174,6 +175,8 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
           {isEditing ? '保存' : '完成'}
         </button>
       )}
+      </div>
+      <div className="keypad-safe-bottom h-(--safe-bottom) w-full bg-(--paper-sheet)" />
     </div>
   );
 };
