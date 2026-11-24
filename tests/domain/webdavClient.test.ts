@@ -9,7 +9,7 @@ describe('WebDavClient', () => {
     vi.restoreAllMocks();
   });
 
-  it('routes requests through builtin proxy by default with X-Target-URL header', async () => {
+  it('routes requests through builtin proxy with X-Target-URL and X-Requested-With headers', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -28,6 +28,7 @@ describe('WebDavClient', () => {
     expect(calledUrl).toBe('/api/webdav');
     const headers = calledInit.headers as Headers;
     expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav');
+    expect(headers.get('X-Requested-With')).toBe('XMLHttpRequest');
     expect(headers.get('Authorization')).toContain('Basic ');
   });
 
@@ -50,7 +51,7 @@ describe('WebDavClient', () => {
     expect(calledInit.headers['Depth']).toBe('0');
   });
 
-  it('routes to custom proxy endpoint when proxyMode is custom and url is configured', async () => {
+  it('routes to custom proxy endpoint with query param and custom headers', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -60,15 +61,41 @@ describe('WebDavClient', () => {
       password: 'token-password',
       proxyMode: 'custom',
       customProxyUrl: 'https://dav-proxy.naera.dev/',
+      customHeaders: {
+        'CF-Access-Client-Id': 'client-123',
+        'X-Proxy-Key': 'secret-key',
+      },
     };
 
     const connected = await client.testConnection(config);
     expect(connected).toBe(true);
 
     const [calledUrl, calledInit] = fetchMock.mock.calls[0];
-    expect(calledUrl).toBe('https://dav-proxy.naera.dev');
+    expect(calledUrl).toBe('https://dav-proxy.naera.dev?url=https%3A%2F%2Fdav.jianguoyun.com%2Fdav');
     const headers = calledInit.headers as Headers;
     expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav');
+    expect(headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+    expect(headers.get('CF-Access-Client-Id')).toBe('client-123');
+    expect(headers.get('X-Proxy-Key')).toBe('secret-key');
+  });
+
+  it('replaces url placeholder when present in customProxyUrl', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const config: WebDavConfig = {
+      url: 'https://dav.jianguoyun.com/dav/',
+      username: 'user@example.com',
+      password: 'token-password',
+      proxyMode: 'custom',
+      customProxyUrl: 'https://dav-proxy.naera.dev/proxy/{url}',
+    };
+
+    const connected = await client.testConnection(config);
+    expect(connected).toBe(true);
+
+    const [calledUrl] = fetchMock.mock.calls[0];
+    expect(calledUrl).toBe('https://dav-proxy.naera.dev/proxy/https%3A%2F%2Fdav.jianguoyun.com%2Fdav');
   });
 
   it('formats helpful error message when TypeError occurs due to CORS', async () => {

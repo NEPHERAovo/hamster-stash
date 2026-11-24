@@ -12,7 +12,7 @@ function webdavDevProxyPlugin(): Plugin {
           res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK',
-            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Headers': 'Authorization, Content-Type, Depth, If-Match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, X-Target-URL, X-Requested-With, *',
           });
           res.end();
           return;
@@ -52,7 +52,7 @@ function webdavDevProxyPlugin(): Plugin {
             respHeaders[key] = value;
           });
           respHeaders['Access-Control-Allow-Origin'] = '*';
-          respHeaders['Access-Control-Allow-Headers'] = '*';
+          respHeaders['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, Depth, If-Match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, X-Target-URL, X-Requested-With, *';
           respHeaders['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK';
 
           res.writeHead(response.status, respHeaders);

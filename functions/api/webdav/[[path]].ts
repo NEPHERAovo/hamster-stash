@@ -11,7 +11,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK',
-        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type, Depth, If-Match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, X-Target-URL, X-Requested-With, *',
         'Access-Control-Max-Age': '86400',
       },
     });
@@ -79,7 +79,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     const responseHeaders = new Headers(response.headers);
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK');
-    responseHeaders.set('Access-Control-Allow-Headers', '*');
+    responseHeaders.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Depth, If-Match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, X-Target-URL, X-Requested-With, *');
     responseHeaders.set('Access-Control-Expose-Headers', '*');
 
     return new Response(response.body, {

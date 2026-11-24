@@ -7,6 +7,7 @@ export interface WebDavConfig {
   syncPath?: string;
   proxyMode?: WebDavProxyMode;
   customProxyUrl?: string;
+  customHeaders?: Record<string, string>;
 }
 
 export class WebDavClient {
@@ -54,6 +55,12 @@ export class WebDavClient {
       const proxyEndpoint = '/api/webdav';
       const headers = new Headers(init.headers);
       headers.set('X-Target-URL', targetUrl);
+      headers.set('X-Requested-With', 'XMLHttpRequest');
+      if (config.customHeaders) {
+        for (const [k, v] of Object.entries(config.customHeaders)) {
+          if (k.trim() && v) headers.set(k.trim(), v);
+        }
+      }
       return fetch(proxyEndpoint, {
         ...init,
         headers,
@@ -61,9 +68,23 @@ export class WebDavClient {
     }
 
     if (proxyMode === 'custom' && config.customProxyUrl) {
-      const proxyEndpoint = config.customProxyUrl.trim().replace(/\/+$/, '');
+      let proxyEndpoint = config.customProxyUrl.trim();
       const headers = new Headers(init.headers);
       headers.set('X-Target-URL', targetUrl);
+      headers.set('X-Requested-With', 'XMLHttpRequest');
+      if (config.customHeaders) {
+        for (const [k, v] of Object.entries(config.customHeaders)) {
+          if (k.trim() && v) headers.set(k.trim(), v);
+        }
+      }
+
+      if (proxyEndpoint.includes('{url}') || proxyEndpoint.includes('{target}')) {
+        proxyEndpoint = proxyEndpoint.replace(/\{url\}|\{target\}/g, encodeURIComponent(targetUrl));
+      } else {
+        const separator = proxyEndpoint.includes('?') ? '&' : '?';
+        proxyEndpoint = `${proxyEndpoint.replace(/\/+$/, '')}${separator}url=${encodeURIComponent(targetUrl)}`;
+      }
+
       return fetch(proxyEndpoint, {
         ...init,
         headers,

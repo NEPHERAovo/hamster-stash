@@ -1,19 +1,87 @@
 import React, { useEffect, useState } from 'react';
 import { CloudIcon as Cloud, ArrowsClockwiseIcon as RefreshCw, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, CheckIcon as Check, PlugsConnectedIcon as PlugZap } from '@phosphor-icons/react';
 import { syncService } from '../../domain/sync/syncService';
-import { webdavClient, type WebDavProxyMode } from '../../domain/sync/webdavClient';
+import { webdavClient, type WebDavConfig, type WebDavProxyMode } from '../../domain/sync/webdavClient';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { toast } from '../../stores/useToastStore';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperChip } from '../ui/PaperChip';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperSwitch } from '../ui/PaperSwitch';
 import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
 import { formatMonthDayTime } from '../../utils/date';
+
+interface WebDavPreset {
+  name: string;
+  url: string;
+  syncPath: string;
+  proxyMode: WebDavProxyMode;
+}
+
+const WEBDAV_PRESETS: WebDavPreset[] = [
+  {
+    name: '坚果云',
+    url: 'https://dav.jianguoyun.com/dav/',
+    syncPath: 'hamsterstash',
+    proxyMode: 'builtin',
+  },
+  {
+    name: 'Alist',
+    url: 'http://localhost:5244/dav/',
+    syncPath: 'hamsterstash',
+    proxyMode: 'direct',
+  },
+  {
+    name: 'InfiniCLOUD',
+    url: 'https://ACCOUNT.teracloud.jp/dav/',
+    syncPath: 'hamsterstash',
+    proxyMode: 'builtin',
+  },
+  {
+    name: 'Nextcloud',
+    url: 'https://cloud.example.com/remote.php/dav/files/USER/',
+    syncPath: 'hamsterstash',
+    proxyMode: 'direct',
+  },
+  {
+    name: '群晖 NAS',
+    url: 'https://nas-ip:5006/home/',
+    syncPath: 'hamsterstash',
+    proxyMode: 'direct',
+  },
+];
+
+function parseHeaders(text: string): Record<string, string> | undefined {
+  const trimmed = text.trim();
+  if (!trimmed) return undefined;
+  try {
+    const json = JSON.parse(trimmed);
+    if (typeof json === 'object' && json !== null) {
+      const result: Record<string, string> = {};
+      for (const [k, v] of Object.entries(json)) {
+        if (k.trim() && v) result[k.trim()] = String(v).trim();
+      }
+      return Object.keys(result).length > 0 ? result : undefined;
+    }
+  } catch {
+    const result: Record<string, string> = {};
+    for (const line of trimmed.split('\n')) {
+      const idx = line.indexOf(':');
+      if (idx > 0) {
+        const k = line.slice(0, idx).trim();
+        const v = line.slice(idx + 1).trim();
+        if (k && v) result[k] = v;
+      }
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
+  }
+  return undefined;
+}
 
 export const WebDavSyncSection: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,6 +91,8 @@ export const WebDavSyncSection: React.FC = () => {
   const [syncPath, setSyncPath] = useState('');
   const [proxyMode, setProxyMode] = useState<WebDavProxyMode>('builtin');
   const [customProxyUrl, setCustomProxyUrl] = useState('');
+  const [customHeadersText, setCustomHeadersText] = useState('');
+  const [showWorkerSnippet, setShowWorkerSnippet] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [autoSyncDaily, setAutoSyncDaily] = useState(false);
   const [syncAttachments, setSyncAttachments] = useState(false);
@@ -49,6 +119,13 @@ export const WebDavSyncSection: React.FC = () => {
           setSyncPath(config.syncPath || '');
           setProxyMode(config.proxyMode || 'builtin');
           setCustomProxyUrl(config.customProxyUrl || '');
+          if (config.customHeaders && Object.keys(config.customHeaders).length > 0) {
+            setCustomHeadersText(
+              Object.entries(config.customHeaders)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join('\n')
+            );
+          }
         }
         if (lastSync) {
           setLastSyncAt(lastSync);
@@ -66,13 +143,14 @@ export const WebDavSyncSection: React.FC = () => {
     return formatMonthDayTime(iso) || iso;
   };
 
-  const currentConfig = {
+  const currentConfig: WebDavConfig = {
     url: url.trim(),
     username: username.trim(),
     password: password.trim(),
     syncPath: syncPath.trim() || undefined,
     proxyMode,
     customProxyUrl: proxyMode === 'custom' ? customProxyUrl.trim() : undefined,
+    customHeaders: proxyMode === 'custom' ? parseHeaders(customHeadersText) : undefined,
   };
 
   const handleToggleAutoSync = async () => {
@@ -223,8 +301,34 @@ export const WebDavSyncSection: React.FC = () => {
 
         {isOpen && (
           <div className="mt-3 space-y-2.5 border-t border-dashed border-(--rule-hairline)/60 pt-3.5">
-            <div className="space-y-1">
-              <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
+                <span className="text-[10px] text-(--ink-tertiary)">点击快速填入常用服务</span>
+              </div>
+              <div className="flex flex-wrap gap-1 pb-0.5">
+                {WEBDAV_PRESETS.map((preset) => {
+                  const rootPart = preset.url.replace(/ACCOUNT|USER|cloud\.example\.com|nas-ip/g, '');
+                  const isSelected = url.includes(rootPart);
+                  return (
+                    <PaperChip
+                      key={preset.name}
+                      type="button"
+                      size="xs"
+                      selected={isSelected}
+                      onClick={() => {
+                        setUrl(preset.url);
+                        setProxyMode(preset.proxyMode);
+                        if (!syncPath.trim()) {
+                          setSyncPath(preset.syncPath);
+                        }
+                      }}
+                    >
+                      {preset.name}
+                    </PaperChip>
+                  );
+                })}
+              </div>
               <PaperInput
                 placeholder="https://dav.jianguoyun.com/dav/"
                 value={url}
@@ -248,14 +352,29 @@ export const WebDavSyncSection: React.FC = () => {
             </div>
 
             {proxyMode === 'custom' && (
-              <div className="space-y-1">
-                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">自建代理接口地址</label>
-                <PaperInput
-                  placeholder="https://dav.naera.dev/"
-                  value={customProxyUrl}
-                  onChange={(e) => setCustomProxyUrl(e.target.value)}
-                  className="h-9 text-xs"
-                />
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">自建代理接口地址</label>
+                  <PaperInput
+                    placeholder="https://dav.naera.dev/ 或 https://my-proxy.workers.dev/"
+                    value={customProxyUrl}
+                    onChange={(e) => setCustomProxyUrl(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">自定义请求头 (可选，如凭据)</label>
+                    <span className="text-[10px] text-(--ink-tertiary)">Key: Value 格式</span>
+                  </div>
+                  <PaperInput
+                    placeholder="CF-Access-Client-Id: xxx"
+                    value={customHeadersText}
+                    onChange={(e) => setCustomHeadersText(e.target.value)}
+                    className="h-9 font-mono text-xs"
+                  />
+                </div>
               </div>
             )}
 
@@ -274,8 +393,47 @@ export const WebDavSyncSection: React.FC = () => {
                 </div>
               )}
               {proxyMode === 'custom' && (
-                <div>
-                  • <strong>自建代理</strong>：请求将转发至你指定的私有反代网关（如绑定的 `dav.naera.dev` 或私人 Worker），数据仅在你信任的节点流转。
+                <div className="space-y-1.5">
+                  <div>
+                    • <strong>自建代理</strong>：请求将转发至你指定的私有反代网关（如绑定的私人域名或私人 Worker）。客户端已自动附加 <code>X-Requested-With</code>、<code>X-Target-URL</code> 与 <code>?url=</code> 双通道转发参数。<br />
+                    • <strong>跨域说明</strong>：浏览器跨域由服务端返回的响应头决定，前端无需且无法在请求中伪造跨域头；自建服务需在响应中返回允许跨域头与 WebDAV 动词（包括 PROPFIND、MKCOL、PUT 等）。
+                  </div>
+                  <div>
+                    <PaperButton
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setShowWorkerSnippet(!showWorkerSnippet)}
+                      className="h-5 px-1.5 text-[10px] text-(--color-accent)"
+                    >
+                      {showWorkerSnippet ? '收起自建 Worker 脚本参考' : '查看自建 Cloudflare Worker 脚本参考'}
+                    </PaperButton>
+                    {showWorkerSnippet && (
+                      <pre className="mt-1 max-h-36 overflow-auto rounded bg-(--paper-sunken) p-2 font-mono text-[10px] leading-tight text-(--ink-primary) select-all">
+{`export default {
+  async fetch(req) {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,MKCOL,MOVE,COPY,LOCK,UNLOCK',
+          'Access-Control-Allow-Headers': '*',
+        }
+      });
+    }
+    const target = req.headers.get('x-target-url') || new URL(req.url).searchParams.get('url');
+    if (!target) return new Response('Missing target', { status: 400 });
+    const h = new Headers(req.headers);
+    h.set('Host', new URL(target).host);
+    const resp = await fetch(target, { method: req.method, headers: h, body: req.body });
+    const rh = new Headers(resp.headers);
+    rh.set('Access-Control-Allow-Origin', '*');
+    rh.set('Access-Control-Allow-Headers', '*');
+    return new Response(resp.body, { status: resp.status, headers: rh });
+  }
+};`}
+                      </pre>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
