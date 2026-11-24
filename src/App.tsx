@@ -618,7 +618,9 @@ export function App() {
         }}
         onSuccess={(newId) => {
           setFreshTxId(newId);
-          mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          if (!editingTx) {
+            mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }}
       />
 
