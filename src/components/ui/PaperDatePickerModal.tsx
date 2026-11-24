@@ -56,16 +56,6 @@ interface TimeWheelColumnProps {
   labelSuffix: string;
 }
 
-function getItemScaleClass(dist: number, isSelected: boolean): string {
-  if (isSelected) {
-    return 'scale-100 text-sm font-bold text-(--ink-solid)';
-  }
-  if (dist === 1) {
-    return 'scale-90 text-xs font-normal text-(--ink-tertiary) opacity-60';
-  }
-  return 'scale-80 text-[11px] font-normal text-(--ink-faint) opacity-25';
-}
-
 const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   items,
   selectedValue,
@@ -73,10 +63,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   labelSuffix,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<number | null>(null);
-  const isProgrammaticRef = useRef(false);
-  const isUserInteractingRef = useRef(false);
-  const hasMountedRef = useRef(false);
+  const isMountRef = useRef(true);
 
   const selectedIndex = useMemo(() => {
     const idx = items.indexOf(selectedValue);
@@ -88,120 +75,66 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const targetTop = selectedIndex * TIME_ITEM_HEIGHT;
 
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
+    if (isMountRef.current) {
+      isMountRef.current = false;
       setActiveIdx(selectedIndex);
       container.scrollTop = targetTop;
-      requestAnimationFrame(() => {
-        if (containerRef.current) {
-          containerRef.current.scrollTop = targetTop;
-        }
-      });
-      return;
-    }
-
-    if (isUserInteractingRef.current) {
       return;
     }
 
     setActiveIdx(selectedIndex);
 
-    if (Math.abs(container.scrollTop - targetTop) > 1) {
-      isProgrammaticRef.current = true;
+    if (Math.abs(container.scrollTop - targetTop) > 16) {
       if (typeof container.scrollTo === 'function') {
         container.scrollTo({ top: targetTop, behavior: 'smooth' });
       } else {
         container.scrollTop = targetTop;
       }
-      const timer = window.setTimeout(() => {
-        isProgrammaticRef.current = false;
-      }, 350);
-      return () => window.clearTimeout(timer);
     }
   }, [selectedIndex]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const currentScrollTop = e.currentTarget.scrollTop;
-    const centerIndex = Math.max(
+    const scrollTop = e.currentTarget.scrollTop;
+    const centerIdx = Math.max(
       0,
-      Math.min(items.length - 1, Math.round(currentScrollTop / TIME_ITEM_HEIGHT))
+      Math.min(items.length - 1, Math.round(scrollTop / TIME_ITEM_HEIGHT))
     );
-    setActiveIdx(centerIndex);
-
-    if (isProgrammaticRef.current) {
-      return;
-    }
-
-    const centerValue = items[centerIndex];
-    if (centerValue && centerValue !== selectedValue) {
-      onChange(centerValue);
-    }
-
-    if (scrollTimeoutRef.current !== null) {
-      window.clearTimeout(scrollTimeoutRef.current);
-    }
-
-    scrollTimeoutRef.current = window.setTimeout(() => {
-      isUserInteractingRef.current = false;
-      if (isProgrammaticRef.current) return;
-      const c = containerRef.current;
-      if (!c) return;
-      const finalIndex = Math.max(
-        0,
-        Math.min(items.length - 1, Math.round(c.scrollTop / TIME_ITEM_HEIGHT))
-      );
-      const finalTop = finalIndex * TIME_ITEM_HEIGHT;
-      if (Math.abs(c.scrollTop - finalTop) > 1) {
-        if (typeof c.scrollTo === 'function') {
-          c.scrollTo({ top: finalTop, behavior: 'smooth' });
-        } else {
-          c.scrollTop = finalTop;
-        }
+    if (centerIdx !== activeIdx) {
+      setActiveIdx(centerIdx);
+      const targetVal = items[centerIdx];
+      if (targetVal && targetVal !== selectedValue) {
+        onChange(targetVal);
       }
-    }, 120);
+    }
   };
 
   const handleItemClick = (idx: number) => {
-    const targetValue = items[idx];
-    if (!targetValue) return;
+    const targetVal = items[idx];
+    if (!targetVal) return;
     setActiveIdx(idx);
-    onChange(targetValue);
-
+    onChange(targetVal);
     const container = containerRef.current;
-    if (!container) return;
-    isProgrammaticRef.current = true;
-    const targetTop = idx * TIME_ITEM_HEIGHT;
-    if (typeof container.scrollTo === 'function') {
-      container.scrollTo({ top: targetTop, behavior: 'smooth' });
-    } else {
-      container.scrollTop = targetTop;
+    if (container) {
+      const targetTop = idx * TIME_ITEM_HEIGHT;
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({ top: targetTop, behavior: 'smooth' });
+      } else {
+        container.scrollTop = targetTop;
+      }
     }
-    window.setTimeout(() => {
-      isProgrammaticRef.current = false;
-    }, 350);
-  };
-
-  const handleStartInteraction = () => {
-    isUserInteractingRef.current = true;
-    isProgrammaticRef.current = false;
   };
 
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      onTouchStart={handleStartInteraction}
-      onMouseDown={handleStartInteraction}
-      onWheel={handleStartInteraction}
       className="h-24 flex-1 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto overscroll-contain select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
     >
       <div className="pointer-events-none h-8 shrink-0" aria-hidden="true" />
       {items.map((item, idx) => {
-        const dist = Math.abs(idx - activeIdx);
-        const isSelected = dist === 0;
+        const isSelected = idx === activeIdx;
         return (
           <button
             key={item}
@@ -210,8 +143,10 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
             data-selected={isSelected}
             onClick={() => handleItemClick(idx)}
             className={cn(
-              'flex h-8 w-full cursor-pointer snap-center items-center justify-center font-mono transition-all duration-100',
-              getItemScaleClass(dist, isSelected)
+              'flex h-8 w-full cursor-pointer snap-center items-center justify-center font-mono text-sm',
+              isSelected
+                ? 'font-bold text-(--ink-solid)'
+                : 'font-normal text-(--ink-tertiary)/60 hover:text-(--ink-primary)'
             )}
           >
             {item}
