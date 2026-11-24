@@ -54,7 +54,6 @@ const LOAN_FLOW_OPTIONS = [
   {
     id: 'cat_lend_out',
     label: '借给他人',
-    flowHint: '流出',
     icon: 'arrow-up-right',
     direction: 'lend' as const,
     role: 'origin' as const,
@@ -63,7 +62,6 @@ const LOAN_FLOW_OPTIONS = [
   {
     id: 'cat_borrow_in',
     label: '向人借款',
-    flowHint: '流入',
     icon: 'arrow-down-left',
     direction: 'borrow' as const,
     role: 'origin' as const,
@@ -72,7 +70,6 @@ const LOAN_FLOW_OPTIONS = [
   {
     id: 'cat_loan_repay',
     label: '收回还款',
-    flowHint: '流入',
     icon: 'check-circle-2',
     direction: 'lend' as const,
     role: 'repayment' as const,
@@ -81,7 +78,6 @@ const LOAN_FLOW_OPTIONS = [
   {
     id: 'cat_debt_clear',
     label: '偿还欠款',
-    flowHint: '流出',
     icon: 'corner-down-right',
     direction: 'borrow' as const,
     role: 'repayment' as const,
@@ -962,9 +958,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     </div>
                     <span className="w-full truncate text-center text-[10px] leading-tight">
                       {flow.label}
-                    </span>
-                    <span className="mt-0.5 font-mono text-[9px] leading-none text-(--ink-faint)">
-                      {flow.flowHint}
                     </span>
                   </PaperButton>
                 );

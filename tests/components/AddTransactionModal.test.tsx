@@ -654,5 +654,20 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
         );
       });
     });
+
+    it('renders loan category options without flow hint subtitles to keep visual consistency', () => {
+      render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+      const loanTabBtn = screen.getByRole('button', { name: '借贷' });
+      fireEvent.click(loanTabBtn);
+
+      expect(screen.getByText('借给他人')).toBeInTheDocument();
+      expect(screen.getByText('向人借款')).toBeInTheDocument();
+      expect(screen.getByText('收回还款')).toBeInTheDocument();
+      expect(screen.getByText('偿还欠款')).toBeInTheDocument();
+
+      expect(screen.queryByText('流出')).toBeNull();
+      expect(screen.queryByText('流入')).toBeNull();
+    });
   });
 });
