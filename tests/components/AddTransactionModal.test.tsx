@@ -563,4 +563,62 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
       });
     });
   });
+
+  describe('Keypad Dual Operators and Direct Submission', () => {
+    it('supports clicking + / × to toggle between addition and multiplication and records directly on 完成', async () => {
+      const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
+      useLedgerStore.setState({ recordTransaction: recordSpy });
+
+      render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole('button', { name: '1' }));
+      fireEvent.click(screen.getByRole('button', { name: '0' }));
+
+      const addMulBtn = screen.getByTitle('加法与乘法运算');
+      fireEvent.click(addMulBtn);
+      fireEvent.click(addMulBtn);
+
+      fireEvent.click(screen.getByRole('button', { name: '5' }));
+
+      const submitBtn = screen.getByRole('button', { name: '完成' });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(recordSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amount: 5000,
+            categoryId: 'cat_rent',
+          })
+        );
+      });
+    });
+
+    it('supports clicking − / ÷ to toggle between subtraction and division', async () => {
+      const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
+      useLedgerStore.setState({ recordTransaction: recordSpy });
+
+      render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole('button', { name: '6' }));
+      fireEvent.click(screen.getByRole('button', { name: '0' }));
+
+      const subDivBtn = screen.getByTitle('减法与除法运算');
+      fireEvent.click(subDivBtn);
+      fireEvent.click(subDivBtn);
+
+      fireEvent.click(screen.getByRole('button', { name: '3' }));
+
+      const submitBtn = screen.getByRole('button', { name: '完成' });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(recordSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amount: 2000,
+            categoryId: 'cat_rent',
+          })
+        );
+      });
+    });
+  });
 });

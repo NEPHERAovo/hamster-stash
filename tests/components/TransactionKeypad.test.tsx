@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { TransactionKeypad } from '../../src/components/ledger/TransactionKeypad';
 
 describe('TransactionKeypad', () => {
-  it('triggers onDigit callback when number or dot buttons are clicked', () => {
+  it('triggers onDigit callback with telephone layout (1-2-3 top, 7-8-9 bottom) and h-13 sizing', () => {
     const handleDigit = vi.fn();
     render(
       <TransactionKeypad
@@ -12,23 +12,28 @@ describe('TransactionKeypad', () => {
         onOperator={vi.fn()}
         onBackspace={vi.fn()}
         onClear={vi.fn()}
-        onEqual={vi.fn()}
         onSubmit={vi.fn()}
-        hasOperator={false}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '7' }));
-    fireEvent.click(screen.getByRole('button', { name: '8' }));
-    fireEvent.click(screen.getByRole('button', { name: '.' }));
+    const btn1 = screen.getByRole('button', { name: '1' });
+    const btn2 = screen.getByRole('button', { name: '2' });
+    const btnDot = screen.getByRole('button', { name: '.' });
 
-    expect(handleDigit).toHaveBeenCalledWith('7');
-    expect(handleDigit).toHaveBeenCalledWith('8');
+    expect(btn1.className).toContain('h-13');
+    expect(btn2.className).toContain('h-13');
+
+    fireEvent.click(btn1);
+    fireEvent.click(btn2);
+    fireEvent.click(btnDot);
+
+    expect(handleDigit).toHaveBeenCalledWith('1');
+    expect(handleDigit).toHaveBeenCalledWith('2');
     expect(handleDigit).toHaveBeenCalledWith('.');
     expect(handleDigit).toHaveBeenCalledTimes(3);
   });
 
-  it('triggers operator, backspace, and submit callbacks', () => {
+  it('triggers dual operators (+ / × and − / ÷), backspace, and submit callbacks', () => {
     const handleOperator = vi.fn();
     const handleBackspace = vi.fn();
     const handleSubmit = vi.fn();
@@ -39,17 +44,16 @@ describe('TransactionKeypad', () => {
         onOperator={handleOperator}
         onBackspace={handleBackspace}
         onClear={vi.fn()}
-        onEqual={vi.fn()}
         onSubmit={handleSubmit}
         hasOperator={false}
       />
     );
 
-    fireEvent.click(screen.getByTitle('加法运算'));
-    expect(handleOperator).toHaveBeenCalledWith('+');
+    fireEvent.click(screen.getByTitle('加法与乘法运算'));
+    expect(handleOperator).toHaveBeenCalledWith('add-mul');
 
-    fireEvent.click(screen.getByTitle('减法运算'));
-    expect(handleOperator).toHaveBeenCalledWith('-');
+    fireEvent.click(screen.getByTitle('减法与除法运算'));
+    expect(handleOperator).toHaveBeenCalledWith('sub-div');
 
     fireEvent.click(screen.getByTitle('退格'));
     expect(handleBackspace).toHaveBeenCalledTimes(1);
@@ -61,8 +65,8 @@ describe('TransactionKeypad', () => {
     expect(handleSubmit).toHaveBeenCalledWith(true);
   });
 
-  it('renders equal button when hasOperator is true and clear button when editing', () => {
-    const handleEqual = vi.fn();
+  it('never displays equal button even when hasOperator is true, submitting directly', () => {
+    const handleSubmit = vi.fn();
     const handleClear = vi.fn();
 
     render(
@@ -71,15 +75,19 @@ describe('TransactionKeypad', () => {
         onOperator={vi.fn()}
         onBackspace={vi.fn()}
         onClear={handleClear}
-        onEqual={handleEqual}
-        onSubmit={vi.fn()}
+        onSubmit={handleSubmit}
         hasOperator={true}
         isEditing={true}
       />
     );
 
-    fireEvent.click(screen.getByTitle('计算结果'));
-    expect(handleEqual).toHaveBeenCalledTimes(1);
+    // No equal button should be rendered
+    expect(screen.queryByTitle('计算结果')).not.toBeInTheDocument();
+    expect(screen.queryByText('=')).not.toBeInTheDocument();
+
+    // Editing mode displays 保存 and C
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(handleSubmit).toHaveBeenCalledWith(false);
 
     fireEvent.click(screen.getByTitle('清空重置'));
     expect(handleClear).toHaveBeenCalledTimes(1);

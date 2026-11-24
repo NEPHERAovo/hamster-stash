@@ -366,7 +366,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   }, [accounts, selectedAcctId]);
 
-  const hasOperator = useMemo(() => /[+-]/.test(expr), [expr]);
+  const hasOperator = useMemo(() => /[+\-×÷*/]/.test(expr), [expr]);
 
   const evaluatedVal = useMemo(() => {
     return evaluateArithmetic(expr);
@@ -377,7 +377,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setExpr((prev) => {
       if (prev === '0' && digit !== '.') return digit;
       if (digit === '.') {
-        const segs = prev.split(/[+-]/);
+        const segs = prev.split(/[+\-×÷*/]/);
         const curSeg = segs[segs.length - 1] || '';
         if (curSeg.includes('.')) return prev;
       }
@@ -385,15 +385,73 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     });
   };
 
-  const handleOperator = (op: '+' | '-') => {
+  const handleOperator = (op: '+' | '-' | '×' | '÷' | 'add-mul' | 'sub-div') => {
     triggerHaptic();
     setExpr((prev) => {
       const trimmed = prev.trim();
-      if (/[+-]$/.test(trimmed)) {
-        return trimmed.slice(0, -1) + op;
-      }
       if (trimmed === '' || trimmed === '0') return '0';
-      return `${trimmed} ${op} `;
+
+      if (op === 'add-mul') {
+        if (trimmed.endsWith('+')) {
+          return trimmed.slice(0, -1).trim() + ' × ';
+        }
+        if (trimmed.endsWith('×') || trimmed.endsWith('*')) {
+          return trimmed.slice(0, -1).trim() + ' + ';
+        }
+        if (/[+\-×÷*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1).trim() + ' + ';
+        }
+        return `${trimmed} + `;
+      }
+
+      if (op === 'sub-div') {
+        if (trimmed.endsWith('-')) {
+          return trimmed.slice(0, -1).trim() + ' ÷ ';
+        }
+        if (trimmed.endsWith('÷') || trimmed.endsWith('/')) {
+          return trimmed.slice(0, -1).trim() + ' - ';
+        }
+        if (/[+\-×÷*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1).trim() + ' - ';
+        }
+        return `${trimmed} - `;
+      }
+
+      if (op === '+') {
+        if (trimmed.endsWith('+')) {
+          return trimmed.slice(0, -1).trim() + ' × ';
+        }
+        if (/[+\-×÷*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1).trim() + ' + ';
+        }
+        return `${trimmed} + `;
+      }
+
+      if (op === '-') {
+        if (trimmed.endsWith('-')) {
+          return trimmed.slice(0, -1).trim() + ' ÷ ';
+        }
+        if (/[+\-×÷*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1).trim() + ' - ';
+        }
+        return `${trimmed} - `;
+      }
+
+      if (op === '×') {
+        if (/[+\-×÷*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1).trim() + ' × ';
+        }
+        return `${trimmed} × `;
+      }
+
+      if (op === '÷') {
+        if (/[+\-×÷*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1).trim() + ' ÷ ';
+        }
+        return `${trimmed} ÷ `;
+      }
+
+      return prev;
     });
   };
 
@@ -402,10 +460,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setExpr((prev) => {
       const trimmed = prev.trim();
       if (trimmed.length <= 1) return '0';
-      if (/[+-]$/.test(trimmed)) {
+      if (/[+\-×÷*/]$/.test(trimmed)) {
         return trimmed.slice(0, -1).trim();
       }
-      return trimmed.slice(0, -1).trim();
+      return trimmed.slice(0, -1);
     });
   };
 
