@@ -534,7 +534,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   return (
     <div className="w-full pb-20 select-none">
       <div
-        className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1"
+        className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-3 pt-[calc(0.25rem+var(--safe-top))] pb-1 sm:px-4"
         onDoubleClick={handleHeaderDoubleClick}
         onTouchEnd={handleHeaderTouchEnd}
       >

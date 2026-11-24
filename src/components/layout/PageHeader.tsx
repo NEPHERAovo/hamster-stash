@@ -60,7 +60,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       onDoubleClick={handleDoubleClick}
       onTouchEnd={handleTouchEnd}
       className={cn(
-        'sticky top-0 z-40 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 transition-colors duration-200 select-none',
+        'sticky top-0 z-40 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between pt-[calc(0.25rem+var(--safe-top))] pb-1 transition-colors duration-200 select-none',
+        leftAction || centerTitle ? 'px-3 sm:px-4' : 'px-4',
         'page-header-bar border-b border-(--rule-hairline) bg-(--paper-base)',
         className
       )}

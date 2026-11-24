@@ -27,7 +27,7 @@ describe('WebDavClient', () => {
     const [calledUrl, calledInit] = fetchMock.mock.calls[0];
     expect(calledUrl).toBe('/api/webdav');
     const headers = calledInit.headers as Headers;
-    expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav');
+    expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav/');
     expect(headers.get('X-Requested-With')).toBe('XMLHttpRequest');
     expect(headers.get('Authorization')).toContain('Basic ');
 
@@ -53,7 +53,7 @@ describe('WebDavClient', () => {
     expect(connected).toBe(true);
 
     const [calledUrl, calledInit] = fetchMock.mock.calls[0];
-    expect(calledUrl).toBe('https://dav.jianguoyun.com/dav');
+    expect(calledUrl).toBe('https://dav.jianguoyun.com/dav/');
     expect(calledInit.headers['Depth']).toBe('0');
   });
 
@@ -77,9 +77,9 @@ describe('WebDavClient', () => {
     expect(connected).toBe(true);
 
     const [calledUrl, calledInit] = fetchMock.mock.calls[0];
-    expect(calledUrl).toBe('https://dav-proxy.naera.dev?url=https%3A%2F%2Fdav.jianguoyun.com%2Fdav');
+    expect(calledUrl).toBe('https://dav-proxy.naera.dev?url=https%3A%2F%2Fdav.jianguoyun.com%2Fdav%2F');
     const headers = calledInit.headers as Headers;
-    expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav');
+    expect(headers.get('X-Target-URL')).toBe('https://dav.jianguoyun.com/dav/');
     expect(headers.get('X-Requested-With')).toBe('XMLHttpRequest');
     expect(headers.get('CF-Access-Client-Id')).toBe('client-123');
     expect(headers.get('X-Proxy-Key')).toBe('secret-key');
@@ -101,7 +101,7 @@ describe('WebDavClient', () => {
     expect(connected).toBe(true);
 
     const [calledUrl] = fetchMock.mock.calls[0];
-    expect(calledUrl).toBe('https://dav-proxy.naera.dev/proxy/https%3A%2F%2Fdav.jianguoyun.com%2Fdav');
+    expect(calledUrl).toBe('https://dav-proxy.naera.dev/proxy/https%3A%2F%2Fdav.jianguoyun.com%2Fdav%2F');
   });
 
   it('throws descriptive error on 401 Unauthorized without triggering native browser basic auth', async () => {

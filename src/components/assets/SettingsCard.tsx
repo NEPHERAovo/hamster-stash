@@ -283,7 +283,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
 
         <div
-          className="flex cursor-pointer items-center justify-between border-b-2 border-solid border-(--rule-strong) py-2.5 select-none"
+          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
           onClick={onOpenDataManage}
         >
           <div className="flex items-center gap-2.5">

@@ -145,13 +145,13 @@ export class WebDavClient {
     };
 
     try {
-      let resp = await this.executeFetch(config, baseUrl, {
+      let resp = await this.executeFetch(config, `${baseUrl}/`, {
         method: 'PROPFIND',
         headers,
       });
 
       if (resp.status === 405 || resp.status === 501) {
-        resp = await this.executeFetch(config, baseUrl, {
+        resp = await this.executeFetch(config, `${baseUrl}/`, {
           method: 'GET',
           headers: { Authorization: this.getAuthHeader(config) },
         });
