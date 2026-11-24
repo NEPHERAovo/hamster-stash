@@ -540,20 +540,6 @@ export const CategoryManageSubPage: React.FC = () => {
     }
   };
 
-  const handleToggleFromModal = async (cat: Category) => {
-    const isCurrentlyActive = !cat.isArchived;
-    if (isCurrentlyActive && activeCategories.length <= 1) {
-      toast.error('至少需保留一个可用分类');
-      return;
-    }
-    try {
-      await updateCategory(cat.id, { isArchived: isCurrentlyActive });
-      setIsModalOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '操作失败');
-    }
-  };
-
   let submitLabel = '确认添加';
   if (isSaving) {
     submitLabel = '保存中...';
@@ -683,6 +669,7 @@ export const CategoryManageSubPage: React.FC = () => {
                     key={iconName}
                     icon={IconComp}
                     size="md"
+                    className="flex aspect-square h-auto w-full items-center justify-center"
                     variant={isSelected ? 'primary' : 'sunken'}
                     onClick={() => setIconInput(iconName)}
                   />
@@ -712,15 +699,7 @@ export const CategoryManageSubPage: React.FC = () => {
           </div>
 
           {editingCat && (
-            <div className="space-y-2 border-t border-(--rule-hairline) pt-2 pb-(--safe-bottom)">
-              <PaperButton
-                type="button"
-                variant="secondary"
-                fullWidth
-                onClick={() => handleToggleFromModal(editingCat)}
-              >
-                {editingCat.isArchived ? '启用分类' : '停用分类'}
-              </PaperButton>
+            <div className="border-t border-(--rule-hairline) pt-2 pb-(--safe-bottom)">
               <PaperButton
                 type="button"
                 variant="danger-ghost"

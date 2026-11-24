@@ -119,6 +119,8 @@ describe('CategoryManageSubPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('编辑分类')).toBeDefined();
+      expect(screen.queryByText('停用分类')).toBeNull();
+      expect(screen.queryByText('启用分类')).toBeNull();
     });
 
     const nameInput = screen.getByDisplayValue('餐饮');
