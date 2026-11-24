@@ -283,7 +283,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
 
         <div
-          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+          className="flex cursor-pointer items-center justify-between border-b-2 border-solid border-(--rule-strong) py-2.5 select-none"
           onClick={onOpenDataManage}
         >
           <div className="flex items-center gap-2.5">
@@ -299,7 +299,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
         {!isInstalled && (
           <div
-            className="flex cursor-pointer items-center justify-between border-t border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
             onClick={handleInstallClick}
           >
             <div className="flex items-center gap-2.5">
@@ -322,7 +322,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         )}
 
         <div
-          className="flex cursor-pointer items-center justify-between border-t border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
           onClick={async () => {
             if (needRefresh) {
               await applyUpdate();
@@ -356,7 +356,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
 
         <div
-          className="flex cursor-pointer items-center justify-between border-t border-dashed border-(--rule-hairline)/60 py-3 select-none"
+          className="flex cursor-pointer items-center justify-between py-3 select-none"
           onClick={() => toast.info('仓鼠囤囤 v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
         >
           <div className="flex items-center gap-2.5">
