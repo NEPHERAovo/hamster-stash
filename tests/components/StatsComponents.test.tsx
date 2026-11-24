@@ -453,7 +453,7 @@ describe('Modular Stats & UI Components', () => {
     expect(centerDateBtn).toBeInTheDocument();
 
     fireEvent.click(centerDateBtn);
-    expect(screen.getByText('选择日期范围')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '最近7天' })).toBeInTheDocument();
   });
 
   it('opens month picker when clicking center date in month mode, and year picker in year mode', () => {

@@ -12,7 +12,7 @@ describe('PaperDatePickerModal', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders in date mode and selects date upon confirmation', () => {
+  it('renders in date mode with header quick shortcuts and selects date upon confirmation', () => {
     const handleChange = vi.fn();
     const handleClose = vi.fn();
 
@@ -26,7 +26,12 @@ describe('PaperDatePickerModal', () => {
       />
     );
 
-    expect(screen.getByText('选择日期')).toBeInTheDocument();
+    // Header has quick shortcuts instead of redundant title
+    expect(screen.getByRole('button', { name: '今天' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '昨天' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '前天' })).toBeInTheDocument();
+    expect(screen.queryByText('选择日期与时间')).not.toBeInTheDocument();
+
     expect(screen.getByText('2026年')).toBeInTheDocument();
     expect(screen.getByText('11月')).toBeInTheDocument();
 
@@ -38,8 +43,12 @@ describe('PaperDatePickerModal', () => {
     expect(day20.className).toContain('text-(--btn-primary-fg)');
     expect(day20.className).not.toContain('text-(--ink-primary)');
 
-    // Click confirm
+    // Buttons are standard full-width (flex-1)
+    const cancelBtn = screen.getByRole('button', { name: '取消' });
     const confirmBtn = screen.getByRole('button', { name: '确定' });
+    expect(cancelBtn.className).toContain('flex-1');
+    expect(confirmBtn.className).toContain('flex-1');
+
     fireEvent.click(confirmBtn);
 
     expect(handleChange).toHaveBeenCalledWith('2026-11-20');
@@ -145,7 +154,7 @@ describe('PaperDatePickerModal', () => {
     expect(handleChange).toHaveBeenCalledWith('2024');
   });
 
-  it('selects quick shortcuts in date mode (今天, 昨天)', () => {
+  it('selects quick shortcuts in date mode (今天, 昨天, 前天)', () => {
     const handleChange = vi.fn();
     const handleClose = vi.fn();
 
@@ -182,8 +191,8 @@ describe('PaperDatePickerModal', () => {
       />
     );
 
-    expect(screen.getByText('选择日期范围')).toBeInTheDocument();
-    expect(screen.getByText('2026-11-05 至 2026-11-10')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '最近7天' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '本月' })).toBeInTheDocument();
 
     const day12 = screen.getByRole('button', { name: '12' });
     fireEvent.click(day12);
@@ -228,7 +237,7 @@ describe('PaperDatePickerModal', () => {
     expect(result.end).toBe(todayDate());
   });
 
-  it('renders in datetime mode and allows picking date, time, and presets (前天, 昨天, 今天)', () => {
+  it('renders in datetime mode and allows picking date, time presets, and wheel items without title time badge', () => {
     const handleChange = vi.fn();
     const handleClose = vi.fn();
 
@@ -242,14 +251,19 @@ describe('PaperDatePickerModal', () => {
       />
     );
 
-    expect(screen.getByText('选择日期与时间')).toBeInTheDocument();
+    // Redundant top title and data subtitle are removed
+    expect(screen.queryByText('选择日期与时间')).not.toBeInTheDocument();
 
-    // Check presets in datetime mode
+    // Check presets in datetime mode header
     expect(screen.getByRole('button', { name: '今天' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '昨天' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '前天' })).toBeInTheDocument();
 
-    // Pick a preset time such as 18:00 directly below calendar
+    // Time section header has no redundant selected time text on title right
+    expect(screen.getByText('时间')).toBeInTheDocument();
+    expect(screen.queryByText('14:30')).not.toBeInTheDocument();
+
+    // Pick a preset time such as 18:00
     const preset18 = screen.getByRole('button', { name: '18:00' });
     fireEvent.click(preset18);
 
@@ -260,7 +274,7 @@ describe('PaperDatePickerModal', () => {
     expect(handleChange).toHaveBeenCalledWith('2026-11-15 18:00');
   });
 
-  it('allows selecting specific date, hour and minute directly on the unified datetime screen', () => {
+  it('allows selecting specific date, hour and minute directly on the sliding drum wheel', () => {
     const handleChange = vi.fn();
     const handleClose = vi.fn();
 
@@ -281,7 +295,7 @@ describe('PaperDatePickerModal', () => {
     expect(day18.className).toContain('text-(--btn-primary-fg)');
     expect(day18.className).not.toContain('text-(--ink-primary)');
 
-    // Select hour 09 and minute 37 directly on time section below
+    // Select hour 09 and minute 37 directly on drum wheel column
     const h09 = screen.getByRole('button', { name: '09时' });
     fireEvent.click(h09);
     const m37 = screen.getByRole('button', { name: '37分' });
