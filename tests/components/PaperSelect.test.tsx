@@ -114,4 +114,41 @@ describe('PaperSelect', () => {
     const listbox = screen.getByRole('listbox');
     expect(listbox.className).toContain('bottom-full');
   });
+
+  it('correctly handles optgroup children without concatenating child option labels', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <PaperSelect value="cat_food" onChange={handleChange}>
+        <optgroup label="支出">
+          <option value="cat_food">餐饮</option>
+          <option value="cat_market">超市</option>
+          <option value="cat_transit">交通</option>
+        </optgroup>
+        <optgroup label="收入">
+          <option value="cat_salary">工资</option>
+          <option value="cat_bonus">奖金</option>
+        </optgroup>
+      </PaperSelect>
+    );
+
+    const combobox = screen.getByRole('combobox');
+    expect(combobox.textContent).toContain('餐饮');
+    expect(combobox.textContent).not.toContain('餐饮超市交通');
+
+    fireEvent.click(combobox);
+
+    expect(screen.getByText('支出')).toBeInTheDocument();
+    expect(screen.getByText('收入')).toBeInTheDocument();
+
+    const transitOption = screen.getByRole('option', { name: '交通' });
+    expect(transitOption).toBeInTheDocument();
+
+    fireEvent.click(transitOption);
+
+    expect(handleChange).toHaveBeenCalled();
+    const [event, val] = handleChange.mock.calls[0];
+    expect(event.target.value).toBe('cat_transit');
+    expect(val).toBe('cat_transit');
+  });
 });

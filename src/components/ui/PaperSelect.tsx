@@ -8,6 +8,8 @@ export interface PaperSelectOption {
   label: string;
   icon?: React.ReactNode;
   disabled?: boolean;
+  group?: string;
+  isHeader?: boolean;
 }
 
 export interface PaperSelectProps
@@ -64,13 +66,39 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
       if (options && options.length > 0) return options;
 
       const list: PaperSelectOption[] = [];
-      React.Children.forEach(children, (child) => {
-        if (React.isValidElement(child)) {
+
+      const processNode = (node: React.ReactNode) => {
+        React.Children.forEach(node, (child) => {
+          if (!React.isValidElement(child)) return;
+
           const childProps = child.props as {
             value?: string;
+            label?: string;
             children?: React.ReactNode;
             disabled?: boolean;
           };
+
+          if (child.type === React.Fragment) {
+            processNode(childProps.children);
+            return;
+          }
+
+          if (
+            child.type === 'optgroup' ||
+            (childProps.label && childProps.children && childProps.value === undefined)
+          ) {
+            if (childProps.label) {
+              list.push({
+                value: `__group_${childProps.label}`,
+                label: childProps.label,
+                isHeader: true,
+                disabled: true,
+              });
+            }
+            processNode(childProps.children);
+            return;
+          }
+
           const val = childProps.value !== undefined ? String(childProps.value) : '';
           const text = getReactNodeText(childProps.children);
           const lbl = text || val;
@@ -79,20 +107,22 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
             label: lbl,
             disabled: childProps.disabled,
           });
-        }
-      });
+        });
+      };
+
+      processNode(children);
       return list;
     }, [options, children]);
 
     const selectedOption = useMemo(() => {
-      return parsedOptions.find((opt) => opt.value === String(value));
+      return parsedOptions.find((opt) => !opt.isHeader && opt.value === String(value));
     }, [parsedOptions, value]);
 
     const displayLabel = useMemo(() => {
       if (selectedOption) return selectedOption.label;
       if (placeholder) return placeholder;
-      if (parsedOptions.length > 0) return parsedOptions[0]?.label ?? '';
-      return '';
+      const firstSelectable = parsedOptions.find((opt) => !opt.isHeader);
+      return firstSelectable?.label ?? '';
     }, [selectedOption, placeholder, parsedOptions]);
 
     const updatePlacement = useCallback(() => {
@@ -180,11 +210,13 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
           name={props.name}
           disabled={disabled}
         >
-          {parsedOptions.map((opt) => (
-            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-              {opt.label}
-            </option>
-          ))}
+          {parsedOptions
+            .filter((opt) => !opt.isHeader)
+            .map((opt) => (
+              <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+                {opt.label}
+              </option>
+            ))}
         </select>
 
         <button
@@ -236,6 +268,18 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
             )}
           >
             {parsedOptions.map((opt) => {
+              if (opt.isHeader) {
+                return (
+                  <div
+                    key={opt.value}
+                    role="presentation"
+                    className="px-2.5 pt-2 pb-1 text-[10px] font-bold tracking-wider text-(--ink-tertiary) select-none"
+                  >
+                    {opt.label}
+                  </div>
+                );
+              }
+
               const isSelected = opt.value === String(value);
               return (
                 <button
