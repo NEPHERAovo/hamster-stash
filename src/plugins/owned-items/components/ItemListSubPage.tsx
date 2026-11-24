@@ -127,7 +127,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       )}
 
       <div className={cn('space-y-3.5 px-4', onClose ? 'pt-3' : 'pt-2')}>
-        <div className="tab-stagger-1 paper-summary-card paper-deckle-bottom relative rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">
+        <div className="tab-stagger-1 paper-summary-card paper-deckle-bottom relative border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">
           <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
 
           <div className="space-y-3 p-4 pt-4.5">

@@ -48,6 +48,8 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
   dismissThreshold = 80,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const lastHeaderTapRef = useRef(0);
   const [shouldRender, setShouldRender] = useState(isOpen);
   const isClosingRef = useRef(false);
   const isTrackingRef = useRef(false);
@@ -77,6 +79,10 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
       isClosingRef.current = false;
     }, 240);
   }, [onClose]);
+
+  const scrollToTop = useCallback(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   useCloseWatcher({
     isOpen: shouldRender && !isClosingRef.current,
@@ -249,8 +255,26 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
 
   if (!shouldRender) return null;
 
+  const handleHeaderDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select')) return;
+    scrollToTop();
+  };
+
+  const handleHeaderTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select')) return;
+    const now = performance.now();
+    if (now - lastHeaderTapRef.current < 300) {
+      scrollToTop();
+      lastHeaderTapRef.current = 0;
+    } else {
+      lastHeaderTapRef.current = now;
+    }
+  };
+
   return (
-    <SubPageContext.Provider value={{ requestClose }}>
+    <SubPageContext.Provider value={{ requestClose, scrollToTop }}>
       <div
         ref={containerRef}
         onAnimationEnd={(e) => {
@@ -266,8 +290,19 @@ export const SubPageShell: React.FC<SubPageShellProps> = ({
         )}
       >
         <div className="grid-layer absolute! inset-0 z-0" aria-hidden="true" />
-        {header && <div className="relative z-1 shrink-0">{header}</div>}
-        <div className="relative z-1 min-h-0 w-full flex-1 overflow-y-auto overscroll-contain">
+        {header && (
+          <div
+            className="relative z-1 shrink-0 cursor-pointer select-none"
+            onDoubleClick={handleHeaderDoubleClick}
+            onTouchEnd={handleHeaderTouchEnd}
+          >
+            {header}
+          </div>
+        )}
+        <div
+          ref={contentRef}
+          className="relative z-1 min-h-0 w-full flex-1 overflow-y-auto overscroll-contain"
+        >
           {children}
         </div>
       </div>

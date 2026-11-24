@@ -283,6 +283,10 @@ export function App() {
     return computeMonthSummary(currentMonthTransactions, displayTransactions, { includedAccountIds });
   }, [currentMonthTransactions, displayTransactions, includedAccountIds]);
 
+  const handleScrollToTop = () => {
+    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const renderHeader = () => {
     if (currentTab === 'ledger') {
       return (
@@ -293,6 +297,7 @@ export function App() {
           onNextMonth={() => stepMonth(1)}
           showBackToToday={!isCurrentNaturalMonth}
           onBackToToday={jumpToCurrentMonth}
+          onDoubleClick={handleScrollToTop}
         />
       );
     }
@@ -301,6 +306,7 @@ export function App() {
       return (
         <PageHeader
           title={isModern ? '统计' : 'Statistics'}
+          onDoubleClick={handleScrollToTop}
           rightAction={
             <SegToggle
               options={[
@@ -327,6 +333,7 @@ export function App() {
       return (
         <PageHeader
           title={pageTitle}
+          onDoubleClick={handleScrollToTop}
         />
       );
     }
@@ -334,6 +341,7 @@ export function App() {
     return (
       <PageHeader
         title={isModern ? '资产' : 'Assets'}
+        onDoubleClick={handleScrollToTop}
         rightAction={
           <PaperIconButton
             icon={Settings}

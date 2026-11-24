@@ -16,6 +16,7 @@ export interface PageHeaderProps {
   showBackToToday?: boolean;
   onBackToToday?: () => void;
   centerTitle?: boolean;
+  onDoubleClick?: (e: React.MouseEvent<HTMLElement>) => void;
   className?: string;
 }
 
@@ -31,12 +32,35 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   showBackToToday = false,
   onBackToToday,
   centerTitle = false,
+  onDoubleClick,
   className,
 }) => {
+  const lastTapRef = React.useRef(0);
+
+  const handleDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select')) return;
+    onDoubleClick?.(e);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select')) return;
+    const now = performance.now();
+    if (now - lastTapRef.current < 300) {
+      onDoubleClick?.(e as unknown as React.MouseEvent<HTMLElement>);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   return (
     <header
+      onDoubleClick={handleDoubleClick}
+      onTouchEnd={handleTouchEnd}
       className={cn(
-        'sticky top-0 z-40 box-border flex min-h-[calc(3rem+var(--safe-top))] items-center justify-between px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 transition-colors duration-200 select-none',
+        'sticky top-0 z-40 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1 transition-colors duration-200 select-none',
         'page-header-bar border-b border-(--rule-hairline) bg-(--paper-base)',
         className
       )}

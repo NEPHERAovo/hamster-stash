@@ -96,6 +96,7 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
           onSelectTransaction={onSelectTransaction}
           pageSize={20}
           contained
+          showFullDate
         />
       </div>
     </div>

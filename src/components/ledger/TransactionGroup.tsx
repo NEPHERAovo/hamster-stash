@@ -24,6 +24,7 @@ export interface TransactionGroupProps {
   freshTxId?: string | null;
   contained?: boolean;
   isLoading?: boolean;
+  showFullDate?: boolean;
 }
 
 export const TransactionGroup: React.FC<TransactionGroupProps> = ({
@@ -36,6 +37,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   freshTxId: externalFreshTxId,
   contained = false,
   isLoading,
+  showFullDate = false,
 }) => {
   const isInitialLoaded = useLedgerStore((s) => s.isInitialLoaded);
   const effectiveLoading = isLoading !== undefined ? isLoading : !isInitialLoaded;
@@ -281,7 +283,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               acctMap={acctMap}
               activeFreshId={activeFreshId}
               contained={contained}
-              isSearching={isSearching}
+              isSearching={isSearching || showFullDate}
               onSelectTransaction={onSelectTransaction}
             />
           ) : (
@@ -294,7 +296,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
               acctMap={acctMap}
               activeFreshId={activeFreshId}
               contained={contained}
-              isSearching={isSearching}
+              isSearching={isSearching || showFullDate}
               onSelectTransaction={onSelectTransaction}
             />
           )}

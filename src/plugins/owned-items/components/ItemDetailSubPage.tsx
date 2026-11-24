@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, TrashIcon as Trash2, PencilSimpleIcon as Edit2, CoinsIcon as DollarSign, ArrowCounterClockwiseIcon as RotateCcw, CalendarBlankIcon as CalendarBlank, MagnifyingGlassIcon as Search, XIcon as X } from '@phosphor-icons/react';
 import {
   useHostTransactions,
@@ -6,6 +6,7 @@ import {
   useHostCategories,
   useHostTransactionActions,
   usePluginNavigation,
+  useSubPage,
   centsToYuan,
   yuanToCents,
   getCategoryIcon,
@@ -41,6 +42,26 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const hostCategories = useHostCategories();
   const { recordTransaction, updateTransaction } = useHostTransactionActions();
   const { openModal } = usePluginNavigation();
+  const subPage = useSubPage();
+  const lastHeaderTapRef = useRef(0);
+
+  const handleHeaderDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select')) return;
+    subPage?.scrollToTop?.();
+  };
+
+  const handleHeaderTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select')) return;
+    const now = performance.now();
+    if (now - lastHeaderTapRef.current < 300) {
+      subPage?.scrollToTop?.();
+      lastHeaderTapRef.current = 0;
+    } else {
+      lastHeaderTapRef.current = now;
+    }
+  };
 
   const [isSellPanelOpen, setIsSellPanelOpen] = useState(false);
   const [dispositionMode, setDispositionMode] = useState<'sold' | 'gifted' | 'scrapped'>('sold');
@@ -512,7 +533,11 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
   return (
     <div className="w-full pb-20 select-none">
-      <div className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1">
+      <div
+        className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-4.5 pt-[calc(0.25rem+var(--safe-top))] pb-1"
+        onDoubleClick={handleHeaderDoubleClick}
+        onTouchEnd={handleHeaderTouchEnd}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <PaperIconButton
             icon={ChevronLeft}
@@ -549,7 +574,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       </div>
 
       <div className="space-y-4 px-4 pt-3.5">
-        <div className="paper-summary-card paper-deckle-bottom relative rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">
+        <div className="paper-summary-card paper-deckle-bottom relative border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">
           <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
 
           <div className="space-y-3.5 p-4 pt-4">
@@ -989,7 +1014,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                       </span>
                       <PaperIconButton
                         icon={X}
-                        size="xs"
+                        size="sm"
                         variant="ghost"
                         onClick={() => handleUnlinkTransaction(tx)}
                         className="text-(--ink-faint) hover:text-(--color-expense)"

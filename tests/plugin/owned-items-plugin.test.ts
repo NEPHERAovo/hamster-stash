@@ -287,6 +287,25 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
 
     const { getByText } = render(React.createElement(ItemRowBadge, { context: { transaction: tx } }));
     expect(getByText('购入·MacBoo…')).toBeInTheDocument();
+
+    const sellTx: Transaction = {
+      id: 'tx_sell',
+      type: 'income',
+      amount: 450000,
+      accountId: 'acct_1',
+      categoryId: 'cat_income',
+      date: '2026-11-20',
+      ext: {
+        'owned-items': {
+          itemId: 'item_macbook',
+          itemRole: 'sell',
+        },
+      },
+      createdAt: '',
+      updatedAt: '',
+    };
+    const { getByText: getBySellText } = render(React.createElement(ItemRowBadge, { context: { transaction: sellTx } }));
+    expect(getBySellText('售出·MacBoo…')).toBeInTheDocument();
   });
 
   it('computes metrics and daily cost accurately for digital subscriptions', () => {

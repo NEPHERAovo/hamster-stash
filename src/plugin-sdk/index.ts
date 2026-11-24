@@ -29,6 +29,7 @@ export {
 } from './hooks/useHostData';
 export { useHostTransactionActions } from './hooks/useHostTransactionActions';
 export { usePluginNavigation } from './hooks/usePluginNavigation';
+export { useSubPage } from '../components/layout/SubPageContext';
 
 export { PluginSlot, type PluginSlotProps } from './components/PluginSlot';
 export { PluginOverride, type PluginOverrideProps } from './components/PluginOverride';

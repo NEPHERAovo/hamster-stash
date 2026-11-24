@@ -26,7 +26,7 @@ export const ItemRowBadge: React.FC<ItemRowBadgeProps> = ({ context }) => {
   const getRoleLabel = () => {
     if (itemRole === 'buy') return '购入';
     if (itemRole === 'maintenance') return '保养';
-    if (itemRole === 'sell') return '回血';
+    if (itemRole === 'sell') return '售出';
     return '物品';
   };
 

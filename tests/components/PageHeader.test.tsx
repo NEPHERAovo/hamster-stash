@@ -46,4 +46,18 @@ describe('PageHeader component', () => {
     expect(screen.getByTestId('back-btn')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('招商银行卡');
   });
+
+  it('triggers onDoubleClick when header is double clicked directly', () => {
+    const handleDoubleClick = vi.fn();
+    render(
+      <PageHeader
+        title="November 2026"
+        onDoubleClick={handleDoubleClick}
+      />
+    );
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    fireEvent.doubleClick(heading);
+    expect(handleDoubleClick).toHaveBeenCalledTimes(1);
+  });
 });

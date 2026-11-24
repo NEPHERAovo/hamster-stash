@@ -419,41 +419,41 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
       )}
 
-      <div className="tab-stagger-1 space-y-2">
-        <div className="flex items-center justify-between px-1 select-none">
-          <PaperIconButton
-            icon={ChevronLeft}
-            onClick={handlePrevPeriod}
-            title="上一期"
-            aria-label="上一期"
-          />
+      <div className="sticky top-0 z-20 -mx-4 flex items-center justify-between border-b border-(--rule-hairline)/60 bg-(--paper-base)/90 px-4 py-1.5 backdrop-blur-md transition-all select-none">
+        <PaperIconButton
+          icon={ChevronLeft}
+          onClick={handlePrevPeriod}
+          title="上一期"
+          aria-label="上一期"
+        />
 
-          <PaperButton
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsDatePickerOpen(true)}
-            className="group h-auto max-w-[calc(100%-88px)] min-w-0 gap-1.5 border-0 px-2.5 py-1 font-normal hover:bg-(--paper-sunken)/70"
-            title="点击选择日期"
-          >
-            <span className="truncate font-serif text-lg tracking-tight text-(--ink-solid) not-italic sm:text-xl">
-              {formattedPeriodTitle}
+        <PaperButton
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsDatePickerOpen(true)}
+          className="group h-auto max-w-[calc(100%-88px)] min-w-0 gap-1.5 border-0 px-2.5 py-1 font-normal hover:bg-(--paper-sunken)/70"
+          title="点击选择日期"
+        >
+          <span className="truncate font-serif text-lg tracking-tight text-(--ink-solid) not-italic sm:text-xl">
+            {formattedPeriodTitle}
+          </span>
+          {weekBadge && (
+            <span className="shrink-0 rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[10px] text-(--ink-secondary)">
+              {weekBadge}
             </span>
-            {weekBadge && (
-              <span className="shrink-0 rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[10px] text-(--ink-secondary)">
-                {weekBadge}
-              </span>
-            )}
-            <CaretDownIcon className="size-3.5 shrink-0 text-(--ink-tertiary) transition-transform group-hover:text-(--ink-primary)" />
-          </PaperButton>
+          )}
+          <CaretDownIcon className="size-3.5 shrink-0 text-(--ink-tertiary) transition-transform group-hover:text-(--ink-primary)" />
+        </PaperButton>
 
-          <PaperIconButton
-            icon={ChevronRight}
-            onClick={handleNextPeriod}
-            title="下一期"
-            aria-label="下一期"
-          />
-        </div>
+        <PaperIconButton
+          icon={ChevronRight}
+          onClick={handleNextPeriod}
+          title="下一期"
+          aria-label="下一期"
+        />
+      </div>
 
+      <div className="tab-stagger-1 space-y-2">
         <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-colors duration-200 select-none sm:p-5">
           <div className="flex items-center justify-between gap-2 select-none">
             <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
@@ -631,6 +631,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           onSelectTransaction={onSelectTransaction}
           pageSize={12}
           contained
+          showFullDate={mode !== 'month'}
         />
       </div>
 
