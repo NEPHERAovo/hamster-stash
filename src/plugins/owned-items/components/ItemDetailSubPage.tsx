@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, TrashIcon as Trash2, PencilSimpleIcon as Edit2, CoinsIcon as DollarSign, ArrowCounterClockwiseIcon as RotateCcw, CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react';
+import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, TrashIcon as Trash2, PencilSimpleIcon as Edit2, CoinsIcon as DollarSign, ArrowCounterClockwiseIcon as RotateCcw, CalendarBlankIcon as CalendarBlank, MagnifyingGlassIcon as Search, XIcon as X } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   useHostAccounts,
+  useHostCategories,
   useHostTransactionActions,
   usePluginNavigation,
   centsToYuan,
@@ -34,10 +35,11 @@ export interface ItemDetailSubPageProps {
 export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, params }) => {
   const itemId = params?.itemId;
   const item = usePluginItemStore((s) => s.items.find((i) => i.id === itemId));
-  const { deleteItem, changeStatus } = usePluginItemStore();
+  const { deleteItem, changeStatus, updateItem } = usePluginItemStore();
   const transactions = useHostTransactions();
   const accounts = useHostAccounts();
-  const { recordTransaction } = useHostTransactionActions();
+  const hostCategories = useHostCategories();
+  const { recordTransaction, updateTransaction } = useHostTransactionActions();
   const { openModal } = usePluginNavigation();
 
   const [isSellPanelOpen, setIsSellPanelOpen] = useState(false);
@@ -50,6 +52,8 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const [isSubmittingSell, setIsSubmittingSell] = useState(false);
 
   const [isMaintPanelOpen, setIsMaintPanelOpen] = useState(false);
+  const [maintMode, setMaintMode] = useState<'existing' | 'new'>('existing');
+  const [searchBillQuery, setSearchBillQuery] = useState('');
   const [maintPriceYuan, setMaintPriceYuan] = useState('');
   const [maintAccountId, setMaintAccountId] = useState(accounts[0]?.id || '');
   const [maintDate, setMaintDate] = useState(new Date().toISOString().split('T')[0]);
@@ -70,6 +74,83 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     if (!item) return null;
     return computeItemMetrics(item, transactions);
   }, [item, transactions]);
+
+  const linkedTxIds = useMemo(() => {
+    return new Set(itemTransactions.map((t) => t.id));
+  }, [itemTransactions]);
+
+  const candidateExpenses = useMemo(() => {
+    const unlinked = transactions.filter((t) => t.type === 'expense' && !linkedTxIds.has(t.id));
+    const q = searchBillQuery.trim().toLowerCase();
+    if (!q) {
+      return unlinked.slice(0, 30);
+    }
+    return unlinked
+      .filter((t) => {
+        const cat = hostCategories.find((c) => c.id === t.categoryId);
+        const acct = accounts.find((a) => a.id === t.accountId);
+        if (t.note?.toLowerCase().includes(q)) return true;
+        if (cat?.name.toLowerCase().includes(q)) return true;
+        if (acct?.name.toLowerCase().includes(q)) return true;
+        if (centsToYuan(t.amount).includes(q)) return true;
+        return false;
+      })
+      .slice(0, 50);
+  }, [transactions, linkedTxIds, searchBillQuery, hostCategories, accounts]);
+
+  const handleLinkTransaction = async (tx: Transaction) => {
+    if (!item) return;
+    const hasBuy = itemTransactions.some((t) => getOwnedItemExt(t.ext)?.itemRole === 'buy');
+    let role: 'buy' | 'maintenance' = 'maintenance';
+    if (!hasBuy && (!item.kind || item.kind === 'physical')) {
+      const asBuy = await confirmAction({
+        title: '选择关联角色',
+        message: `是否将这笔「¥${centsToYuan(tx.amount)}」设为「${item.name}」的【初始购入账单】？（点击取消则作为配件/保养支出）`,
+        confirmText: '设为初始购入',
+        cancelText: '作为配件保养',
+        isDestructive: false,
+      });
+      role = asBuy ? 'buy' : 'maintenance';
+    }
+
+    try {
+      await updateTransaction(tx.id, {
+        ext: {
+          ...(tx.ext || {}),
+          'owned-items': {
+            itemId: item.id,
+            itemRole: role,
+            kind: item.kind,
+          },
+        },
+      });
+      if (role === 'buy' && tx.date) {
+        await updateItem(item.id, { buyDate: tx.date });
+      }
+      setIsMaintPanelOpen(false);
+      setSearchBillQuery('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '关联失败');
+    }
+  };
+
+  const handleUnlinkTransaction = async (tx: Transaction) => {
+    const confirmed = await confirmAction({
+      title: '解除关联',
+      message: '确定将本笔支出从该物品中移除关联吗？账单本身不会被删除。',
+      confirmText: '解除关联',
+      isDestructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      const nextExt = { ...(tx.ext || {}) };
+      delete nextExt['owned-items'];
+      await updateTransaction(tx.id, { ext: nextExt });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '解除关联失败');
+    }
+  };
 
   if (!item || !metrics) {
     return (
@@ -590,101 +671,171 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         </div>
 
         {isMaintPanelOpen && (
-          <form
-            onSubmit={handleConfirmMaint}
-            className="paper-card space-y-3 rounded-(--radius-md) border border-(--rule-strong) bg-(--paper-sheet) p-3.5 shadow-xs"
-          >
-            <div className="text-xs font-semibold text-(--ink-solid)">
-              {isSub ? '记录续费支出' : '记录配件维护支出'}
+          <div className="paper-card space-y-3 rounded-(--radius-md) border border-(--rule-strong) bg-(--paper-sheet) p-3.5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold text-(--ink-solid)">
+                {isSub ? '关联续费' : '关联支出'}
+              </div>
+              <SegToggle
+                options={[
+                  { value: 'existing', label: '选已有账单' },
+                  { value: 'new', label: isSub ? '记新续费' : '记新支出' },
+                ]}
+                value={maintMode}
+                onChange={(val) => setMaintMode(val as 'existing' | 'new')}
+                size="sm"
+                fullWidth={false}
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                  支出金额
-                </label>
-                <AmountInput
-                  size="sm"
-                  value={maintPriceYuan}
-                  onChange={setMaintPriceYuan}
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                  支付账户
-                </label>
-                <PaperSelect
-                  size="sm"
-                  value={maintAccountId}
-                  onChange={(e) => setMaintAccountId(e.target.value)}
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </PaperSelect>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                  记账日期
-                </label>
-                <PaperButton
-                  variant="sunken"
-                  size="sm"
-                  fullWidth
-                  onClick={() => setIsMaintDateOpen(true)}
-                  className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
-                >
-                  <span>{maintDate || '选择日期'}</span>
-                </PaperButton>
-                <PaperDatePickerModal
-                  isOpen={isMaintDateOpen}
-                  onClose={() => setIsMaintDateOpen(false)}
-                  mode="date"
-                  value={maintDate}
-                  onChange={(val) => setMaintDate(val)}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                  支出备注
-                </label>
+            {maintMode === 'existing' ? (
+              <div className="space-y-2">
                 <PaperInput
                   size="sm"
-                  type="text"
-                  value={maintNote}
-                  onChange={(e) => setMaintNote(e.target.value)}
-                  placeholder="输入支出备注"
+                  value={searchBillQuery}
+                  onChange={(e) => setSearchBillQuery(e.target.value)}
+                  placeholder="搜索备注、分类、账户、金额..."
+                  leftIcon={<Search className="size-3.5 text-(--ink-tertiary)" />}
+                  clearable={Boolean(searchBillQuery)}
+                  onClear={() => setSearchBillQuery('')}
                 />
-              </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
-              <PaperButton
-                variant="secondary"
-                size="compact"
-                onClick={() => setIsMaintPanelOpen(false)}
-              >
-                取消
-              </PaperButton>
-              <PaperButton
-                variant="primary"
-                size="compact"
-                type="submit"
-                disabled={isSubmittingMaint}
-              >
-                确认记录
-              </PaperButton>
-            </div>
-          </form>
+                <div className="max-h-56 space-y-1.5 overflow-y-auto pr-0.5">
+                  {candidateExpenses.length === 0 ? (
+                    <div className="py-6 text-center font-mono text-xs text-(--ink-tertiary)">
+                      {searchBillQuery ? '未找到相关支出' : '暂无可选支出账单'}
+                    </div>
+                  ) : (
+                    candidateExpenses.map((tx) => {
+                      const cat = hostCategories.find((c) => c.id === tx.categoryId);
+                      const acct = accounts.find((a) => a.id === tx.accountId);
+                      const CatIcon = getCategoryIcon(cat?.icon || 'squares-four');
+                      return (
+                        <div
+                          key={tx.id}
+                          onClick={() => handleLinkTransaction(tx)}
+                          className="flex cursor-pointer items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-2.5 transition-colors hover:border-(--border-strong) hover:bg-(--paper-hover)"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex size-7 shrink-0 items-center justify-center rounded-(--radius-xs) bg-(--paper-sheet) text-(--ink-primary)">
+                              <CatIcon className="size-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-semibold text-(--ink-solid)">
+                                {tx.note || cat?.name || '支出'}
+                              </div>
+                              <div className="font-mono text-[10px] text-(--ink-tertiary)">
+                                {tx.date} · {acct?.name || '账户'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="shrink-0 font-mono text-xs font-bold text-(--ink-solid) tabular-nums">
+                            -¥{centsToYuan(tx.amount)}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 font-mono text-[10px] text-(--ink-tertiary)">
+                  <span>{searchBillQuery ? `搜索结果 ${candidateExpenses.length} 笔` : '展示最近 30 笔未关联支出'}</span>
+                  <PaperButton variant="secondary" size="xs" onClick={() => setIsMaintPanelOpen(false)}>
+                    关闭
+                  </PaperButton>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleConfirmMaint} className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      支出金额
+                    </label>
+                    <AmountInput
+                      size="sm"
+                      value={maintPriceYuan}
+                      onChange={setMaintPriceYuan}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      支付账户
+                    </label>
+                    <PaperSelect
+                      size="sm"
+                      value={maintAccountId}
+                      onChange={(e) => setMaintAccountId(e.target.value)}
+                    >
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </PaperSelect>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      记账日期
+                    </label>
+                    <PaperButton
+                      variant="sunken"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setIsMaintDateOpen(true)}
+                      className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+                      leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
+                    >
+                      <span>{maintDate || '选择日期'}</span>
+                    </PaperButton>
+                    <PaperDatePickerModal
+                      isOpen={isMaintDateOpen}
+                      onClose={() => setIsMaintDateOpen(false)}
+                      mode="date"
+                      value={maintDate}
+                      onChange={(val) => setMaintDate(val)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      支出备注
+                    </label>
+                    <PaperInput
+                      size="sm"
+                      type="text"
+                      value={maintNote}
+                      onChange={(e) => setMaintNote(e.target.value)}
+                      placeholder="输入支出备注"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
+                  <PaperButton
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => setIsMaintPanelOpen(false)}
+                  >
+                    取消
+                  </PaperButton>
+                  <PaperButton
+                    variant="primary"
+                    size="compact"
+                    type="submit"
+                    disabled={isSubmittingMaint}
+                  >
+                    确认记录
+                  </PaperButton>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {isSellPanelOpen && (
@@ -827,7 +978,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                       </div>
                     </div>
 
-                    <div className="shrink-0 text-right">
+                    <div className="flex shrink-0 items-center gap-2 text-right">
                       <span
                         className={cn(
                           'font-mono text-xs font-bold tabular-nums',
@@ -836,6 +987,15 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                       >
                         {isIncome ? `+¥${centsToYuan(tx.amount)}` : `-¥${centsToYuan(tx.amount)}`}
                       </span>
+                      <PaperIconButton
+                        icon={X}
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => handleUnlinkTransaction(tx)}
+                        className="text-(--ink-faint) hover:text-(--color-expense)"
+                        title="解除关联"
+                        aria-label="解除关联"
+                      />
                     </div>
                   </div>
                 );
