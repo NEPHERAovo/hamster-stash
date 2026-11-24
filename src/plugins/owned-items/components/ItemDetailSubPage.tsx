@@ -328,7 +328,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           />
           <div className="min-w-0">
             <h1 className="truncate font-serif text-xl leading-none text-(--ink-solid) not-italic sm:text-2xl">
-              {item.name}
+              {isSub ? '订阅详情' : '物品详情'}
             </h1>
           </div>
         </div>

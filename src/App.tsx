@@ -108,6 +108,7 @@ export function App() {
   const todayMonth = currentYearMonth();
 
   const isCurrentNaturalMonth = currentMonth === todayMonth;
+  const hasPluginSubPage = Boolean(usePluginUIStore((s) => s.activeSubPage));
 
   const stepMonth = (offset: number) => {
     const nextMonth = stepYearMonth(currentMonth, offset);
@@ -248,7 +249,8 @@ export function App() {
     Boolean(reconcileAccount) ||
     isTransferOpen ||
     Boolean(editingTransferTx) ||
-    Boolean(activeCategoryDrilldown);
+    Boolean(activeCategoryDrilldown) ||
+    hasPluginSubPage;
 
   useTabSwipeGesture({
     currentTab,
@@ -583,7 +585,7 @@ export function App() {
         )}
       </SubPageShell>
 
-      {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !activeDetailAccount && !activeCategoryDrilldown && (
+      {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !isDataManageOpen && !activeDetailAccount && !activeCategoryDrilldown && !hasPluginSubPage && (
         <BottomNav
           currentTab={currentTab}
           showAddButton={currentTab === 'ledger' || currentTab === 'items' || currentTab === 'assets'}

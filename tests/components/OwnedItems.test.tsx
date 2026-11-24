@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { OwnedItemsSummaryCard } from '../../src/plugins/owned-items/components/OwnedItemsSummaryCard';
+import { ItemDetailSubPage } from '../../src/plugins/owned-items/components/ItemDetailSubPage';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { useLedgerStore } from '../../src/stores/useLedgerStore';
@@ -68,5 +69,34 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
 
     expect(screen.getByText('暂无记录')).toBeInTheDocument();
     expect(screen.queryByText('新建')).not.toBeInTheDocument();
+  });
+
+  it('renders generic "物品详情" for physical items and "订阅详情" for subscriptions', () => {
+    const { rerender } = render(
+      <ItemDetailSubPage onClose={() => {}} params={{ itemId: 'item_switch' }} />
+    );
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('物品详情');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Nintendo Switch');
+
+    const subItem: Item = {
+      ...dummyItem,
+      id: 'sub_netflix',
+      name: 'Netflix',
+      kind: 'subscription',
+      billingCycle: 'month',
+    };
+    act(() => {
+      usePluginItemStore.setState({ items: [subItem] });
+    });
+
+    act(() => {
+      rerender(
+        <ItemDetailSubPage onClose={() => {}} params={{ itemId: 'sub_netflix' }} />
+      );
+    });
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('订阅详情');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Netflix');
   });
 });
