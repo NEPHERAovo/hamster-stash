@@ -220,8 +220,12 @@ export const WebDavSyncSection: React.FC = () => {
 
     setIsTesting(true);
     try {
-      await webdavClient.testConnection(currentConfig);
-      toast.success('WebDAV 连接成功');
+      const ok = await webdavClient.testConnection(currentConfig);
+      if (ok) {
+        toast.success('WebDAV 连接成功');
+      } else {
+        toast.error('WebDAV 连接失败，请检查配置与网络');
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '连接失败，请检查配置与网络');
     } finally {
@@ -430,6 +434,7 @@ export const WebDavSyncSection: React.FC = () => {
     const rh = new Headers(resp.headers);
     rh.set('Access-Control-Allow-Origin', '*');
     rh.set('Access-Control-Allow-Headers', '*');
+    rh.delete('www-authenticate');
     return new Response(resp.body, { status: resp.status, headers: rh });
   }
 };`}

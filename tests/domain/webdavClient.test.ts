@@ -98,7 +98,50 @@ describe('WebDavClient', () => {
     expect(calledUrl).toBe('https://dav-proxy.naera.dev/proxy/https%3A%2F%2Fdav.jianguoyun.com%2Fdav');
   });
 
-  it('formats helpful error message when TypeError occurs due to CORS', async () => {
+  it('throws descriptive error on 401 Unauthorized without triggering native browser basic auth', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const config: WebDavConfig = {
+      url: 'https://dav.jianguoyun.com/dav/',
+      username: 'user@example.com',
+      password: 'wrong-password',
+      proxyMode: 'builtin',
+    };
+
+    await expect(client.testConnection(config)).rejects.toThrow('401 Unauthorized');
+  });
+
+  it('throws descriptive error on 502 Bad Gateway', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 502 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const config: WebDavConfig = {
+      url: 'https://dav.jianguoyun.com/dav/',
+      username: 'user@example.com',
+      password: 'token-password',
+      proxyMode: 'builtin',
+    };
+
+    await expect(client.testConnection(config)).rejects.toThrow('502 Bad Gateway');
+  });
+
+  it('reports network error instead of false CORS error when builtin proxy fails', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const config: WebDavConfig = {
+      url: 'https://dav.jianguoyun.com/dav/',
+      username: 'user@example.com',
+      password: 'token-password',
+      proxyMode: 'builtin',
+    };
+
+    await expect(client.testConnection(config)).rejects.toThrow('网络连接异常或代理服务暂时不可达');
+    await expect(client.testConnection(config)).rejects.not.toThrow('CORS');
+  });
+
+  it('reports CORS and direct connection advice when direct mode fails', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -109,6 +152,6 @@ describe('WebDavClient', () => {
       proxyMode: 'direct',
     };
 
-    await expect(client.testConnection(config)).rejects.toThrow('CORS Error');
+    await expect(client.testConnection(config)).rejects.toThrow('CORS');
   });
 });

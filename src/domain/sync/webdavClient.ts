@@ -44,6 +44,36 @@ export class WebDavClient {
     return false;
   }
 
+  private handleHttpError(resp: Response, action: string): never {
+    if (resp.status === 401) {
+      throw new Error(`WebDAV ${action}失败 (401 Unauthorized)：账号或密码错误，请检查授权凭据`);
+    }
+    if (resp.status === 403) {
+      throw new Error(`WebDAV ${action}失败 (403 Forbidden)：无权访问该路径或应用密码受限`);
+    }
+    if (resp.status === 404) {
+      throw new Error(`WebDAV ${action}失败 (404 Not Found)：服务器地址或路径不存在`);
+    }
+    if (resp.status === 502) {
+      throw new Error(`WebDAV ${action}失败 (502 Bad Gateway)：代理网关无法连通目标网盘，请检查地址或网络`);
+    }
+    throw new Error(`WebDAV ${action}失败 (HTTP ${resp.status}): ${resp.statusText || '服务异常'}`);
+  }
+
+  private handleNetworkError(e: unknown, config: WebDavConfig, action: string): never {
+    if (e instanceof Error && !this.isCorsOrNetworkError(e)) {
+      throw e;
+    }
+    const mode = config.proxyMode || 'builtin';
+    if (mode === 'builtin') {
+      throw new Error(`WebDAV ${action}失败：网络连接异常或代理服务暂时不可达，请检查网络设置。`, { cause: e });
+    }
+    if (mode === 'custom') {
+      throw new Error(`WebDAV ${action}失败：无法连通自建代理网关，请检查代理地址是否正确及跨域响应头。`, { cause: e });
+    }
+    throw new Error(`WebDAV ${action}失败：网络异常或目标网盘未开启浏览器跨域 (CORS)。可切换为「内置代理」模式。`, { cause: e });
+  }
+
   private async executeFetch(
     config: WebDavConfig,
     targetUrl: string,
@@ -114,12 +144,13 @@ export class WebDavClient {
         });
       }
 
-      return resp.ok || resp.status === 207;
-    } catch (e) {
-      if (this.isCorsOrNetworkError(e)) {
-        throw new Error('WebDAV 连接失败：跨域请求受阻 (CORS Error)。坚果云等公有网盘未配置浏览器跨域允许头，直连会被拦截。可切换为「内置代理」或配置自建代理中转。', { cause: e });
+      if (resp.ok || resp.status === 207) {
+        return true;
       }
-      throw new Error(`连接 WebDAV 失败：${e instanceof Error ? e.message : '网络或跨域受阻'}`, { cause: e });
+
+      this.handleHttpError(resp, '连接');
+    } catch (e) {
+      this.handleNetworkError(e, config, '连接');
     }
   }
 
@@ -140,7 +171,7 @@ export class WebDavClient {
       }
 
       if (!resp.ok) {
-        throw new Error(`WebDAV GET 失败 (HTTP ${resp.status}): ${resp.statusText}`);
+        this.handleHttpError(resp, '读取');
       }
 
       return await resp.text();
@@ -148,10 +179,7 @@ export class WebDavClient {
       if (e instanceof Error && e.message.includes('404')) {
         return null;
       }
-      if (this.isCorsOrNetworkError(e)) {
-        throw new Error('WebDAV 读取失败：跨域限制 (CORS Error)。目标服务器未开放浏览器跨域响应头，可切换为「内置代理」或使用自建代理。', { cause: e });
-      }
-      throw e;
+      this.handleNetworkError(e, config, '读取');
     }
   }
 
@@ -192,27 +220,29 @@ export class WebDavClient {
         body: content,
       });
     } catch (e) {
-      if (this.isCorsOrNetworkError(e)) {
-        throw new Error('WebDAV 写入失败：跨域限制 (CORS Error)。目标服务器未开放浏览器跨域响应头，可切换为「内置代理」或使用自建代理。', { cause: e });
-      }
-      throw e;
+      this.handleNetworkError(e, config, '写入');
     }
 
     if (resp.status === 409) {
       await this.ensureParentDir(config, filename);
-      const retryResp = await this.executeFetch(config, targetUrl, {
-        method: 'PUT',
-        headers,
-        body: content,
-      });
+      let retryResp: Response;
+      try {
+        retryResp = await this.executeFetch(config, targetUrl, {
+          method: 'PUT',
+          headers,
+          body: content,
+        });
+      } catch (e) {
+        this.handleNetworkError(e, config, '写入');
+      }
       if (!retryResp.ok && retryResp.status !== 201 && retryResp.status !== 204) {
-        throw new Error(`WebDAV PUT 写入失败 (HTTP ${retryResp.status})`);
+        this.handleHttpError(retryResp, '写入');
       }
       return;
     }
 
     if (!resp.ok && resp.status !== 201 && resp.status !== 204) {
-      throw new Error(`WebDAV PUT 写入失败 (HTTP ${resp.status}): ${resp.statusText}`);
+      this.handleHttpError(resp, '写入');
     }
   }
 

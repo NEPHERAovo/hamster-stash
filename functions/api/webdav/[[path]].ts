@@ -70,8 +70,9 @@ export async function onRequest(context: EventContext): Promise<Response> {
       redirect: 'follow',
     };
 
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
+    if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
       fetchOptions.body = request.body;
+      (fetchOptions as unknown as { duplex: string }).duplex = 'half';
     }
 
     const response = await fetch(targetUrl, fetchOptions);
@@ -81,6 +82,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK');
     responseHeaders.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Depth, If-Match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, X-Target-URL, X-Requested-With, *');
     responseHeaders.set('Access-Control-Expose-Headers', '*');
+    responseHeaders.delete('www-authenticate');
 
     return new Response(response.body, {
       status: response.status,

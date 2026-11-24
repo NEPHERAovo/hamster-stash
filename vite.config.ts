@@ -38,7 +38,7 @@ function webdavDevProxyPlugin(): Plugin {
           for await (const chunk of req) {
             chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
           }
-          const body = ['GET', 'HEAD'].includes(req.method || 'GET') ? undefined : Buffer.concat(chunks);
+          const body = ['GET', 'HEAD'].includes(req.method || 'GET') || chunks.length === 0 ? undefined : Buffer.concat(chunks);
 
           const response = await fetch(targetUrl, {
             method: req.method,
@@ -54,6 +54,8 @@ function webdavDevProxyPlugin(): Plugin {
           respHeaders['Access-Control-Allow-Origin'] = '*';
           respHeaders['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, Depth, If-Match, If-None-Match, Lock-Token, Timeout, Destination, Overwrite, X-Target-URL, X-Requested-With, *';
           respHeaders['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK';
+          delete respHeaders['www-authenticate'];
+          delete respHeaders['WWW-Authenticate'];
 
           res.writeHead(response.status, respHeaders);
           const resBuffer = await response.arrayBuffer();
