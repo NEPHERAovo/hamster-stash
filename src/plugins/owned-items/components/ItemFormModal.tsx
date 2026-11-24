@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { CheckIcon as Check, CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { CheckIcon as Check, CalendarBlankIcon as CalendarBlank, DotsThreeIcon as DotsThree } from '@phosphor-icons/react';
 import {
   useHostAccounts,
   useHostTransactionActions,
@@ -9,6 +9,7 @@ import {
   toast,
   dayjs,
   todayDate,
+  cn,
   SegToggle,
   PaperButton,
   PaperIconButton,
@@ -17,6 +18,7 @@ import {
   PaperModal,
   AmountInput,
   PaperDatePickerModal,
+  PaperIconPickerModal,
 } from '../../../plugin-sdk';
 import type { Item, ItemStatus, ItemKind, SubscriptionCycle } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
@@ -60,8 +62,7 @@ const POPULAR_ITEM_ICONS = [
   'car',
   'bike',
   'armchair',
-  'box',
-  'package',
+  'gift',
 ];
 
 const POPULAR_SUB_ICONS = [
@@ -75,7 +76,6 @@ const POPULAR_SUB_ICONS = [
   'globe',
   'book-open',
   'graduation-cap',
-  'heart-pulse',
   'wrench',
 ];
 
@@ -207,7 +207,16 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
     }
   };
 
-  const currentIconChoices = kind === 'subscription' ? POPULAR_SUB_ICONS : POPULAR_ITEM_ICONS;
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+
+  const baseIcons = kind === 'subscription' ? POPULAR_SUB_ICONS : POPULAR_ITEM_ICONS;
+  const currentIconChoices = useMemo(() => {
+    if (icon && !baseIcons.includes(icon)) {
+      return [icon, ...baseIcons.slice(0, 10)];
+    }
+    return baseIcons;
+  }, [baseIcons, icon]);
+
   const getModalTitle = () => {
     if (editingItem) {
       if (editingItem.kind === 'subscription') return '编辑订阅';
@@ -267,7 +276,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           <label className="mb-1.5 block font-mono text-[11px] text-(--ink-tertiary)">
             图标
           </label>
-          <div className="grid grid-cols-6 justify-items-center gap-2">
+          <div className="grid grid-cols-6 gap-2">
             {currentIconChoices.map((ic) => {
               const IconComp = getCategoryIcon(ic);
               const isSelected = icon === ic;
@@ -277,14 +286,32 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   icon={IconComp}
                   size="md"
                   variant={isSelected ? 'primary' : 'sunken'}
-                  className="flex size-9 items-center justify-center"
+                  className={cn(
+                    'flex aspect-square h-auto w-full items-center justify-center transition-all',
+                    isSelected && 'ring-1 ring-(--color-income)'
+                  )}
                   onClick={() => setIcon(ic)}
                   title={ic}
                   aria-label={ic}
                 />
               );
             })}
+            <PaperIconButton
+              icon={DotsThree}
+              size="md"
+              variant="sunken"
+              className="flex aspect-square h-auto w-full items-center justify-center text-(--ink-tertiary) hover:text-(--ink-primary)"
+              onClick={() => setIsIconPickerOpen(true)}
+              title="更多图标"
+              aria-label="更多图标"
+            />
           </div>
+          <PaperIconPickerModal
+            isOpen={isIconPickerOpen}
+            onClose={() => setIsIconPickerOpen(false)}
+            selectedIcon={icon}
+            onSelect={(newIcon) => setIcon(newIcon)}
+          />
         </div>
 
         <div>
