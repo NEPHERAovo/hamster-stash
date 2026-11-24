@@ -36,14 +36,14 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
   const isActive = isCreateNew || Boolean(selectedItem);
   let displayText = '物品';
   if (isCreateNew) {
-    displayText = '+ 新物品';
+    displayText = itemExt?.kind === 'subscription' ? '+ 新订阅' : '+ 新物品';
   } else if (selectedItem) {
     displayText = selectedItem.name;
   }
 
   let badgeTitle = '关联物品';
   if (isCreateNew) {
-    badgeTitle = '将本笔支出记为新物品';
+    badgeTitle = itemExt?.kind === 'subscription' ? '将本笔支出记为新订阅' : '将本笔支出记为新物品';
   } else if (selectedItem) {
     badgeTitle = `已关联物品: ${selectedItem.name}`;
   }
@@ -58,8 +58,9 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
         rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
         onClick={toggleTray}
         title={badgeTitle}
+        className="max-w-28 shrink-0"
       >
-        <span className="max-w-16 truncate">{displayText}</span>
+        <span className="max-w-20 truncate">{displayText}</span>
       </PaperChip>
     </>
   );

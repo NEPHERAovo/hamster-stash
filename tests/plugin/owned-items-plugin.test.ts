@@ -6,6 +6,7 @@ import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
 import { OwnedItemsPlugin } from '../../src/plugins/owned-items';
 import { ItemRowBadge } from '../../src/plugins/owned-items/components/ItemRowBadge';
 import { ItemFormModal } from '../../src/plugins/owned-items/components/ItemFormModal';
+import { ItemMetaTrayPanel } from '../../src/plugins/owned-items/components/ItemMetaTrayPanel';
 import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
@@ -359,5 +360,51 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(getByText('2026-03-15')).toBeInTheDocument();
     expect(getByText('2026-04-15')).toBeInTheDocument();
     expect(getByText('新建订阅')).toBeInTheDocument();
+  });
+
+  it('ItemMetaTrayPanel renders long subscription and item names with truncation and full width classes', () => {
+    const longSubName = '域名-三年-naera.dev-cloudflare';
+    usePluginItemStore.setState({
+      items: [
+        {
+          id: 'sub_long',
+          name: longSubName,
+          kind: 'subscription',
+          status: 'using',
+          cost: 15000,
+          buyDate: '2026-01-01',
+          icon: 'globe',
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    });
+
+    const setExtKeySpy = vi.fn();
+    const { getByRole } = render(
+      React.createElement(ItemMetaTrayPanel, {
+        context: {
+          txType: 'expense',
+          dateStr: '2026-11-24',
+          ext: {
+            'owned-items': {
+              isTrayOpen: true,
+            },
+          },
+          setExtKey: setExtKeySpy,
+        },
+      })
+    );
+
+    const chip = getByRole('button', { name: longSubName });
+    expect(chip).toBeInTheDocument();
+    expect(chip.className).toContain('w-full');
+    expect(chip.className).toContain('min-w-0');
+    expect(chip.className).toContain('justify-start');
+    expect(chip.getAttribute('title')).toBe(longSubName);
+
+    const truncateSpan = chip.querySelector('span.truncate');
+    expect(truncateSpan).toBeInTheDocument();
+    expect(truncateSpan?.textContent).toBe(longSubName);
   });
 });

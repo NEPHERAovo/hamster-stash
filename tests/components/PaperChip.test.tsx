@@ -39,4 +39,19 @@ describe('PaperChip Component', () => {
     fireEvent.click(disabledChip);
     expect(handleClick).not.toHaveBeenCalled();
   });
+
+  it('renders long text with truncate classes and defaults title to string children', () => {
+    const longName = '域名-三年-naera.dev-cloudflare-very-long-name';
+    render(<PaperChip>{longName}</PaperChip>);
+
+    const chip = screen.getByRole('button', { name: longName });
+    expect(chip).toBeInTheDocument();
+    expect(chip.getAttribute('title')).toBe(longName);
+    expect(chip.className).toContain('min-w-0');
+    expect(chip.className).toContain('max-w-full');
+
+    const textSpan = chip.querySelector('span.truncate');
+    expect(textSpan).toBeInTheDocument();
+    expect(textSpan?.textContent).toBe(longName);
+  });
 });

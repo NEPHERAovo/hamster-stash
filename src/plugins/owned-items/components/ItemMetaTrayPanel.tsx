@@ -89,6 +89,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
             selected={isCreateNew && (!itemExt?.kind || itemExt?.kind === 'physical')}
             leftIcon={<Plus className="size-3.5 shrink-0 stroke-2" />}
             onClick={() => handleToggleCreateNew('physical')}
+            className="w-full min-w-0 justify-center"
           >
             记为新物品
           </PaperChip>
@@ -98,6 +99,7 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
             selected={isCreateNew && itemExt?.kind === 'subscription'}
             leftIcon={<Plus className="size-3.5 shrink-0 stroke-2" />}
             onClick={() => handleToggleCreateNew('subscription')}
+            className="w-full min-w-0 justify-center"
           >
             记为新订阅
           </PaperChip>
@@ -118,6 +120,8 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                     selected={isSelected}
                     leftIcon={<ItemIcon className="size-3 shrink-0 opacity-70" />}
                     onClick={() => handleSelectExistingItem(it.id, 'subscription')}
+                    className="w-full min-w-0 justify-start px-2"
+                    title={it.name}
                   >
                     {it.name}
                   </PaperChip>
@@ -146,6 +150,8 @@ export const ItemMetaTrayPanel: React.FC<ItemMetaTrayPanelProps> = ({ context })
                     selected={isSelected}
                     leftIcon={<ItemIcon className="size-3 shrink-0 opacity-70" />}
                     onClick={() => handleSelectExistingItem(it.id, 'physical')}
+                    className="w-full min-w-0 justify-start px-2"
+                    title={it.name}
                   >
                     {it.name}
                   </PaperChip>

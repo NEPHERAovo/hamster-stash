@@ -321,6 +321,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                       key={a.id}
                       selected={repaymentAccountId === a.id}
                       onClick={() => setRepaymentAccountId(a.id)}
+                      className="max-w-36"
                     >
                       {a.name}
                     </PaperChip>

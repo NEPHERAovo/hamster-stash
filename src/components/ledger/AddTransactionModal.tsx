@@ -1025,6 +1025,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <PaperChip
               selected={isAcctTrayOpen}
               rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
+              className="max-w-28 shrink-0"
               onClick={() => {
                 setIsAcctTrayOpen((prev) => !prev);
                 setIsDateTimePickerOpen(false);
@@ -1033,7 +1034,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 setIsOffsetTrayOpen(false);
               }}
             >
-              <span className="max-w-19 truncate">{activeAccount?.name || '选择账户'}</span>
+              <span className="max-w-20 truncate">{activeAccount?.name || '选择账户'}</span>
             </PaperChip>
 
             <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
@@ -1041,6 +1042,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <PaperChip
               selected={isDateTimePickerOpen}
               rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
+              className="shrink-0"
               onClick={() => {
                 setIsDateTimePickerOpen(true);
                 setIsAcctTrayOpen(false);
@@ -1059,6 +1061,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   <PaperChip
                     variant="expense"
                     selected={isReimbursable}
+                    className="shrink-0"
                     onClick={() => {
                       setIsReimbursable((prev) => {
                         const next = !prev;
@@ -1081,6 +1084,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       selected={Boolean(voucher)}
                       leftIcon={<Paperclip className="size-3 stroke-2" />}
                       title={voucher ? voucher.name : '添加凭证附件'}
+                      className="max-w-28 shrink-0"
                       onClick={() => {
                         if (voucher) {
                           setIsVoucherTrayOpen((prev) => !prev);
@@ -1092,7 +1096,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         }
                       }}
                     >
-                      <span className="shrink-0">{voucher ? '已附凭证' : '凭证'}</span>
+                      <span className="max-w-20 truncate">{voucher ? voucher.name || '已附凭证' : '凭证'}</span>
                     </PaperChip>
                   </>
                 )}
@@ -1103,6 +1107,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     <PaperChip
                       selected={Boolean(amortizeMonths) || isAmortizeTrayOpen}
                       rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
+                      className="shrink-0"
                       onClick={() => {
                         setIsAmortizeTrayOpen((prev) => !prev);
                         setIsAcctTrayOpen(false);
@@ -1124,13 +1129,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   variant="income"
                   selected={Boolean(offsetTransactionId) || isOffsetTrayOpen}
                   rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
+                  className="max-w-36 shrink-0"
                   onClick={() => {
                     setIsOffsetTrayOpen((prev) => !prev);
                     setIsAcctTrayOpen(false);
                     setIsDateTimePickerOpen(false);
                   }}
                 >
-                  <span className="max-w-22 truncate">
+                  <span className="max-w-26 truncate">
                     {selectedOffsetTx
                       ? `抵扣 · ${selectedOffsetTx.note || categories.find((c) => c.id === selectedOffsetTx.categoryId)?.name || '支出'}`
                       : '抵扣支出'}
@@ -1196,7 +1202,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       setSelectedAcctId(a.id);
                       setIsAcctTrayOpen(false);
                     }}
-                    className="max-w-35"
+                    className="max-w-36"
                   >
                     {a.name}
                   </PaperChip>

@@ -51,6 +51,7 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
               size="sm"
               selected={filterCatId === null}
               onClick={() => setFilterCatId(null)}
+              className="shrink-0"
             >
               全部
             </PaperChip>
@@ -60,6 +61,7 @@ export const OffsetTrayPanel: React.FC<OffsetTrayPanelProps> = ({
                 size="sm"
                 selected={filterCatId === cat.id}
                 onClick={() => setFilterCatId(cat.id)}
+                className="max-w-28 shrink-0"
               >
                 {cat.name}
               </PaperChip>

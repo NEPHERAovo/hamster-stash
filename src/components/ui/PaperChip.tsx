@@ -20,6 +20,7 @@ export const PaperChip = React.forwardRef<HTMLButtonElement, PaperChipProps>(
       rightIcon,
       disabled,
       children,
+      title,
       ...props
     },
     ref
@@ -48,13 +49,16 @@ export const PaperChip = React.forwardRef<HTMLButtonElement, PaperChipProps>(
         : 'border-(--rule-hairline)/60 bg-(--paper-sunken)/70 text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary)',
     };
 
+    const resolvedTitle = title ?? (typeof children === 'string' ? children : undefined);
+
     return (
       <button
         ref={ref}
         type="button"
         disabled={disabled}
+        title={resolvedTitle}
         className={cn(
-          'paper-chip',
+          'paper-chip inline-flex max-w-full min-w-0 items-center',
           sizeStyles[size],
           variantStyles[variant],
           className
@@ -62,7 +66,7 @@ export const PaperChip = React.forwardRef<HTMLButtonElement, PaperChipProps>(
         {...props}
       >
         {leftIcon && <span className="flex shrink-0 items-center">{leftIcon}</span>}
-        {children && <span>{children}</span>}
+        {children && <span className="min-w-0 truncate">{children}</span>}
         {rightIcon && <span className="flex shrink-0 items-center">{rightIcon}</span>}
       </button>
     );
