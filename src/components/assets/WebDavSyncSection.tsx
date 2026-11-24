@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CloudIcon as Cloud, ArrowsClockwiseIcon as RefreshCw, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, CheckIcon as Check, PlugsConnectedIcon as PlugZap } from '@phosphor-icons/react';
 import { syncService } from '../../domain/sync/syncService';
-import { webdavClient } from '../../domain/sync/webdavClient';
+import { webdavClient, type WebDavProxyMode } from '../../domain/sync/webdavClient';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
@@ -11,6 +11,7 @@ import { PaperButton } from '../ui/PaperButton';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperSwitch } from '../ui/PaperSwitch';
+import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
 import { formatMonthDayTime } from '../../utils/date';
 
@@ -20,6 +21,8 @@ export const WebDavSyncSection: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [syncPath, setSyncPath] = useState('');
+  const [proxyMode, setProxyMode] = useState<WebDavProxyMode>('builtin');
+  const [customProxyUrl, setCustomProxyUrl] = useState('');
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [autoSyncDaily, setAutoSyncDaily] = useState(false);
   const [syncAttachments, setSyncAttachments] = useState(false);
@@ -44,6 +47,8 @@ export const WebDavSyncSection: React.FC = () => {
           setUsername(config.username || '');
           setPassword(config.password || '');
           setSyncPath(config.syncPath || '');
+          setProxyMode(config.proxyMode || 'builtin');
+          setCustomProxyUrl(config.customProxyUrl || '');
         }
         if (lastSync) {
           setLastSyncAt(lastSync);
@@ -66,6 +71,8 @@ export const WebDavSyncSection: React.FC = () => {
     username: username.trim(),
     password: password.trim(),
     syncPath: syncPath.trim() || undefined,
+    proxyMode,
+    customProxyUrl: proxyMode === 'custom' ? customProxyUrl.trim() : undefined,
   };
 
   const handleToggleAutoSync = async () => {
@@ -219,17 +226,65 @@ export const WebDavSyncSection: React.FC = () => {
             <div className="space-y-1">
               <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">服务器地址</label>
               <PaperInput
-                placeholder="https://dav.your-server.com/"
+                placeholder="https://dav.jianguoyun.com/dav/"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="h-9 text-xs"
               />
-              {url.includes('jianguoyun.com') && (
-                <div className="mt-1.5 rounded-(--radius-sm) border border-dashed border-(--color-expense)/40 bg-(--color-expense-bg)/40 p-2 text-[11px] leading-relaxed text-(--color-expense)">
-                  坚果云未配置浏览器 CORS 跨域头，纯前端直连会被浏览器拦截。建议通过 Cloudflare Worker / Nginx 反向代理中转，或改用支持 CORS 的 Alist / Nextcloud。
+            </div>
+
+            <div className="space-y-1">
+              <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">网络中转模式</label>
+              <SegToggle
+                size="sm"
+                value={proxyMode}
+                onChange={(val) => setProxyMode(val as WebDavProxyMode)}
+                options={[
+                  { value: 'builtin', label: '内置代理 (免跨域)' },
+                  { value: 'direct', label: '直连模式' },
+                  { value: 'custom', label: '自建代理' },
+                ]}
+              />
+            </div>
+
+            {proxyMode === 'custom' && (
+              <div className="space-y-1">
+                <label className="px-0.5 text-[11px] font-medium text-(--ink-tertiary)">自建代理接口地址</label>
+                <PaperInput
+                  placeholder="https://dav.naera.dev/"
+                  value={customProxyUrl}
+                  onChange={(e) => setCustomProxyUrl(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              </div>
+            )}
+
+            <div className="rounded-(--radius-sm) border border-dashed border-(--rule-hairline) bg-(--paper-sunken)/60 p-2.5 text-[11px] leading-relaxed text-(--ink-secondary)">
+              <div className="mb-0.5 font-semibold text-(--ink-primary)">数据安全与隐私声明</div>
+              {proxyMode === 'builtin' && (
+                <div>
+                  • <strong>流式中转</strong>：请求经当前站点的 Cloudflare Pages 边缘函数透传，不落盘、不留存任何账本数据与授权密码。<br />
+                  • <strong>隐私提示</strong>：若访问他人托管的公有实例，密码及账本数据中途会流经该站点的 Cloudflare Edge。注重极致隐私建议自建 Pages 实例、自建 Worker 或使用局域网 Alist 直连。
+                </div>
+              )}
+              {proxyMode === 'direct' && (
+                <div>
+                  • <strong>完全直连</strong>：浏览器直接请求目标 WebDAV，数据绝不经过任何第三方。<br />
+                  • <strong>跨域要求</strong>：目标服务器必须配置 CORS 跨域允许头（如 Alist / Nextcloud / 自建 NAS），坚果云等公网云盘直连会被浏览器拦截。
+                </div>
+              )}
+              {proxyMode === 'custom' && (
+                <div>
+                  • <strong>自建代理</strong>：请求将转发至你指定的私有反代网关（如绑定的 `dav.naera.dev` 或私人 Worker），数据仅在你信任的节点流转。
                 </div>
               )}
             </div>
+
+            {proxyMode === 'direct' && url.includes('jianguoyun.com') && (
+              <div className="rounded-(--radius-sm) border border-dashed border-(--color-expense)/40 bg-(--color-expense-bg)/40 p-2 text-[11px] leading-relaxed text-(--color-expense)">
+                坚果云未配置浏览器 CORS 跨域头，在「直连模式」下会被浏览器拦截。建议切换为「内置代理」或使用自建代理。
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">

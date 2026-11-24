@@ -1,8 +1,12 @@
+export type WebDavProxyMode = 'direct' | 'builtin' | 'custom';
+
 export interface WebDavConfig {
   url: string;
   username: string;
   password: string;
   syncPath?: string;
+  proxyMode?: WebDavProxyMode;
+  customProxyUrl?: string;
 }
 
 export class WebDavClient {
@@ -39,6 +43,36 @@ export class WebDavClient {
     return false;
   }
 
+  private async executeFetch(
+    config: WebDavConfig,
+    targetUrl: string,
+    init: RequestInit
+  ): Promise<Response> {
+    const proxyMode = config.proxyMode || 'builtin';
+
+    if (proxyMode === 'builtin') {
+      const proxyEndpoint = '/api/webdav';
+      const headers = new Headers(init.headers);
+      headers.set('X-Target-URL', targetUrl);
+      return fetch(proxyEndpoint, {
+        ...init,
+        headers,
+      });
+    }
+
+    if (proxyMode === 'custom' && config.customProxyUrl) {
+      const proxyEndpoint = config.customProxyUrl.trim().replace(/\/+$/, '');
+      const headers = new Headers(init.headers);
+      headers.set('X-Target-URL', targetUrl);
+      return fetch(proxyEndpoint, {
+        ...init,
+        headers,
+      });
+    }
+
+    return fetch(targetUrl, init);
+  }
+
   async testConnection(config: WebDavConfig): Promise<boolean> {
     const baseUrl = config.url.trim().replace(/\/+$/, '');
     const headers = {
@@ -47,13 +81,13 @@ export class WebDavClient {
     };
 
     try {
-      let resp = await fetch(baseUrl, {
+      let resp = await this.executeFetch(config, baseUrl, {
         method: 'PROPFIND',
         headers,
       });
 
       if (resp.status === 405 || resp.status === 501) {
-        resp = await fetch(baseUrl, {
+        resp = await this.executeFetch(config, baseUrl, {
           method: 'GET',
           headers: { Authorization: this.getAuthHeader(config) },
         });
@@ -62,7 +96,7 @@ export class WebDavClient {
       return resp.ok || resp.status === 207;
     } catch (e) {
       if (this.isCorsOrNetworkError(e)) {
-        throw new Error('WebDAV 连接失败：跨域请求受阻 (CORS Error)。坚果云等公有网盘未配置浏览器跨域允许头，纯前端 PWA 无法直接连接。建议配置 Cloudflare Worker 反向代理或改用支持 CORS 的 WebDAV（如 Alist / Nextcloud）。', { cause: e });
+        throw new Error('WebDAV 连接失败：跨域请求受阻 (CORS Error)。坚果云等公有网盘未配置浏览器跨域允许头，直连会被拦截。可切换为「内置代理」或配置自建代理中转。', { cause: e });
       }
       throw new Error(`连接 WebDAV 失败：${e instanceof Error ? e.message : '网络或跨域受阻'}`, { cause: e });
     }
@@ -75,7 +109,7 @@ export class WebDavClient {
     };
 
     try {
-      const resp = await fetch(targetUrl, {
+      const resp = await this.executeFetch(config, targetUrl, {
         method: 'GET',
         headers,
       });
@@ -94,7 +128,7 @@ export class WebDavClient {
         return null;
       }
       if (this.isCorsOrNetworkError(e)) {
-        throw new Error('WebDAV 读取失败：跨域限制 (CORS Error)。服务器未开放浏览器跨域响应头，请通过反向代理中转或使用支持 CORS 的 WebDAV 服务。', { cause: e });
+        throw new Error('WebDAV 读取失败：跨域限制 (CORS Error)。目标服务器未开放浏览器跨域响应头，可切换为「内置代理」或使用自建代理。', { cause: e });
       }
       throw e;
     }
@@ -106,11 +140,11 @@ export class WebDavClient {
       Authorization: this.getAuthHeader(config),
     };
     try {
-      const headResp = await fetch(targetUrl, { method: 'HEAD', headers });
+      const headResp = await this.executeFetch(config, targetUrl, { method: 'HEAD', headers });
       if (headResp.ok) return true;
       if (headResp.status === 404) return false;
       if (headResp.status === 405 || headResp.status === 501) {
-        const propResp = await fetch(targetUrl, {
+        const propResp = await this.executeFetch(config, targetUrl, {
           method: 'PROPFIND',
           headers: { ...headers, Depth: '0' },
         });
@@ -131,21 +165,21 @@ export class WebDavClient {
 
     let resp: Response;
     try {
-      resp = await fetch(targetUrl, {
+      resp = await this.executeFetch(config, targetUrl, {
         method: 'PUT',
         headers,
         body: content,
       });
     } catch (e) {
       if (this.isCorsOrNetworkError(e)) {
-        throw new Error('WebDAV 写入失败：跨域限制 (CORS Error)。服务器未开放浏览器跨域响应头，请通过反向代理中转或使用支持 CORS 的 WebDAV 服务。', { cause: e });
+        throw new Error('WebDAV 写入失败：跨域限制 (CORS Error)。目标服务器未开放浏览器跨域响应头，可切换为「内置代理」或使用自建代理。', { cause: e });
       }
       throw e;
     }
 
     if (resp.status === 409) {
       await this.ensureParentDir(config, filename);
-      const retryResp = await fetch(targetUrl, {
+      const retryResp = await this.executeFetch(config, targetUrl, {
         method: 'PUT',
         headers,
         body: content,
@@ -180,7 +214,7 @@ export class WebDavClient {
     for (const part of parts) {
       current = `${current}/${part}`;
       try {
-        await fetch(current, {
+        await this.executeFetch(config, current, {
           method: 'MKCOL',
           headers: { Authorization: this.getAuthHeader(config) },
         });

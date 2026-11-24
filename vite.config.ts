@@ -1,7 +1,71 @@
 import { VitePWA } from 'vite-plugin-pwa';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+
+function webdavDevProxyPlugin(): Plugin {
+  return {
+    name: 'webdav-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/webdav', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK',
+            'Access-Control-Allow-Headers': '*',
+          });
+          res.end();
+          return;
+        }
+
+        const targetUrl = (req.headers['x-target-url'] as string) || new URL(req.url || '', 'http://localhost').searchParams.get('url');
+        if (!targetUrl) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing target URL in X-Target-URL header or ?url=' }));
+          return;
+        }
+
+        try {
+          const headers = new Headers();
+          for (const [k, v] of Object.entries(req.headers)) {
+            if (!['host', 'x-target-url', 'connection'].includes(k.toLowerCase()) && v) {
+              headers.set(k, Array.isArray(v) ? v.join(', ') : (v as string));
+            }
+          }
+          headers.set('Host', new URL(targetUrl).host);
+
+          const chunks: Uint8Array[] = [];
+          for await (const chunk of req) {
+            chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+          }
+          const body = ['GET', 'HEAD'].includes(req.method || 'GET') ? undefined : Buffer.concat(chunks);
+
+          const response = await fetch(targetUrl, {
+            method: req.method,
+            headers,
+            body,
+            redirect: 'follow',
+          });
+
+          const respHeaders: Record<string, string> = {};
+          response.headers.forEach((value, key) => {
+            respHeaders[key] = value;
+          });
+          respHeaders['Access-Control-Allow-Origin'] = '*';
+          respHeaders['Access-Control-Allow-Headers'] = '*';
+          respHeaders['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK';
+
+          res.writeHead(response.status, respHeaders);
+          const resBuffer = await response.arrayBuffer();
+          res.end(Buffer.from(resBuffer));
+        } catch (e: unknown) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
+        }
+      });
+    },
+  };
+}
 
 export default defineConfig({
   server: {
@@ -38,7 +102,7 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react(), tailwindcss(), VitePWA({
+  plugins: [webdavDevProxyPlugin(), react(), tailwindcss(), VitePWA({
     strategies: 'injectManifest',
     srcDir: 'src',
     filename: 'sw.ts',
