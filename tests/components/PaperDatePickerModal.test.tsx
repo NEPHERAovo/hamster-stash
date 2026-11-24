@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { PaperDatePickerModal } from '../../src/components/ui/PaperDatePickerModal';
-import { todayDate } from '../../src/utils/date';
+import { todayDate, dayjs } from '../../src/utils/date';
 
 describe('PaperDatePickerModal', () => {
   it('does not render when isOpen is false', () => {
@@ -340,6 +340,54 @@ describe('PaperDatePickerModal', () => {
     fireEvent.click(confirmBtn);
 
     expect(handleChange).toHaveBeenCalledWith('2026-11-15 07:30');
+  });
+
+  it('preserves initial datetime value when opened and does not reset to 00:00', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <PaperDatePickerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        mode="datetime"
+        value="2026-11-24 10:35"
+        onChange={handleChange}
+      />
+    );
+
+    // Initial value is 10:35, check selected items
+    const h10 = screen.getByRole('button', { name: '10时' });
+    const m35 = screen.getByRole('button', { name: '35分' });
+    expect(h10.getAttribute('data-selected')).toBe('true');
+    expect(m35.getAttribute('data-selected')).toBe('true');
+
+    const confirmBtn = screen.getByRole('button', { name: '确定' });
+    fireEvent.click(confirmBtn);
+
+    expect(handleChange).toHaveBeenCalledWith('2026-11-24 10:35');
+  });
+
+  it('clicking 现在 preset accurately updates time without reverting hour to 00', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <PaperDatePickerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        mode="datetime"
+        value="2026-11-24 08:00"
+        onChange={handleChange}
+      />
+    );
+
+    const nowBtn = screen.getByRole('button', { name: '现在' });
+    fireEvent.click(nowBtn);
+
+    const confirmBtn = screen.getByRole('button', { name: '确定' });
+    fireEvent.click(confirmBtn);
+
+    const expectedTime = dayjs().format('HH:mm');
+    expect(handleChange).toHaveBeenCalledWith(`2026-11-24 ${expectedTime}`);
   });
 
   it('allows returning from year or month subview back to calendar', () => {
