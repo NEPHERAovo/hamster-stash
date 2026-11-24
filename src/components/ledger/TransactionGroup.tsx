@@ -135,6 +135,20 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(tx);
     }
+    for (const dateKey of Object.keys(acc)) {
+      acc[dateKey].sort((a, b) => {
+        const timeA = a.createdAt || `${a.date}T00:00:00.000Z`;
+        const timeB = b.createdAt || `${b.date}T00:00:00.000Z`;
+        const msA = new Date(timeA).getTime();
+        const msB = new Date(timeB).getTime();
+        if (!Number.isNaN(msA) && !Number.isNaN(msB) && msA !== msB) {
+          return msB - msA;
+        }
+        const cmp = timeB.localeCompare(timeA);
+        if (cmp !== 0) return cmp;
+        return b.id.localeCompare(a.id);
+      });
+    }
     return acc;
   }, [filteredTransactions]);
 

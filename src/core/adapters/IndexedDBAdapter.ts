@@ -259,6 +259,12 @@ export class IndexedDBAdapter implements DataAdapter {
         const bVal = String((b as Record<string, unknown>)[options.orderBy!] ?? '');
         if (aVal < bVal) return -1 * order;
         if (aVal > bVal) return 1 * order;
+        if (options.orderBy === 'date') {
+          const aCreated = String((a as Record<string, unknown>).createdAt ?? '');
+          const bCreated = String((b as Record<string, unknown>).createdAt ?? '');
+          if (aCreated < bCreated) return -1 * order;
+          if (aCreated > bCreated) return 1 * order;
+        }
         return 0;
       });
     }

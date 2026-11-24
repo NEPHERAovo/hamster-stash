@@ -265,4 +265,56 @@ describe('TransactionGroup component', () => {
     expect(emptyContainer).not.toBeNull();
     expect(emptyContainer?.classList.contains('filter-fade-enter')).toBe(true);
   });
+
+  it('sorts transactions within the same date card in reverse chronological order from newest to oldest', () => {
+    const sameDayTransactions: Transaction[] = [
+      {
+        id: 'tx_morning',
+        type: 'expense',
+        amount: 1500,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-20',
+        createdAt: '2026-11-20T08:30:00.000Z',
+        updatedAt: '2026-11-20T08:30:00.000Z',
+        note: '早餐',
+      },
+      {
+        id: 'tx_noon',
+        type: 'expense',
+        amount: 3500,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-20',
+        createdAt: '2026-11-20T12:15:00.000Z',
+        updatedAt: '2026-11-20T12:15:00.000Z',
+        note: '午餐',
+      },
+      {
+        id: 'tx_night',
+        type: 'expense',
+        amount: 6000,
+        categoryId: 'cat_food',
+        accountId: 'acct_1',
+        date: '2026-11-20',
+        createdAt: '2026-11-20T19:45:00.000Z',
+        updatedAt: '2026-11-20T19:45:00.000Z',
+        note: '晚餐',
+      },
+    ];
+
+    const { container } = render(
+      <TransactionGroup
+        transactions={sameDayTransactions}
+        categories={mockCategories}
+        accounts={mockAccounts}
+      />
+    );
+
+    const rows = container.querySelectorAll('.entry-row');
+    expect(rows.length).toBe(3);
+    expect(rows[0]).toHaveTextContent('晚餐');
+    expect(rows[1]).toHaveTextContent('午餐');
+    expect(rows[2]).toHaveTextContent('早餐');
+  });
 });

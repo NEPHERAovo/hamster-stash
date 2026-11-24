@@ -51,9 +51,22 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const accountTxs = useMemo(() => {
-    return transactions.filter(
-      (t) => t.accountId === account.id || t.toAccountId === account.id
-    );
+    return transactions
+      .filter((t) => t.accountId === account.id || t.toAccountId === account.id)
+      .sort((a, b) => {
+        const dateCmp = b.date.localeCompare(a.date);
+        if (dateCmp !== 0) return dateCmp;
+        const timeA = a.createdAt || `${a.date}T00:00:00.000Z`;
+        const timeB = b.createdAt || `${b.date}T00:00:00.000Z`;
+        const msA = new Date(timeA).getTime();
+        const msB = new Date(timeB).getTime();
+        if (!Number.isNaN(msA) && !Number.isNaN(msB) && msA !== msB) {
+          return msB - msA;
+        }
+        const cmp = timeB.localeCompare(timeA);
+        if (cmp !== 0) return cmp;
+        return b.id.localeCompare(a.id);
+      });
   }, [transactions, account.id]);
 
   const [trendOffset, setTrendOffset] = useState<number>(0);
