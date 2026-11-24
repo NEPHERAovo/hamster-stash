@@ -314,96 +314,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           />
         </div>
 
-        <div>
-          <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-            {kind === 'subscription' ? '起始日期' : '购入日期'}
-          </label>
-          <PaperButton
-            variant="sunken"
-            size="md"
-            fullWidth
-            onClick={() => setIsBuyDateOpen(true)}
-            className="justify-start gap-2 border-(--rule-hairline) px-3 font-mono text-sm text-(--ink-primary) hover:border-(--border-strong)"
-            leftIcon={<CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />}
-          >
-            <span>{buyDate || '选择日期'}</span>
-          </PaperButton>
-          <PaperDatePickerModal
-            isOpen={isBuyDateOpen}
-            onClose={() => setIsBuyDateOpen(false)}
-            mode="date"
-            value={buyDate}
-            onChange={(val) => {
-              setBuyDate(val);
-              if (!editingItem && kind === 'subscription') {
-                setNextRenewalDate(calculateNextRenewalDate(val, billingCycle));
-              }
-            }}
-          />
-        </div>
-
-        {kind === 'subscription' && (
-          <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                  续费周期
-                </label>
-                <PaperSelect
-                  value={billingCycle}
-                  onChange={(e) => {
-                    const nextCycle = e.target.value as SubscriptionCycle;
-                    setBillingCycle(nextCycle);
-                    if (!editingItem) {
-                      setNextRenewalDate(calculateNextRenewalDate(buyDate, nextCycle));
-                    }
-                  }}
-                >
-                  <option value="monthly">按月</option>
-                  <option value="yearly">按年</option>
-                  <option value="quarterly">按季</option>
-                  <option value="weekly">按周</option>
-                </PaperSelect>
-              </div>
-
-              <div>
-                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                  续费金额
-                </label>
-                <AmountInput
-                  size="sm"
-                  value={renewalAmountYuan}
-                  onChange={setRenewalAmountYuan}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                下次续费日
-              </label>
-              <PaperButton
-                variant="sunken"
-                size="md"
-                fullWidth
-                onClick={() => setIsNextRenewalDateOpen(true)}
-                className="justify-start gap-2 border-(--rule-hairline) px-3 font-mono text-sm text-(--ink-primary) hover:border-(--border-strong)"
-                leftIcon={<CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />}
-              >
-                <span>{nextRenewalDate || '选择日期'}</span>
-              </PaperButton>
-              <PaperDatePickerModal
-                isOpen={isNextRenewalDateOpen}
-                onClose={() => setIsNextRenewalDateOpen(false)}
-                mode="date"
-                value={nextRenewalDate}
-                onChange={(val) => setNextRenewalDate(val)}
-              />
-            </div>
-          </div>
-        )}
-
         {!editingItem && (
           <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
             <div className="grid grid-cols-2 gap-3">
@@ -429,6 +339,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                   支出账户
                 </label>
                 <PaperSelect
+                  size="sm"
                   value={selectedAcctId}
                   onChange={(e) => setSelectedAcctId(e.target.value)}
                 >
@@ -443,6 +354,122 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
           </div>
         )}
 
+        {kind === 'subscription' ? (
+          <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  续费周期
+                </label>
+                <PaperSelect
+                  size="sm"
+                  value={billingCycle}
+                  onChange={(e) => {
+                    const nextCycle = e.target.value as SubscriptionCycle;
+                    setBillingCycle(nextCycle);
+                    if (!editingItem) {
+                      setNextRenewalDate(calculateNextRenewalDate(buyDate, nextCycle));
+                    }
+                  }}
+                >
+                  <option value="monthly">按月</option>
+                  <option value="yearly">按年</option>
+                  <option value="quarterly">按季</option>
+                  <option value="weekly">按周</option>
+                </PaperSelect>
+              </div>
+
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  每期金额
+                </label>
+                <AmountInput
+                  size="sm"
+                  value={renewalAmountYuan}
+                  onChange={setRenewalAmountYuan}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  起始日期
+                </label>
+                <PaperButton
+                  variant="sunken"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setIsBuyDateOpen(true)}
+                  className="justify-start gap-1.5 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
+                >
+                  <span className="truncate">{buyDate || '选择日期'}</span>
+                </PaperButton>
+                <PaperDatePickerModal
+                  isOpen={isBuyDateOpen}
+                  onClose={() => setIsBuyDateOpen(false)}
+                  mode="date"
+                  value={buyDate}
+                  onChange={(val) => {
+                    setBuyDate(val);
+                    if (!editingItem && kind === 'subscription') {
+                      setNextRenewalDate(calculateNextRenewalDate(val, billingCycle));
+                    }
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                  下次续费日
+                </label>
+                <PaperButton
+                  variant="sunken"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setIsNextRenewalDateOpen(true)}
+                  className="justify-start gap-1.5 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
+                >
+                  <span className="truncate">{nextRenewalDate || '选择日期'}</span>
+                </PaperButton>
+                <PaperDatePickerModal
+                  isOpen={isNextRenewalDateOpen}
+                  onClose={() => setIsNextRenewalDateOpen(false)}
+                  mode="date"
+                  value={nextRenewalDate}
+                  onChange={(val) => setNextRenewalDate(val)}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="border-t border-dashed border-(--rule-hairline) pt-2">
+            <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+              购入日期
+            </label>
+            <PaperButton
+              variant="sunken"
+              size="sm"
+              fullWidth
+              onClick={() => setIsBuyDateOpen(true)}
+              className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+              leftIcon={<CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />}
+            >
+              <span>{buyDate || '选择日期'}</span>
+            </PaperButton>
+            <PaperDatePickerModal
+              isOpen={isBuyDateOpen}
+              onClose={() => setIsBuyDateOpen(false)}
+              mode="date"
+              value={buyDate}
+              onChange={(val) => setBuyDate(val)}
+            />
+          </div>
+        )}
+
         <div>
           <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
             备注
@@ -451,10 +478,11 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="添加备注"
+            size="sm"
           />
         </div>
 
-        <div className="flex items-center gap-2 pt-2 pb-(--safe-bottom)">
+        <div className="sticky bottom-0 z-10 -mx-4 mt-3 -mb-4 flex items-center gap-2 border-t border-(--rule-hairline) bg-(--paper-sheet) px-4 py-3 pb-[calc(0.75rem+var(--safe-bottom))] shadow-xs">
           <PaperButton
             type="button"
             variant="sunken"
