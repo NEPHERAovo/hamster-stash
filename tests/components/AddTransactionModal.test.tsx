@@ -515,4 +515,52 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
       }
     });
   });
+
+  describe('Record Another ("再记一笔")', () => {
+    it('clears amount and note but preserves date, time, and category when clicking 再记一笔', async () => {
+      const recordSpy = vi.fn().mockImplementation(async (payload) => {
+        useAccountStore.setState({ accounts: [{ ...mockAccount, balance: mockAccount.balance - payload.amount }] });
+        return { id: 'new_tx', ...payload };
+      });
+      useLedgerStore.setState({ recordTransaction: recordSpy });
+
+      render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+      fireEvent.click(screen.getByText('5'));
+      fireEvent.click(screen.getByText('0'));
+
+      const noteInput = screen.getByPlaceholderText('添加备注...');
+      fireEvent.change(noteInput, { target: { value: '午餐咖啡' } });
+
+      const continueBtn = screen.getByText('再记一笔');
+      fireEvent.click(continueBtn);
+
+      await waitFor(() => {
+        expect(recordSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amount: 5000,
+            note: '午餐咖啡',
+            categoryId: 'cat_rent',
+          })
+        );
+      });
+
+      expect(noteInput).toHaveValue('');
+      expect(screen.getAllByText('0').length).toBeGreaterThanOrEqual(2);
+
+      fireEvent.click(screen.getByText('2'));
+      fireEvent.click(screen.getByText('0'));
+      fireEvent.click(continueBtn);
+
+      await waitFor(() => {
+        expect(recordSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amount: 2000,
+            note: undefined,
+            categoryId: 'cat_rent',
+          })
+        );
+      });
+    });
+  });
 });

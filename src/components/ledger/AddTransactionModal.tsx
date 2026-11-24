@@ -250,8 +250,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     }
   };
 
+  const prevIsOpenRef = useRef(false);
+  const prevEditingIdRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    if (isOpen) {
+    const wasOpen = prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+    const currentEditingId = editingTransaction?.id;
+    const editingChanged = currentEditingId !== prevEditingIdRef.current;
+    prevEditingIdRef.current = currentEditingId;
+
+    if (isOpen && (!wasOpen || editingChanged)) {
       setIsDateTimePickerOpen(false);
       setIsAcctTrayOpen(false);
       setIsVoucherTrayOpen(false);
@@ -304,7 +313,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setSelectedCatId('');
       }
     }
-  }, [isOpen, editingTransaction, accounts, initialExt]);
+  }, [isOpen, editingTransaction, initialExt]);
 
   const currentCategories = useMemo(() => {
     if (txType === 'loan') return [];
@@ -507,6 +516,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setIsOffsetTrayOpen(false);
         setVoucher(null);
         setExt({});
+        setIsReimbursable(false);
+        setAmortizeMonths(null);
+        setIsCustomAmortize(false);
+        setCustomAmortizeInput('');
       } else {
         closeWithAnimation(240);
       }
