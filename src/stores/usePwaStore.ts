@@ -75,13 +75,13 @@ export const usePwaStore = create<PwaState>((set, get) => ({
       try {
         await updateHandler(true);
       } catch {
-        // proceed to reload fallback
+        void 0;
       }
     }
 
     window.setTimeout(() => {
       window.location.reload();
-    }, 1200);
+    }, 3000);
   },
 
   checkForUpdates: async () => {

@@ -59,4 +59,37 @@ describe('usePwaStore', () => {
     expect(usePwaStore.getState().isInstalled).toBe(true);
     expect(usePwaStore.getState().installPrompt).toBeNull();
   });
+
+  it('triggers reload fallback after exactly 3000ms when applying update', async () => {
+    vi.useFakeTimers();
+    const reloadMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { reload: reloadMock },
+      writable: true,
+      configurable: true,
+    });
+
+    const updateHandlerMock = vi.fn().mockResolvedValue(undefined);
+    const postMessageMock = vi.fn();
+    const mockRegistration = {
+      waiting: { postMessage: postMessageMock },
+    } as unknown as ServiceWorkerRegistration;
+
+    usePwaStore.getState().bindServiceWorker(updateHandlerMock, mockRegistration);
+    const updatePromise = usePwaStore.getState().applyUpdate();
+    await Promise.resolve();
+
+    expect(usePwaStore.getState().isUpdating).toBe(true);
+    expect(postMessageMock).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    expect(updateHandlerMock).toHaveBeenCalledWith(true);
+
+    vi.advanceTimersByTime(2999);
+    expect(reloadMock).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(reloadMock).toHaveBeenCalledOnce();
+
+    await updatePromise;
+    vi.useRealTimers();
+  });
 });
