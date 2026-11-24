@@ -26,7 +26,7 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
       <div className="washi-tape absolute -top-2 left-1/2 z-10 -translate-x-1/2" />
 
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-[11px] font-medium text-(--ink-tertiary)">本月结余</span>
+        <span className="font-mono text-[11px] font-medium text-(--ink-tertiary)">本月支出</span>
         <span
           className={cn(
             'real-stamp',
@@ -38,7 +38,7 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
       </div>
 
       <div className="mb-2.5 font-mono text-2xl leading-tight font-bold tracking-tight text-(--ink-solid) tabular-nums sm:text-3xl">
-        ¥ {centsToYuan(summary.netBalance)}
+        ¥ {centsToYuan(summary.totalExpense)}
       </div>
 
       <div className="summary-card-divider flex items-center border-t border-dashed border-(--rule-strong) pt-2 font-mono text-[11px] tabular-nums">

@@ -18,17 +18,17 @@ describe('BalanceSummaryCard component', () => {
 
     expect(screen.queryByText(/November Ledger/i)).toBeNull();
 
-    expect(screen.getByText('本月结余')).toBeInTheDocument();
+    expect(screen.getByText('本月支出')).toBeInTheDocument();
 
     const stamp = screen.getByText('盈余');
     expect(stamp).toBeInTheDocument();
     expect(stamp.className).toContain('stamp-income');
 
-    const balances = screen.getAllByText(/12174\.50/);
-    expect(balances.length).toBe(2);
+    const expenses = screen.getAllByText(/325\.50/);
+    expect(expenses.length).toBe(2);
 
     expect(screen.getByText('+12500.00')).toBeInTheDocument();
-    expect(screen.getByText('325.50')).toBeInTheDocument();
+    expect(screen.getByText('+12174.50')).toBeInTheDocument();
   });
 
   it('renders deficit balance with 超支 stamp when netBalance is negative', () => {
@@ -46,7 +46,8 @@ describe('BalanceSummaryCard component', () => {
     expect(stamp).toBeInTheDocument();
     expect(stamp.className).not.toContain('stamp-income');
 
-    const balances = screen.getAllByText(/-2000\.00/);
-    expect(balances.length).toBe(2);
+    const expenses = screen.getAllByText(/3000\.00/);
+    expect(expenses.length).toBe(2);
+    expect(screen.getByText('-2000.00')).toBeInTheDocument();
   });
 });
