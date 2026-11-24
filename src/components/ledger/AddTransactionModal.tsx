@@ -943,15 +943,24 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 return (
                   <PaperButton
                     key={flow.id}
-                    variant={isSelected ? 'sunken' : 'ghost'}
+                    variant="ghost"
+                    size="compact"
                     onClick={() => setSelectedCatId(flow.id)}
                     className={cn(
                       'relative flex h-auto flex-col items-center justify-center rounded-none px-1 py-2 font-normal',
-                      hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
-                      isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs'
+                      hasRightBorder ? 'border-r border-dotted border-(--rule-hairline)' : 'border-r border-transparent',
+                      isSelected
+                        ? 'z-10 bg-(--paper-sunken) font-semibold text-(--ink-solid)'
+                        : 'bg-transparent text-(--ink-secondary) hover:bg-(--paper-sunken)/40 hover:text-(--ink-primary)'
                     )}
                   >
-                    <div className="mb-0.5 flex size-6 items-center justify-center">
+                    {isSelected && (
+                      <span
+                        className="pointer-events-none absolute inset-0 border border-(--rule-hairline) shadow-2xs"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center">
                       <IconComp
                         className={cn(
                           'stroke-1.8 size-4',
@@ -995,18 +1004,27 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   return (
                     <PaperButton
                       key={cat.id}
-                      variant={isSelected ? 'sunken' : 'ghost'}
+                      variant="ghost"
+                      size="compact"
                       onClick={() => {
                         setSelectedCatId(cat.id);
                       }}
                       className={cn(
                         'relative flex h-auto flex-col items-center justify-center rounded-none px-1 py-2 font-normal',
-                        hasRightBorder && 'border-r border-dotted border-(--rule-hairline)',
-                        hasBottomBorder && 'border-b border-dotted border-(--rule-hairline)',
-                        isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs'
+                        hasRightBorder ? 'border-r border-dotted border-(--rule-hairline)' : 'border-r border-transparent',
+                        hasBottomBorder ? 'border-b border-dotted border-(--rule-hairline)' : 'border-b border-transparent',
+                        isSelected
+                          ? 'z-10 bg-(--paper-sunken) font-semibold text-(--ink-solid)'
+                          : 'bg-transparent text-(--ink-secondary) hover:bg-(--paper-sunken)/40 hover:text-(--ink-primary)'
                       )}
                     >
-                      <div className="mb-0.5 flex size-6 items-center justify-center">
+                      {isSelected && (
+                        <span
+                          className="pointer-events-none absolute inset-0 border border-(--rule-hairline) shadow-2xs"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center">
                         <IconComp
                           className={cn(
                             'stroke-1.8 size-4',

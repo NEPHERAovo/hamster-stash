@@ -289,6 +289,40 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
     expect(categoryWrapper?.className).not.toContain('max-h-[38vh]');
   });
 
+  it('maintains fixed cell layout dimensions without border jumping between selected and unselected categories', () => {
+    const expenseFood: Category = {
+      id: 'cat_food',
+      name: '餐饮',
+      type: 'expense',
+      icon: 'utensils',
+      color: '#fff',
+      sortOrder: 2,
+      createdAt: '',
+      updatedAt: '',
+    };
+    useCategoryStore.setState({ categories: [mockCategory, expenseFood] });
+
+    render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+    const rentBtn = screen.getByText('房租').closest('button');
+    const foodBtn = screen.getByText('餐饮').closest('button');
+
+    expect(rentBtn).toBeInTheDocument();
+    expect(foodBtn).toBeInTheDocument();
+
+    expect(rentBtn?.className).toContain('bg-(--paper-sunken)');
+    expect(foodBtn?.className).toContain('bg-transparent');
+    expect(rentBtn?.className).toContain('px-1 py-2');
+    expect(foodBtn?.className).toContain('px-1 py-2');
+
+    fireEvent.click(foodBtn!);
+
+    expect(foodBtn?.className).toContain('bg-(--paper-sunken)');
+    expect(rentBtn?.className).toContain('bg-transparent');
+    expect(foodBtn?.className).toContain('px-1 py-2');
+    expect(rentBtn?.className).toContain('px-1 py-2');
+  });
+
   describe('Time-based Frequent Category Prediction', () => {
     const expenseTransit: Category = {
       id: 'cat_transit',
