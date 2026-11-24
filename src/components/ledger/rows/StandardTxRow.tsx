@@ -122,6 +122,11 @@ export const StandardTxRow: React.FC<StandardTxRowProps> = ({
               {formatOffsetIncomeText()}
             </span>
           )}
+          {account?.includeInNetWorth === false && (
+            <span className="real-stamp px-1 py-0.5 text-[9px] text-(--ink-tertiary)">
+              不计收支
+            </span>
+          )}
           <PluginSlot name="tx.row.badges" context={{ transaction, category, account }} />
         </div>
 

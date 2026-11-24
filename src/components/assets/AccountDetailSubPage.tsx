@@ -367,12 +367,12 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
           )}
 
           <div className="flex items-center justify-between py-2">
-            <span className="text-(--ink-tertiary)">计入净资产</span>
+            <span className="text-(--ink-tertiary)">计入净资产与统计</span>
             {onToggleIncludeInNetWorth ? (
               <PaperSwitch
                 checked={isIncludedInNetWorth}
                 onChange={handleToggleNetWorth}
-                aria-label="计入净资产"
+                aria-label="计入净资产与统计"
               />
             ) : (
               <span

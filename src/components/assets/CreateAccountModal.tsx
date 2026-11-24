@@ -370,11 +370,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         )}
 
         <div className="flex items-center justify-between rounded-(--input-radius) border border-(--rule-hairline) bg-(--paper-sunken)/70 px-3 py-2.5">
-          <span className="text-xs font-medium text-(--ink-primary)">计入净资产</span>
+          <span className="text-xs font-medium text-(--ink-primary)">计入净资产与统计</span>
           <PaperSwitch
             checked={includeInNetWorth}
             onChange={setIncludeInNetWorth}
-            aria-label="计入净资产"
+            aria-label="计入净资产与统计"
           />
         </div>
 

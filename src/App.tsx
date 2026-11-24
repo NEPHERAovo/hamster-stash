@@ -264,14 +264,24 @@ export function App() {
 
   const displayTransactions = allTransactions.length > 0 ? allTransactions : transactions;
 
+  const includedAccountIds = useMemo(
+    () => new Set(accounts.filter((a) => !a.isArchived && a.includeInNetWorth !== false).map((a) => a.id)),
+    [accounts]
+  );
+
+  const statsTransactions = useMemo(
+    () => displayTransactions.filter((t) => includedAccountIds.has(t.accountId)),
+    [displayTransactions, includedAccountIds]
+  );
+
   const currentMonthTransactions = useMemo(
     () => displayTransactions.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth)),
     [displayTransactions, currentMonth]
   );
 
   const displayMonthSummary = useMemo(() => {
-    return computeMonthSummary(currentMonthTransactions, displayTransactions);
-  }, [currentMonthTransactions, displayTransactions]);
+    return computeMonthSummary(currentMonthTransactions, displayTransactions, { includedAccountIds });
+  }, [currentMonthTransactions, displayTransactions, includedAccountIds]);
 
   const renderHeader = () => {
     if (currentTab === 'ledger') {
@@ -399,7 +409,7 @@ export function App() {
           {currentTab === 'stats' && (
             <div className="w-full px-4">
               <StatsView
-                allTransactions={displayTransactions}
+                allTransactions={statsTransactions}
                 categories={categories}
                 accounts={accounts}
                 mode={statsMode}

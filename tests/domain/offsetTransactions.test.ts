@@ -298,5 +298,56 @@ describe('AA 分摊 / 收入抵扣支出统计与业务核心', () => {
       expect(summary.totalIncome).toBe(0);
       expect(summary.totalExpense).toBe(0);
     });
+
+    it('computeMonthSummary properly respects includedAccountIds filter', () => {
+      const tx1: Transaction = {
+        id: 'tx_1',
+        type: 'expense',
+        amount: 5000,
+        categoryId: 'cat_food',
+        accountId: 'acct_personal',
+        date: '2026-11-01',
+        createdAt: '2026-11-01T10:00:00.000Z',
+        updatedAt: '2026-11-01T10:00:00.000Z',
+      };
+      const tx2: Transaction = {
+        id: 'tx_2',
+        type: 'expense',
+        amount: 10000,
+        categoryId: 'cat_family',
+        accountId: 'acct_family_excluded',
+        date: '2026-11-02',
+        createdAt: '2026-11-02T10:00:00.000Z',
+        updatedAt: '2026-11-02T10:00:00.000Z',
+      };
+      const tx3: Transaction = {
+        id: 'tx_3',
+        type: 'income',
+        amount: 20000,
+        categoryId: 'cat_salary',
+        accountId: 'acct_personal',
+        date: '2026-11-05',
+        createdAt: '2026-11-05T10:00:00.000Z',
+        updatedAt: '2026-11-05T10:00:00.000Z',
+      };
+      const tx4: Transaction = {
+        id: 'tx_4',
+        type: 'income',
+        amount: 8000,
+        categoryId: 'cat_family_in',
+        accountId: 'acct_family_excluded',
+        date: '2026-11-06',
+        createdAt: '2026-11-06T10:00:00.000Z',
+        updatedAt: '2026-11-06T10:00:00.000Z',
+      };
+
+      const all = [tx1, tx2, tx3, tx4];
+      const included = new Set(['acct_personal']);
+      const filteredSummary = computeMonthSummary(all, all, { includedAccountIds: included });
+
+      expect(filteredSummary.totalExpense).toBe(5000);
+      expect(filteredSummary.totalIncome).toBe(20000);
+      expect(filteredSummary.netBalance).toBe(15000);
+    });
   });
 });

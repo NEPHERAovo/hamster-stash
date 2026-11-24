@@ -84,7 +84,11 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
     const currentMonth = get().currentMonth || currentYearMonth();
     const monthTxs = all.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth));
-    const summary = computeMonthSummary(monthTxs, all);
+    const accounts = useAccountStore.getState().accounts;
+    const includedAccountIds = accounts.length > 0
+      ? new Set(accounts.filter((a) => !a.isArchived && a.includeInNetWorth !== false).map((a) => a.id))
+      : undefined;
+    const summary = computeMonthSummary(monthTxs, all, includedAccountIds ? { includedAccountIds } : undefined);
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 
     set({
@@ -104,7 +108,11 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
     const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
     const monthTxs = all.filter((tx) => typeof tx.date === 'string' && tx.date.startsWith(month));
-    const summary = computeMonthSummary(monthTxs, all);
+    const accounts = useAccountStore.getState().accounts;
+    const includedAccountIds = accounts.length > 0
+      ? new Set(accounts.filter((a) => !a.isArchived && a.includeInNetWorth !== false).map((a) => a.id))
+      : undefined;
+    const summary = computeMonthSummary(monthTxs, all, includedAccountIds ? { includedAccountIds } : undefined);
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 
     set({

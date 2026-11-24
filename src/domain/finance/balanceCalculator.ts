@@ -40,13 +40,22 @@ export function computeEffectiveExpenseAmount(
  */
 export function computeMonthSummary(
   transactions: Transaction[],
-  allTransactions?: Transaction[]
+  allTransactions?: Transaction[],
+  options?: { includedAccountIds?: Set<string> }
 ): MonthSummary {
-  const offsetMap = buildOffsetMap(allTransactions || transactions);
+  const allTxs = allTransactions || transactions;
+  const filteredAll = options?.includedAccountIds
+    ? allTxs.filter((t) => options.includedAccountIds!.has(t.accountId))
+    : allTxs;
+  const filteredCurrent = options?.includedAccountIds
+    ? transactions.filter((t) => options.includedAccountIds!.has(t.accountId))
+    : transactions;
+
+  const offsetMap = buildOffsetMap(filteredAll);
   let totalIncome = 0;
   let totalExpense = 0;
 
-  for (const tx of transactions) {
+  for (const tx of filteredCurrent) {
     if (tx.type === 'income') {
       if (!tx.offsetTransactionId) {
         totalIncome += tx.amount;
