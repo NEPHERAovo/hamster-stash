@@ -481,4 +481,21 @@ describe('Modular Stats & UI Components', () => {
     fireEvent.click(centerDateBtn);
     expect(screen.getByText('选择年份')).toBeInTheDocument();
   });
+
+  it('uses flex column gap layout to preserve spacing between composition and trend charts', () => {
+    const { container } = render(
+      <StatsView
+        allTransactions={[]}
+        categories={[]}
+        accounts={[]}
+      />
+    );
+
+    const rootEl = container.firstElementChild;
+    expect(rootEl?.className).toContain('flex');
+    expect(rootEl?.className).toContain('flex-col');
+    expect(rootEl?.className).toContain('gap-3.5');
+    expect(rootEl?.querySelector('.tab-stagger-1')).toBeInTheDocument();
+    expect(rootEl?.querySelector('.tab-stagger-2')).toBeInTheDocument();
+  });
 });

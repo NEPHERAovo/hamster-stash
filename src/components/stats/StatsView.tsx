@@ -405,9 +405,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
   };
 
   return (
-    <div className="pb-6">
+    <div className="flex flex-col gap-3.5 pb-6">
       {!controlledMode && (
-        <div className="flex justify-center pb-3.5">
+        <div className="flex justify-center pt-2">
           <SegToggle
             options={[
               { value: 'week', label: '周' },
@@ -457,7 +457,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
         />
       </div>
 
-      <div className="tab-stagger-1 mt-3.5 space-y-2">
+      <div className="tab-stagger-1 flex flex-col gap-2">
         <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-colors duration-200 select-none sm:p-5">
           <div className="flex items-center justify-between gap-2 select-none">
             <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
@@ -617,7 +617,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
         />
       </div>
 
-      <div className="tab-stagger-3 space-y-1.5 pt-1">
+      <div className="tab-stagger-3 flex flex-col gap-1.5 pt-1">
         <div className="flex items-center justify-between px-1 select-none">
           <span className="text-xs font-semibold text-(--ink-secondary)">
             周期账单
