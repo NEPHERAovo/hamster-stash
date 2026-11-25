@@ -40,7 +40,7 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
   };
 
   beforeEach(() => {
-    usePluginItemStore.setState({ items: [dummyItem], loading: false });
+    usePluginItemStore.setState({ items: [dummyItem], loading: false, sortOption: 'date-desc' });
     useLedgerStore.setState({ transactions: [dummyTx], allTransactions: [dummyTx] });
     usePluginUIStore.setState({
       registeredSubPages: { 'item-list': () => React.createElement('div', null, 'ItemList') },
@@ -218,6 +218,63 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
     fireEvent.click(soldBtn);
     expect(screen.getByText('Sony Camera')).toBeInTheDocument();
     expect(screen.queryByText('Nintendo Switch')).toBeNull();
+  });
+
+  it('reorders items in ItemListSubPage when selecting time, cost, and daily cost sort options', () => {
+    const itemA: Item = {
+      ...dummyItem,
+      id: 'item_a',
+      name: '物品A_最贵但早买',
+      buyDate: '2026-01-01',
+      endDate: '2026-01-20',
+    };
+    const itemB: Item = {
+      ...dummyItem,
+      id: 'item_b',
+      name: '物品B_最便宜最新',
+      buyDate: '2026-11-01',
+      endDate: '2026-11-02',
+    };
+    const itemC: Item = {
+      ...dummyItem,
+      id: 'item_c',
+      name: '物品C_日均最高',
+      buyDate: '2026-06-01',
+      endDate: '2026-06-02',
+    };
+
+    const txs: Transaction[] = [
+      { ...dummyTx, id: 'tx_a', amount: 300000, ext: { 'owned-items': { itemId: 'item_a', itemRole: 'buy' } } },
+      { ...dummyTx, id: 'tx_b', amount: 10000, ext: { 'owned-items': { itemId: 'item_b', itemRole: 'buy' } } },
+      { ...dummyTx, id: 'tx_c', amount: 100000, ext: { 'owned-items': { itemId: 'item_c', itemRole: 'buy' } } },
+    ];
+
+    act(() => {
+      usePluginItemStore.setState({ items: [itemA, itemB, itemC], loading: false, sortOption: 'date-desc' });
+      useLedgerStore.setState({ transactions: txs, allTransactions: txs });
+    });
+
+    const { container } = render(<ItemListSubPage />);
+
+    const getCardNames = () =>
+      Array.from(container.querySelectorAll('[role="button"] span.font-semibold.truncate')).map(
+        (el) => el.textContent
+      );
+
+    expect(getCardNames()).toEqual(['物品B_最便宜最新', '物品C_日均最高', '物品A_最贵但早买']);
+
+    const sortPill = screen.getByRole('combobox', { name: '排序方式' });
+    expect(sortPill.textContent).toContain('时间 ↓');
+
+    fireEvent.click(sortPill);
+    fireEvent.click(screen.getByRole('option', { name: '按费用 · 从高到低' }));
+    expect(sortPill.textContent).toContain('费用 ↓');
+    expect(getCardNames()).toEqual(['物品A_最贵但早买', '物品C_日均最高', '物品B_最便宜最新']);
+
+    fireEvent.click(sortPill);
+    fireEvent.click(screen.getByRole('option', { name: '按日均 · 从高到低' }));
+    expect(sortPill.textContent).toContain('日均 ↓');
+    expect(getCardNames()).toEqual(['物品C_日均最高', '物品A_最贵但早买', '物品B_最便宜最新']);
   });
 
   it('links an existing unlinked expense in-place when creating a new item in ItemFormModal', async () => {

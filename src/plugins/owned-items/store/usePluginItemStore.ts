@@ -1,13 +1,27 @@
 import { create } from 'zustand';
-import type { PluginCollection } from '../../../plugin-sdk';
-import type { Item, ItemStatus, ItemKind, SubscriptionCycle } from '../types';
+import type { PluginCollection, PluginContext } from '../../../plugin-sdk';
+import type { Item, ItemStatus, ItemKind, ItemSortOption, SubscriptionCycle } from '../types';
+
+const VALID_SORT_OPTIONS: readonly ItemSortOption[] = [
+  'date-desc',
+  'date-asc',
+  'cost-desc',
+  'cost-asc',
+  'daily-desc',
+  'daily-asc',
+];
 
 let itemCollection: PluginCollection<Item> | null = null;
+let pluginSettings: PluginContext['settings'] | null = null;
 
 interface PluginItemState {
   items: Item[];
   loading: boolean;
+  sortOption: ItemSortOption;
   setCollection: (col: PluginCollection<Item>) => void;
+  setSettings: (settings: PluginContext['settings']) => void;
+  loadSortOption: () => Promise<void>;
+  setSortOption: (sortOption: ItemSortOption) => void;
   loadItems: () => Promise<void>;
   createItem: (input: {
     name: string;
@@ -28,9 +42,31 @@ interface PluginItemState {
 export const usePluginItemStore = create<PluginItemState>((set, get) => ({
   items: [],
   loading: false,
+  sortOption: 'date-desc',
 
   setCollection: (col) => {
     itemCollection = col;
+  },
+
+  setSettings: (settings) => {
+    pluginSettings = settings;
+  },
+
+  loadSortOption: async () => {
+    if (!pluginSettings) return;
+    try {
+      const saved = await pluginSettings.get<string>('sortOption', 'date-desc');
+      if (VALID_SORT_OPTIONS.includes(saved as ItemSortOption)) {
+        set({ sortOption: saved as ItemSortOption });
+      }
+    } catch {
+      void 0;
+    }
+  },
+
+  setSortOption: (sortOption) => {
+    set({ sortOption });
+    void pluginSettings?.set('sortOption', sortOption);
   },
 
   loadItems: async () => {

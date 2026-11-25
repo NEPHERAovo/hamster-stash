@@ -42,7 +42,7 @@ export { PaperButton, type PaperButtonProps } from '../components/ui/PaperButton
 export { PaperIconButton, type PaperIconButtonProps } from '../components/ui/PaperIconButton';
 export { PaperInput, type PaperInputProps } from '../components/ui/PaperInput';
 export { AmountInput, type AmountInputProps } from '../components/ui/AmountInput';
-export { PaperSelect, type PaperSelectProps } from '../components/ui/PaperSelect';
+export { PaperSelect, type PaperSelectProps, type PaperSelectOption } from '../components/ui/PaperSelect';
 export { PaperChip, type PaperChipProps } from '../components/ui/PaperChip';
 export { PaperModal, type PaperModalProps } from '../components/ui/PaperModal';
 export { PaperBadge, type PaperBadgeProps } from '../components/ui/PaperBadge';

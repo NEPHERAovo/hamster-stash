@@ -11,8 +11,10 @@ import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
 import {
+  buildItemMetricsMap,
   computeItemMetrics,
   computeOverallItemMetrics,
+  sortItems,
 } from '../../src/plugins/owned-items/domain/itemCalculator';
 import type { Item } from '../../src/plugins/owned-items/types';
 import type { Transaction } from '../../src/plugin-sdk';
@@ -644,5 +646,109 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(queryByText('记为新物品')).toBeNull();
     expect(getByRole('button', { name: '售出' })).toBeInTheDocument();
     expect(getByRole('button', { name: '收益' })).toBeInTheDocument();
+  });
+
+  it('sorts items accurately by buyDate, grossCost, and dailyCost in both directions', () => {
+    const items: Item[] = [
+      {
+        id: 'item_old_cheap',
+        name: '旧耳机',
+        icon: 'headphones',
+        status: 'using',
+        buyDate: '2026-01-01',
+        endDate: '2026-01-20',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'item_mid_mid',
+        name: '中相机',
+        icon: 'camera',
+        status: 'using',
+        buyDate: '2026-06-01',
+        endDate: '2026-06-10',
+        createdAt: '2026-06-01T00:00:00Z',
+        updatedAt: '2026-06-01T00:00:00Z',
+      },
+      {
+        id: 'item_new_expensive',
+        name: '新电脑',
+        icon: 'laptop',
+        status: 'using',
+        buyDate: '2026-11-01',
+        endDate: '2026-11-02',
+        createdAt: '2026-11-01T00:00:00Z',
+        updatedAt: '2026-11-01T00:00:00Z',
+      },
+    ];
+
+    const transactions: Transaction[] = [
+      {
+        id: 'tx_1',
+        type: 'expense',
+        amount: 20000,
+        accountId: 'acct_1',
+        categoryId: 'cat_digital',
+        date: '2026-01-01',
+        ext: { 'owned-items': { itemId: 'item_old_cheap', itemRole: 'buy' } },
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'tx_2',
+        type: 'expense',
+        amount: 100000,
+        accountId: 'acct_1',
+        categoryId: 'cat_digital',
+        date: '2026-06-01',
+        ext: { 'owned-items': { itemId: 'item_mid_mid', itemRole: 'buy' } },
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: 'tx_3',
+        type: 'expense',
+        amount: 50000,
+        accountId: 'acct_1',
+        categoryId: 'cat_digital',
+        date: '2026-11-01',
+        ext: { 'owned-items': { itemId: 'item_new_expensive', itemRole: 'buy' } },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ];
+
+    const metricsMap = buildItemMetricsMap(items, transactions);
+
+    expect(sortItems(items, metricsMap, 'date-desc').map((i) => i.id)).toEqual([
+      'item_new_expensive',
+      'item_mid_mid',
+      'item_old_cheap',
+    ]);
+    expect(sortItems(items, metricsMap, 'date-asc').map((i) => i.id)).toEqual([
+      'item_old_cheap',
+      'item_mid_mid',
+      'item_new_expensive',
+    ]);
+    expect(sortItems(items, metricsMap, 'cost-desc').map((i) => i.id)).toEqual([
+      'item_mid_mid',
+      'item_new_expensive',
+      'item_old_cheap',
+    ]);
+    expect(sortItems(items, metricsMap, 'cost-asc').map((i) => i.id)).toEqual([
+      'item_old_cheap',
+      'item_new_expensive',
+      'item_mid_mid',
+    ]);
+    expect(sortItems(items, metricsMap, 'daily-desc').map((i) => i.id)).toEqual([
+      'item_new_expensive',
+      'item_mid_mid',
+      'item_old_cheap',
+    ]);
+    expect(sortItems(items, metricsMap, 'daily-asc').map((i) => i.id)).toEqual([
+      'item_old_cheap',
+      'item_mid_mid',
+      'item_new_expensive',
+    ]);
   });
 });

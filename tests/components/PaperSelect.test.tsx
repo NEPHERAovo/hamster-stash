@@ -151,4 +151,47 @@ describe('PaperSelect', () => {
     expect(event.target.value).toBe('cat_transit');
     expect(val).toBe('cat_transit');
   });
+
+  it('displays shortLabel on trigger while listing full label and supports right-aligned xs pill', () => {
+    const handleChange = vi.fn();
+    vi.stubGlobal('innerWidth', 400);
+
+    const { container } = render(
+      <PaperSelect
+        size="xs"
+        popupAlign="right"
+        popupMinWidth={170}
+        containerClassName="w-auto shrink-0"
+        value="date-desc"
+        onChange={handleChange}
+        options={[
+          { value: 'date-desc', label: '按时间 · 从新到旧', shortLabel: '时间 ↓' },
+          { value: 'cost-desc', label: '按费用 · 从高到低', shortLabel: '费用 ↓' },
+        ]}
+      />
+    );
+
+    const wrapper = container.firstElementChild as HTMLElement;
+    vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      bottom: 130,
+      left: 310,
+      right: 384,
+      width: 74,
+      height: 30,
+      x: 310,
+      y: 100,
+      toJSON: () => {},
+    });
+
+    const combobox = screen.getByRole('combobox');
+    expect(combobox.textContent).toContain('时间 ↓');
+    expect(combobox.textContent).not.toContain('按时间 · 从新到旧');
+
+    fireEvent.click(combobox);
+
+    const listbox = screen.getByRole('listbox');
+    expect(listbox.style.left).toBe('214px');
+    expect(screen.getByRole('option', { name: '按费用 · 从高到低' })).toBeInTheDocument();
+  });
 });

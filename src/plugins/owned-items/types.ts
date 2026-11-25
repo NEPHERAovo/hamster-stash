@@ -6,6 +6,14 @@ export type SubscriptionCycle = 'monthly' | 'yearly' | 'weekly' | 'quarterly';
 
 export type ItemRole = 'buy' | 'maintenance' | 'sell' | 'profit';
 
+export type ItemSortOption =
+  | 'date-desc'
+  | 'date-asc'
+  | 'cost-desc'
+  | 'cost-asc'
+  | 'daily-desc'
+  | 'daily-asc';
+
 export interface Item {
   id: string;
   name: string;

@@ -2,6 +2,7 @@ import type { Transaction } from '../../../plugin-sdk';
 import {
   type Item,
   type ItemMetrics,
+  type ItemSortOption,
   type ItemStatus,
   type OverallItemMetrics,
   getOwnedItemExt,
@@ -30,11 +31,7 @@ export function calculateHoldingDays(buyDate: string, endDate?: string): number 
   return Math.max(1, diffDays + 1);
 }
 
-export function computeItemMetrics(item: Item, transactions: Transaction[]): ItemMetrics {
-  const itemTxs = transactions.filter((t) => {
-    return getOwnedItemExt(t.ext)?.itemId === item.id;
-  });
-
+function computeMetricsForTransactions(item: Item, itemTxs: Transaction[]): ItemMetrics {
   let grossCost = 0;
   let recoveredAmount = 0;
 
@@ -69,9 +66,77 @@ export function computeItemMetrics(item: Item, transactions: Transaction[]): Ite
   };
 }
 
-export function computeOverallItemMetrics(
+export function computeItemMetrics(item: Item, transactions: Transaction[]): ItemMetrics {
+  const itemTxs = transactions.filter((t) => getOwnedItemExt(t.ext)?.itemId === item.id);
+  return computeMetricsForTransactions(item, itemTxs);
+}
+
+export function buildItemMetricsMap(
   items: Item[],
   transactions: Transaction[]
+): Map<string, ItemMetrics> {
+  const grouped = new Map<string, Transaction[]>();
+  for (const tx of transactions) {
+    const itemId = getOwnedItemExt(tx.ext)?.itemId;
+    if (!itemId) continue;
+    const list = grouped.get(itemId);
+    if (list) {
+      list.push(tx);
+    } else {
+      grouped.set(itemId, [tx]);
+    }
+  }
+
+  const metricsMap = new Map<string, ItemMetrics>();
+  for (const item of items) {
+    metricsMap.set(item.id, computeMetricsForTransactions(item, grouped.get(item.id) || []));
+  }
+  return metricsMap;
+}
+
+function compareByDateDesc(a: Item, b: Item): number {
+  const dateDiff = (b.buyDate || '').localeCompare(a.buyDate || '');
+  if (dateDiff !== 0) return dateDiff;
+  const createdDiff = (b.createdAt || '').localeCompare(a.createdAt || '');
+  if (createdDiff !== 0) return createdDiff;
+  return b.id.localeCompare(a.id);
+}
+
+export function sortItems(
+  items: Item[],
+  metricsMap: Map<string, ItemMetrics>,
+  sortOption: ItemSortOption
+): Item[] {
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    if (sortOption === 'date-desc') {
+      return compareByDateDesc(a, b);
+    }
+    if (sortOption === 'date-asc') {
+      return -compareByDateDesc(a, b);
+    }
+
+    const metricsA = metricsMap.get(a.id);
+    const metricsB = metricsMap.get(b.id);
+    const valA = sortOption.startsWith('cost-')
+      ? (metricsA?.grossCost ?? 0)
+      : (metricsA?.dailyCost ?? 0);
+    const valB = sortOption.startsWith('cost-')
+      ? (metricsB?.grossCost ?? 0)
+      : (metricsB?.dailyCost ?? 0);
+
+    if (valA !== valB) {
+      return sortOption.endsWith('-desc') ? valB - valA : valA - valB;
+    }
+    return compareByDateDesc(a, b);
+  });
+  return sorted;
+}
+
+export function computeOverallItemMetrics(
+  items: Item[],
+  transactions: Transaction[],
+  metricsMap?: Map<string, ItemMetrics>
 ): OverallItemMetrics {
   const activeItems = items.filter((i) => !isItemDisposed(i.status));
 
@@ -81,7 +146,7 @@ export function computeOverallItemMetrics(
   let subscriptionCount = 0;
 
   for (const item of activeItems) {
-    const m = computeItemMetrics(item, transactions);
+    const m = metricsMap?.get(item.id) ?? computeItemMetrics(item, transactions);
     totalUsingNetCost += m.netCost;
     totalUsingDailyCost += m.dailyCost;
     if (item.kind === 'subscription') {

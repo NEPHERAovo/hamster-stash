@@ -89,8 +89,10 @@ export class OwnedItemsPlugin extends BasePlugin {
 
   async onActivate(ctx: PluginContext): Promise<void> {
     const collection = ctx.storage.collection<Item>('items');
-    usePluginItemStore.getState().setCollection(collection);
-    await usePluginItemStore.getState().loadItems();
+    const itemStore = usePluginItemStore.getState();
+    itemStore.setCollection(collection);
+    itemStore.setSettings(ctx.settings);
+    await Promise.all([itemStore.loadItems(), itemStore.loadSortOption()]);
 
     this.unsubscribeDataImported = ctx.events.on('data:imported', () => {
       void usePluginItemStore.getState().loadItems();

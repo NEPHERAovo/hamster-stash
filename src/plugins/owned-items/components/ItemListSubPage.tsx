@@ -7,14 +7,18 @@ import {
   getCategoryIcon,
   cn,
   PaperIconButton,
+  PaperSelect,
+  type PaperSelectOption,
   SegToggle,
 } from '../../../plugin-sdk';
-import type { Item, ItemStatus } from '../types';
+import type { Item, ItemSortOption, ItemStatus } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import {
+  buildItemMetricsMap,
   computeItemMetrics,
   computeOverallItemMetrics,
   isItemDisposed,
+  sortItems,
 } from '../domain/itemCalculator';
 
 export interface ItemListSubPageProps {
@@ -25,27 +29,42 @@ export interface ItemListSubPageProps {
 type FilterTab = 'using' | 'sold' | 'all';
 type KindTab = 'all' | 'physical' | 'subscription';
 
+const SORT_OPTIONS: PaperSelectOption[] = [
+  { value: 'date-desc', label: '按时间 · 从新到旧', shortLabel: '时间 ↓' },
+  { value: 'date-asc', label: '按时间 · 从旧到新', shortLabel: '时间 ↑' },
+  { value: 'cost-desc', label: '按费用 · 从高到低', shortLabel: '费用 ↓' },
+  { value: 'cost-asc', label: '按费用 · 从低到高', shortLabel: '费用 ↑' },
+  { value: 'daily-desc', label: '按日均 · 从高到低', shortLabel: '日均 ↓' },
+  { value: 'daily-asc', label: '按日均 · 从低到高', shortLabel: '日均 ↑' },
+];
+
 export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => {
   const items = usePluginItemStore((s) => s.items);
+  const sortOption = usePluginItemStore((s) => s.sortOption);
+  const setSortOption = usePluginItemStore((s) => s.setSortOption);
   const transactions = useHostTransactions();
   const { openSubPage, openModal } = usePluginNavigation();
 
   const [activeTab, setActiveTab] = useState<FilterTab>('using');
   const [kindFilter, setKindFilter] = useState<KindTab>('all');
 
+  const metricsMap = useMemo(() => {
+    return buildItemMetricsMap(items, transactions);
+  }, [items, transactions]);
+
   const overallSummary = useMemo(() => {
     const soldItems = items.filter((i) => isItemDisposed(i.status));
 
-    const m = computeOverallItemMetrics(items, transactions);
+    const m = computeOverallItemMetrics(items, transactions, metricsMap);
     return {
       ...m,
       soldCount: soldItems.length,
       totalCount: items.length,
     };
-  }, [items, transactions]);
+  }, [items, transactions, metricsMap]);
 
   const filteredItems = useMemo(() => {
-    return items.filter((i) => {
+    const filtered = items.filter((i) => {
       const matchKind =
         kindFilter === 'all' ||
         (kindFilter === 'physical' && (!i.kind || i.kind === 'physical')) ||
@@ -57,7 +76,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       if (activeTab === 'sold') return isItemDisposed(i.status);
       return !isItemDisposed(i.status);
     });
-  }, [items, activeTab, kindFilter]);
+    return sortItems(filtered, metricsMap, sortOption);
+  }, [items, activeTab, kindFilter, metricsMap, sortOption]);
 
   const getPhysicalStatusLabel = (status: ItemStatus): string => {
     if (status === 'idle') return '闲置';
@@ -159,7 +179,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
         </div>
 
         <div className="tab-stagger-2 w-full space-y-3">
-          <div className="no-scrollbar flex items-center justify-between gap-1.5 overflow-x-auto border-b border-(--rule-hairline) pb-2.5">
+          <div className="flex [scrollbar-width:none] items-center justify-between gap-1.5 overflow-x-auto border-b border-(--rule-hairline) pb-2.5 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <SegToggle
               options={[
                 { value: 'all', label: '全部' },
@@ -183,12 +203,26 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               size="xs"
               fullWidth={false}
             />
+
+            <PaperSelect
+              aria-label="排序方式"
+              size="xs"
+              variant="sunken"
+              popupAlign="right"
+              popupMinWidth={168}
+              containerClassName="w-auto shrink-0"
+              options={SORT_OPTIONS}
+              value={sortOption}
+              onChange={(_, val) => {
+                if (val) setSortOption(val as ItemSortOption);
+              }}
+            />
           </div>
 
           {filteredItems.length > 0 ? (
             <div className="space-y-2.5">
               {filteredItems.map((item) => {
-                const metrics = computeItemMetrics(item, transactions);
+                const metrics = metricsMap.get(item.id) ?? computeItemMetrics(item, transactions);
                 const IconComp = getCategoryIcon(item.icon);
                 const isSub = item.kind === 'subscription';
 

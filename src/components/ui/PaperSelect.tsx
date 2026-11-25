@@ -7,6 +7,7 @@ import { useCloseWatcher } from '../../hooks/useCloseWatcher';
 export interface PaperSelectOption {
   value: string;
   label: string;
+  shortLabel?: string;
   icon?: React.ReactNode;
   disabled?: boolean;
   group?: string;
@@ -19,8 +20,10 @@ export interface PaperSelectProps
   value?: string;
   onChange?: (event: React.ChangeEvent<HTMLSelectElement>, value?: string) => void;
   placeholder?: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   variant?: 'sunken' | 'surface';
+  popupAlign?: 'left' | 'right';
+  popupMinWidth?: number;
   containerClassName?: string;
   buttonClassName?: string;
 }
@@ -49,11 +52,15 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
       disabled,
       size = 'md',
       variant = 'sunken',
+      popupAlign = 'left',
+      popupMinWidth = 160,
       options,
       value,
       onChange,
       placeholder,
       id,
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledBy,
       ...props
     },
     ref
@@ -127,10 +134,10 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
     }, [parsedOptions, value]);
 
     const displayLabel = useMemo(() => {
-      if (selectedOption) return selectedOption.label;
+      if (selectedOption) return selectedOption.shortLabel || selectedOption.label;
       if (placeholder) return placeholder;
       const firstSelectable = parsedOptions.find((opt) => !opt.isHeader);
-      return firstSelectable?.label ?? '';
+      return firstSelectable?.shortLabel || firstSelectable?.label || '';
     }, [selectedOption, placeholder, parsedOptions]);
 
     const updatePlacement = useCallback(() => {
@@ -155,8 +162,9 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
       setPlacement(nextPlacement);
       setMaxListHeight(nextMaxHeight);
 
-      const targetWidth = Math.max(rect.width, 160);
-      const left = Math.max(8, Math.min(rect.left, viewportWidth - targetWidth - 8));
+      const targetWidth = Math.max(rect.width, popupMinWidth);
+      const preferredLeft = popupAlign === 'right' ? rect.right - targetWidth : rect.left;
+      const left = Math.max(8, Math.min(preferredLeft, viewportWidth - targetWidth - 8));
 
       if (nextPlacement === 'top') {
         setPopupCoords({
@@ -171,7 +179,7 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
           width: targetWidth,
         });
       }
-    }, []);
+    }, [popupAlign, popupMinWidth]);
 
     const toggleOpen = () => {
       if (disabled) return;
@@ -230,8 +238,9 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
     }, [isOpen, updatePlacement]);
 
     const sizeStyles = {
-      sm: 'h-8 px-2.5 text-xs',
-      md: 'h-10 px-3 text-sm',
+      xs: 'h-7.5 gap-1 px-2 font-sans text-xs font-medium',
+      sm: 'h-8 px-2.5 font-mono text-xs',
+      md: 'h-10 px-3 font-mono text-sm',
     };
 
     const variantStyles = {
@@ -270,12 +279,14 @@ export const PaperSelect = React.forwardRef<HTMLSelectElement, PaperSelectProps>
           type="button"
           role="combobox"
           value={value}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           disabled={disabled}
           onClick={toggleOpen}
           className={cn(
-            'flex w-full cursor-pointer items-center justify-between rounded-(--input-radius) border text-left font-mono transition-colors focus-visible:ring-1 focus-visible:ring-(--ink-primary) focus-visible:outline-none',
+            'flex w-full cursor-pointer items-center justify-between rounded-(--input-radius) border text-left transition-colors focus-visible:ring-1 focus-visible:ring-(--ink-primary) focus-visible:outline-none',
             sizeStyles[size],
             variantStyles[variant],
             disabled && 'cursor-not-allowed opacity-50',
