@@ -37,7 +37,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
     setIsExportingBackup(true);
     try {
       await core.init();
-      const exportData = await core.adapter.export();
+      const exportData = await core.dataLifecycleService.exportData();
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -77,7 +77,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
       if (!confirmed) return;
 
       await core.init();
-      await core.adapter.import(data);
+      await core.dataLifecycleService.restoreData(data);
       pluginManager.emitHostEvent('data:imported');
 
       await loadAccounts();

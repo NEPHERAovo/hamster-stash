@@ -55,19 +55,7 @@ const getInitialPreferences = (): PreferencesPayload => {
 const persistPreferencesToDB = async (prefs: PreferencesPayload) => {
   try {
     await core.init();
-    const now = new Date().toISOString();
-    const existing = await core.adapter.read<AppPreferencesSetting>('settings', 'app_preferences');
-    if (existing) {
-      await core.adapter.update<AppPreferencesSetting>('settings', 'app_preferences', {
-        ...prefs,
-        updatedAt: now,
-      });
-    } else {
-      await core.adapter.create<AppPreferencesSetting>('settings', {
-        id: 'app_preferences',
-        ...prefs,
-      });
-    }
+    await core.settingsRepo.saveSetting<AppPreferencesSetting>('app_preferences', prefs);
   } catch {
     void 0;
   }
@@ -139,7 +127,7 @@ export const usePreferenceStore = create<PreferenceState>((set, get) => ({
   loadPreferencesFromDB: async () => {
     try {
       await core.init();
-      const record = await core.adapter.read<AppPreferencesSetting>('settings', 'app_preferences');
+      const record = await core.settingsRepo.getSetting<AppPreferencesSetting>('app_preferences');
       if (record) {
         const clean = record.majorThresholdYuan !== undefined
           ? sanitizeThreshold(record.majorThresholdYuan)

@@ -1,15 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
 import { AttachmentStore } from '../../src/core/attachments/attachmentStore';
+import { DataLifecycleService } from '../../src/domain/data/dataLifecycleService';
 
 describe('Content-addressed AttachmentStore', () => {
   let adapter: MemoryAdapter;
   let store: AttachmentStore;
+  let lifecycle: DataLifecycleService;
 
   beforeEach(async () => {
     adapter = new MemoryAdapter();
     await adapter.initialize();
     store = new AttachmentStore(adapter);
+    lifecycle = new DataLifecycleService(adapter);
   });
 
   it('deduplicates identical attachment payloads by content hash and excludes them from ledger JSON export', async () => {
@@ -36,7 +39,7 @@ describe('Content-addressed AttachmentStore', () => {
     const all = await store.listAttachments();
     expect(all.length).toBe(1);
 
-    const exported = await adapter.export();
+    const exported = await lifecycle.exportData();
     expect(JSON.stringify(exported)).not.toContain(sampleUrl);
   });
 });

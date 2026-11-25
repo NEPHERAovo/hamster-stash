@@ -2,11 +2,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
 import { CoreContext } from '../../src/core';
 import { SeedService } from '../../src/domain/bootstrap/seedService';
-import { STORES } from '../../src/core/db/schema';
+import { AccountRepository } from '../../src/core/repositories/AccountRepository';
+import { CategoryRepository } from '../../src/core/repositories/CategoryRepository';
+import { TransactionRepository } from '../../src/core/repositories/TransactionRepository';
 import { DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES } from '../../src/core/db/defaultData';
-import type { Account } from '../../src/types/account';
-import type { Category } from '../../src/types/category';
-import type { Transaction } from '../../src/types/transaction';
 
 describe('SeedService & CoreContext bootstrap', () => {
   beforeEach(() => {
@@ -24,8 +23,10 @@ describe('SeedService & CoreContext bootstrap', () => {
 
     await seedService.ensureSeeded();
 
-    const categories = await adapter.query<Category>(STORES.CATEGORIES);
-    const accounts = await adapter.query<Account>(STORES.ACCOUNTS);
+    const catRepo = new CategoryRepository(adapter);
+    const acctRepo = new AccountRepository(adapter);
+    const categories = await catRepo.findAll();
+    const accounts = await acctRepo.findAll();
 
     expect(categories).toHaveLength(DEFAULT_CATEGORIES.length);
     expect(accounts).toHaveLength(DEFAULT_ACCOUNTS.length);
@@ -36,15 +37,16 @@ describe('SeedService & CoreContext bootstrap', () => {
     const adapter = new MemoryAdapter();
     await adapter.initialize();
     const seedService = new SeedService(adapter);
+    const catRepo = new CategoryRepository(adapter);
 
     await seedService.ensureSeeded();
-    await adapter.update<Category>(STORES.CATEGORIES, 'cat_food', { name: 'corrupted_food' });
-    await adapter.delete(STORES.CATEGORIES, 'cat_market');
+    await catRepo.update('cat_food', { name: 'corrupted_food' });
+    await catRepo.delete('cat_market');
 
     await seedService.ensureSeeded();
 
-    const food = await adapter.read<Category>(STORES.CATEGORIES, 'cat_food');
-    const market = await adapter.read<Category>(STORES.CATEGORIES, 'cat_market');
+    const food = await catRepo.findById('cat_food');
+    const market = await catRepo.findById('cat_market');
     expect(food?.name).toBe('餐饮');
     expect(market).toBeNull();
   });
@@ -56,8 +58,10 @@ describe('SeedService & CoreContext bootstrap', () => {
 
     await Promise.all([ctx.init(), ctx.init()]);
 
-    const txs = await memAdapter.query<Transaction>(STORES.TRANSACTIONS);
-    const accts = await memAdapter.query<Account>(STORES.ACCOUNTS);
+    const txRepo = new TransactionRepository(memAdapter);
+    const acctRepo = new AccountRepository(memAdapter);
+    const txs = await txRepo.findAll();
+    const accts = await acctRepo.findAll();
     expect(txs.length).toBeGreaterThan(10);
     expect(accts.length).toBeGreaterThanOrEqual(4);
   });

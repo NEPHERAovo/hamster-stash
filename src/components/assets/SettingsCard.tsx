@@ -112,7 +112,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
     setIsExportingBackup(true);
     try {
       await core.init();
-      const exportData = await core.adapter.export();
+      const exportData = await core.dataLifecycleService.exportData();
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);

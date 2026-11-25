@@ -8,7 +8,6 @@ import {
 import { webdavClient, type WebDavConfig } from '../../src/domain/sync/webdavClient';
 import { core } from '../../src/core';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
-import { STORES } from '../../src/core/db/schema';
 import type { ExportData } from '../../src/types/adapter';
 import type { Transaction } from '../../src/types/transaction';
 import type { Account } from '../../src/types/account';
@@ -92,9 +91,6 @@ describe('WebDAV daily auto-sync scheduler', () => {
       memAdapter = new MemoryAdapter();
       await memAdapter.initialize();
       core.adapter = memAdapter;
-      core.txRepo = new (core.txRepo.constructor as typeof core.txRepo)(memAdapter);
-      core.acctRepo = new (core.acctRepo.constructor as typeof core.acctRepo)(memAdapter);
-      core.catRepo = new (core.catRepo.constructor as typeof core.catRepo)(memAdapter);
       vi.restoreAllMocks();
       vi.spyOn(core, 'init').mockResolvedValue(undefined);
     });
@@ -122,7 +118,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
         updatedAt: '2026-11-20T00:00:00.000Z',
       };
 
-      await memAdapter.import({
+      await core.dataLifecycleService.restoreData({
         version: '4.0.0',
         exportedAt: '2026-11-25T09:00:00.000Z',
         transactions: [tx],
@@ -153,7 +149,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
         .spyOn(webdavClient, 'fetchFile')
         .mockResolvedValue(JSON.stringify(remoteSnapshot));
       const putSpy = vi.spyOn(webdavClient, 'putFile').mockResolvedValue(undefined);
-      const importSpy = vi.spyOn(memAdapter, 'import');
+      const replaceSpy = vi.spyOn(memAdapter, 'replaceAll');
 
       const syncSvc = new SyncService();
       const result = await syncSvc.prepareWebDavSync(validConfig);
@@ -161,8 +157,8 @@ describe('WebDAV daily auto-sync scheduler', () => {
       expect(fetchSpy).toHaveBeenCalledWith(validConfig, SYNC_VAULT_FILE);
       expect(result.status).toBe('up_to_date');
       expect(putSpy).not.toHaveBeenCalled();
-      expect(importSpy).not.toHaveBeenCalled();
-      const savedBase = await memAdapter.read(STORES.SETTINGS, SYNC_BASE_SETTING_ID);
+      expect(replaceSpy).not.toHaveBeenCalled();
+      const savedBase = await core.settingsRepo.findById(SYNC_BASE_SETTING_ID);
       expect(savedBase).not.toBeNull();
 
       core.adapter = origAdapter;
@@ -219,7 +215,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
         plugins: { data: [], settings: {} },
       };
 
-      await memAdapter.import({
+      await core.dataLifecycleService.restoreData({
         version: '4.0.0',
         exportedAt: '2026-11-25T09:30:00.000Z',
         transactions: [localTx],
@@ -241,7 +237,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
 
       vi.spyOn(webdavClient, 'fetchFile').mockResolvedValue(JSON.stringify(remoteSnapshot));
       const putSpy = vi.spyOn(webdavClient, 'putFile').mockResolvedValue(undefined);
-      const importSpy = vi.spyOn(memAdapter, 'import');
+      const replaceSpy = vi.spyOn(memAdapter, 'replaceAll');
 
       const syncSvc = new SyncService();
       const prep = await syncSvc.prepareWebDavSync(validConfig);
@@ -250,14 +246,14 @@ describe('WebDAV daily auto-sync scheduler', () => {
       expect(prep.plan?.incomingItems.some((i) => i.id === 'tx_remote_new')).toBe(true);
       expect(prep.plan?.pushItems.some((i) => i.id === 'tx_1')).toBe(true);
       expect(putSpy).not.toHaveBeenCalled();
-      expect(importSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).not.toHaveBeenCalled();
 
       await syncSvc.commitWebDavSync(prep.plan!, { 'transactions:tx_remote_new': 'remote' }, validConfig);
-      expect(importSpy).toHaveBeenCalledTimes(1);
+      expect(replaceSpy).toHaveBeenCalledTimes(1);
       expect(putSpy).toHaveBeenCalledTimes(1);
-      const currentTxs = await memAdapter.query<Transaction>(STORES.TRANSACTIONS);
+      const currentTxs = await core.txRepo.findAll();
       expect(currentTxs).toHaveLength(2);
-      const updatedAcct = await memAdapter.read<Account>(STORES.ACCOUNTS, 'acct_1');
+      const updatedAcct = await core.acctRepo.findById('acct_1');
       expect(updatedAcct?.balance).toBe(100);
 
       core.adapter = origAdapter;

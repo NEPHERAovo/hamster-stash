@@ -1,14 +1,10 @@
-import { STORES } from '../db/schema';
-import type { DataAdapter, StoredEntity } from '../../types/adapter';
-import type { AdapterResolver } from '../plugin/PluginStorageManager';
+import type { AdapterResolver, DataAdapter } from '../../types/adapter';
+import {
+  AttachmentRepository,
+  type AttachmentRecord,
+} from '../repositories/AttachmentRepository';
 
-export interface AttachmentRecord extends StoredEntity {
-  id: string;
-  name: string;
-  mimeType: string;
-  size: string;
-  dataUrl: string;
-}
+export type { AttachmentRecord };
 
 function fallbackHashHex(content: string): string {
   let h1 = 0x811c9dc5;
@@ -56,16 +52,16 @@ export class AttachmentStore {
     this.ensureReady = ensureReady;
   }
 
-  private async getAdapter(): Promise<DataAdapter> {
+  private async getRepo(): Promise<AttachmentRepository> {
     if (this.ensureReady) {
       await this.ensureReady();
     }
-    const resolved =
+    const resolved: DataAdapter | undefined =
       typeof this.adapterResolver === 'function' ? this.adapterResolver() : this.adapterResolver;
     if (!resolved) {
       throw new Error('AttachmentStore adapter is not configured.');
     }
-    return resolved;
+    return new AttachmentRepository(resolved);
   }
 
   async saveAttachment(input: {
@@ -75,13 +71,13 @@ export class AttachmentStore {
     size: string;
     dataUrl: string;
   }): Promise<AttachmentRecord> {
-    const adapter = await this.getAdapter();
+    const repo = await this.getRepo();
     const id = input.id || (await computeAttachmentId(input.dataUrl));
-    const existing = await adapter.read<AttachmentRecord>(STORES.ATTACHMENTS, id);
+    const existing = await repo.findById(id);
     if (existing) {
       return existing;
     }
-    return adapter.create<AttachmentRecord>(STORES.ATTACHMENTS, {
+    return repo.create({
       id,
       name: input.name,
       mimeType: input.mimeType,
@@ -91,13 +87,13 @@ export class AttachmentStore {
   }
 
   async getAttachment(id: string): Promise<AttachmentRecord | null> {
-    const adapter = await this.getAdapter();
-    return adapter.read<AttachmentRecord>(STORES.ATTACHMENTS, id);
+    const repo = await this.getRepo();
+    return repo.findById(id);
   }
 
   async listAttachments(): Promise<AttachmentRecord[]> {
-    const adapter = await this.getAdapter();
-    return adapter.query<AttachmentRecord>(STORES.ATTACHMENTS);
+    const repo = await this.getRepo();
+    return repo.findAll();
   }
 }
 

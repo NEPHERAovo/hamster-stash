@@ -1,40 +1,44 @@
-import { isSandboxModeActive, STORES } from '../../core/db/schema';
+import { isSandboxModeActive } from '../../core/db/schema';
 import {
   DEFAULT_ACCOUNTS,
   DEFAULT_CATEGORIES,
   getSandboxSeedData,
 } from '../../core/db/defaultData';
-import type { DataAdapter, StoredEntity } from '../../types/adapter';
-import type { Account } from '../../types/account';
+import { AccountRepository } from '../../core/repositories/AccountRepository';
+import { CategoryRepository } from '../../core/repositories/CategoryRepository';
+import { TransactionRepository } from '../../core/repositories/TransactionRepository';
+import type { AdapterResolver, StoredEntity } from '../../types/adapter';
 import type { Category } from '../../types/category';
-import type { Transaction } from '../../types/transaction';
-
-import type { AdapterResolver } from '../../core/plugin/PluginStorageManager';
 
 const DEFAULT_SEED_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 
 export class SeedService {
-  private adapterResolver: AdapterResolver;
+  private catRepo: CategoryRepository;
+  private acctRepo: AccountRepository;
+  private txRepo: TransactionRepository;
 
-  constructor(adapter: AdapterResolver) {
-    this.adapterResolver = adapter;
-  }
-
-  private get adapter(): DataAdapter {
-    return typeof this.adapterResolver === 'function'
-      ? this.adapterResolver()
-      : this.adapterResolver;
+  constructor(adapterResolver: AdapterResolver) {
+    this.catRepo = new CategoryRepository(adapterResolver);
+    this.acctRepo = new AccountRepository(adapterResolver);
+    this.txRepo = new TransactionRepository(adapterResolver);
   }
 
   async ensureSeeded(): Promise<void> {
     const now = new Date().toISOString();
-    const snapshot = await this.adapter.export({ includeTombstones: true });
+    const [existingCats, existingAccts, existingTxs] = await Promise.all([
+      this.catRepo.findAllRaw(),
+      this.acctRepo.findAllRaw(),
+      isSandboxModeActive() ? this.txRepo.findAllRaw() : Promise.resolve([]),
+    ]);
 
-    await this.seedCategories(snapshot.categories, now);
-    await this.seedAccounts(snapshot.accounts);
+    await this.seedCategories(existingCats, now);
+    await this.seedAccounts(existingAccts.length);
 
-    if (isSandboxModeActive() && snapshot.transactions.length === 0) {
-      await this.seedSandboxData(snapshot.accounts, now);
+    if (isSandboxModeActive() && existingTxs.length === 0) {
+      await this.seedSandboxData(
+        new Set(existingAccts.map((a) => a.id)),
+        now
+      );
     }
   }
 
@@ -44,7 +48,7 @@ export class SeedService {
   ): Promise<void> {
     if (existingCategories.length === 0) {
       for (const cat of DEFAULT_CATEGORIES) {
-        await this.adapter.create<Category>(STORES.CATEGORIES, {
+        await this.catRepo.create({
           ...cat,
           createdAt: DEFAULT_SEED_TIMESTAMP,
           updatedAt: DEFAULT_SEED_TIMESTAMP,
@@ -61,7 +65,7 @@ export class SeedService {
     for (const cat of DEFAULT_CATEGORIES) {
       const existing = byId.get(cat.id);
       if (!existing) {
-        await this.adapter.create<Category>(STORES.CATEGORIES, {
+        await this.catRepo.create({
           ...cat,
           isArchived: cat.isArchived ?? true,
           createdAt: DEFAULT_SEED_TIMESTAMP,
@@ -74,7 +78,7 @@ export class SeedService {
           existing.name !== cat.name &&
           existing.name.length > 2;
         if (shouldUpdateName) {
-          await this.adapter.update<Category>(STORES.CATEGORIES, existing.id, {
+          await this.catRepo.update(existing.id, {
             name: cat.name,
             updatedAt: now,
           });
@@ -83,10 +87,10 @@ export class SeedService {
     }
   }
 
-  private async seedAccounts(existingAccounts: Account[]): Promise<void> {
-    if (existingAccounts.length > 0) return;
+  private async seedAccounts(existingCount: number): Promise<void> {
+    if (existingCount > 0) return;
     for (const acct of DEFAULT_ACCOUNTS) {
-      await this.adapter.create<Account>(STORES.ACCOUNTS, {
+      await this.acctRepo.create({
         ...acct,
         createdAt: DEFAULT_SEED_TIMESTAMP,
         updatedAt: DEFAULT_SEED_TIMESTAMP,
@@ -94,23 +98,22 @@ export class SeedService {
     }
   }
 
-  private async seedSandboxData(existingAccounts: Account[], now: string): Promise<void> {
+  private async seedSandboxData(existingAcctIds: Set<string>, now: string): Promise<void> {
     const { sampleAccounts, sampleTransactions } = getSandboxSeedData(now);
-    const existingAcctIds = new Set(existingAccounts.map((a) => a.id));
 
     for (const acct of sampleAccounts) {
       if (existingAcctIds.has(acct.id)) {
-        const activeAcct = await this.adapter.read<Account>(STORES.ACCOUNTS, acct.id);
+        const activeAcct = await this.acctRepo.findById(acct.id);
         if (activeAcct) {
-          await this.adapter.update<Account>(STORES.ACCOUNTS, acct.id, acct);
+          await this.acctRepo.update(acct.id, acct);
         }
       } else {
-        await this.adapter.create<Account>(STORES.ACCOUNTS, acct);
+        await this.acctRepo.create(acct);
       }
     }
 
     for (const tx of sampleTransactions) {
-      await this.adapter.create<Transaction>(STORES.TRANSACTIONS, tx);
+      await this.txRepo.create(tx);
     }
   }
 }

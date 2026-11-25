@@ -2,9 +2,12 @@ import { IndexedDBAdapter } from './adapters/IndexedDBAdapter';
 import { AccountRepository } from './repositories/AccountRepository';
 import { TransactionRepository } from './repositories/TransactionRepository';
 import { CategoryRepository } from './repositories/CategoryRepository';
+import { SettingsRepository } from './repositories/SettingsRepository';
+import { AttachmentRepository } from './repositories/AttachmentRepository';
 import { TransactionService } from '../domain/transaction/transactionService';
 import { AccountService } from '../domain/account/accountService';
 import { SeedService } from '../domain/bootstrap/seedService';
+import { DataLifecycleService } from '../domain/data/dataLifecycleService';
 import { pluginManager } from './plugin/PluginManager';
 import { attachmentStore } from './attachments/attachmentStore';
 import type { DataAdapter } from '../types/adapter';
@@ -14,7 +17,10 @@ export class CoreContext {
   public acctRepo: AccountRepository;
   public txRepo: TransactionRepository;
   public catRepo: CategoryRepository;
+  public settingsRepo: SettingsRepository;
+  public attachmentRepo: AttachmentRepository;
   public seedService: SeedService;
+  public dataLifecycleService: DataLifecycleService;
   public txService: TransactionService;
   public acctService: AccountService;
   private initialized = false;
@@ -22,21 +28,26 @@ export class CoreContext {
 
   constructor(customAdapter?: DataAdapter) {
     this.adapter = customAdapter || new IndexedDBAdapter();
-    this.acctRepo = new AccountRepository(this.adapter);
-    this.txRepo = new TransactionRepository(this.adapter);
-    this.catRepo = new CategoryRepository(this.adapter);
+    const resolveAdapter = () => this.adapter;
 
-    this.seedService = new SeedService(() => this.adapter);
+    this.acctRepo = new AccountRepository(resolveAdapter);
+    this.txRepo = new TransactionRepository(resolveAdapter);
+    this.catRepo = new CategoryRepository(resolveAdapter);
+    this.settingsRepo = new SettingsRepository(resolveAdapter);
+    this.attachmentRepo = new AttachmentRepository(resolveAdapter);
+
+    this.seedService = new SeedService(resolveAdapter);
+    this.dataLifecycleService = new DataLifecycleService(resolveAdapter);
     this.txService = new TransactionService(this.txRepo, this.acctRepo, this.catRepo);
     this.acctService = new AccountService(this.acctRepo, this.txRepo);
 
     if (!customAdapter) {
       pluginManager.bindAdapter(
-        () => this.adapter,
+        resolveAdapter,
         () => this.init()
       );
       attachmentStore.bindAdapter(
-        () => this.adapter,
+        resolveAdapter,
         () => this.init()
       );
     }

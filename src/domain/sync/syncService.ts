@@ -1,7 +1,6 @@
 import { core } from '../../core';
 import { attachmentStore, type AttachmentRecord } from '../../core/attachments/attachmentStore';
 import { pluginManager } from '../../core/plugin/PluginManager';
-import { STORES } from '../../core/db/schema';
 import { webdavClient, type WebDavConfig } from './webdavClient';
 import {
   buildThreeWaySyncPlan,
@@ -124,7 +123,7 @@ export class SyncService {
   }> {
     await core.init();
     try {
-      const record = await core.adapter.read<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config');
+      const record = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
       if (record && record.config) {
         return {
           config: record.config,
@@ -152,9 +151,9 @@ export class SyncService {
     options?: { autoSyncDaily?: boolean; syncAttachments?: boolean }
   ): Promise<void> {
     await core.init();
-    const existing = await core.adapter.read<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config');
+    const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
     if (existing) {
-      await core.adapter.update<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config', {
+      await core.settingsRepo.update('webdav_config', {
         config,
         ...(options?.autoSyncDaily !== undefined ? { autoSyncDaily: options.autoSyncDaily } : {}),
         ...(options?.syncAttachments !== undefined
@@ -162,8 +161,7 @@ export class SyncService {
           : {}),
       });
     } else {
-      await core.adapter.create<WebDavSettingRecord>(STORES.SETTINGS, {
-        id: 'webdav_config',
+      await core.settingsRepo.saveSetting<WebDavSettingRecord>('webdav_config', {
         config,
         autoSyncDaily: Boolean(options?.autoSyncDaily),
         syncAttachments: Boolean(options?.syncAttachments),
@@ -174,15 +172,14 @@ export class SyncService {
 
   async setAutoSyncDaily(enabled: boolean): Promise<void> {
     await core.init();
-    const existing = await core.adapter.read<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config');
+    const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
     if (existing) {
-      await core.adapter.update<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config', {
+      await core.settingsRepo.update('webdav_config', {
         autoSyncDaily: enabled,
       });
       return;
     }
-    await core.adapter.create<WebDavSettingRecord>(STORES.SETTINGS, {
-      id: 'webdav_config',
+    await core.settingsRepo.saveSetting<WebDavSettingRecord>('webdav_config', {
       config: { url: '', username: '', password: '' },
       autoSyncDaily: enabled,
       syncAttachments: false,
@@ -192,15 +189,14 @@ export class SyncService {
 
   async setSyncAttachments(enabled: boolean): Promise<void> {
     await core.init();
-    const existing = await core.adapter.read<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config');
+    const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
     if (existing) {
-      await core.adapter.update<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config', {
+      await core.settingsRepo.update('webdav_config', {
         syncAttachments: enabled,
       });
       return;
     }
-    await core.adapter.create<WebDavSettingRecord>(STORES.SETTINGS, {
-      id: 'webdav_config',
+    await core.settingsRepo.saveSetting<WebDavSettingRecord>('webdav_config', {
       config: { url: '', username: '', password: '' },
       autoSyncDaily: false,
       syncAttachments: enabled,
@@ -287,9 +283,9 @@ export class SyncService {
     uploadedAttachmentIds?: string[];
   }): Promise<void> {
     try {
-      const existing = await core.adapter.read<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config');
+      const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
       if (existing) {
-        await core.adapter.update<WebDavSettingRecord>(STORES.SETTINGS, 'webdav_config', patch);
+        await core.settingsRepo.update('webdav_config', patch);
       }
     } catch {
       void 0;
@@ -298,7 +294,7 @@ export class SyncService {
 
   private async getBaseSnapshot(): Promise<ExportData | null> {
     try {
-      const record = await core.adapter.read<SyncBaseRecord>(STORES.SETTINGS, SYNC_BASE_SETTING_ID);
+      const record = await core.settingsRepo.getSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID);
       if (record?.snapshot) {
         return sanitizeSyncPayload(record.snapshot);
       }
@@ -310,17 +306,9 @@ export class SyncService {
 
   private async saveBaseSnapshot(snapshot: ExportData): Promise<void> {
     const cleanSnapshot = sanitizeSyncPayload(snapshot);
-    const existing = await core.adapter.read<SyncBaseRecord>(STORES.SETTINGS, SYNC_BASE_SETTING_ID);
-    if (existing) {
-      await core.adapter.update<SyncBaseRecord>(STORES.SETTINGS, SYNC_BASE_SETTING_ID, {
-        snapshot: cleanSnapshot,
-      });
-    } else {
-      await core.adapter.create<SyncBaseRecord>(STORES.SETTINGS, {
-        id: SYNC_BASE_SETTING_ID,
-        snapshot: cleanSnapshot,
-      });
-    }
+    await core.settingsRepo.saveSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID, {
+      snapshot: cleanSnapshot,
+    });
   }
 
   private async backupMissingAttachments(
@@ -409,7 +397,7 @@ export class SyncService {
     const config = this.resolveValidatedConfig(customConfig || stored.config || undefined);
     const shouldBackupAttachments = options?.syncAttachments ?? stored.syncAttachments;
 
-    const rawLocalData = await core.adapter.export({ includeTombstones: true });
+    const rawLocalData = await core.dataLifecycleService.exportData({ includeTombstones: true });
     const localData = sanitizeSyncPayload(rawLocalData);
     const remoteContent = await webdavClient.fetchFile(config, SYNC_VAULT_FILE);
     const now = new Date().toISOString();
@@ -534,12 +522,12 @@ export class SyncService {
         ...(cleanMerged.settings || {}),
       };
       for (const key of LOCAL_ONLY_SETTING_KEYS) {
-        const localRec = await core.adapter.read<StoredEntity>(STORES.SETTINGS, key);
+        const localRec = await core.settingsRepo.findById(key);
         if (localRec) {
           preservedLocalSettings[key] = localRec;
         }
       }
-      await core.adapter.import({
+      await core.dataLifecycleService.restoreData({
         ...cleanMerged,
         settings: preservedLocalSettings,
       });
