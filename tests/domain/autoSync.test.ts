@@ -1,7 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { SyncService, stripInlineVoucherPayloads } from '../../src/domain/sync/syncService';
-import type { WebDavConfig } from '../../src/domain/sync/webdavClient';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import {
+  SyncService,
+  stripInlineVoucherPayloads,
+  SYNC_BASE_SETTING_ID,
+  SYNC_VAULT_FILE,
+} from '../../src/domain/sync/syncService';
+import { webdavClient, type WebDavConfig } from '../../src/domain/sync/webdavClient';
+import { core } from '../../src/core';
+import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
+import { STORES } from '../../src/core/db/schema';
 import type { ExportData } from '../../src/types/adapter';
+import type { Transaction } from '../../src/types/transaction';
+import type { Account } from '../../src/types/account';
 
 describe('WebDAV daily auto-sync scheduler', () => {
   const service = new SyncService();
@@ -72,5 +82,184 @@ describe('WebDAV daily auto-sync scheduler', () => {
     expect(stripped.transactions[0].voucher?.name).toBe('invoice.jpg');
     expect(stripped.transactions[0].voucher?.fileUrl).toBeUndefined();
     expect(JSON.stringify(stripped)).not.toContain('HUGE_PAYLOAD');
+  });
+
+  describe('three-way WebDAV sync preparation and review gating', () => {
+    let memAdapter: MemoryAdapter;
+    const origAdapter = core.adapter;
+
+    beforeEach(async () => {
+      memAdapter = new MemoryAdapter();
+      await memAdapter.initialize();
+      core.adapter = memAdapter;
+      core.txRepo = new (core.txRepo.constructor as typeof core.txRepo)(memAdapter);
+      core.acctRepo = new (core.acctRepo.constructor as typeof core.acctRepo)(memAdapter);
+      core.catRepo = new (core.catRepo.constructor as typeof core.catRepo)(memAdapter);
+      vi.restoreAllMocks();
+    });
+
+    it('skips both putFile and import when local and remote payloads are strictly equal', async () => {
+      const tx: Transaction = {
+        id: 'tx_eq_1',
+        type: 'expense',
+        amount: 4200,
+        accountId: 'acct_1',
+        categoryId: 'cat_food',
+        date: '2026-11-25',
+        createdAt: '2026-11-25T09:00:00.000Z',
+        updatedAt: '2026-11-25T09:00:00.000Z',
+      };
+      const acct: Account = {
+        id: 'acct_1',
+        name: 'Wallet',
+        type: 'savings',
+        balance: 10000,
+        currency: 'CNY',
+        icon: 'wallet',
+        sortOrder: 1,
+        createdAt: '2026-11-20T00:00:00.000Z',
+        updatedAt: '2026-11-20T00:00:00.000Z',
+      };
+
+      await memAdapter.import({
+        version: '4.0.0',
+        exportedAt: '2026-11-25T09:00:00.000Z',
+        transactions: [tx],
+        accounts: [acct],
+        categories: [],
+        settings: {
+          webdav_config: {
+            id: 'webdav_config',
+            config: validConfig,
+            lastSyncAt: '2026-11-25T09:05:00.000Z',
+            autoSyncDaily: true,
+          },
+        },
+        plugins: { data: [], settings: {} },
+      });
+
+      const remoteSnapshot: ExportData = {
+        version: '4.0.0',
+        exportedAt: '2026-11-24T00:00:00.000Z',
+        transactions: [tx],
+        accounts: [acct],
+        categories: [],
+        settings: {},
+        plugins: { data: [], settings: {} },
+      };
+
+      const fetchSpy = vi
+        .spyOn(webdavClient, 'fetchFile')
+        .mockResolvedValue(JSON.stringify(remoteSnapshot));
+      const putSpy = vi.spyOn(webdavClient, 'putFile').mockResolvedValue(undefined);
+      const importSpy = vi.spyOn(memAdapter, 'import');
+
+      const syncSvc = new SyncService();
+      const result = await syncSvc.prepareWebDavSync(validConfig);
+
+      expect(fetchSpy).toHaveBeenCalledWith(validConfig, SYNC_VAULT_FILE);
+      expect(result.status).toBe('up_to_date');
+      expect(putSpy).not.toHaveBeenCalled();
+      expect(importSpy).not.toHaveBeenCalled();
+      const savedBase = await memAdapter.read(STORES.SETTINGS, SYNC_BASE_SETTING_ID);
+      expect(savedBase).not.toBeNull();
+
+      core.adapter = origAdapter;
+    });
+
+    it('pauses without writing local DB when cloud has incoming changes or conflicts', async () => {
+      const localTx: Transaction = {
+        id: 'tx_1',
+        type: 'expense',
+        amount: 4200,
+        accountId: 'acct_1',
+        categoryId: 'cat_food',
+        date: '2026-11-25',
+        note: 'Local note',
+        ext: { 'owned-items': { itemId: 'item_1', itemRole: 'buy', kind: 'physical' } },
+        createdAt: '2026-11-25T09:00:00.000Z',
+        updatedAt: '2026-11-25T09:30:00.000Z',
+      };
+      const baseTx: Transaction = {
+        ...localTx,
+        note: 'Base note',
+        ext: undefined,
+        updatedAt: '2026-11-25T09:00:00.000Z',
+      };
+      const remoteIncomingTx: Transaction = {
+        id: 'tx_remote_new',
+        type: 'expense',
+        amount: 9900,
+        accountId: 'acct_1',
+        categoryId: 'cat_shop',
+        date: '2026-11-25',
+        createdAt: '2026-11-25T10:00:00.000Z',
+        updatedAt: '2026-11-25T10:00:00.000Z',
+      };
+      const acct: Account = {
+        id: 'acct_1',
+        name: 'Wallet',
+        type: 'savings',
+        balance: 10000,
+        currency: 'CNY',
+        icon: 'wallet',
+        sortOrder: 1,
+        createdAt: '2026-11-20T00:00:00.000Z',
+        updatedAt: '2026-11-20T00:00:00.000Z',
+      };
+
+      const baseSnapshot: ExportData = {
+        version: '4.0.0',
+        exportedAt: '2026-11-25T09:00:00.000Z',
+        transactions: [baseTx],
+        accounts: [acct],
+        categories: [],
+        settings: {},
+        plugins: { data: [], settings: {} },
+      };
+
+      await memAdapter.import({
+        version: '4.0.0',
+        exportedAt: '2026-11-25T09:30:00.000Z',
+        transactions: [localTx],
+        accounts: [acct],
+        categories: [],
+        settings: {
+          [SYNC_BASE_SETTING_ID]: {
+            id: SYNC_BASE_SETTING_ID,
+            snapshot: baseSnapshot,
+          },
+        },
+        plugins: { data: [], settings: {} },
+      });
+
+      const remoteSnapshot: ExportData = {
+        ...baseSnapshot,
+        transactions: [baseTx, remoteIncomingTx],
+      };
+
+      vi.spyOn(webdavClient, 'fetchFile').mockResolvedValue(JSON.stringify(remoteSnapshot));
+      const putSpy = vi.spyOn(webdavClient, 'putFile').mockResolvedValue(undefined);
+      const importSpy = vi.spyOn(memAdapter, 'import');
+
+      const syncSvc = new SyncService();
+      const prep = await syncSvc.prepareWebDavSync(validConfig);
+
+      expect(prep.status).toBe('needs_review');
+      expect(prep.plan?.incomingItems.some((i) => i.id === 'tx_remote_new')).toBe(true);
+      expect(prep.plan?.pushItems.some((i) => i.id === 'tx_1')).toBe(true);
+      expect(putSpy).not.toHaveBeenCalled();
+      expect(importSpy).not.toHaveBeenCalled();
+
+      await syncSvc.commitWebDavSync(prep.plan!, { 'transactions:tx_remote_new': 'remote' }, validConfig);
+      expect(importSpy).toHaveBeenCalledTimes(1);
+      expect(putSpy).toHaveBeenCalledTimes(1);
+      const currentTxs = await memAdapter.query<Transaction>(STORES.TRANSACTIONS);
+      expect(currentTxs).toHaveLength(2);
+      const updatedAcct = await memAdapter.read<Account>(STORES.ACCOUNTS, 'acct_1');
+      expect(updatedAcct?.balance).toBe(100);
+
+      core.adapter = origAdapter;
+    });
   });
 });

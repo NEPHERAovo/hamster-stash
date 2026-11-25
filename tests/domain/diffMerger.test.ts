@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { mergeSyncPayloads } from '../../src/domain/sync/diffMerger';
-import type { ExportData } from '../../types/adapter';
+import {
+  mergeSyncPayloads,
+  buildThreeWaySyncPlan,
+  resolveSyncPlan,
+  areValuesCanonicallyEqual,
+} from '../../src/domain/sync/diffMerger';
+import type { ExportData, StoredEntity } from '../../types/adapter';
 import type { Transaction } from '../../types/transaction';
 import type { Account } from '../../types/account';
 import type { Category } from '../../types/category';
@@ -150,5 +155,165 @@ describe('diffMerger', () => {
     expect(result.merged.settings).toBeDefined();
     expect(result.merged.settings?.app_theme).toBeDefined();
     expect(result.merged.settings?.webdav_config).toBeDefined();
+  });
+
+  it('treats objects with reordered keys, undefined fields, and empty ext as canonically equal', () => {
+    const a: Transaction = {
+      id: 'tx_canon',
+      type: 'expense',
+      amount: 1800,
+      accountId: 'acct_1',
+      categoryId: 'cat_food',
+      date: '2026-11-25',
+      note: 'Coffee',
+      ext: {},
+      createdAt: '2026-11-25T08:00:00.000Z',
+      updatedAt: '2026-11-25T08:00:00.000Z',
+    };
+    const b: Transaction = {
+      updatedAt: '2026-11-25T08:00:00.000Z',
+      createdAt: '2026-11-25T08:00:00.000Z',
+      date: '2026-11-25',
+      categoryId: 'cat_food',
+      accountId: 'acct_1',
+      amount: 1800,
+      type: 'expense',
+      id: 'tx_canon',
+      note: 'Coffee',
+      tags: undefined,
+    };
+
+    expect(areValuesCanonicallyEqual(a, b)).toBe(true);
+
+    const local = createBaseExport();
+    const remote = createBaseExport();
+    local.transactions.push(a);
+    remote.transactions.push(b);
+
+    const plan = buildThreeWaySyncPlan(local, remote, local);
+    expect(plan.isStrictlyEqual).toBe(true);
+    expect(plan.requiresReview).toBe(false);
+    expect(plan.pushItems).toHaveLength(0);
+    expect(plan.incomingItems).toHaveLength(0);
+    expect(plan.conflictItems).toHaveLength(0);
+  });
+
+  it('classifies local-only changes as fast-forward push without review when base matches remote', () => {
+    const baseTx: Transaction = {
+      id: 'tx_1',
+      type: 'expense',
+      amount: 19900,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-24',
+      note: 'Keyboard',
+      createdAt: '2026-11-24T10:00:00.000Z',
+      updatedAt: '2026-11-24T10:00:00.000Z',
+    };
+    const linkedLocalTx: Transaction = {
+      ...baseTx,
+      ext: { 'owned-items': { itemId: 'item_kbd', itemRole: 'buy', kind: 'physical' } },
+      updatedAt: '2026-11-25T09:00:00.000Z',
+    };
+
+    const base = createBaseExport();
+    base.transactions.push(baseTx);
+    const remote = createBaseExport();
+    remote.transactions.push(baseTx);
+    const local = createBaseExport();
+    local.transactions.push(linkedLocalTx);
+
+    const plan = buildThreeWaySyncPlan(local, remote, base);
+    expect(plan.isStrictlyEqual).toBe(false);
+    expect(plan.requiresReview).toBe(false);
+    expect(plan.pushItems).toHaveLength(1);
+    expect(plan.pushItems[0].key).toBe('transactions:tx_1');
+
+    const resolved = resolveSyncPlan(plan, {});
+    expect(resolved.changedLocal).toBe(false);
+    expect(resolved.changedRemote).toBe(true);
+    expect(resolved.merged.transactions[0].ext).toEqual(linkedLocalTx.ext);
+  });
+
+  it('requires user review for incoming cloud additions and adjusts local account balance only once', () => {
+    const baseAcct: Account = {
+      id: 'acct_1',
+      name: 'Cash',
+      type: 'savings',
+      balance: 10000,
+      currency: 'CNY',
+      icon: 'wallet',
+      sortOrder: 1,
+      createdAt: '2026-11-20T00:00:00.000Z',
+      updatedAt: '2026-11-20T00:00:00.000Z',
+    };
+    const remoteTx: Transaction = {
+      id: 'tx_cloud_1',
+      type: 'expense',
+      amount: 2500,
+      accountId: 'acct_1',
+      categoryId: 'cat_food',
+      date: '2026-11-25',
+      createdAt: '2026-11-25T10:00:00.000Z',
+      updatedAt: '2026-11-25T10:00:00.000Z',
+    };
+
+    const base = createBaseExport();
+    base.accounts.push(baseAcct);
+    const local = createBaseExport();
+    local.accounts.push(baseAcct);
+    const remote = createBaseExport();
+    remote.accounts.push(baseAcct);
+    remote.transactions.push(remoteTx);
+
+    const plan = buildThreeWaySyncPlan(local, remote, base);
+    expect(plan.requiresReview).toBe(true);
+    expect(plan.incomingItems).toHaveLength(1);
+    expect(plan.incomingItems[0].kind).toBe('add');
+
+    const accepted = resolveSyncPlan(plan, { 'transactions:tx_cloud_1': 'remote' });
+    expect(accepted.changedLocal).toBe(true);
+    expect(accepted.merged.transactions).toHaveLength(1);
+    expect(accepted.merged.accounts[0].balance).toBe(7500);
+  });
+
+  it('detects cross-id duplicate linked-vs-unlinked twins and retains tombstone on local preference', () => {
+    const linkedLocal: Transaction = {
+      id: 'tx_linked',
+      type: 'expense',
+      amount: 50000,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-24',
+      note: 'Headphones',
+      ext: { 'owned-items': { itemId: 'item_hp', itemRole: 'buy', kind: 'physical' } },
+      createdAt: '2026-11-24T12:00:00.000Z',
+      updatedAt: '2026-11-25T08:00:00.000Z',
+    };
+    const unlinkedRemoteTwin: Transaction = {
+      id: 'tx_old_twin',
+      type: 'expense',
+      amount: 50000,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-24',
+      note: 'Headphones',
+      createdAt: '2026-11-24T12:00:00.000Z',
+      updatedAt: '2026-11-24T12:00:00.000Z',
+    };
+
+    const local = createBaseExport();
+    local.transactions.push(linkedLocal);
+    const remote = createBaseExport();
+    remote.transactions.push(unlinkedRemoteTwin);
+
+    const plan = buildThreeWaySyncPlan(local, remote, null);
+    expect(plan.requiresReview).toBe(true);
+    expect(plan.conflictItems.some((c) => c.id === 'tx_old_twin' && c.reason === 'cross_id_duplicate')).toBe(true);
+
+    const resolved = resolveSyncPlan(plan, { 'transactions:tx_old_twin': 'local' }, { retainTombstones: true });
+    const twinInMerged = resolved.merged.transactions.find((t) => t.id === 'tx_old_twin') as (Transaction & StoredEntity) | undefined;
+    expect(twinInMerged?.deletedAt).toBeTruthy();
+    expect(resolved.merged.transactions.filter((t) => !(t as StoredEntity).deletedAt)).toHaveLength(1);
   });
 });
