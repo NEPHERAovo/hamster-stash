@@ -1,6 +1,7 @@
 import React from 'react';
 import { CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
+import { PaperCard } from './PaperCard';
 
 export interface SettingSectionProps {
   title?: string;
@@ -32,15 +33,18 @@ export const SettingSection: React.FC<SettingSectionProps> = ({
           <span>{title}</span>
         </div>
       )}
-      <div
+      <PaperCard
+        rounded="lg"
+        padding="none"
+        divided
         className={cn(
-          'paper-card divide-y divide-dashed divide-(--rule-hairline)/60 overflow-hidden rounded-(--radius-lg) border bg-(--paper-sheet) px-3.5 shadow-xs',
-          danger ? 'border-(--color-expense)/30' : 'border-(--rule-hairline)',
+          'px-3.5 shadow-xs',
+          danger && 'border-(--color-expense)/30',
           cardClassName
         )}
       >
         {children}
-      </div>
+      </PaperCard>
     </div>
   );
 };

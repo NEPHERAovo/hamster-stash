@@ -32,6 +32,7 @@ import { SubPageShell, SubPageBackButton } from '../layout/SubPageShell';
 import { PageHeader } from '../layout/PageHeader';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperCard } from '../ui/PaperCard';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
 import {
@@ -456,7 +457,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
       </div>
 
       <div className="tab-stagger-1 flex flex-col gap-2">
-        <div className="paper-card w-full space-y-3.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-colors duration-200 select-none sm:p-5">
+        <PaperCard
+          rounded="md"
+          padding="none"
+          className="w-full space-y-3.5 p-3.5 shadow-xs select-none sm:p-5"
+        >
           <div className="flex items-center justify-between gap-2 select-none">
             <span className="truncate text-[13px] font-semibold tracking-tight text-(--ink-primary)">
               {compositionTitle}
@@ -599,7 +604,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
               </div>
             </>
           )}
-        </div>
+        </PaperCard>
       </div>
 
       <div className="tab-stagger-2">

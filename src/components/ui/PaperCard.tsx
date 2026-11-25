@@ -5,6 +5,7 @@ export interface PaperCardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'sunken' | 'elevated' | 'dashed' | 'receipt' | 'journal' | 'organic' | 'deckle';
   padding?: 'none' | 'xs' | 'sm' | 'md' | 'lg';
   rounded?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'full';
+  divided?: boolean;
   interactive?: boolean;
 }
 
@@ -15,6 +16,7 @@ export const PaperCard = React.forwardRef<HTMLDivElement, PaperCardProps>(
       variant = 'default',
       padding = 'md',
       rounded = 'sm',
+      divided = false,
       interactive = false,
       children,
       ...props
@@ -61,6 +63,7 @@ export const PaperCard = React.forwardRef<HTMLDivElement, PaperCardProps>(
           variantStyles[variant],
           paddingStyles[padding],
           roundedStyles[rounded],
+          divided && 'overflow-hidden divide-rule-dashed',
           interactiveStyles,
           className
         )}

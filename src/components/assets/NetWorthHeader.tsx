@@ -3,6 +3,7 @@ import { ArrowsLeftRightIcon as ArrowLeftRight } from '@phosphor-icons/react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { PendingSettlementSummary } from '../../domain/transaction/transactionService';
 import { cn } from '../../utils/cn';
+import { PaperSummaryCard } from '../ui/PaperSummaryCard';
 
 export interface NetWorthHeaderProps {
   netWorthCents: number;
@@ -18,15 +19,10 @@ export const NetWorthHeader: React.FC<NetWorthHeaderProps> = ({
   className,
 }) => {
   return (
-    <div
-      className={cn(
-        'relative w-full border border-(--rule-hairline) bg-(--paper-sheet) p-4 transition-all duration-200 select-none sm:p-5',
-        'paper-deckle-bottom paper-summary-card',
-        className
-      )}
+    <PaperSummaryCard
+      tapeClassName="-top-2"
+      className={cn('w-full p-4 sm:p-5', className)}
     >
-      <div className="washi-tape absolute -top-2 left-1/2 z-10 -translate-x-1/2" />
-
       <div className="mb-1 flex items-center justify-between">
         <span className="font-mono text-[11px] font-medium text-(--ink-tertiary)">净资产总额</span>
         <span className="real-stamp stamp-income px-1 py-0.5 text-[9px] text-(--color-income)">
@@ -41,10 +37,10 @@ export const NetWorthHeader: React.FC<NetWorthHeaderProps> = ({
       {summary && (
         <div
           onClick={onClickLoanHub}
-          className="-mx-1 mt-1 flex cursor-pointer items-center justify-between rounded-(--radius-sm) border-t border-dashed border-(--rule-hairline) px-1 pt-2.5 transition-all hover:bg-(--paper-hover)/50"
+          className="-mx-1 mt-1 flex cursor-pointer items-center justify-between rounded-(--radius-sm) px-1 pt-2.5 transition-all rule-dashed-t hover:bg-(--paper-hover)/50"
         >
           <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-accent)">
+            <div className="paper-icon-box size-6 text-(--color-accent)">
               <ArrowLeftRight className="stroke-1.8 size-3.5" />
             </div>
             <div>
@@ -66,7 +62,7 @@ export const NetWorthHeader: React.FC<NetWorthHeaderProps> = ({
           </span>
         </div>
       )}
-    </div>
+    </PaperSummaryCard>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { centsToYuan, getCategoryIcon, cn } from '../../../plugin-sdk';
+import { centsToYuan, getCategoryIcon, cn, PaperSummaryCard } from '../../../plugin-sdk';
 import { isItemDisposed } from '../domain/itemCalculator';
 import type { Item, ItemMetrics, ItemStatus } from '../types';
 
@@ -65,9 +65,7 @@ export const ItemSummaryStub: React.FC<ItemSummaryStubProps> = ({
   const recoveredTitle = resolveRecoveredTitle(item.status);
 
   return (
-    <div className="paper-summary-card paper-deckle-bottom relative border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">
-      <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
-
+    <PaperSummaryCard className="pb-4">
       <div className="space-y-3.5 p-4 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -166,11 +164,11 @@ export const ItemSummaryStub: React.FC<ItemSummaryStubProps> = ({
         </div>
 
         {item.note && (
-          <div className="border-t border-dashed border-(--rule-hairline)/70 pt-2 text-[11px] text-(--ink-secondary) italic">
+          <div className="border-(--rule-hairline)/70 pt-2 text-[11px] text-(--ink-secondary) italic rule-dashed-t">
             “{item.note}”
           </div>
         )}
       </div>
-    </div>
+    </PaperSummaryCard>
   );
 };

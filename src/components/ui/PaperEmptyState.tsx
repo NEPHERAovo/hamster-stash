@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
+import { PaperCard } from './PaperCard';
 
 export interface PaperEmptyStateProps {
   icon?: React.ComponentType<{ className?: string }>;
@@ -21,7 +22,7 @@ export const PaperEmptyState: React.FC<PaperEmptyStateProps> = ({
   children,
 }) => {
   const containerVariants = {
-    card: 'paper-card flex w-full flex-col items-center gap-1.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center text-xs text-(--ink-tertiary) shadow-xs transition-all duration-200 select-none',
+    card: 'flex w-full flex-col items-center gap-1.5 text-center text-xs text-(--ink-tertiary) shadow-xs transition-all duration-200 select-none',
     dashed:
       'my-4 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none dark:shadow-[0_1px_4px_rgba(0,0,0,0.12)]',
     plain: 'py-8 text-center text-xs text-(--ink-tertiary) select-none',
@@ -40,12 +41,16 @@ export const PaperEmptyState: React.FC<PaperEmptyStateProps> = ({
 
   if (variant === 'card') {
     return (
-      <div className={cn(containerVariants.card, animate && 'filter-fade-enter', className)}>
+      <PaperCard
+        rounded="md"
+        padding="lg"
+        className={cn(containerVariants.card, animate && 'filter-fade-enter', className)}
+      >
         {Icon && <Icon className="stroke-1.5 size-6 text-(--ink-faint)" />}
         <span className="font-medium text-(--ink-secondary)">{title}</span>
         {description && <span className="font-mono text-[11px] text-(--ink-tertiary)">{description}</span>}
         {children}
-      </div>
+      </PaperCard>
     );
   }
 

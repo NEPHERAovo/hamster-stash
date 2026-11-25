@@ -7,6 +7,7 @@ import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { SwipeableRow } from '../ui/SwipeableRow';
+import { PaperCard } from '../ui/PaperCard';
 import { cn } from '../../utils/cn';
 
 export interface AccountListProps {
@@ -181,7 +182,11 @@ export const AccountList: React.FC<AccountListProps> = ({
           </span>
         </div>
 
-        <div className="paper-card overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs transition-all duration-200 select-none">
+        <PaperCard
+          rounded="md"
+          padding="none"
+          className="overflow-hidden shadow-xs transition-all duration-200 select-none"
+        >
           {savingsAccounts.length === 0 ? (
             <div className="py-6 text-center text-xs text-(--ink-tertiary)">
               暂无储蓄账户
@@ -199,7 +204,7 @@ export const AccountList: React.FC<AccountListProps> = ({
               />
             ))
           )}
-        </div>
+        </PaperCard>
       </div>
 
       {creditAccounts.length > 0 && (
@@ -213,7 +218,11 @@ export const AccountList: React.FC<AccountListProps> = ({
             </span>
           </div>
 
-          <div className="paper-card overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs transition-all duration-200 select-none">
+          <PaperCard
+            rounded="md"
+            padding="none"
+            className="overflow-hidden shadow-xs transition-all duration-200 select-none"
+          >
             {creditAccounts.map((acct) => (
               <SwipeableAccountRow
                 key={acct.id}
@@ -225,7 +234,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                 onDelete={() => handleDeleteAccount(acct)}
               />
             ))}
-          </div>
+          </PaperCard>
         </div>
       )}
     </div>

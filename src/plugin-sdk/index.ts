@@ -38,6 +38,7 @@ export { PluginSubPageOutlet } from './components/PluginSubPageOutlet';
 export { PluginModalOutlet } from './components/PluginModalOutlet';
 
 export { PaperCard, type PaperCardProps } from '../components/ui/PaperCard';
+export { PaperSummaryCard, type PaperSummaryCardProps } from '../components/ui/PaperSummaryCard';
 export { PaperButton, type PaperButtonProps } from '../components/ui/PaperButton';
 export { PaperIconButton, type PaperIconButtonProps } from '../components/ui/PaperIconButton';
 export { PaperInput, type PaperInputProps } from '../components/ui/PaperInput';
@@ -50,6 +51,7 @@ export { CategoryBadge, type CategoryBadgeProps } from '../components/ui/Categor
 export { SegToggle, type SegToggleProps, type SegToggleOption } from '../components/ui/SegToggle';
 export { PaperSwitch, type PaperSwitchProps } from '../components/ui/PaperSwitch';
 export { PaperDatePickerModal, type PaperDatePickerModalProps } from '../components/ui/PaperDatePickerModal';
+export { PaperDateField, type PaperDateFieldProps } from '../components/ui/PaperDateField';
 export { PaperIconPickerModal, type PaperIconPickerModalProps } from '../components/ui/PaperIconPickerModal';
 export { PageHeader, type PageHeaderProps } from '../components/layout/PageHeader';
 export { TransactionKeypad, type TransactionKeypadProps } from '../components/ledger/TransactionKeypad';

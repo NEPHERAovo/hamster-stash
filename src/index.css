@@ -1,12 +1,5 @@
 @import "tailwindcss";
-
-@utility no-scrollbar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
+@import "./styles/utilities.css";
 
 :root {
   /* ============================================================
@@ -34,6 +27,7 @@
   --rule-hairline: #CFDCD0;
   --rule-strong: #B6C9B8;
   --rule-margin: rgba(63, 130, 86, 0.24);
+  --rule-style: dashed;
 
   /* 墨水/文字 — 阶梯对比度显性区分 */
   --ink-solid: #162419;
@@ -549,7 +543,7 @@ body {
   --bg-sunken: #EBEDF0; --paper-sunken: #EBEDF0; --bg-hover: #F8F9FA; --paper-hover: #F8F9FA;
   --border-hairline: rgba(17, 19, 24, 0.06); --rule-hairline: rgba(17, 19, 24, 0.06);
   --border-default: rgba(17, 19, 24, 0.10); --rule-strong: rgba(17, 19, 24, 0.12); --border-strong: rgba(17, 19, 24, 0.18);
-  --rule-margin: transparent; --grid-line: transparent;
+  --rule-style: solid; --rule-margin: transparent; --grid-line: transparent;
   --shadow-sm: 0 4px 12px -2px rgba(20, 28, 56, 0.05); --shadow-md: 0 8px 24px -6px rgba(20, 28, 56, 0.06); --shadow-lg: 0 16px 36px -8px rgba(20, 28, 56, 0.10);
   --radius-xs: 6px; --radius-sm: 12px; --radius-md: 18px; --radius-lg: 22px;
   --ink-primary: #111318; --ink-secondary: #5A606E; --ink-tertiary: #8C93A3; --ink-faint: #B0B5C1; --ink-solid: #111318;

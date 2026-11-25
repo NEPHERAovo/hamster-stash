@@ -1,15 +1,16 @@
 import React from 'react';
-import { MagnifyingGlassIcon as Search, CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import {
   centsToYuan,
   getCategoryIcon,
   cn,
+  PaperCard,
   PaperButton,
   PaperInput,
   PaperSelect,
   AmountInput,
   SegToggle,
-  PaperDatePickerModal,
+  PaperDateField,
   type Account,
   type Category,
   type Transaction,
@@ -33,8 +34,6 @@ export interface ItemBillPanelProps {
   onChangeBillAccountId: (id: string) => void;
   billDate: string;
   onChangeBillDate: (date: string) => void;
-  isBillDateOpen: boolean;
-  onOpenBillDate: (open: boolean) => void;
   billNote: string;
   onChangeBillNote: (note: string) => void;
   isSubmittingBill: boolean;
@@ -61,8 +60,6 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
   onChangeBillAccountId,
   billDate,
   onChangeBillDate,
-  isBillDateOpen,
-  onOpenBillDate,
   billNote,
   onChangeBillNote,
   isSubmittingBill,
@@ -74,7 +71,7 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
   const activeCandidates = isProfitRole ? candidateIncomeTxs : candidateExpenses;
 
   return (
-    <div className="paper-card space-y-3 rounded-(--radius-md) border border-(--rule-strong) bg-(--paper-sheet) p-3.5 shadow-xs">
+    <PaperCard variant="elevated" rounded="md" padding="none" className="space-y-3 p-3.5">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs font-semibold text-(--ink-solid)">
           {isSub ? '续费记录' : '关联账单'}
@@ -209,23 +206,10 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+              <label className="mb-1 paper-field-label">
                 记账日期
               </label>
-              <PaperButton
-                variant="sunken"
-                size="sm"
-                fullWidth
-                onClick={() => onOpenBillDate(true)}
-                className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-                leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
-              >
-                <span>{billDate || '选择日期'}</span>
-              </PaperButton>
-              <PaperDatePickerModal
-                isOpen={isBillDateOpen}
-                onClose={() => onOpenBillDate(false)}
-                mode="date"
+              <PaperDateField
                 value={billDate}
                 onChange={onChangeBillDate}
               />
@@ -260,6 +244,6 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
           </div>
         </form>
       )}
-    </div>
+    </PaperCard>
   );
 };

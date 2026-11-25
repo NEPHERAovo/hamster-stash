@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowsClockwiseIcon as RefreshCw, XIcon as X } from '@phosphor-icons/react';
 import { usePwaStore } from '../../stores/usePwaStore';
+import { PaperCard } from './PaperCard';
 
 export const PwaUpdateBanner: React.FC = () => {
   const { needRefresh, dismissed, isUpdating, applyUpdate, dismissPrompt } = usePwaStore();
@@ -14,9 +15,9 @@ export const PwaUpdateBanner: React.FC = () => {
       role="status"
       aria-live="polite"
     >
-      <div className="paper-card flex items-center justify-between gap-2.5 rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-2.5 shadow-lg">
+      <PaperCard rounded="lg" padding="none" className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 shadow-lg">
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income)">
+          <div className="paper-icon-box size-7 text-(--color-income)">
             <RefreshCw className={`size-3.5 stroke-2 ${isUpdating ? 'animate-spin' : ''}`} />
           </div>
           <div className="min-w-0">
@@ -48,7 +49,7 @@ export const PwaUpdateBanner: React.FC = () => {
             <X className="size-3.5 stroke-2" />
           </button>
         </div>
-      </div>
+      </PaperCard>
     </div>
   );
 };

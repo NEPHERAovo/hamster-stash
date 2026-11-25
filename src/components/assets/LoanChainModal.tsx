@@ -10,6 +10,7 @@ import type { ActiveInstallment } from '../../domain/finance/amortization';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { PaperModal } from '../ui/PaperModal';
+import { PaperCard } from '../ui/PaperCard';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
 import { SegToggle } from '../ui/SegToggle';
 import { cn } from '../../utils/cn';
@@ -156,9 +157,11 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
         ) : (
           <div className="space-y-2.5">
             {filteredItems.map((entry) => (
-              <div
+              <PaperCard
                 key={entry.id}
-                className="paper-card flex items-center justify-between gap-3 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sheet) p-3 shadow-xs select-none"
+                rounded="sm"
+                padding="sm"
+                className="flex items-center justify-between gap-3 shadow-xs select-none"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <div
@@ -205,7 +208,7 @@ export const LoanChainModal: React.FC<LoanChainModalProps> = ({
                     {entry.isExpenseOrDebt ? '待还欠款' : '待收资产'}
                   </div>
                 </div>
-              </div>
+              </PaperCard>
             ))}
           </div>
         )}

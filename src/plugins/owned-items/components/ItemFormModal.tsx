@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckIcon as Check, CalendarBlankIcon as CalendarBlank, DotsThreeIcon as DotsThree, MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
+import { CheckIcon as Check, DotsThreeIcon as DotsThree, MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import {
   useHostAccounts,
   useHostCategories,
@@ -19,7 +19,7 @@ import {
   PaperSelect,
   PaperModal,
   AmountInput,
-  PaperDatePickerModal,
+  PaperDateField,
   PaperIconPickerModal,
 } from '../../../plugin-sdk';
 import { getOwnedItemExt, type Item, type ItemStatus, type ItemKind, type SubscriptionCycle } from '../types';
@@ -107,8 +107,6 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
   const [billingCycle, setBillingCycle] = useState<SubscriptionCycle>('monthly');
   const [renewalAmountYuan, setRenewalAmountYuan] = useState('');
   const [nextRenewalDate, setNextRenewalDate] = useState('');
-  const [isBuyDateOpen, setIsBuyDateOpen] = useState(false);
-  const [isNextRenewalDateOpen, setIsNextRenewalDateOpen] = useState(false);
 
   const [costYuan, setCostYuan] = useState('');
   const [selectedAcctId, setSelectedAcctId] = useState('');
@@ -533,20 +531,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                   起始日期
                 </label>
-                <PaperButton
-                  variant="sunken"
-                  size="sm"
-                  fullWidth
-                  onClick={() => setIsBuyDateOpen(true)}
-                  className="justify-start gap-1.5 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
-                >
-                  <span className="truncate">{buyDate || '选择日期'}</span>
-                </PaperButton>
-                <PaperDatePickerModal
-                  isOpen={isBuyDateOpen}
-                  onClose={() => setIsBuyDateOpen(false)}
-                  mode="date"
+                <PaperDateField
                   value={buyDate}
                   onChange={(val) => {
                     setBuyDate(val);
@@ -554,6 +539,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                       setNextRenewalDate(calculateNextRenewalDate(val, billingCycle));
                     }
                   }}
+                  className="gap-1.5"
                 />
               </div>
 
@@ -561,47 +547,22 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
                 <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
                   下次续费日
                 </label>
-                <PaperButton
-                  variant="sunken"
-                  size="sm"
-                  fullWidth
-                  onClick={() => setIsNextRenewalDateOpen(true)}
-                  className="justify-start gap-1.5 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
-                >
-                  <span className="truncate">{nextRenewalDate || '选择日期'}</span>
-                </PaperButton>
-                <PaperDatePickerModal
-                  isOpen={isNextRenewalDateOpen}
-                  onClose={() => setIsNextRenewalDateOpen(false)}
-                  mode="date"
+                <PaperDateField
                   value={nextRenewalDate}
-                  onChange={(val) => setNextRenewalDate(val)}
+                  onChange={setNextRenewalDate}
+                  className="gap-1.5"
                 />
               </div>
             </div>
           </div>
         ) : (
-          <div className="border-t border-dashed border-(--rule-hairline) pt-2">
+          <div className="pt-2 rule-dashed-t">
             <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
               购入日期
             </label>
-            <PaperButton
-              variant="sunken"
-              size="sm"
-              fullWidth
-              onClick={() => setIsBuyDateOpen(true)}
-              className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-              leftIcon={<CalendarBlank className="size-3.5 shrink-0 text-(--ink-tertiary)" />}
-            >
-              <span>{buyDate || '选择日期'}</span>
-            </PaperButton>
-            <PaperDatePickerModal
-              isOpen={isBuyDateOpen}
-              onClose={() => setIsBuyDateOpen(false)}
-              mode="date"
+            <PaperDateField
               value={buyDate}
-              onChange={(val) => setBuyDate(val)}
+              onChange={setBuyDate}
             />
           </div>
         )}

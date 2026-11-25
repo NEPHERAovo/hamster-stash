@@ -16,6 +16,7 @@ import { PaperSwitch } from '../ui/PaperSwitch';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperChip } from '../ui/PaperChip';
+import { PaperCard } from '../ui/PaperCard';
 import { SettingSection, SettingRow } from '../ui/SettingList';
 import { ClearAllDataModal } from './ClearAllDataModal';
 import { PwaInstallGuideModal } from './PwaInstallGuideModal';
@@ -147,9 +148,9 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             <span>配色主题</span>
           </div>
 
-          <div className="paper-card rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 shadow-xs">
+          <PaperCard rounded="md" padding="sm" className="shadow-xs">
             <ThemeSelector />
-          </div>
+          </PaperCard>
         </>
       )}
 

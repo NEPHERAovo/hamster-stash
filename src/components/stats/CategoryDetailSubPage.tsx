@@ -5,6 +5,7 @@ import type { Transaction } from '../../types/transaction';
 import { TransactionGroup } from '../ledger/TransactionGroup';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { CategoryBadge } from '../ui/CategoryBadge';
+import { PaperCard } from '../ui/PaperCard';
 import type { CategoryDrilldownData } from './StatsView';
 
 export interface CategoryDetailSubPageProps {
@@ -41,7 +42,7 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
 
   return (
     <div className="space-y-3.5 p-4 pb-12">
-      <div className="paper-card w-full space-y-2.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-4 shadow-xs select-none">
+      <PaperCard rounded="md" padding="md" className="w-full space-y-2.5 shadow-xs select-none">
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2">
             <CategoryBadge category={category} size="md" />
@@ -79,7 +80,7 @@ export const CategoryDetailSubPage: React.FC<CategoryDetailSubPageProps> = ({
             </>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       <div className="space-y-1.5 pt-1">
         <div className="flex items-center justify-between px-1 select-none">

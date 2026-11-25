@@ -1,13 +1,13 @@
 import React from 'react';
-import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react';
 import {
   centsToYuan,
+  PaperCard,
   PaperButton,
   PaperInput,
   PaperSelect,
   AmountInput,
   SegToggle,
-  PaperDatePickerModal,
+  PaperDateField,
   type Account,
   type Transaction,
 } from '../../../plugin-sdk';
@@ -27,8 +27,6 @@ export interface ItemDisposePanelProps {
   accounts: Account[];
   disposeDate: string;
   onChangeDisposeDate: (date: string) => void;
-  isDisposeDateOpen: boolean;
-  onOpenDisposeDate: (open: boolean) => void;
   disposeNote: string;
   onChangeDisposeNote: (note: string) => void;
   isSubmittingDispose: boolean;
@@ -51,8 +49,6 @@ export const ItemDisposePanel: React.FC<ItemDisposePanelProps> = ({
   accounts,
   disposeDate,
   onChangeDisposeDate,
-  isDisposeDateOpen,
-  onOpenDisposeDate,
   disposeNote,
   onChangeDisposeNote,
   isSubmittingDispose,
@@ -74,10 +70,8 @@ export const ItemDisposePanel: React.FC<ItemDisposePanelProps> = ({
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="paper-card space-y-3 rounded-(--radius-md) border border-(--rule-strong) bg-(--paper-sheet) p-3.5 shadow-xs"
-    >
+    <PaperCard variant="elevated" rounded="md" padding="none" className="p-3.5">
+      <form onSubmit={onSubmit} className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs font-semibold text-(--ink-solid)">处置</div>
         <SegToggle
@@ -179,23 +173,10 @@ export const ItemDisposePanel: React.FC<ItemDisposePanelProps> = ({
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+              <label className="mb-1 paper-field-label">
                 {dateLabelMap[dispositionMode]}
               </label>
-              <PaperButton
-                variant="sunken"
-                size="sm"
-                fullWidth
-                onClick={() => onOpenDisposeDate(true)}
-                className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-                leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
-              >
-                <span>{disposeDate || '选择日期'}</span>
-              </PaperButton>
-              <PaperDatePickerModal
-                isOpen={isDisposeDateOpen}
-                onClose={() => onOpenDisposeDate(false)}
-                mode="date"
+              <PaperDateField
                 value={disposeDate}
                 onChange={onChangeDisposeDate}
               />
@@ -230,6 +211,7 @@ export const ItemDisposePanel: React.FC<ItemDisposePanelProps> = ({
           确认
         </PaperButton>
       </div>
-    </form>
+      </form>
+    </PaperCard>
   );
 };

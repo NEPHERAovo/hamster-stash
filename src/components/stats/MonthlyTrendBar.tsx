@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { PaperIconButton } from '../ui/PaperIconButton';
+import { PaperCard } from '../ui/PaperCard';
 import { SegToggle } from '../ui/SegToggle';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
@@ -123,9 +124,11 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
   };
 
   return (
-    <div
+    <PaperCard
+      rounded="md"
+      padding="none"
       className={cn(
-        'paper-card w-full rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 shadow-xs transition-all duration-200 select-none sm:p-4',
+        'w-full p-3.5 shadow-xs transition-all duration-200 select-none sm:p-4',
         className
       )}
     >
@@ -307,7 +310,7 @@ export const MonthlyTrendBar: React.FC<MonthlyTrendBarProps> = ({
           })}
         </svg>
       </div>
-    </div>
+    </PaperCard>
   );
 };
 

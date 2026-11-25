@@ -14,6 +14,7 @@ import { PaperButton } from '../ui/PaperButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
+import { PaperCard } from '../ui/PaperCard';
 import { cn } from '../../utils/cn';
 
 const CATEGORY_ICON_CHOICES = [
@@ -570,9 +571,12 @@ export const CategoryManageSubPage: React.FC = () => {
           <span>共 {totalCategoryCount} 项</span>
         </div>
 
-        <div
+        <PaperCard
           ref={containerRef}
-          className="paper-card divide-y divide-dashed divide-(--rule-hairline)/60 overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs"
+          rounded="lg"
+          padding="none"
+          divided
+          className="shadow-xs"
         >
           {displayActiveCategories.map((cat, idx) => (
             <SwipeableCategoryRow
@@ -608,7 +612,7 @@ export const CategoryManageSubPage: React.FC = () => {
               onToggleActive={handleToggleActive}
             />
           ))}
-        </div>
+        </PaperCard>
       </div>
 
       {ghostPos && draggingCat && GhostIconComp && typeof document !== 'undefined' &&

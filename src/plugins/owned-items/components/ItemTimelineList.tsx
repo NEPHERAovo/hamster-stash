@@ -1,6 +1,6 @@
 import React from 'react';
 import { XIcon as X } from '@phosphor-icons/react';
-import { centsToYuan, cn, PaperIconButton, type Transaction } from '../../../plugin-sdk';
+import { centsToYuan, cn, PaperCard, PaperIconButton, type Transaction } from '../../../plugin-sdk';
 import { getOwnedItemExt } from '../types';
 
 export interface ItemTimelineListProps {
@@ -59,7 +59,7 @@ export const ItemTimelineList: React.FC<ItemTimelineListProps> = ({
       </div>
 
       {transactions.length > 0 ? (
-        <div className="paper-card divide-y divide-dashed divide-(--rule-hairline)/60 overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
+        <PaperCard rounded="md" padding="none" divided>
           {transactions.map((tx) => {
             const isIncome = tx.type === 'income';
             return (
@@ -103,11 +103,16 @@ export const ItemTimelineList: React.FC<ItemTimelineListProps> = ({
               </div>
             );
           })}
-        </div>
+        </PaperCard>
       ) : (
-        <div className="paper-card rounded-(--radius-md) border border-dashed border-(--rule-hairline) bg-(--paper-sheet) py-6 text-center font-mono text-xs text-(--ink-tertiary)">
+        <PaperCard
+          rounded="md"
+          variant="dashed"
+          padding="none"
+          className="bg-(--paper-sheet) py-6 text-center font-mono text-xs text-(--ink-tertiary)"
+        >
           暂无关联记账流水
-        </div>
+        </PaperCard>
       )}
     </div>
   );

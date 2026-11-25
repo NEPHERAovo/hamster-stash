@@ -20,6 +20,7 @@ import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { toast } from '../../stores/useToastStore';
 import { SyncReviewModal } from './SyncReviewModal';
 import { PaperButton } from '../ui/PaperButton';
+import { PaperCard } from '../ui/PaperCard';
 import { PaperChip } from '../ui/PaperChip';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperInput } from '../ui/PaperInput';
@@ -302,7 +303,7 @@ export const WebDavSyncSection: React.FC = () => {
         <span>云端同步</span>
       </div>
 
-      <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-3 shadow-xs">
+      <PaperCard rounded="lg" padding="none" className="overflow-hidden px-3.5 py-3 shadow-xs">
         <div className="flex items-center justify-between gap-2">
           <div
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 select-none"
@@ -553,7 +554,7 @@ export const WebDavSyncSection: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-2.5 flex items-center justify-between border-t border-dashed border-(--rule-hairline)/60 pt-2.5 select-none">
+        <div className="mt-2.5 flex items-center justify-between pt-2.5 select-none rule-dashed-t">
           <span className="text-[13px] font-medium text-(--ink-primary)">每日自动同步</span>
           <PaperSwitch
             checked={autoSyncDaily}
@@ -562,7 +563,7 @@ export const WebDavSyncSection: React.FC = () => {
           />
         </div>
 
-        <div className="mt-2.5 flex items-center justify-between border-t border-dashed border-(--rule-hairline)/60 pt-2.5 select-none">
+        <div className="mt-2.5 flex items-center justify-between pt-2.5 select-none rule-dashed-t">
           <span className="text-[13px] font-medium text-(--ink-primary)">备份凭证附件</span>
           <PaperSwitch
             checked={syncAttachments}
@@ -570,7 +571,7 @@ export const WebDavSyncSection: React.FC = () => {
             aria-label="备份凭证附件"
           />
         </div>
-      </div>
+      </PaperCard>
 
       <SyncReviewModal
         isOpen={Boolean(reviewPlan)}

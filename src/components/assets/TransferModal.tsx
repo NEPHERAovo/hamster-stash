@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowsLeftRightIcon as ArrowLeftRight,
   TrashIcon as Trash2,
-  CalendarBlankIcon as CalendarIcon,
 } from '@phosphor-icons/react';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
@@ -10,7 +9,7 @@ import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperSelect } from '../ui/PaperSelect';
 import { PaperInput } from '../ui/PaperInput';
 import { AmountInput } from '../ui/AmountInput';
-import { PaperDatePickerModal } from '../ui/PaperDatePickerModal';
+import { PaperDateField } from '../ui/PaperDateField';
 import type { Account } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
 import { centsToYuan, yuanToCents } from '../../domain/finance/balanceCalculator';
@@ -52,7 +51,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [dateStr, setDateStr] = useState(todayDate());
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -209,17 +207,13 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
         <div className="space-y-1.5">
           <label className="font-mono text-xs text-(--ink-tertiary)">划转日期</label>
-          <PaperButton
-            type="button"
+          <PaperDateField
             variant="secondary"
             size="md"
-            fullWidth
-            onClick={() => setIsDatePickerOpen(true)}
-            className="justify-between font-mono text-xs font-normal"
-            rightIcon={<CalendarIcon className="size-4 text-(--ink-tertiary)" />}
-          >
-            <span>{dateStr}</span>
-          </PaperButton>
+            iconPosition="right"
+            value={dateStr}
+            onChange={setDateStr}
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -266,14 +260,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           </PaperButton>
         </div>
       </form>
-
-      <PaperDatePickerModal
-        isOpen={isDatePickerOpen}
-        onClose={() => setIsDatePickerOpen(false)}
-        mode="date"
-        value={dateStr}
-        onChange={setDateStr}
-      />
     </PaperModal>
   );
 };

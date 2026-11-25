@@ -8,6 +8,8 @@ import {
   getCategoryIcon,
   cn,
   PageHeader,
+  PaperCard,
+  PaperSummaryCard,
   PaperIconButton,
   PaperSelect,
   type PaperSelectOption,
@@ -144,9 +146,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
       )}
 
       <div className={cn('space-y-3.5 px-4', onClose ? 'pt-3' : 'pt-2')}>
-        <div className="tab-stagger-1 paper-summary-card paper-deckle-bottom relative border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">
-          <div className="washi-tape absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-2xs" />
-
+        <PaperSummaryCard className="tab-stagger-1 pb-4">
           <div className="space-y-3 p-4 pt-4.5">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] font-medium text-(--ink-tertiary)">
@@ -176,7 +176,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               </div>
             </div>
           </div>
-        </div>
+        </PaperSummaryCard>
 
         <div className="tab-stagger-2 w-full space-y-3">
           <div className="no-scrollbar flex items-center justify-between gap-1.5 overflow-x-auto border-b border-(--rule-hairline) pb-2.5">
@@ -227,8 +227,10 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                 const isSub = item.kind === 'subscription';
 
                 return (
-                  <div
+                  <PaperCard
                     key={item.id}
+                    rounded="md"
+                    interactive
                     onClick={() => openSubPage('item-detail', { itemId: item.id })}
                     role="button"
                     tabIndex={0}
@@ -238,11 +240,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                         openSubPage('item-detail', { itemId: item.id });
                       }
                     }}
-                    className={cn(
-                      'paper-card w-full rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-(--ink-solid)',
-                      'cursor-pointer p-3.5 shadow-xs transition-all',
-                      'active:scale-0.995 relative hover:border-(--rule-strong)'
-                    )}
+                    className="active:scale-0.995 relative w-full p-3.5 shadow-xs hover:border-(--rule-strong)"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2.5">
@@ -296,7 +294,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
                         )}
                       </div>
                     </div>
-                  </div>
+                  </PaperCard>
                 );
               })}
             </div>

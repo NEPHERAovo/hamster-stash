@@ -2,6 +2,7 @@ import React from 'react';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
 import type { MonthSummary } from '../../domain/finance/balanceCalculator';
 import { cn } from '../../utils/cn';
+import { PaperSummaryCard } from '../ui/PaperSummaryCard';
 
 export interface BalanceSummaryCardProps {
   summary: MonthSummary;
@@ -16,15 +17,10 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
   const isSurplus = summary.netBalance >= 0;
 
   return (
-    <div
-      className={cn(
-        'relative mx-4 mt-3.5 border border-(--rule-hairline) bg-(--paper-sheet) p-4 transition-all duration-200 select-none sm:p-5',
-        'paper-deckle-bottom paper-summary-card',
-        className
-      )}
+    <PaperSummaryCard
+      tapeClassName="-top-2"
+      className={cn('mx-4 mt-3.5 p-4 sm:p-5', className)}
     >
-      <div className="washi-tape absolute -top-2 left-1/2 z-10 -translate-x-1/2" />
-
       <div className="mb-1 flex items-center justify-between">
         <span className="font-mono text-[11px] font-medium text-(--ink-tertiary)">本月支出</span>
         <span
@@ -41,7 +37,7 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
         ¥ {centsToYuan(summary.totalExpense)}
       </div>
 
-      <div className="summary-card-divider flex items-center border-t border-dashed border-(--rule-strong) pt-2 font-mono text-[11px] tabular-nums">
+      <div className="summary-card-divider flex items-center border-(--rule-strong) pt-2 font-mono text-[11px] tabular-nums rule-dashed-t">
         <div className="flex items-end gap-1 leading-none">
           <span className="text-[10px] text-(--ink-tertiary)">收入</span>
           <span className="font-semibold text-(--color-income)">
@@ -67,7 +63,7 @@ export const BalanceSummaryCard: React.FC<BalanceSummaryCardProps> = ({
           </span>
         </div>
       </div>
-    </div>
+    </PaperSummaryCard>
   );
 };
 
