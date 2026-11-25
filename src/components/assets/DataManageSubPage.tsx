@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { core } from '../../core';
+import { pluginManager } from '../../core/plugin/PluginManager';
 import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
@@ -77,6 +78,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
 
       await core.init();
       await core.adapter.import(data);
+      pluginManager.emitHostEvent('data:imported');
 
       await loadAccounts();
       await loadCategories();

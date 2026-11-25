@@ -76,6 +76,8 @@ async function revertSoldIfNoSellLeft(itemId: string, excludeTxId: string): Prom
 }
 
 export class OwnedItemsPlugin extends BasePlugin {
+  private unsubscribeDataImported: (() => void) | null = null;
+
   readonly manifest: PluginManifest = {
     id: 'owned-items',
     name: '物品与订阅',
@@ -89,6 +91,10 @@ export class OwnedItemsPlugin extends BasePlugin {
     const collection = ctx.storage.collection<Item>('items');
     usePluginItemStore.getState().setCollection(collection);
     await usePluginItemStore.getState().loadItems();
+
+    this.unsubscribeDataImported = ctx.events.on('data:imported', () => {
+      void usePluginItemStore.getState().loadItems();
+    });
 
     ctx.ui.registerNavTab({
       id: 'items',
@@ -184,6 +190,8 @@ export class OwnedItemsPlugin extends BasePlugin {
   }
 
   async onDeactivate(): Promise<void> {
+    this.unsubscribeDataImported?.();
+    this.unsubscribeDataImported = null;
   }
 }
 

@@ -4,12 +4,21 @@ import { DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES, getSandboxSeedData } from '../db/
 import type {
   DataAdapter,
   ExportData,
+  ExportOptions,
   QueryOptions,
   StoredEntity,
 } from '../../types/adapter';
 import type { Account } from '../../types/account';
 import type { Category } from '../../types/category';
 import type { Transaction } from '../../types/transaction';
+
+const DEFAULT_SEED_TIMESTAMP = '1970-01-01T00:00:00.000Z';
+const TOMBSTONE_COLLECTIONS = new Set<string>([
+  STORES.TRANSACTIONS,
+  STORES.ACCOUNTS,
+  STORES.CATEGORIES,
+  STORES.PLUGIN_DATA,
+]);
 
 export class IndexedDBAdapter implements DataAdapter {
   readonly id = 'indexeddb';
@@ -106,8 +115,8 @@ export class IndexedDBAdapter implements DataAdapter {
       for (const cat of DEFAULT_CATEGORIES) {
         await tx.store.put({
           ...cat,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: DEFAULT_SEED_TIMESTAMP,
+          updatedAt: DEFAULT_SEED_TIMESTAMP,
         });
       }
       await tx.done;
@@ -119,10 +128,10 @@ export class IndexedDBAdapter implements DataAdapter {
           await tx.store.put({
             ...cat,
             isArchived: cat.isArchived ?? true,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: DEFAULT_SEED_TIMESTAMP,
+            updatedAt: DEFAULT_SEED_TIMESTAMP,
           });
-        } else if (existing.isSystem) {
+        } else if (existing.isSystem && !existing.deletedAt) {
           const shouldUpdateName =
             existing.name &&
             typeof existing.name === 'string' &&
@@ -146,8 +155,8 @@ export class IndexedDBAdapter implements DataAdapter {
       for (const acct of DEFAULT_ACCOUNTS) {
         await tx.store.put({
           ...acct,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: DEFAULT_SEED_TIMESTAMP,
+          updatedAt: DEFAULT_SEED_TIMESTAMP,
         });
       }
       await tx.done;
@@ -200,6 +209,7 @@ export class IndexedDBAdapter implements DataAdapter {
       createdAt,
       updatedAt: now,
     } as unknown as T;
+    delete (entity as StoredEntity).deletedAt;
 
     await db.put(collection, entity);
     return entity;
@@ -208,7 +218,8 @@ export class IndexedDBAdapter implements DataAdapter {
   async read<T extends StoredEntity>(collection: string, id: string): Promise<T | null> {
     const db = this.getDB();
     const item = await db.get(collection, id);
-    return item ? (item as T) : null;
+    if (!item || (item as StoredEntity).deletedAt) return null;
+    return item as T;
   }
 
   async update<T extends StoredEntity>(
@@ -218,7 +229,7 @@ export class IndexedDBAdapter implements DataAdapter {
   ): Promise<T> {
     const db = this.getDB();
     const item = await db.get(collection, id);
-    if (!item) {
+    if (!item || (item as StoredEntity).deletedAt) {
       throw new Error(`Item ${id} not found in store ${collection}`);
     }
 
@@ -234,7 +245,18 @@ export class IndexedDBAdapter implements DataAdapter {
 
   async delete(collection: string, id: string): Promise<void> {
     const db = this.getDB();
-    await db.delete(collection, id);
+    if (!TOMBSTONE_COLLECTIONS.has(collection)) {
+      await db.delete(collection, id);
+      return;
+    }
+    const existing = (await db.get(collection, id)) as StoredEntity | undefined;
+    if (!existing || existing.deletedAt) return;
+    const now = new Date().toISOString();
+    await db.put(collection, {
+      ...existing,
+      deletedAt: now,
+      updatedAt: now,
+    });
   }
 
   async query<T extends StoredEntity>(
@@ -242,7 +264,7 @@ export class IndexedDBAdapter implements DataAdapter {
     options?: QueryOptions
   ): Promise<T[]> {
     const db = this.getDB();
-    let items = (await db.getAll(collection)) as T[];
+    let items = ((await db.getAll(collection)) as T[]).filter((item) => !item.deletedAt);
 
     if (options?.filters) {
       items = items.filter((item) => {
@@ -280,12 +302,18 @@ export class IndexedDBAdapter implements DataAdapter {
     return items;
   }
 
-  async export(): Promise<ExportData> {
-    const txs = await this.query<Transaction>(STORES.TRANSACTIONS);
-    const accts = await this.query<Account>(STORES.ACCOUNTS);
-    const cats = await this.query<Category>(STORES.CATEGORIES);
+  async export(options?: ExportOptions): Promise<ExportData> {
+    const db = this.getDB();
+    const readCollection = async <T extends StoredEntity>(store: string): Promise<T[]> => {
+      const all = (await db.getAll(store)) as T[];
+      return options?.includeTombstones ? all : all.filter((item) => !item.deletedAt);
+    };
+
+    const txs = await readCollection<Transaction>(STORES.TRANSACTIONS);
+    const accts = await readCollection<Account>(STORES.ACCOUNTS);
+    const cats = await readCollection<Category>(STORES.CATEGORIES);
     const settingsList = await this.query<StoredEntity>(STORES.SETTINGS);
-    const pluginData = await this.query<StoredEntity>(STORES.PLUGIN_DATA);
+    const pluginData = await readCollection<StoredEntity>(STORES.PLUGIN_DATA);
     const pluginSettings = await this.query<StoredEntity>(STORES.PLUGIN_SETTINGS);
 
     const settingsMap: Record<string, unknown> = {};

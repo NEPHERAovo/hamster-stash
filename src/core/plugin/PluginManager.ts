@@ -88,6 +88,10 @@ export class PluginManager {
   ): Promise<R> {
     return this.registry.getPipeline().run<P, R>(hookName, payload, finalHandler);
   }
+
+  emitHostEvent(event: string, ...args: unknown[]): void {
+    this.registry.emitEvent(event, ...args);
+  }
 }
 
 export const pluginManager = new PluginManager();

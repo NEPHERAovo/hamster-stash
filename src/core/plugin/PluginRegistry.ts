@@ -11,6 +11,7 @@ export class PluginRegistry {
   private pipeline = new MiddlewarePipeline();
   private storageManager: PluginStorageManager;
   private adapter: DataAdapter;
+  private eventListeners = new Map<string, Map<string, Set<(...args: unknown[]) => void>>>();
 
   constructor(adapter: DataAdapter) {
     this.adapter = adapter;
@@ -49,8 +50,7 @@ export class PluginRegistry {
   createContext(pluginId: string): PluginContext {
     const storageManager = this.storageManager;
     const pipeline = this.pipeline;
-
-    const listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+    const eventListeners = this.eventListeners;
 
     return {
       pluginId,
@@ -124,25 +124,40 @@ export class PluginRegistry {
 
       events: {
         on: (event, handler) => {
-          if (!listeners.has(event)) {
-            listeners.set(event, new Set());
+          let perEvent = eventListeners.get(event);
+          if (!perEvent) {
+            perEvent = new Map();
+            eventListeners.set(event, perEvent);
           }
-          listeners.get(event)!.add(handler);
+          let handlers = perEvent.get(pluginId);
+          if (!handlers) {
+            handlers = new Set();
+            perEvent.set(pluginId, handlers);
+          }
+          handlers.add(handler);
           return () => {
-            listeners.get(event)?.delete(handler);
+            perEvent?.get(pluginId)?.delete(handler);
           };
         },
         emit: (event, ...args) => {
-          listeners.get(event)?.forEach((fn) => {
-            try {
-              fn(...args);
-            } catch (err) {
-              console.error(`Error in event listener for ${event}:`, err);
-            }
-          });
+          this.emitEvent(event, ...args);
         },
       },
     };
+  }
+
+  emitEvent(event: string, ...args: unknown[]): void {
+    const perEvent = this.eventListeners.get(event);
+    if (!perEvent) return;
+    perEvent.forEach((handlers) => {
+      handlers.forEach((fn) => {
+        try {
+          fn(...args);
+        } catch (err) {
+          console.error(`Error in event listener for ${event}:`, err);
+        }
+      });
+    });
   }
 
   async activate(pluginId: string): Promise<void> {
@@ -182,6 +197,9 @@ export class PluginRegistry {
     usePluginUIStore.getState().unregisterOverridesByPlugin(pluginId);
     usePluginUIStore.getState().unregisterNavTabsByPlugin(pluginId);
     this.pipeline.unregisterByPlugin(pluginId);
+    this.eventListeners.forEach((perEvent) => {
+      perEvent.delete(pluginId);
+    });
 
     this.activeContexts.delete(pluginId);
     usePluginUIStore.getState().setPluginEnabled(pluginId, false);

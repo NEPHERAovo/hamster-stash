@@ -1,12 +1,21 @@
 import type {
   DataAdapter,
   ExportData,
+  ExportOptions,
   QueryOptions,
   StoredEntity,
 } from '../../types/adapter';
 import type { Account } from '../../types/account';
 import type { Category } from '../../types/category';
 import type { Transaction } from '../../types/transaction';
+import { STORES } from '../db/schema';
+
+const TOMBSTONE_COLLECTIONS = new Set<string>([
+  STORES.TRANSACTIONS,
+  STORES.ACCOUNTS,
+  STORES.CATEGORIES,
+  STORES.PLUGIN_DATA,
+]);
 
 export class MemoryAdapter implements DataAdapter {
   readonly id = 'memory';
@@ -40,6 +49,7 @@ export class MemoryAdapter implements DataAdapter {
       createdAt,
       updatedAt: now,
     } as unknown as T;
+    delete (entity as StoredEntity).deletedAt;
 
     col.set(id, entity);
     return entity;
@@ -48,7 +58,8 @@ export class MemoryAdapter implements DataAdapter {
   async read<T extends StoredEntity>(collection: string, id: string): Promise<T | null> {
     const col = this.getCollection(collection);
     const item = col.get(id);
-    return item ? (structuredClone(item) as T) : null;
+    if (!item || item.deletedAt) return null;
+    return structuredClone(item) as T;
   }
 
   async update<T extends StoredEntity>(
@@ -58,7 +69,7 @@ export class MemoryAdapter implements DataAdapter {
   ): Promise<T> {
     const col = this.getCollection(collection);
     const item = col.get(id);
-    if (!item) {
+    if (!item || item.deletedAt) {
       throw new Error(`Item ${id} not found in collection ${collection}`);
     }
 
@@ -74,7 +85,18 @@ export class MemoryAdapter implements DataAdapter {
 
   async delete(collection: string, id: string): Promise<void> {
     const col = this.getCollection(collection);
-    col.delete(id);
+    if (!TOMBSTONE_COLLECTIONS.has(collection)) {
+      col.delete(id);
+      return;
+    }
+    const existing = col.get(id);
+    if (!existing || existing.deletedAt) return;
+    const now = new Date().toISOString();
+    col.set(id, {
+      ...existing,
+      deletedAt: now,
+      updatedAt: now,
+    });
   }
 
   async query<T extends StoredEntity>(
@@ -82,7 +104,7 @@ export class MemoryAdapter implements DataAdapter {
     options?: QueryOptions
   ): Promise<T[]> {
     const col = this.getCollection(collection);
-    let items = Array.from(col.values()) as unknown as T[];
+    let items = Array.from(col.values()).filter((item) => !item.deletedAt) as unknown as T[];
 
     if (options?.filters) {
       items = items.filter((item) => {
@@ -120,13 +142,18 @@ export class MemoryAdapter implements DataAdapter {
     return items.map((i) => structuredClone(i));
   }
 
-  async export(): Promise<ExportData> {
-    const txs = await this.query<Transaction>('transactions');
-    const accts = await this.query<Account>('accounts');
-    const cats = await this.query<Category>('categories');
-    const settingsList = await this.query<StoredEntity>('settings');
-    const pluginData = await this.query<StoredEntity>('plugin_data');
-    const pluginSettings = await this.query<StoredEntity>('plugin_settings');
+  async export(options?: ExportOptions): Promise<ExportData> {
+    const readCollection = <T extends StoredEntity>(name: string): T[] => {
+      const all = Array.from(this.getCollection(name).values()).map((i) => structuredClone(i) as T);
+      return options?.includeTombstones ? all : all.filter((item) => !item.deletedAt);
+    };
+
+    const txs = readCollection<Transaction>(STORES.TRANSACTIONS);
+    const accts = readCollection<Account>(STORES.ACCOUNTS);
+    const cats = readCollection<Category>(STORES.CATEGORIES);
+    const settingsList = await this.query<StoredEntity>(STORES.SETTINGS);
+    const pluginData = readCollection<StoredEntity>(STORES.PLUGIN_DATA);
+    const pluginSettings = await this.query<StoredEntity>(STORES.PLUGIN_SETTINGS);
 
     const settingsMap: Record<string, unknown> = {};
     for (const s of settingsList) {

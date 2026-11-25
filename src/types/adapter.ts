@@ -30,6 +30,10 @@ export interface ExportData {
   };
 }
 
+export interface ExportOptions {
+  includeTombstones?: boolean;
+}
+
 export interface DataAdapter {
   readonly id: string;
   initialize(): Promise<void>;
@@ -45,7 +49,7 @@ export interface DataAdapter {
 
   query<T extends StoredEntity>(collection: string, options?: QueryOptions): Promise<T[]>;
 
-  export(): Promise<ExportData>;
+  export(options?: ExportOptions): Promise<ExportData>;
   import(data: ExportData): Promise<void>;
   clearAll(): Promise<void>;
 }
