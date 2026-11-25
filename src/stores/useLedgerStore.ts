@@ -16,8 +16,7 @@ import { currentYearMonth } from '../utils/date';
 
 interface LedgerState {
   currentMonth: string; // YYYY-MM
-  transactions: Transaction[]; // 全量或当前视图流水（按时间倒序）
-  allTransactions: Transaction[];
+  transactions: Transaction[];
   summary: MonthSummary;
   settlementSummary: PendingSettlementSummary;
   loading: boolean;
@@ -61,7 +60,6 @@ const initialSettlementSummary: PendingSettlementSummary = {
 export const useLedgerStore = create<LedgerState>((set, get) => ({
   currentMonth: currentYearMonth(),
   transactions: [],
-  allTransactions: [],
   summary: { totalIncome: 0, totalExpense: 0, netBalance: 0, retentionRate: 0 },
   settlementSummary: initialSettlementSummary,
   loading: false,
@@ -98,7 +96,6 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     const settlementSummary = await core.txService.getPendingSettlementSummary();
 
     set({
-      allTransactions: all,
       transactions: all,
       summary,
       settlementSummary,
@@ -128,7 +125,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
     set({
       currentMonth: month,
-      allTransactions: all,
+      transactions: all,
       summary,
       settlementSummary,
       loading: false,

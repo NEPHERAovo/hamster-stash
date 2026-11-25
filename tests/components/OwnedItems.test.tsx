@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import React from 'react';
-import { OwnedItemsSummaryCard } from '../../src/plugins/owned-items/components/OwnedItemsSummaryCard';
 import { ItemDetailSubPage } from '../../src/plugins/owned-items/components/ItemDetailSubPage';
 import { ItemListSubPage } from '../../src/plugins/owned-items/components/ItemListSubPage';
 import { ItemFormModal } from '../../src/plugins/owned-items/components/ItemFormModal';
@@ -11,7 +10,7 @@ import { useLedgerStore } from '../../src/stores/useLedgerStore';
 import type { Item } from '../../src/plugins/owned-items/types';
 import type { Transaction } from '../../src/plugin-sdk';
 
-describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
+describe('OwnedItems Plugin Components', () => {
   const dummyItem: Item = {
     id: 'item_switch',
     name: 'Nintendo Switch',
@@ -41,36 +40,13 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
 
   beforeEach(() => {
     usePluginItemStore.setState({ items: [dummyItem], loading: false, sortOption: 'date-desc' });
-    useLedgerStore.setState({ transactions: [dummyTx], allTransactions: [dummyTx] });
+    useLedgerStore.setState({ transactions: [dummyTx] });
     usePluginUIStore.setState({
       registeredSubPages: { 'item-list': () => React.createElement('div', null, 'ItemList') },
       registeredModals: { 'item-form': () => React.createElement('div', null, 'ItemForm') },
       activeSubPage: null,
       activeModal: null,
     });
-  });
-
-  it('展示正确的持有名称与在持统计', () => {
-    render(<OwnedItemsSummaryCard />);
-
-    expect(screen.getByText('物品')).toBeInTheDocument();
-    expect(screen.getByText('1 件在用')).toBeInTheDocument();
-    expect(screen.getByText('Nintendo Switch')).toBeInTheDocument();
-    expect(screen.getByText('总投入')).toBeInTheDocument();
-    expect(screen.getByText('日均成本')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button'));
-    expect(usePluginUIStore.getState().activeSubPage?.id).toBe('item-list');
-  });
-
-  it('空列表时展示手帐风占位文案且不显示冗余新建按钮', () => {
-    usePluginItemStore.setState({ items: [], loading: false });
-    useLedgerStore.setState({ transactions: [], allTransactions: [] });
-
-    render(<OwnedItemsSummaryCard />);
-
-    expect(screen.getByText('暂无记录')).toBeInTheDocument();
-    expect(screen.queryByText('新建')).not.toBeInTheDocument();
   });
 
   it('renders generic "物品详情" for physical items and "订阅详情" for subscriptions', () => {
@@ -131,7 +107,6 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
     usePluginItemStore.setState({ items: [dummyItem], changeStatus: changeStatusSpy });
     useLedgerStore.setState({
       transactions: [dummyTx, existingIncome, existingExpense],
-      allTransactions: [dummyTx, existingIncome, existingExpense],
       updateTransaction: updateSpy,
     });
 
@@ -251,7 +226,7 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
 
     act(() => {
       usePluginItemStore.setState({ items: [itemA, itemB, itemC], loading: false, sortOption: 'date-desc' });
-      useLedgerStore.setState({ transactions: txs, allTransactions: txs });
+      useLedgerStore.setState({ transactions: txs });
     });
 
     const { container } = render(<ItemListSubPage />);
@@ -305,7 +280,6 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
     });
     useLedgerStore.setState({
       transactions: [existingExpense],
-      allTransactions: [existingExpense],
       recordTransaction: recordSpy,
       updateTransaction: updateSpy,
     });

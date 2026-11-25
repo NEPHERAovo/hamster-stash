@@ -76,7 +76,7 @@ export function App() {
   const handleSelectTransaction = (tx: Transaction) => {
     const originalTxId = (tx.ext?.amortize as Record<string, unknown> | undefined)?.originalTxId as string | undefined;
     const targetTx = originalTxId
-      ? allTransactions.find((t) => t.id === originalTxId) || tx
+      ? transactions.find((t) => t.id === originalTxId) || tx
       : tx;
 
     if (targetTx.type === 'transfer') {
@@ -94,7 +94,7 @@ export function App() {
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
-  const { isDark, toggleDark, uiStyle } = useThemeStore();
+  const { uiStyle } = useThemeStore();
   const isModern = uiStyle === 'modern';
 
   const {
@@ -102,7 +102,6 @@ export function App() {
     setCurrentMonth,
     loadMonth,
     transactions,
-    allTransactions,
     settlementSummary,
     loadTransactions,
     loadSettlementSummary,
@@ -273,7 +272,7 @@ export function App() {
 
   const activeNavTab = pluginNavTabs.find((t) => t.id === currentTab);
 
-  const displayTransactions = allTransactions.length > 0 ? allTransactions : transactions;
+  const displayTransactions = transactions;
 
   const includedAccountIds = useMemo(
     () => new Set(accounts.filter((a) => !a.isArchived && a.includeInNetWorth !== false).map((a) => a.id)),
@@ -538,8 +537,6 @@ export function App() {
       >
         <SettingsSubPage
           onClose={() => setIsSettingsOpen(false)}
-          isDark={isDark}
-          onToggleDark={toggleDark}
           onOpenImport={() => setIsImportOpen(true)}
           onOpenCategories={() => setIsCategoryManageOpen(true)}
           onOpenDataManage={() => setIsDataManageOpen(true)}

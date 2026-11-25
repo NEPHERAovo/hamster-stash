@@ -74,7 +74,6 @@ export interface StatsViewProps {
   onCompositionDimensionChange?: (dimension: StatsDimension) => void;
   trendDimension?: StatsDimension;
   onTrendDimensionChange?: (dimension: StatsDimension) => void;
-  dimension?: StatsDimension;
   onOpenCategoryDrilldown?: (data: CategoryDrilldownData) => void;
 }
 
@@ -98,15 +97,14 @@ export const StatsView: React.FC<StatsViewProps> = ({
   onCompositionDimensionChange,
   trendDimension: controlledTrendDim,
   onTrendDimensionChange,
-  dimension: legacyDimension,
   onOpenCategoryDrilldown,
 }) => {
   const [internalMode, setInternalMode] = useState<PeriodMode>('month');
   const [internalCompDimension, setInternalCompDimension] = useState<StatsDimension>(
-    controlledCompDim || legacyDimension || 'expense'
+    controlledCompDim || 'expense'
   );
   const [internalTrendDimension, setInternalTrendDimension] = useState<StatsDimension>(
-    controlledTrendDim || legacyDimension || 'expense'
+    controlledTrendDim || 'expense'
   );
   const [internalDrilldown, setInternalDrilldown] = useState<CategoryDrilldownData | null>(null);
 

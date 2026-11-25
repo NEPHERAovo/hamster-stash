@@ -25,7 +25,7 @@ const RANGE_OPTIONS: { value: ExportRangeMode; label: string }[] = [
 ];
 
 export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose }) => {
-  const allTransactions = useLedgerStore((s) => s.allTransactions);
+  const transactions = useLedgerStore((s) => s.transactions);
   const [rangeMode, setRangeMode] = useState<ExportRangeMode>('all');
   const [customStart, setCustomStart] = useState(() =>
     dayjs().startOf('month').format('YYYY-MM-DD')
@@ -62,12 +62,12 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
 
   const matchedCount = useMemo(() => {
     const { start, end } = resolvedBounds;
-    return allTransactions.filter((t) => {
+    return transactions.filter((t) => {
       if (start && t.date < start) return false;
       if (end && t.date > end) return false;
       return true;
     }).length;
-  }, [allTransactions, resolvedBounds]);
+  }, [transactions, resolvedBounds]);
 
   const isRangeInvalid =
     rangeMode === 'custom' && Boolean(customStart && customEnd && customStart > customEnd);

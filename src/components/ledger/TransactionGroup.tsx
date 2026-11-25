@@ -47,8 +47,8 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
-  const allTxs = useLedgerStore((s) => s.allTransactions);
-  const dataSource = allTxs.length > 0 ? allTxs : transactions;
+  const storeTransactions = useLedgerStore((s) => s.transactions);
+  const dataSource = storeTransactions.length > 0 ? storeTransactions : transactions;
 
   const { offsetMap, expenseNoteMap } = useMemo(() => {
     const oMap = new Map<string, number>();

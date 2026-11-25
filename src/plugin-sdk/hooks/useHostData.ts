@@ -9,14 +9,11 @@ import type { Category } from '../../types/category';
  * 宿主流水数据响应式读取 Hook (按时间倒序的全量交易流水)
  */
 export function useHostTransactions(): Transaction[] {
-  const allTransactions = useLedgerStore((s) => s.allTransactions);
-  const transactions = useLedgerStore((s) => s.transactions);
-  return allTransactions.length > 0 ? allTransactions : transactions;
+  return useLedgerStore((s) => s.transactions);
 }
 
 export function getHostTransactions(): Transaction[] {
-  const state = useLedgerStore.getState();
-  return state.allTransactions.length > 0 ? state.allTransactions : state.transactions;
+  return useLedgerStore.getState().transactions;
 }
 
 /**

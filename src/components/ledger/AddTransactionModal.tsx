@@ -93,7 +93,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onSuccess,
 }) => {
   const { recordTransaction, updateTransaction, deleteTransaction, settlementSummary } = useLedgerStore();
-  const allTransactions = useLedgerStore((s) => s.allTransactions);
+  const allTransactions = useLedgerStore((s) => s.transactions);
   const { categories } = useCategoryStore();
   const { accounts } = useAccountStore();
 

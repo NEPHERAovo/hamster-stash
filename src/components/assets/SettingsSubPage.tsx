@@ -6,8 +6,6 @@ export interface SettingsSubPageProps extends SettingsCardProps {
 }
 
 export const SettingsSubPage: React.FC<SettingsSubPageProps> = ({
-  isDark,
-  onToggleDark,
   onOpenImport,
   onOpenCategories,
   onOpenDataManage,
@@ -16,8 +14,6 @@ export const SettingsSubPage: React.FC<SettingsSubPageProps> = ({
     <div className="w-full pb-8 select-none">
       <div className="px-4 pt-2">
         <SettingsCard
-          isDark={isDark}
-          onToggleDark={onToggleDark}
           onOpenImport={onOpenImport}
           onOpenCategories={onOpenCategories}
           onOpenDataManage={onOpenDataManage}

@@ -25,8 +25,6 @@ import { cn } from '../../utils/cn';
 import { todayDate } from '../../utils/date';
 
 export interface SettingsCardProps {
-  isDark?: boolean;
-  onToggleDark?: () => void;
   onOpenImport?: () => void;
   onOpenCategories?: () => void;
   onOpenDataManage?: () => void;
@@ -37,7 +35,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   onOpenDataManage,
 }) => {
   const { accounts, loadAccounts } = useAccountStore();
-  const { allTransactions, loadTransactions, loadSettlementSummary } = useLedgerStore();
+  const { transactions, loadTransactions, loadSettlementSummary } = useLedgerStore();
   const { categories, loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const {
@@ -493,7 +491,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
           <div className="space-y-1.5 rounded-(--radius-sm) border border-dashed border-(--rule-hairline) bg-(--paper-sunken)/70 p-3 font-mono text-xs">
             <div className="flex items-center justify-between text-(--ink-secondary)">
               <span>记账流水</span>
-              <span className="font-semibold text-(--ink-solid)">{allTransactions.length} 笔</span>
+              <span className="font-semibold text-(--ink-solid)">{transactions.length} 笔</span>
             </div>
             <div className="flex items-center justify-between text-(--ink-secondary)">
               <span>资金账户</span>
@@ -534,7 +532,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
       <ClearAllDataModal
         isOpen={isClearAllOpen}
-        transactionCount={allTransactions.length}
+        transactionCount={transactions.length}
         accountCount={accounts.length}
         onClose={() => setIsClearAllOpen(false)}
         onRequestBackup={() => setIsBackupConfirmOpen(true)}

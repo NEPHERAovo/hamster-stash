@@ -1,4 +1,3 @@
-export * from './DotGrid';
 export * from './PaperCard';
 export * from './PaperButton';
 export * from './PaperInput';
@@ -8,7 +7,6 @@ export * from './PaperModal';
 export * from './SegToggle';
 export * from './PaperBadge';
 export * from './CategoryBadge';
-export * from './PaperKeypad';
 export * from './PaperSwitch';
 export * from './ThemeSelector';
 export * from './Toast';

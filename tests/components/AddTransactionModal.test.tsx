@@ -234,7 +234,7 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
       },
     ];
 
-    useLedgerStore.setState({ allTransactions: mockTxs });
+    useLedgerStore.setState({ transactions: mockTxs });
 
     render(
       <AddTransactionModal
@@ -422,7 +422,7 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
         },
       ];
 
-      useLedgerStore.setState({ allTransactions: historicalTxs });
+      useLedgerStore.setState({ transactions: historicalTxs });
       const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
       useLedgerStore.setState({ recordTransaction: recordSpy });
 
@@ -474,7 +474,7 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
         },
       ];
 
-      useLedgerStore.setState({ allTransactions: historicalTxs });
+      useLedgerStore.setState({ transactions: historicalTxs });
       const recordSpy = vi.fn().mockResolvedValue({ id: 'new_tx' });
       useLedgerStore.setState({ recordTransaction: recordSpy });
 
@@ -515,7 +515,7 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
         },
       ];
 
-      useLedgerStore.setState({ allTransactions: historicalTxs });
+      useLedgerStore.setState({ transactions: historicalTxs });
       const updateSpy = vi.fn().mockResolvedValue({ id: 'edit_tx' });
       useLedgerStore.setState({ updateTransaction: updateSpy });
 
