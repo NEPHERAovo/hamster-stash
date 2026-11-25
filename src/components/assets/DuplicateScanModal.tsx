@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { TrashIcon as Trash2, CheckSquareIcon as CheckSquare, SquareIcon as Square } from '@phosphor-icons/react';
-import { scanSuspectDuplicateGroups } from '../../domain/sync/duplicateScanner';
+import { scanSuspectDuplicateGroups, type DuplicateMatchReason } from '../../domain/sync/duplicateScanner';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
@@ -14,6 +14,13 @@ import { cn } from '../../utils/cn';
 export interface DuplicateScanModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+function formatMatchReasonLabel(reason: DuplicateMatchReason): string {
+  if (reason === 'same_item') return '同物品重复';
+  if (reason === 'item_link_pair') return '物品关联重复';
+  if (reason === 'sync_clone') return '同源克隆';
+  return '短时重复';
 }
 
 export const DuplicateScanModal: React.FC<DuplicateScanModalProps> = ({
@@ -103,11 +110,16 @@ export const DuplicateScanModal: React.FC<DuplicateScanModalProps> = ({
                       <span className="font-semibold text-(--ink-primary)">
                         {group.date} · {amountPrefix}¥{centsToYuan(group.amount)}
                       </span>
-                      {group.hasItemLinkConflict && (
-                        <span className="rounded-(--badge-radius) bg-(--color-expense-bg) px-1.5 py-0.5 text-[10px] text-(--color-expense)">
-                          物品关联重复
-                        </span>
-                      )}
+                      <span
+                        className={cn(
+                          'rounded-(--badge-radius) px-1.5 py-0.5 text-[10px]',
+                          group.hasItemLinkConflict
+                            ? 'bg-(--color-expense-bg) text-(--color-expense)'
+                            : 'bg-(--paper-sunken) text-(--ink-secondary)'
+                        )}
+                      >
+                        {formatMatchReasonLabel(group.matchReason)}
+                      </span>
                     </div>
 
                     <div className="divide-y divide-dashed divide-(--rule-hairline)/60">
