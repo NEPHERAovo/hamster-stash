@@ -82,3 +82,9 @@
 - **Why**: Deeply nested ternary expressions (`a ? b : c ? d : e`) obscure conditional branches, degrade cognitive readability, cause subtle precedence bugs, and hinder automated testing.
 - **Evidence**: Enforced in `eslint.config.js` and refactored across 20+ components (`App.tsx`, `AddTransactionModal.tsx`, etc.).
 - **Seen**: 1
+
+### 12. Mandatory Pre-Development Remote Branch Sync
+- **Rule**: Always run `git fetch origin` and integrate the latest `origin/main` (via fast-forward pull or rebase) before writing any code or creating local commits for a new request.
+- **Why**: Developing on top of an outdated local branch diverges from upstream changes, resulting in avoidable multi-file merge conflicts, duplicated refactors, and risky rebase resolutions later.
+- **Evidence**: Encountered 21 unpulled upstream commits while rebasing local feature commits onto `origin/main` (`98a878b`), requiring manual conflict resolution across the `owned-items` plugin and `StatsView.tsx`.
+- **Seen**: 1

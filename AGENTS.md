@@ -203,19 +203,21 @@ HamsterStash features an extensible micro-kernel architecture where feature modu
 
 To maintain an unblemished repository history and clean atomic review:
 
-1. **Package Manager Invariant**:
+1. **Pre-Development Remote Sync**:
+   - Before writing code or starting a new task, always fetch the latest remote state (`git fetch origin`) and sync the working branch cleanly onto the latest remote base (for example `git rebase origin/main` or fast-forward `git pull --rebase origin main`). Never start new feature or bugfix commits on top of a stale local branch when `origin/main` has advanced.
+2. **Package Manager Invariant**:
    - Always execute commands using `pnpm` or `pnpm dlx`. Never invoke `npm`, `npx`, or `yarn`.
-2. **Strictly Unitized Atomic Commits**:
+3. **Strictly Unitized Atomic Commits**:
    - Commits must be strictly unitized and granular: each discrete requirement, bugfix, or component modification must have its own dedicated commit with targeted tests and changes.
    - Never combine multiple distinct issues or unrelated refactorings into a single monolithic commit.
-3. **Local Commit Only (No Proactive Push)**:
+4. **Local Commit Only (No Proactive Push)**:
    - Commit each unitized increment locally immediately after verifying it passes `pnpm check`.
    - Strictly forbidden to execute `git push` autonomously or proactively. Never push commits to any remote repository unless the user explicitly requests or commands a push.
-4. **Commit Message Format**:
+5. **Commit Message Format**:
    - Format: `<scope>: <imperative English summary>`
    - Allowed scopes: `ledger`, `stats`, `assets`, `plugin-sdk`, `plugin/items`, `ui`, `test`, `docs`, `ci`, `chore`.
    - Example: `feat(ledger): add offset transaction link pill`
-5. **Verified Section in Commit Body**:
+6. **Verified Section in Commit Body**:
    - Whenever a commit touches more than 3 files or more than 150 lines, include a `Verified:` section in the commit body listing commands executed and test scenarios covered.
-6. **Hard Quality Gate**:
+7. **Hard Quality Gate**:
    - Every commit must pass `pnpm check` (`pnpm lint && pnpm test && pnpm build`).
