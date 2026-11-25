@@ -29,9 +29,28 @@ function formatReasonLabel(item: SyncDiffItem): string {
   return '云端下发';
 }
 
-function getTxOwnedLabel(tx: Transaction | undefined): string {
+function buildItemNameMap(plan: SyncDiffPlan | null): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!plan) return map;
+  const snapshots = [plan.localSnapshot, plan.remoteSnapshot, plan.baseSnapshot];
+  for (const snap of snapshots) {
+    const pluginData = snap?.plugins?.data;
+    if (!Array.isArray(pluginData)) continue;
+    for (const entry of pluginData) {
+      const record = entry as { id?: string; data?: { name?: string } };
+      if (record.id && record.data?.name && !map.has(record.id)) {
+        map.set(record.id, record.data.name);
+      }
+    }
+  }
+  return map;
+}
+
+function getTxOwnedLabel(tx: Transaction | undefined, itemNameMap: Map<string, string>): string {
   const owned = tx?.ext?.['owned-items'] as { itemId?: string } | undefined;
-  return owned?.itemId ? '含物品关联' : '';
+  if (!owned?.itemId) return '';
+  const itemName = itemNameMap.get(owned.itemId);
+  return itemName ? `关联:${itemName}` : '含物品关联';
 }
 
 function formatEntityHeadline(item: SyncDiffItem): string {
@@ -60,14 +79,15 @@ function formatEntityHeadline(item: SyncDiffItem): string {
 
 function formatSideSummary(
   collection: SyncDiffItem['collection'],
-  entity: Record<string, unknown> | undefined
+  entity: Record<string, unknown> | undefined,
+  itemNameMap: Map<string, string>
 ): string {
   if (!entity) return '无记录';
   if (entity.deletedAt) return '已删除';
   if (collection === 'transactions') {
     const tx = entity as unknown as Transaction;
     const amount = `${tx.type === 'income' ? '+' : '-'}¥${centsToYuan(tx.amount)}`;
-    const parts = [tx.date, amount, tx.note || '无备注', getTxOwnedLabel(tx)].filter(Boolean);
+    const parts = [tx.date, amount, tx.note || '无备注', getTxOwnedLabel(tx, itemNameMap)].filter(Boolean);
     return parts.join(' · ');
   }
   if (collection === 'accounts') {
@@ -95,6 +115,8 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
     if (!plan) return [];
     return [...plan.conflictItems, ...plan.incomingItems];
   }, [plan]);
+
+  const itemNameMap = useMemo(() => buildItemNameMap(plan), [plan]);
 
   const [resolutions, setResolutions] = useState<Record<string, SyncResolutionChoice>>({});
   const [isApplying, setIsApplying] = useState(false);
@@ -214,7 +236,8 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
                     <span className="truncate">
                       {formatSideSummary(
                         item.collection,
-                        item.localEntity as Record<string, unknown> | undefined
+                        item.localEntity as Record<string, unknown> | undefined,
+                        itemNameMap
                       )}
                     </span>
                   </div>
@@ -233,7 +256,8 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
                     <span className="truncate">
                       {formatSideSummary(
                         item.collection,
-                        item.remoteEntity as Record<string, unknown> | undefined
+                        item.remoteEntity as Record<string, unknown> | undefined,
+                        itemNameMap
                       )}
                     </span>
                   </div>

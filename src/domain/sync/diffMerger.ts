@@ -131,10 +131,14 @@ function isExpiredTombstone(entity: StoredEntity | undefined, nowMs: number): bo
 
 type SyncTx = Transaction & { deletedAt?: string };
 
-function hasOwnedItemLink(tx: SyncTx | undefined): boolean {
-  if (!tx?.ext) return false;
+function getOwnedItemId(tx: SyncTx | undefined): string | undefined {
+  if (!tx?.ext) return undefined;
   const owned = tx.ext['owned-items'] as { itemId?: string } | undefined;
-  return Boolean(owned?.itemId);
+  return owned?.itemId || undefined;
+}
+
+function hasOwnedItemLink(tx: SyncTx | undefined): boolean {
+  return Boolean(getOwnedItemId(tx));
 }
 
 function isSameCorePurchase(a: SyncTx, b: SyncTx): boolean {
@@ -159,7 +163,7 @@ function findCrossIdDuplicateTwin(
     if (!isSameCorePurchase(localTx, remoteTx)) return false;
     if ((localTx.note || '').trim() !== (remoteTx.note || '').trim()) return false;
     if (localTx.createdAt !== remoteTx.createdAt) return false;
-    return hasOwnedItemLink(localTx) !== hasOwnedItemLink(remoteTx);
+    return getOwnedItemId(localTx) !== getOwnedItemId(remoteTx);
   });
 }
 
@@ -221,6 +225,7 @@ function classifyEntityCollection<T extends StoredEntity>(params: {
   const incoming: SyncDiffItem[] = [];
   const conflict: SyncDiffItem[] = [];
   const push: SyncDiffItem[] = [];
+  const matchedTwinIds = new Set<string>();
 
   for (const id of allIds) {
     const loc = localMap.get(id);
@@ -264,14 +269,15 @@ function classifyEntityCollection<T extends StoredEntity>(params: {
         localList as unknown as SyncTx[]
       );
       if (twin) {
+        matchedTwinIds.add(twin.id);
         const rec: SyncResolutionChoice = hasOwnedItemLink(twin) ? 'local' : 'remote';
         conflict.push({
           key,
           collection,
           id,
-          kind: 'add',
+          kind: 'modify',
           source: 'conflict',
-          localEntity: undefined,
+          localEntity: twin as unknown as StoredEntity,
           remoteEntity: rem,
           baseEntity: bas,
           recommendedResolution: rec,
@@ -403,7 +409,12 @@ function classifyEntityCollection<T extends StoredEntity>(params: {
     }
   }
 
-  return { unchanged, incoming, conflict, push };
+  const filteredPush =
+    matchedTwinIds.size > 0
+      ? push.filter((item) => !matchedTwinIds.has(item.id))
+      : push;
+
+  return { unchanged, incoming, conflict, push: filteredPush };
 }
 
 function resolveRecordSettingKind(
@@ -902,16 +913,42 @@ export function resolveSyncPlan(
       accountChoiceMap.set(item.id, choice);
     }
 
-    let winner: StoredEntity | Record<string, unknown> | undefined =
-      choice === 'local' ? item.localEntity : item.remoteEntity;
+    if (item.reason === 'cross_id_duplicate' && item.collection === 'transactions') {
+      const localTwin = item.localEntity as StoredEntity | undefined;
+      const remoteTx = item.remoteEntity as StoredEntity | undefined;
 
-    if (item.reason === 'cross_id_duplicate' && choice === 'local' && item.remoteEntity) {
-      winner = {
-        ...(item.remoteEntity as StoredEntity),
-        deletedAt: nowIso,
-        updatedAt: nowIso,
-      };
+      if (choice === 'local' && localTwin) {
+        txMap.set(localTwin.id, localTwin as unknown as Transaction);
+        if (remoteTx) {
+          txMap.set(remoteTx.id, {
+            ...remoteTx,
+            deletedAt: nowIso,
+            updatedAt: nowIso,
+          } as unknown as Transaction);
+          changedRemote = true;
+          stats.deletedRemote++;
+        }
+        resolvedTxItems.push({ item, choice, winner: localTwin as unknown as Transaction });
+      } else if (choice === 'remote' && remoteTx) {
+        txMap.set(remoteTx.id, remoteTx as unknown as Transaction);
+        changedLocal = true;
+        stats.addedLocal++;
+        if (localTwin) {
+          txMap.set(localTwin.id, {
+            ...localTwin,
+            deletedAt: nowIso,
+            updatedAt: nowIso,
+          } as unknown as Transaction);
+          stats.deletedLocal++;
+          changedRemote = true;
+        }
+        resolvedTxItems.push({ item, choice, winner: remoteTx as unknown as Transaction });
+      }
+      continue;
     }
+
+    const winner: StoredEntity | Record<string, unknown> | undefined =
+      choice === 'local' ? item.localEntity : item.remoteEntity;
 
     const equalToLocal = areValuesCanonicallyEqual(winner, item.localEntity);
     const equalToRemote = areValuesCanonicallyEqual(winner, item.remoteEntity);

@@ -378,4 +378,62 @@ describe('diffMerger', () => {
     const resolved = resolveSyncPlan(plan, { 'transactions:tx_rem_spend': 'remote' });
     expect(resolved.merged.accounts[0].balance).toBe(6000);
   });
+
+  it('detects cross-id duplicate when cloud links Item A and local links Item B and never keeps both', () => {
+    const cloudTx: Transaction = {
+      id: 'tx_cloud_item_a',
+      type: 'expense',
+      amount: 50000,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-24',
+      note: 'Mechanical Keyboard',
+      ext: { 'owned-items': { itemId: 'item_A', itemRole: 'buy', kind: 'physical' } },
+      createdAt: '2026-11-24T12:00:00.000Z',
+      updatedAt: '2026-11-25T08:00:00.000Z',
+    };
+    const localTx: Transaction = {
+      id: 'tx_local_item_b',
+      type: 'expense',
+      amount: 50000,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-24',
+      note: 'Mechanical Keyboard',
+      ext: { 'owned-items': { itemId: 'item_B', itemRole: 'buy', kind: 'physical' } },
+      createdAt: '2026-11-24T12:00:00.000Z',
+      updatedAt: '2026-11-25T09:00:00.000Z',
+    };
+
+    const local = createBaseExport();
+    local.transactions.push(localTx);
+    const remote = createBaseExport();
+    remote.transactions.push(cloudTx);
+
+    const plan = buildThreeWaySyncPlan(local, remote, null);
+    expect(plan.requiresReview).toBe(true);
+    expect(plan.pushItems).toHaveLength(0);
+    expect(plan.conflictItems).toHaveLength(1);
+    expect(plan.conflictItems[0].reason).toBe('cross_id_duplicate');
+    expect((plan.conflictItems[0].localEntity as Transaction | undefined)?.id).toBe('tx_local_item_b');
+    expect((plan.conflictItems[0].remoteEntity as Transaction | undefined)?.id).toBe('tx_cloud_item_a');
+
+    const pickRemote = resolveSyncPlan(
+      plan,
+      { 'transactions:tx_cloud_item_a': 'remote' },
+      { retainTombstones: true }
+    );
+    const activeRemote = pickRemote.merged.transactions.filter((t) => !(t as StoredEntity).deletedAt);
+    expect(activeRemote).toHaveLength(1);
+    expect(activeRemote[0].id).toBe('tx_cloud_item_a');
+
+    const pickLocal = resolveSyncPlan(
+      plan,
+      { 'transactions:tx_cloud_item_a': 'local' },
+      { retainTombstones: true }
+    );
+    const activeLocal = pickLocal.merged.transactions.filter((t) => !(t as StoredEntity).deletedAt);
+    expect(activeLocal).toHaveLength(1);
+    expect(activeLocal[0].id).toBe('tx_local_item_b');
+  });
 });
