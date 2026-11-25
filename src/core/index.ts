@@ -6,11 +6,20 @@ import { SettingsRepository } from './repositories/SettingsRepository';
 import { AttachmentRepository } from './repositories/AttachmentRepository';
 import { TransactionService } from '../domain/transaction/transactionService';
 import { AccountService } from '../domain/account/accountService';
+import { CategoryService } from '../domain/category/categoryService';
+import { SettingsService } from '../domain/settings/settingsService';
 import { SeedService } from '../domain/bootstrap/seedService';
-import { DataLifecycleService } from '../domain/data/dataLifecycleService';
+import {
+  DataLifecycleService,
+  dataLifecycleService as globalDataLifecycleService,
+} from '../domain/data/dataLifecycleService';
+import { ImportService } from '../domain/import-export/importService';
+import { SyncService, syncService as globalSyncService } from '../domain/sync/syncService';
 import { pluginManager } from './plugin/PluginManager';
-import { attachmentStore } from './attachments/attachmentStore';
+import { usePluginUIStore } from './plugin/SlotStore';
+import { AttachmentStore, attachmentStore } from './attachments/attachmentStore';
 import type { DataAdapter } from '../types/adapter';
+import type { MiddlewareRunner } from '../types/middleware';
 
 export class CoreContext {
   public adapter: DataAdapter;
@@ -20,7 +29,11 @@ export class CoreContext {
   public settingsRepo: SettingsRepository;
   public attachmentRepo: AttachmentRepository;
   public seedService: SeedService;
+  public catService: CategoryService;
+  public settingsService: SettingsService;
+  public importService: ImportService;
   public dataLifecycleService: DataLifecycleService;
+  public syncService: SyncService;
   public txService: TransactionService;
   public acctService: AccountService;
   private initialized = false;
@@ -36,20 +49,79 @@ export class CoreContext {
     this.settingsRepo = new SettingsRepository(resolveAdapter);
     this.attachmentRepo = new AttachmentRepository(resolveAdapter);
 
-    this.seedService = new SeedService(resolveAdapter);
-    this.dataLifecycleService = new DataLifecycleService(resolveAdapter);
-    this.txService = new TransactionService(this.txRepo, this.acctRepo, this.catRepo);
-    this.acctService = new AccountService(this.acctRepo, this.txRepo);
+    const runMiddleware: MiddlewareRunner | undefined = customAdapter
+      ? undefined
+      : (hookName, payload, finalHandler) =>
+          pluginManager.runMiddleware(hookName, payload, finalHandler);
 
-    if (!customAdapter) {
-      pluginManager.bindAdapter(
-        resolveAdapter,
-        () => this.init()
-      );
-      attachmentStore.bindAdapter(
-        resolveAdapter,
-        () => this.init()
-      );
+    const resetActivePlugins = customAdapter
+      ? undefined
+      : async () => {
+          const enabledPlugins = usePluginUIStore.getState().enabledPlugins;
+          for (const p of pluginManager.getPlugins()) {
+            const id = p.manifest.id;
+            const isEnabled = enabledPlugins[id] ?? p.manifest.defaultEnabled ?? true;
+            if (isEnabled) {
+              await pluginManager.disablePlugin(id);
+              await pluginManager.enablePlugin(id);
+            }
+          }
+        };
+
+    const onDataImported = customAdapter
+      ? undefined
+      : () => pluginManager.emitHostEvent('data:imported');
+
+    this.seedService = new SeedService(resolveAdapter);
+    this.catService = new CategoryService(this.catRepo, this.txRepo);
+    this.settingsService = new SettingsService(this.settingsRepo);
+    this.importService = new ImportService();
+    this.txService = new TransactionService(
+      this.txRepo,
+      this.acctRepo,
+      this.catRepo,
+      runMiddleware
+    );
+    this.acctService = new AccountService(this.acctRepo, this.txRepo, runMiddleware);
+
+    const lifecycleDeps = {
+      adapterResolver: resolveAdapter,
+      ensureReady: () => this.init(),
+      txRepo: this.txRepo,
+      acctRepo: this.acctRepo,
+      catRepo: this.catRepo,
+      seedService: this.seedService,
+      onDataImported,
+      resetActivePlugins,
+    };
+    const scopedAttachmentStore = customAdapter
+      ? new AttachmentStore(resolveAdapter, () => this.init())
+      : attachmentStore;
+
+    const syncDeps = {
+      ensureReady: () => this.init(),
+      settingsService: this.settingsService,
+      dataLifecycleService: globalDataLifecycleService,
+      attachmentStore: scopedAttachmentStore,
+      onDataImported,
+    };
+
+    if (customAdapter) {
+      this.dataLifecycleService = new DataLifecycleService(lifecycleDeps);
+      this.syncService = new SyncService({
+        ...syncDeps,
+        dataLifecycleService: this.dataLifecycleService,
+      });
+    } else {
+      globalDataLifecycleService.configure?.(lifecycleDeps);
+      this.dataLifecycleService = globalDataLifecycleService;
+      globalSyncService.configure?.({
+        ...syncDeps,
+        dataLifecycleService: this.dataLifecycleService,
+      });
+      this.syncService = globalSyncService;
+      pluginManager.bindAdapter(resolveAdapter, () => this.init());
+      attachmentStore.bindAdapter(resolveAdapter, () => this.init());
     }
   }
 

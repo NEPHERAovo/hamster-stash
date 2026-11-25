@@ -82,7 +82,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     set({ loading: true });
     await core.init();
 
-    const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
+    const all = await core.txService.listTransactions();
     const currentMonth = get().currentMonth || currentYearMonth();
     const monthTxs = all.filter((t) => typeof t.date === 'string' && t.date.startsWith(currentMonth));
     const accounts = useAccountStore.getState().accounts;
@@ -112,7 +112,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     set({ loading: true });
     await core.init();
 
-    const all = await core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
+    const all = await core.txService.listTransactions();
     const monthTxs = all.filter((tx) => typeof tx.date === 'string' && tx.date.startsWith(month));
     const accounts = useAccountStore.getState().accounts;
     const includedAccountIds = accounts.length > 0

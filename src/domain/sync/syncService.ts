@@ -1,6 +1,6 @@
-import { core } from '../../core';
-import { attachmentStore, type AttachmentRecord } from '../../core/attachments/attachmentStore';
-import { pluginManager } from '../../core/plugin/PluginManager';
+import type { AttachmentRecord, AttachmentStore } from '../../core/attachments/attachmentStore';
+import type { SettingsService } from '../settings/settingsService';
+import type { DataLifecycleService } from '../data/dataLifecycleService';
 import { webdavClient, type WebDavConfig } from './webdavClient';
 import {
   buildThreeWaySyncPlan,
@@ -63,6 +63,14 @@ export interface WebDavSyncCommitResult {
   uploadedAttachments: number;
 }
 
+export interface SyncServiceDeps {
+  ensureReady?: () => Promise<void>;
+  settingsService?: SettingsService;
+  dataLifecycleService?: DataLifecycleService;
+  attachmentStore?: AttachmentStore;
+  onDataImported?: () => void;
+}
+
 export function stripInlineVoucherPayloads(data: ExportData): ExportData {
   return {
     ...data,
@@ -94,6 +102,7 @@ export function sanitizeSyncPayload(data: ExportData): ExportData {
 }
 
 export class SyncService {
+  private deps: SyncServiceDeps;
   private pendingAutoSync: Promise<AutoSyncRunResult> | null = null;
   private pendingReviewPlan: {
     plan: SyncDiffPlan;
@@ -101,6 +110,38 @@ export class SyncService {
     syncAttachments: boolean;
   } | null = null;
   private autoSyncReviewSuppressedForSession = false;
+
+  constructor(deps: SyncServiceDeps = {}) {
+    this.deps = deps;
+  }
+
+  configure(deps: SyncServiceDeps): void {
+    this.deps = { ...this.deps, ...deps };
+  }
+
+  private get settingsService(): SettingsService {
+    if (!this.deps.settingsService) {
+      throw new Error('SyncService settingsService is not configured.');
+    }
+    return this.deps.settingsService;
+  }
+
+  private get dataLifecycleService(): DataLifecycleService {
+    if (!this.deps.dataLifecycleService) {
+      throw new Error('SyncService dataLifecycleService is not configured.');
+    }
+    return this.deps.dataLifecycleService;
+  }
+
+  private get attachmentStore(): AttachmentStore | undefined {
+    return this.deps.attachmentStore;
+  }
+
+  private async ensureReady(): Promise<void> {
+    if (this.deps.ensureReady) {
+      await this.deps.ensureReady();
+    }
+  }
 
   getPendingReview(): {
     plan: SyncDiffPlan;
@@ -121,9 +162,9 @@ export class SyncService {
     syncAttachments: boolean;
     uploadedAttachmentIds: string[];
   }> {
-    await core.init();
+    await this.ensureReady();
     try {
-      const record = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
+      const record = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
       if (record && record.config) {
         return {
           config: record.config,
@@ -150,10 +191,10 @@ export class SyncService {
     config: WebDavConfig,
     options?: { autoSyncDaily?: boolean; syncAttachments?: boolean }
   ): Promise<void> {
-    await core.init();
-    const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
+    await this.ensureReady();
+    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
     if (existing) {
-      await core.settingsRepo.update('webdav_config', {
+      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', {
         config,
         ...(options?.autoSyncDaily !== undefined ? { autoSyncDaily: options.autoSyncDaily } : {}),
         ...(options?.syncAttachments !== undefined
@@ -161,7 +202,7 @@ export class SyncService {
           : {}),
       });
     } else {
-      await core.settingsRepo.saveSetting<WebDavSettingRecord>('webdav_config', {
+      await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
         config,
         autoSyncDaily: Boolean(options?.autoSyncDaily),
         syncAttachments: Boolean(options?.syncAttachments),
@@ -171,15 +212,15 @@ export class SyncService {
   }
 
   async setAutoSyncDaily(enabled: boolean): Promise<void> {
-    await core.init();
-    const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
+    await this.ensureReady();
+    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
     if (existing) {
-      await core.settingsRepo.update('webdav_config', {
+      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', {
         autoSyncDaily: enabled,
       });
       return;
     }
-    await core.settingsRepo.saveSetting<WebDavSettingRecord>('webdav_config', {
+    await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
       config: { url: '', username: '', password: '' },
       autoSyncDaily: enabled,
       syncAttachments: false,
@@ -188,15 +229,15 @@ export class SyncService {
   }
 
   async setSyncAttachments(enabled: boolean): Promise<void> {
-    await core.init();
-    const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
+    await this.ensureReady();
+    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
     if (existing) {
-      await core.settingsRepo.update('webdav_config', {
+      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', {
         syncAttachments: enabled,
       });
       return;
     }
-    await core.settingsRepo.saveSetting<WebDavSettingRecord>('webdav_config', {
+    await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
       config: { url: '', username: '', password: '' },
       autoSyncDaily: false,
       syncAttachments: enabled,
@@ -283,10 +324,7 @@ export class SyncService {
     uploadedAttachmentIds?: string[];
   }): Promise<void> {
     try {
-      const existing = await core.settingsRepo.getSetting<WebDavSettingRecord>('webdav_config');
-      if (existing) {
-        await core.settingsRepo.update('webdav_config', patch);
-      }
+      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', patch);
     } catch {
       void 0;
     }
@@ -294,7 +332,7 @@ export class SyncService {
 
   private async getBaseSnapshot(): Promise<ExportData | null> {
     try {
-      const record = await core.settingsRepo.getSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID);
+      const record = await this.settingsService.getSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID);
       if (record?.snapshot) {
         return sanitizeSyncPayload(record.snapshot);
       }
@@ -306,7 +344,7 @@ export class SyncService {
 
   private async saveBaseSnapshot(snapshot: ExportData): Promise<void> {
     const cleanSnapshot = sanitizeSyncPayload(snapshot);
-    await core.settingsRepo.saveSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID, {
+    await this.settingsService.saveSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID, {
       snapshot: cleanSnapshot,
     });
   }
@@ -317,6 +355,11 @@ export class SyncService {
     alreadyUploaded: string[]
   ): Promise<{ uploadedCount: number; nextUploadedIds: string[] }> {
     const uploadedSet = new Set(alreadyUploaded);
+    const store = this.attachmentStore;
+    if (!store) {
+      return { uploadedCount: 0, nextUploadedIds: Array.from(uploadedSet) };
+    }
+
     const referencedIds = new Set<string>();
     for (const tx of transactions) {
       if (tx.voucher?.attachmentId && !(tx as StoredEntity).deletedAt) {
@@ -327,7 +370,7 @@ export class SyncService {
     let uploadedCount = 0;
     for (const attId of referencedIds) {
       if (uploadedSet.has(attId)) continue;
-      const local = await attachmentStore.getAttachment(attId);
+      const local = await store.getAttachment(attId);
       if (!local?.dataUrl) continue;
 
       const remotePath = `attachments/${attId}.json`;
@@ -360,12 +403,15 @@ export class SyncService {
     if (!config || !config.url || !config.username || !config.password) {
       return null;
     }
+    const store = this.attachmentStore;
+    if (!store) return null;
+
     try {
       const content = await webdavClient.fetchFile(config, `attachments/${attachmentId}.json`);
       if (!content) return null;
       const parsed = JSON.parse(content) as Partial<AttachmentRecord>;
       if (!parsed.dataUrl) return null;
-      await attachmentStore.saveAttachment({
+      await store.saveAttachment({
         id: attachmentId,
         name: parsed.name || attachmentId,
         mimeType: parsed.mimeType || 'image/jpeg',
@@ -392,12 +438,12 @@ export class SyncService {
     customConfig?: WebDavConfig,
     options?: { syncAttachments?: boolean }
   ): Promise<WebDavSyncPrepareResult> {
-    await core.init();
+    await this.ensureReady();
     const stored = await this.getWebDavConfig();
     const config = this.resolveValidatedConfig(customConfig || stored.config || undefined);
     const shouldBackupAttachments = options?.syncAttachments ?? stored.syncAttachments;
 
-    const rawLocalData = await core.dataLifecycleService.exportData({ includeTombstones: true });
+    const rawLocalData = await this.dataLifecycleService.exportData({ includeTombstones: true });
     const localData = sanitizeSyncPayload(rawLocalData);
     const remoteContent = await webdavClient.fetchFile(config, SYNC_VAULT_FILE);
     const now = new Date().toISOString();
@@ -505,7 +551,7 @@ export class SyncService {
     customConfig?: WebDavConfig,
     options?: { syncAttachments?: boolean }
   ): Promise<WebDavSyncCommitResult> {
-    await core.init();
+    await this.ensureReady();
     const stored = await this.getWebDavConfig();
     const config = this.resolveValidatedConfig(customConfig || stored.config || undefined);
     const shouldBackupAttachments = options?.syncAttachments ?? stored.syncAttachments;
@@ -522,16 +568,16 @@ export class SyncService {
         ...(cleanMerged.settings || {}),
       };
       for (const key of LOCAL_ONLY_SETTING_KEYS) {
-        const localRec = await core.settingsRepo.findById(key);
+        const localRec = await this.settingsService.getSetting<StoredEntity>(key);
         if (localRec) {
           preservedLocalSettings[key] = localRec;
         }
       }
-      await core.dataLifecycleService.restoreData({
+      await this.dataLifecycleService.restoreData({
         ...cleanMerged,
         settings: preservedLocalSettings,
       });
-      pluginManager.emitHostEvent('data:imported');
+      this.deps.onDataImported?.();
     }
 
     if (mergeResult.changedRemote) {

@@ -6,8 +6,13 @@ import {
   SYNC_VAULT_FILE,
 } from '../../src/domain/sync/syncService';
 import { webdavClient, type WebDavConfig } from '../../src/domain/sync/webdavClient';
-import { core } from '../../src/core';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
+import { SettingsRepository } from '../../src/core/repositories/SettingsRepository';
+import { TransactionRepository } from '../../src/core/repositories/TransactionRepository';
+import { AccountRepository } from '../../src/core/repositories/AccountRepository';
+import { SettingsService } from '../../src/domain/settings/settingsService';
+import { DataLifecycleService } from '../../src/domain/data/dataLifecycleService';
+import { AttachmentStore } from '../../src/core/attachments/attachmentStore';
 import type { ExportData } from '../../src/types/adapter';
 import type { Transaction } from '../../src/types/transaction';
 import type { Account } from '../../src/types/account';
@@ -51,20 +56,18 @@ describe('WebDAV daily auto-sync scheduler', () => {
 
   it('strips inline base64 voucher payloads while retaining lightweight attachment references', () => {
     const payload: ExportData = {
-      version: '4.0.0',
-      exportedAt: '2026-11-18T10:00:00.000Z',
-      accounts: [],
-      categories: [],
+      version: '1.0.0',
+      exportedAt: '2026-11-18T12:00:00.000Z',
       transactions: [
         {
-          id: 'tx_1',
+          id: 'tx_att_1',
           type: 'expense',
           amount: 2500,
           categoryId: 'cat_food',
-          accountId: 'acct_default',
+          accountId: 'acct_1',
           date: '2026-11-18',
-          createdAt: '2026-11-18T10:00:00.000Z',
-          updatedAt: '2026-11-18T10:00:00.000Z',
+          createdAt: '2026-11-18T12:00:00.000Z',
+          updatedAt: '2026-11-18T12:00:00.000Z',
           voucher: {
             attachmentId: 'att_abcdef0123456789',
             name: 'invoice.jpg',
@@ -74,6 +77,8 @@ describe('WebDAV daily auto-sync scheduler', () => {
           },
         },
       ],
+      accounts: [],
+      categories: [],
     };
 
     const stripped = stripInlineVoucherPayloads(payload);
@@ -85,14 +90,29 @@ describe('WebDAV daily auto-sync scheduler', () => {
 
   describe('three-way WebDAV sync preparation and review gating', () => {
     let memAdapter: MemoryAdapter;
-    const origAdapter = core.adapter;
+    let settingsService: SettingsService;
+    let dataLifecycleService: DataLifecycleService;
+    let txRepo: TransactionRepository;
+    let acctRepo: AccountRepository;
+    let onDataImported: ReturnType<typeof vi.fn>;
+    let syncSvc: SyncService;
 
     beforeEach(async () => {
+      vi.restoreAllMocks();
       memAdapter = new MemoryAdapter();
       await memAdapter.initialize();
-      core.adapter = memAdapter;
-      vi.restoreAllMocks();
-      vi.spyOn(core, 'init').mockResolvedValue(undefined);
+      const settingsRepo = new SettingsRepository(memAdapter);
+      txRepo = new TransactionRepository(memAdapter);
+      acctRepo = new AccountRepository(memAdapter);
+      settingsService = new SettingsService(settingsRepo);
+      dataLifecycleService = new DataLifecycleService(memAdapter);
+      onDataImported = vi.fn();
+      syncSvc = new SyncService({
+        settingsService,
+        dataLifecycleService,
+        attachmentStore: new AttachmentStore(memAdapter),
+        onDataImported,
+      });
     });
 
     it('skips both putFile and import when local and remote payloads are strictly equal', async () => {
@@ -118,7 +138,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
         updatedAt: '2026-11-20T00:00:00.000Z',
       };
 
-      await core.dataLifecycleService.restoreData({
+      await dataLifecycleService.restoreData({
         version: '4.0.0',
         exportedAt: '2026-11-25T09:00:00.000Z',
         transactions: [tx],
@@ -151,17 +171,14 @@ describe('WebDAV daily auto-sync scheduler', () => {
       const putSpy = vi.spyOn(webdavClient, 'putFile').mockResolvedValue(undefined);
       const replaceSpy = vi.spyOn(memAdapter, 'replaceAll');
 
-      const syncSvc = new SyncService();
       const result = await syncSvc.prepareWebDavSync(validConfig);
 
       expect(fetchSpy).toHaveBeenCalledWith(validConfig, SYNC_VAULT_FILE);
       expect(result.status).toBe('up_to_date');
       expect(putSpy).not.toHaveBeenCalled();
       expect(replaceSpy).not.toHaveBeenCalled();
-      const savedBase = await core.settingsRepo.findById(SYNC_BASE_SETTING_ID);
+      const savedBase = await settingsService.getSetting(SYNC_BASE_SETTING_ID);
       expect(savedBase).not.toBeNull();
-
-      core.adapter = origAdapter;
     });
 
     it('pauses without writing local DB when cloud has incoming changes or conflicts', async () => {
@@ -215,7 +232,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
         plugins: { data: [], settings: {} },
       };
 
-      await core.dataLifecycleService.restoreData({
+      await dataLifecycleService.restoreData({
         version: '4.0.0',
         exportedAt: '2026-11-25T09:30:00.000Z',
         transactions: [localTx],
@@ -239,7 +256,6 @@ describe('WebDAV daily auto-sync scheduler', () => {
       const putSpy = vi.spyOn(webdavClient, 'putFile').mockResolvedValue(undefined);
       const replaceSpy = vi.spyOn(memAdapter, 'replaceAll');
 
-      const syncSvc = new SyncService();
       const prep = await syncSvc.prepareWebDavSync(validConfig);
 
       expect(prep.status).toBe('needs_review');
@@ -251,12 +267,11 @@ describe('WebDAV daily auto-sync scheduler', () => {
       await syncSvc.commitWebDavSync(prep.plan!, { 'transactions:tx_remote_new': 'remote' }, validConfig);
       expect(replaceSpy).toHaveBeenCalledTimes(1);
       expect(putSpy).toHaveBeenCalledTimes(1);
-      const currentTxs = await core.txRepo.findAll();
+      expect(onDataImported).toHaveBeenCalledTimes(1);
+      const currentTxs = await txRepo.findAll();
       expect(currentTxs).toHaveLength(2);
-      const updatedAcct = await core.acctRepo.findById('acct_1');
+      const updatedAcct = await acctRepo.findById('acct_1');
       expect(updatedAcct?.balance).toBe(100);
-
-      core.adapter = origAdapter;
     });
   });
 });

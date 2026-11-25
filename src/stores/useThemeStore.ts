@@ -204,7 +204,7 @@ const persistThemeToDB = async (payload: {
 }) => {
   try {
     await core.init();
-    await core.settingsRepo.saveSetting<AppThemeSetting>('app_theme', payload);
+    await core.settingsService.saveSetting<AppThemeSetting>('app_theme', payload);
   } catch {
     void 0;
   }
@@ -302,7 +302,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     loadThemeFromDB: async () => {
       try {
         await core.init();
-        const record = await core.settingsRepo.getSetting<AppThemeSetting>('app_theme');
+        const record = await core.settingsService.getSetting<AppThemeSetting>('app_theme');
         if (!record) return;
 
         const state = get();

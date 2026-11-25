@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MemoryAdapter } from '../../src/core/adapters/MemoryAdapter';
 import { TransactionRepository } from '../../src/core/repositories/TransactionRepository';
 import { AccountRepository } from '../../src/core/repositories/AccountRepository';
@@ -332,6 +332,23 @@ describe('TransactionService & Core Bookkeeping Logic', () => {
       expect(allTxs.length).toBe(1);
       expect((await acctRepo.findById('acct_wechat'))?.balance).toBe(100000);
       expect((await acctRepo.findById('acct_bank'))?.balance).toBe(496500);
+    });
+
+    it('rolls back account balance mutations atomically when persisting transaction fails', async () => {
+      vi.spyOn(txRepo, 'create').mockRejectedValueOnce(new Error('disk full'));
+
+      await expect(
+        txService.recordTransaction({
+          type: 'expense',
+          amount: 12000,
+          accountId: 'acct_wechat',
+          categoryId: 'cat_food',
+          date: '2026-10-09',
+        })
+      ).rejects.toThrow('disk full');
+
+      expect((await acctRepo.findById('acct_wechat'))?.balance).toBe(100000);
+      expect(await txRepo.findAll()).toHaveLength(0);
     });
   });
 

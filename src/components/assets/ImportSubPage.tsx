@@ -15,6 +15,7 @@ import {
   type PreparedImportRecord,
 } from '../../domain/import-export/csvMapper';
 import { IMPORT_PRESETS, type ImportPreset } from '../../domain/import-export/importPresets';
+import { ImportService } from '../../domain/import-export/importService';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
@@ -270,34 +271,10 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     setErrorMsg('');
 
     try {
-      const currentAccounts = [...accounts];
-
-      if (autoCreateAccounts && mapping.accountCol) {
-        const acctColIdx = parsed.headers.indexOf(mapping.accountCol);
-        if (acctColIdx >= 0) {
-          const distinctNames = new Set<string>();
-          for (const row of parsed.rows) {
-            const val = row[acctColIdx]?.trim();
-            if (val) distinctNames.add(val);
-          }
-
-          const existingNames = new Set(currentAccounts.map((a) => a.name.trim().toLowerCase()));
-          for (const rawName of distinctNames) {
-            if (!existingNames.has(rawName.toLowerCase())) {
-              const newAcct = await createAccount({
-                name: rawName,
-                type: rawName.includes('信用') ? 'credit' : 'savings',
-                initialBalance: 0,
-              });
-              currentAccounts.push(newAcct);
-              existingNames.add(rawName.toLowerCase());
-            }
-          }
-          await loadAccounts();
-        }
-      }
-
-      const { records, skippedCount } = mapConfiguredCsvRows(parsed.headers, parsed.rows, {
+      const importService = new ImportService();
+      const res = await importService.executeCsvImport({
+        headers: parsed.headers,
+        rows: parsed.rows,
         mapping,
         categoryMapping,
         typeMapping,
@@ -305,24 +282,24 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
         defaultExpenseCategoryId: defaultExpenseCat,
         defaultIncomeCategoryId: defaultIncomeCat,
         existingCategories: categories,
-        existingAccounts: currentAccounts,
+        existingAccounts: accounts,
+        autoCreateAccounts,
+        createAccount,
+        importTransactions,
       });
 
-      if (records.length === 0) {
-        throw new Error('未解析出有效交易流水');
+      if (res.createdAccountCount > 0) {
+        await loadAccounts();
       }
-
-      const res = await importTransactions(records, true);
-      const reimbursableCount = records.filter((r) => r.isReimbursable).length;
 
       toast.success(
         `成功导入 ${res.importedCount} 笔流水` +
-          (skippedCount > 0 ? `（跳过 ${skippedCount} 笔）` : '')
+          (res.skippedCount > 0 ? `（跳过 ${res.skippedCount} 笔）` : '')
       );
 
-      if (reimbursableCount > 0 && !isReimbursementEnabled) {
+      if (res.reimbursableCount > 0 && !isReimbursementEnabled) {
         toast.info(
-          `导入流水中含 ${reimbursableCount} 笔待报销账单。当前设置中已停用报销功能，可在设置中开启以查看报销状态。`
+          `导入流水中含 ${res.reimbursableCount} 笔待报销账单。当前设置中已停用报销功能，可在设置中开启以查看报销状态。`
         );
       }
 

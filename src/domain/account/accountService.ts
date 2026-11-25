@@ -1,7 +1,8 @@
 import type { Account, AccountType } from '../../types/account';
+import type { MiddlewareRunner } from '../../types/middleware';
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { TransactionRepository } from '../../core/repositories/TransactionRepository';
-import { pluginManager } from '../../core/plugin/PluginManager';
+import { STORES } from '../../core/db/schema';
 import { todayDate } from '../../utils/date';
 
 export interface CreateAccountInput {
@@ -35,13 +36,20 @@ export interface UpdateAccountInput {
 export class AccountService {
   private acctRepo: AccountRepository;
   private txRepo?: TransactionRepository;
+  private runMiddleware?: MiddlewareRunner;
 
   constructor(
     acctRepo: AccountRepository,
-    txRepo?: TransactionRepository
+    txRepo?: TransactionRepository,
+    runMiddleware?: MiddlewareRunner
   ) {
     this.acctRepo = acctRepo;
     this.txRepo = txRepo;
+    this.runMiddleware = runMiddleware;
+  }
+
+  async listAccounts(): Promise<Account[]> {
+    return this.acctRepo.findAll();
   }
 
   async createAccount(input: CreateAccountInput): Promise<Account> {
@@ -49,49 +57,55 @@ export class AccountService {
       throw new Error('账户名称不能为空');
     }
 
-    const all = await this.acctRepo.findAll();
-    const sortOrder = all.length > 0 ? Math.max(...all.map((a) => a.sortOrder)) + 1 : 1;
+    return this.acctRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      async () => {
+        const all = await this.acctRepo.findAll();
+        const sortOrder =
+          all.length > 0 ? Math.max(...all.map((a) => a.sortOrder)) + 1 : 1;
 
-    const created = await this.acctRepo.create({
-      name: input.name.trim(),
-      note: input.note?.trim() || undefined,
-      type: input.type,
-      balance: input.initialBalance || 0,
-      currency: input.currency || 'CNY',
-      icon: input.icon || (input.type === 'credit' ? 'credit-card' : 'wallet'),
-      color: input.color,
-      includeInNetWorth: input.includeInNetWorth ?? true,
-      creditLimit: input.creditLimit,
-      repaymentDay: input.repaymentDay,
-      repaymentAccountId: input.repaymentAccountId,
-      autoRepay: input.autoRepay,
-      sortOrder,
-    });
+        const created = await this.acctRepo.create({
+          name: input.name.trim(),
+          note: input.note?.trim() || undefined,
+          type: input.type,
+          balance: input.initialBalance || 0,
+          currency: input.currency || 'CNY',
+          icon: input.icon || (input.type === 'credit' ? 'credit-card' : 'wallet'),
+          color: input.color,
+          includeInNetWorth: input.includeInNetWorth ?? true,
+          creditLimit: input.creditLimit,
+          repaymentDay: input.repaymentDay,
+          repaymentAccountId: input.repaymentAccountId,
+          autoRepay: input.autoRepay,
+          sortOrder,
+        });
 
-    if (this.txRepo && input.initialBalance && input.initialBalance !== 0) {
-      const today = todayDate();
-      if (input.initialBalance > 0) {
-        await this.txRepo.create({
-          type: 'income',
-          amount: input.initialBalance,
-          accountId: created.id,
-          categoryId: 'cat_other_in',
-          date: today,
-          note: '初始余额',
-        });
-      } else {
-        await this.txRepo.create({
-          type: 'expense',
-          amount: Math.abs(input.initialBalance),
-          accountId: created.id,
-          categoryId: 'cat_other',
-          date: today,
-          note: '初始欠款',
-        });
+        if (this.txRepo && input.initialBalance && input.initialBalance !== 0) {
+          const today = todayDate();
+          if (input.initialBalance > 0) {
+            await this.txRepo.create({
+              type: 'income',
+              amount: input.initialBalance,
+              accountId: created.id,
+              categoryId: 'cat_other_in',
+              date: today,
+              note: '初始余额',
+            });
+          } else {
+            await this.txRepo.create({
+              type: 'expense',
+              amount: Math.abs(input.initialBalance),
+              accountId: created.id,
+              categoryId: 'cat_other',
+              date: today,
+              note: '初始欠款',
+            });
+          }
+        }
+
+        return created;
       }
-    }
-
-    return created;
+    );
   }
 
   async updateAccount(id: string, patch: UpdateAccountInput): Promise<Account> {
@@ -122,38 +136,44 @@ export class AccountService {
   }
 
   async calculateNetWorth(): Promise<number> {
-    return pluginManager.runMiddleware(
-      'account:netWorth',
-      {},
-      async () => this.internalCalculateNetWorth()
-    );
+    const handler = async () => this.internalCalculateNetWorth();
+    if (this.runMiddleware) {
+      return this.runMiddleware('account:netWorth', {}, handler);
+    }
+    return handler();
   }
 
   private async internalCalculateNetWorth(): Promise<number> {
     const accounts = await this.acctRepo.findAll();
     return accounts.reduce(
-      (acc, cur) => acc + (cur.isArchived || cur.includeInNetWorth === false ? 0 : cur.balance),
+      (acc, cur) =>
+        acc + (cur.isArchived || cur.includeInNetWorth === false ? 0 : cur.balance),
       0
     );
   }
 
   async deleteAccount(id: string, force: boolean = false): Promise<void> {
-    const all = await this.acctRepo.findAll();
-    if (all.length <= 1) {
-      throw new Error('系统至少需保留一个资金账户');
-    }
+    return this.acctRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      async () => {
+        const all = await this.acctRepo.findAll();
+        if (all.length <= 1) {
+          throw new Error('系统至少需保留一个资金账户');
+        }
 
-    if (this.txRepo) {
-      const txs = await this.txRepo.findByAccount(id);
-      if (txs.length > 0) {
-        if (!force) {
-          throw new Error(`该账户下已有 ${txs.length} 条交易流水`);
+        if (this.txRepo) {
+          const txs = await this.txRepo.findByAccount(id);
+          if (txs.length > 0) {
+            if (!force) {
+              throw new Error(`该账户下已有 ${txs.length} 条交易流水`);
+            }
+            for (const tx of txs) {
+              await this.txRepo.delete(tx.id);
+            }
+          }
         }
-        for (const tx of txs) {
-          await this.txRepo.delete(tx.id);
-        }
+        await this.acctRepo.delete(id);
       }
-    }
-    await this.acctRepo.delete(id);
+    );
   }
 }

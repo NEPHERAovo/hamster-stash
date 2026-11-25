@@ -4,9 +4,8 @@ import { PaperModal } from '../ui/PaperModal';
 import { PaperChip } from '../ui/PaperChip';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperDatePickerModal } from '../ui/PaperDatePickerModal';
-import { core } from '../../core';
+import { dataLifecycleService } from '../../domain/data/dataLifecycleService';
 import { useLedgerStore } from '../../stores/useLedgerStore';
-import { exportTransactionsToCsv } from '../../domain/import-export/csvMapper';
 import { toast } from '../../stores/useToastStore';
 import { dayjs, todayDate } from '../../utils/date';
 
@@ -85,21 +84,12 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
 
     setIsExporting(true);
     try {
-      await core.init();
-      const [txs, cats, accts] = await Promise.all([
-        core.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' }),
-        core.catRepo.findAll(),
-        core.acctRepo.findAll(),
-      ]);
-
       const { start, end } = resolvedBounds;
-      const filtered = txs.filter((t) => {
-        if (start && t.date < start) return false;
-        if (end && t.date > end) return false;
-        return true;
+      const { csvContent, exportedCount } = await dataLifecycleService.exportCsvRange({
+        start,
+        end,
       });
 
-      const csvContent = exportTransactionsToCsv(filtered, cats, accts);
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -108,7 +98,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({ isOpen, onClose 
       a.download = `HamsterStash_records_${suffix}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`已导出 ${filtered.length} 笔 CSV 流水`);
+      toast.success(`已导出 ${exportedCount} 笔 CSV 流水`);
       onClose();
     } catch {
       toast.error('导出 CSV 账本失败');

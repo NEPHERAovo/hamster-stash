@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
-import { core } from '../../core';
-import { pluginManager } from '../../core/plugin/PluginManager';
+import { dataLifecycleService } from '../../domain/data/dataLifecycleService';
 import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
@@ -36,8 +35,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
   const handleExportJson = async () => {
     setIsExportingBackup(true);
     try {
-      await core.init();
-      const exportData = await core.dataLifecycleService.exportData();
+      const exportData = await dataLifecycleService.exportData();
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -76,9 +74,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
 
       if (!confirmed) return;
 
-      await core.init();
-      await core.dataLifecycleService.restoreData(data);
-      pluginManager.emitHostEvent('data:imported');
+      await dataLifecycleService.restoreBackup(data);
 
       await loadAccounts();
       await loadCategories();

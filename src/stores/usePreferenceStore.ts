@@ -55,7 +55,7 @@ const getInitialPreferences = (): PreferencesPayload => {
 const persistPreferencesToDB = async (prefs: PreferencesPayload) => {
   try {
     await core.init();
-    await core.settingsRepo.saveSetting<AppPreferencesSetting>('app_preferences', prefs);
+    await core.settingsService.saveSetting<AppPreferencesSetting>('app_preferences', prefs);
   } catch {
     void 0;
   }
@@ -127,7 +127,7 @@ export const usePreferenceStore = create<PreferenceState>((set, get) => ({
   loadPreferencesFromDB: async () => {
     try {
       await core.init();
-      const record = await core.settingsRepo.getSetting<AppPreferencesSetting>('app_preferences');
+      const record = await core.settingsService.getSetting<AppPreferencesSetting>('app_preferences');
       if (record) {
         const clean = record.majorThresholdYuan !== undefined
           ? sanitizeThreshold(record.majorThresholdYuan)

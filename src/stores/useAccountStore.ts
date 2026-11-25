@@ -22,14 +22,14 @@ export const useAccountStore = create<AccountState>((set) => ({
   loadAccounts: async () => {
     set({ loading: true });
     await core.init();
-    const accounts = await core.acctRepo.findAll();
+    const accounts = await core.acctService.listAccounts();
     set({ accounts, loading: false });
   },
 
   createAccount: async (input) => {
     await core.init();
     const acct = await core.acctService.createAccount(input);
-    const accounts = await core.acctRepo.findAll();
+    const accounts = await core.acctService.listAccounts();
     set({ accounts });
     return acct;
   },
@@ -37,7 +37,7 @@ export const useAccountStore = create<AccountState>((set) => ({
   updateAccount: async (id, patch) => {
     await core.init();
     const acct = await core.acctService.updateAccount(id, patch);
-    const accounts = await core.acctRepo.findAll();
+    const accounts = await core.acctService.listAccounts();
     set({ accounts });
     return acct;
   },
@@ -45,7 +45,7 @@ export const useAccountStore = create<AccountState>((set) => ({
   deleteAccount: async (id, force) => {
     await core.init();
     await core.acctService.deleteAccount(id, force);
-    const accounts = await core.acctRepo.findAll();
+    const accounts = await core.acctService.listAccounts();
     set({ accounts });
   },
 

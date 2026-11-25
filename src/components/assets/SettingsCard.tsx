@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SlidersHorizontalIcon as SlidersHorizontal, ReceiptIcon as ReceiptText, CalendarCheckIcon as CalendarClock, TagIcon as Tags, DatabaseIcon as Database, CaretRightIcon as ChevronRight, SquaresFourIcon as Blocks, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCw, DownloadSimpleIcon as Download, FlaskIcon as Flask } from '@phosphor-icons/react';
-import { core } from '../../core';
+import { dataLifecycleService } from '../../domain/data/dataLifecycleService';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from '../../core/db/schema';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
@@ -111,8 +111,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const handleExportJson = async () => {
     setIsExportingBackup(true);
     try {
-      await core.init();
-      const exportData = await core.dataLifecycleService.exportData();
+      const exportData = await dataLifecycleService.exportData();
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -131,23 +130,12 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   };
 
   const handleClearAllData = async () => {
-    await core.init();
-    await core.adapter.clearAll();
-    await core.seedService.ensureSeeded();
+    await dataLifecycleService.clearAllData();
 
     await loadAccounts();
     await loadCategories();
     await loadTransactions();
     await loadSettlementSummary();
-
-    for (const p of plugins) {
-      const id = p.manifest.id;
-      const isEnabled = enabledPlugins[id] ?? p.manifest.defaultEnabled ?? true;
-      if (isEnabled) {
-        await pluginManager.disablePlugin(id);
-        await pluginManager.enablePlugin(id);
-      }
-    }
   };
 
   return (

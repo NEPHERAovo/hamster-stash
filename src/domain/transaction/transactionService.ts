@@ -5,10 +5,11 @@ import type {
   LoanStatus,
   VoucherAttachment,
 } from '../../types/transaction';
+import type { MiddlewareRunner } from '../../types/middleware';
 import type { TransactionRepository } from '../../core/repositories/TransactionRepository';
 import type { AccountRepository } from '../../core/repositories/AccountRepository';
 import type { CategoryRepository } from '../../core/repositories/CategoryRepository';
-import { pluginManager } from '../../core/plugin/PluginManager';
+import { STORES } from '../../core/db/schema';
 import { todayDate, currentYearMonth } from '../../utils/date';
 import { computePendingInstallments, type ActiveInstallment } from '../finance/amortization';
 import { buildOffsetMap } from '../finance/balanceCalculator';
@@ -41,7 +42,7 @@ export interface CreateTransactionInput {
 
 export interface ReconcileInput {
   accountId: string;
-  targetBalance: number;      // 单位：分（目标实际余额）
+  targetBalance: number;
   date: string;
   note?: string;
 }
@@ -61,25 +62,40 @@ export class TransactionService {
   private txRepo: TransactionRepository;
   private acctRepo: AccountRepository;
   private catRepo: CategoryRepository;
+  private runMiddleware?: MiddlewareRunner;
 
   constructor(
     txRepo: TransactionRepository,
     acctRepo: AccountRepository,
-    catRepo: CategoryRepository
+    catRepo: CategoryRepository,
+    runMiddleware?: MiddlewareRunner
   ) {
     this.txRepo = txRepo;
     this.acctRepo = acctRepo;
     this.catRepo = catRepo;
+    this.runMiddleware = runMiddleware;
   }
 
-  /**
-   * 录入交易（支持普通支出、收入、转账、借贷、垫付报销与凭证）并实时联动资金账户
-   */
+  private executeMiddleware<P, R>(
+    hookName: string,
+    payload: P,
+    handler: (payload: P) => Promise<R>
+  ): Promise<R> {
+    if (this.runMiddleware) {
+      return this.runMiddleware(hookName, payload, handler);
+    }
+    return handler(payload);
+  }
+
+  async listTransactions(): Promise<Transaction[]> {
+    return this.txRepo.findAll({ orderBy: 'date', orderDirection: 'desc' });
+  }
+
   async recordTransaction(input: CreateTransactionInput): Promise<Transaction> {
-    return pluginManager.runMiddleware(
+    return this.executeMiddleware(
       'transaction:record',
       { input },
-      async ({ input }) => this.internalRecordTransaction(input)
+      async ({ input: finalInput }) => this.internalRecordTransaction(finalInput)
     );
   }
 
@@ -196,7 +212,7 @@ export class TransactionService {
     }
   }
 
-  private async internalRecordTransaction(input: CreateTransactionInput): Promise<Transaction> {
+  private async executeRecordTransaction(input: CreateTransactionInput): Promise<Transaction> {
     await this.validateTransactionReferences(input);
 
     const { loanDirection, loanRole } = this.resolveLoanMetadata(
@@ -248,38 +264,44 @@ export class TransactionService {
     });
   }
 
-  /**
-   * 平账校准：计算差异并自动生成平账流水
-   */
-  async reconcileAccount(input: ReconcileInput): Promise<{ transaction?: Transaction; diff: number }> {
-    const account = await this.acctRepo.findById(input.accountId);
-    if (!account) {
-      throw new Error(`账户不存在: ${input.accountId}`);
-    }
-
-    const diff = input.targetBalance - account.balance;
-    if (diff === 0) {
-      return { diff: 0 };
-    }
-
-    await this.acctRepo.setBalance(input.accountId, input.targetBalance);
-
-    const tx = await this.txRepo.create({
-      type: 'reconcile',
-      amount: Math.abs(diff),
-      reconcileDiff: diff,
-      accountId: input.accountId,
-      categoryId: 'cat_reconcile',
-      date: input.date,
-      note: input.note || (diff > 0 ? '平账调增' : '平账调减'),
-    });
-
-    return { transaction: tx, diff };
+  private async internalRecordTransaction(input: CreateTransactionInput): Promise<Transaction> {
+    return this.txRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      () => this.executeRecordTransaction(input)
+    );
   }
 
-  /**
-   * 结清某笔报销垫付（报销款到账）
-   */
+  async reconcileAccount(input: ReconcileInput): Promise<{ transaction?: Transaction; diff: number }> {
+    return this.txRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      async () => {
+        const account = await this.acctRepo.findById(input.accountId);
+        if (!account) {
+          throw new Error(`账户不存在: ${input.accountId}`);
+        }
+
+        const diff = input.targetBalance - account.balance;
+        if (diff === 0) {
+          return { diff: 0 };
+        }
+
+        await this.acctRepo.setBalance(input.accountId, input.targetBalance);
+
+        const tx = await this.txRepo.create({
+          type: 'reconcile',
+          amount: Math.abs(diff),
+          reconcileDiff: diff,
+          accountId: input.accountId,
+          categoryId: 'cat_reconcile',
+          date: input.date,
+          note: input.note || (diff > 0 ? '平账调增' : '平账调减'),
+        });
+
+        return { transaction: tx, diff };
+      }
+    );
+  }
+
   async settleReimbursement(
     txId: string,
     receiveAccountId: string,
@@ -291,12 +313,7 @@ export class TransactionService {
     }
 
     const today = settleDate || todayDate();
-
-    await this.txRepo.update(orig.id, {
-      reimburseStatus: 'settled',
-    });
-
-    return this.recordTransaction({
+    const incomeInput: CreateTransactionInput = {
       type: 'income',
       amount: orig.amount,
       accountId: receiveAccountId,
@@ -304,12 +321,21 @@ export class TransactionService {
       date: today,
       note: `报销到账: ${orig.note || orig.reimburseTarget || '垫付款项'}`,
       offsetTransactionId: orig.id,
-    });
+    };
+
+    return this.executeMiddleware(
+      'transaction:record',
+      { input: incomeInput },
+      async ({ input: finalInput }) =>
+        this.txRepo.runInTransaction([STORES.ACCOUNTS, STORES.TRANSACTIONS], async () => {
+          await this.txRepo.update(orig.id, {
+            reimburseStatus: 'settled',
+          });
+          return this.executeRecordTransaction(finalInput);
+        })
+    );
   }
 
-  /**
-   * 一键结清剩余借款（产生对应的收回还款或偿还欠款流水）
-   */
   async settleLoanOrigin(
     originLoanId: string,
     settleAccountId: string,
@@ -326,7 +352,6 @@ export class TransactionService {
     }
 
     const today = settleDate || todayDate();
-
     const categoryId = orig.loanDirection === 'lend' ? 'cat_loan_repay' : 'cat_debt_clear';
 
     return this.recordTransaction({
@@ -342,9 +367,6 @@ export class TransactionService {
     });
   }
 
-  /**
-   * 汇总获取往来借贷与报销待收的聚合资产数据
-   */
   async getPendingSettlementSummary(): Promise<PendingSettlementSummary> {
     const all = await this.txRepo.findAll();
 
@@ -391,169 +413,172 @@ export class TransactionService {
     };
   }
 
-  /**
-   * 删除交易并回滚账户余额与核销链
-   */
   async deleteTransaction(id: string, options?: { unlinkOffsets?: boolean }): Promise<void> {
     const existing = await this.txRepo.findById(id);
-    return pluginManager.runMiddleware(
+    return this.executeMiddleware(
       'transaction:delete',
       { id, options, deletedTx: existing ?? undefined },
-      async ({ id, options }) => this.internalDeleteTransaction(id, options)
+      async ({ id: targetId, options: targetOptions }) =>
+        this.internalDeleteTransaction(targetId, targetOptions)
     );
   }
 
   private async internalDeleteTransaction(id: string, options?: { unlinkOffsets?: boolean }): Promise<void> {
-    const tx = await this.txRepo.findById(id);
-    if (!tx) {
-      throw new Error(`交易记录不存在: ${id}`);
-    }
+    return this.txRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      async () => {
+        const tx = await this.txRepo.findById(id);
+        if (!tx) {
+          throw new Error(`交易记录不存在: ${id}`);
+        }
 
-    if (tx.type === 'expense' && options?.unlinkOffsets !== false) {
-      const linkedOffsets = await this.txRepo.findOffsetsByExpenseId(id);
-      for (const offsetTx of linkedOffsets) {
-        await this.txRepo.update(offsetTx.id, {
-          offsetTransactionId: undefined,
-        });
+        if (tx.type === 'expense' && options?.unlinkOffsets !== false) {
+          const linkedOffsets = await this.txRepo.findOffsetsByExpenseId(id);
+          for (const offsetTx of linkedOffsets) {
+            await this.txRepo.update(offsetTx.id, {
+              offsetTransactionId: undefined,
+            });
+          }
+        }
+
+        await this.applyAccountAndLoanEffects(tx, -1);
+        await this.txRepo.delete(id);
       }
-    }
-
-    await this.applyAccountAndLoanEffects(tx, -1);
-    await this.txRepo.delete(id);
+    );
   }
 
-  /**
-   * 修改交易
-   */
   async updateTransaction(id: string, patch: Partial<CreateTransactionInput>): Promise<Transaction> {
     const previousTx = await this.txRepo.findById(id);
-    return pluginManager.runMiddleware(
+    return this.executeMiddleware(
       'transaction:update',
       { id, patch, previousTx: previousTx ?? undefined },
-      async ({ id, patch }) => this.internalUpdateTransaction(id, patch)
+      async ({ id: targetId, patch: targetPatch }) =>
+        this.internalUpdateTransaction(targetId, targetPatch)
     );
   }
 
   private async internalUpdateTransaction(id: string, patch: Partial<CreateTransactionInput>): Promise<Transaction> {
-    const oldTx = await this.txRepo.findById(id);
-    if (!oldTx) {
-      throw new Error(`交易记录不存在: ${id}`);
-    }
+    return this.txRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      async () => {
+        const oldTx = await this.txRepo.findById(id);
+        if (!oldTx) {
+          throw new Error(`交易记录不存在: ${id}`);
+        }
 
-    const nextType = patch.type || oldTx.type;
-    const nextAmount = patch.amount !== undefined ? patch.amount : oldTx.amount;
-    const nextAccountId = patch.accountId || oldTx.accountId;
-    const nextCategoryId = patch.categoryId || oldTx.categoryId;
-    const nextDate = patch.date || oldTx.date;
-    const nextToAccountId = 'toAccountId' in patch ? patch.toAccountId : oldTx.toAccountId;
-    const nextNote = 'note' in patch ? patch.note?.trim() : oldTx.note;
-    const nextTags = 'tags' in patch ? patch.tags : oldTx.tags;
-    const nextLoanParty = 'loanParty' in patch ? patch.loanParty?.trim() : oldTx.loanParty;
-    const nextIsReimbursable = 'isReimbursable' in patch ? Boolean(patch.isReimbursable) : Boolean(oldTx.isReimbursable);
-    const nextReimburseTarget = 'reimburseTarget' in patch ? patch.reimburseTarget?.trim() : oldTx.reimburseTarget;
-    let nextOffsetTxId: string | undefined;
-    if (nextType === 'income') {
-      nextOffsetTxId = 'offsetTransactionId' in patch ? patch.offsetTransactionId : oldTx.offsetTransactionId;
-    }
-    const nextVoucher = 'voucher' in patch ? patch.voucher : oldTx.voucher;
-    const nextExt = 'ext' in patch ? patch.ext : oldTx.ext;
-    const nextRelatedLoanId = 'relatedLoanId' in patch ? patch.relatedLoanId : oldTx.relatedLoanId;
+        const nextType = patch.type || oldTx.type;
+        const nextAmount = patch.amount !== undefined ? patch.amount : oldTx.amount;
+        const nextAccountId = patch.accountId || oldTx.accountId;
+        const nextCategoryId = patch.categoryId || oldTx.categoryId;
+        const nextDate = patch.date || oldTx.date;
+        const nextToAccountId = 'toAccountId' in patch ? patch.toAccountId : oldTx.toAccountId;
+        const nextNote = 'note' in patch ? patch.note?.trim() : oldTx.note;
+        const nextTags = 'tags' in patch ? patch.tags : oldTx.tags;
+        const nextLoanParty = 'loanParty' in patch ? patch.loanParty?.trim() : oldTx.loanParty;
+        const nextIsReimbursable = 'isReimbursable' in patch ? Boolean(patch.isReimbursable) : Boolean(oldTx.isReimbursable);
+        const nextReimburseTarget = 'reimburseTarget' in patch ? patch.reimburseTarget?.trim() : oldTx.reimburseTarget;
+        let nextOffsetTxId: string | undefined;
+        if (nextType === 'income') {
+          nextOffsetTxId = 'offsetTransactionId' in patch ? patch.offsetTransactionId : oldTx.offsetTransactionId;
+        }
+        const nextVoucher = 'voucher' in patch ? patch.voucher : oldTx.voucher;
+        const nextExt = 'ext' in patch ? patch.ext : oldTx.ext;
+        const nextRelatedLoanId = 'relatedLoanId' in patch ? patch.relatedLoanId : oldTx.relatedLoanId;
 
-    const rawDirection = 'loanDirection' in patch ? patch.loanDirection : oldTx.loanDirection;
-    const rawRole = 'loanRole' in patch ? patch.loanRole : oldTx.loanRole;
-    const { loanDirection, loanRole } = this.resolveLoanMetadata(nextType, nextCategoryId, rawDirection, rawRole);
+        const rawDirection = 'loanDirection' in patch ? patch.loanDirection : oldTx.loanDirection;
+        const rawRole = 'loanRole' in patch ? patch.loanRole : oldTx.loanRole;
+        const { loanDirection, loanRole } = this.resolveLoanMetadata(nextType, nextCategoryId, rawDirection, rawRole);
 
-    const candidateInput: CreateTransactionInput = {
-      type: nextType,
-      amount: nextAmount,
-      accountId: nextAccountId,
-      categoryId: nextCategoryId,
-      toAccountId: nextToAccountId,
-      date: nextDate,
-      note: nextNote,
-      tags: nextTags,
-      loanParty: nextLoanParty,
-      loanDirection,
-      loanRole,
-      relatedLoanId: nextRelatedLoanId,
-      isReimbursable: nextIsReimbursable,
-      reimburseTarget: nextReimburseTarget,
-      offsetTransactionId: nextOffsetTxId,
-      voucher: nextVoucher,
-      ext: nextExt,
-      createdAt: patch.createdAt || oldTx.createdAt,
-    };
+        const candidateInput: CreateTransactionInput = {
+          type: nextType,
+          amount: nextAmount,
+          accountId: nextAccountId,
+          categoryId: nextCategoryId,
+          toAccountId: nextToAccountId,
+          date: nextDate,
+          note: nextNote,
+          tags: nextTags,
+          loanParty: nextLoanParty,
+          loanDirection,
+          loanRole,
+          relatedLoanId: nextRelatedLoanId,
+          isReimbursable: nextIsReimbursable,
+          reimburseTarget: nextReimburseTarget,
+          offsetTransactionId: nextOffsetTxId,
+          voucher: nextVoucher,
+          ext: nextExt,
+          createdAt: patch.createdAt || oldTx.createdAt,
+        };
 
-    await this.validateTransactionReferences(candidateInput);
+        await this.validateTransactionReferences(candidateInput);
 
-    await this.applyAccountAndLoanEffects(oldTx, -1);
+        await this.applyAccountAndLoanEffects(oldTx, -1);
 
-    if (oldTx.type === 'expense' && nextType !== 'expense') {
-      const linkedOffsets = await this.txRepo.findOffsetsByExpenseId(id);
-      for (const offsetTx of linkedOffsets) {
-        await this.txRepo.update(offsetTx.id, {
-          offsetTransactionId: undefined,
+        if (oldTx.type === 'expense' && nextType !== 'expense') {
+          const linkedOffsets = await this.txRepo.findOffsetsByExpenseId(id);
+          for (const offsetTx of linkedOffsets) {
+            await this.txRepo.update(offsetTx.id, {
+              offsetTransactionId: undefined,
+            });
+          }
+        }
+
+        await this.applyAccountAndLoanEffects(
+          {
+            type: nextType,
+            amount: nextAmount,
+            accountId: nextAccountId,
+            toAccountId: nextToAccountId,
+            reconcileDiff: oldTx.reconcileDiff,
+            loanDirection,
+            loanRole,
+            relatedLoanId: nextRelatedLoanId,
+          },
+          1
+        );
+
+        let loanStatus: LoanStatus | undefined;
+        let repaidAmount: number | undefined;
+        if (nextType === 'loan' && loanRole === 'origin') {
+          repaidAmount = oldTx.repaidAmount || 0;
+          if (repaidAmount >= nextAmount) {
+            loanStatus = 'settled';
+          } else if (repaidAmount > 0) {
+            loanStatus = 'partially_repaid';
+          } else {
+            loanStatus = 'pending';
+          }
+        }
+
+        const reimburseStatus = nextIsReimbursable ? oldTx.reimburseStatus || 'pending' : undefined;
+
+        return this.txRepo.update(id, {
+          type: nextType,
+          amount: nextAmount,
+          accountId: nextAccountId,
+          categoryId: nextCategoryId,
+          toAccountId: nextType === 'transfer' ? nextToAccountId : undefined,
+          date: nextDate,
+          note: nextNote,
+          tags: nextTags,
+          loanParty: nextLoanParty,
+          loanDirection,
+          loanRole,
+          relatedLoanId: nextType === 'loan' ? nextRelatedLoanId : undefined,
+          loanStatus,
+          repaidAmount,
+          isReimbursable: nextIsReimbursable,
+          reimburseTarget: nextReimburseTarget,
+          reimburseStatus,
+          offsetTransactionId: nextOffsetTxId,
+          voucher: nextVoucher,
+          ext: nextExt,
+          createdAt: patch.createdAt || oldTx.createdAt,
         });
       }
-    }
-
-    await this.applyAccountAndLoanEffects(
-      {
-        type: nextType,
-        amount: nextAmount,
-        accountId: nextAccountId,
-        toAccountId: nextToAccountId,
-        reconcileDiff: oldTx.reconcileDiff,
-        loanDirection,
-        loanRole,
-        relatedLoanId: nextRelatedLoanId,
-      },
-      1
     );
-
-    let loanStatus: LoanStatus | undefined;
-    let repaidAmount: number | undefined;
-    if (nextType === 'loan' && loanRole === 'origin') {
-      repaidAmount = oldTx.repaidAmount || 0;
-      if (repaidAmount >= nextAmount) {
-        loanStatus = 'settled';
-      } else if (repaidAmount > 0) {
-        loanStatus = 'partially_repaid';
-      } else {
-        loanStatus = 'pending';
-      }
-    }
-
-    const reimburseStatus = nextIsReimbursable ? oldTx.reimburseStatus || 'pending' : undefined;
-
-    return this.txRepo.update(id, {
-      type: nextType,
-      amount: nextAmount,
-      accountId: nextAccountId,
-      categoryId: nextCategoryId,
-      toAccountId: nextType === 'transfer' ? nextToAccountId : undefined,
-      date: nextDate,
-      note: nextNote,
-      tags: nextTags,
-      loanParty: nextLoanParty,
-      loanDirection,
-      loanRole,
-      relatedLoanId: nextType === 'loan' ? nextRelatedLoanId : undefined,
-      loanStatus,
-      repaidAmount,
-      isReimbursable: nextIsReimbursable,
-      reimburseTarget: nextReimburseTarget,
-      reimburseStatus,
-      offsetTransactionId: nextOffsetTxId,
-      voucher: nextVoucher,
-      ext: nextExt,
-      createdAt: patch.createdAt || oldTx.createdAt,
-    });
   }
 
-  /**
-   * 批量导入交易（支持选择是否同步联动更新账户当前余额）
-   */
   async importTransactions(
     records: {
       type: TransactionType;
@@ -567,30 +592,35 @@ export class TransactionService {
     }[],
     syncAccountBalance: boolean = true
   ): Promise<{ importedCount: number }> {
-    let count = 0;
-    for (const r of records) {
-      if (syncAccountBalance) {
-        if (r.type === 'expense') {
-          await this.acctRepo.adjustBalance(r.accountId, -r.amount);
-        } else if (r.type === 'income') {
-          await this.acctRepo.adjustBalance(r.accountId, r.amount);
-        }
-      }
+    return this.txRepo.runInTransaction(
+      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      async () => {
+        let count = 0;
+        for (const r of records) {
+          if (syncAccountBalance) {
+            if (r.type === 'expense') {
+              await this.acctRepo.adjustBalance(r.accountId, -r.amount);
+            } else if (r.type === 'income') {
+              await this.acctRepo.adjustBalance(r.accountId, r.amount);
+            }
+          }
 
-      await this.txRepo.create({
-        type: r.type,
-        amount: r.amount,
-        accountId: r.accountId,
-        categoryId: r.categoryId,
-        date: r.date,
-        createdAt: r.createdAt,
-        note: r.note,
-        isReimbursable: Boolean(r.isReimbursable),
-        reimburseStatus: r.isReimbursable ? 'pending' : undefined,
-      });
-      count++;
-    }
-    return { importedCount: count };
+          await this.txRepo.create({
+            type: r.type,
+            amount: r.amount,
+            accountId: r.accountId,
+            categoryId: r.categoryId,
+            date: r.date,
+            createdAt: r.createdAt,
+            note: r.note,
+            isReimbursable: Boolean(r.isReimbursable),
+            reimburseStatus: r.isReimbursable ? 'pending' : undefined,
+          });
+          count++;
+        }
+        return { importedCount: count };
+      }
+    );
   }
 
   private validateTransactionInput(input: CreateTransactionInput): void {
