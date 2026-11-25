@@ -8,7 +8,6 @@
     <meta name="apple-mobile-web-app-title" content="仓鼠囤囤" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#F3F4F6" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="仓鼠囤囤" />
@@ -23,31 +22,13 @@
     <script>
       (function () {
         try {
-          var mode = localStorage.getItem('hamsterstash_color_mode_v1') || 'auto';
-          var uiStyle = localStorage.getItem('hamsterstash_ui_style_v1') || 'paper';
-          var lightTheme = localStorage.getItem('hamsterstash_light_theme_v1') || 'theme-sage';
-          var darkTheme = localStorage.getItem('hamsterstash_dark_theme_v1') || 'theme-carbon';
+          var mode = localStorage.getItem('hamsterstash_color_mode_v1');
+          var cachedBg = localStorage.getItem('hamsterstash_splash_bg_v1');
+          var cachedDark = localStorage.getItem('hamsterstash_splash_dark_v1');
           var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var isDark = mode === 'dark' || (mode === 'auto' && sysDark);
-          var paperMap = {
-            'theme-sage': '#EEF4ED',
-            'theme-cotton': '#F5F2EA',
-            'theme-kraft': '#EFE5D4',
-            'theme-mist': '#E7EFF5',
-            'theme-cherry': '#F6ECEE',
-            'theme-carbon': '#141311',
-            'theme-indigo': '#0E131C',
-            'theme-espresso': '#14100D',
-            'theme-obsidian': '#0B0B0B',
-            'theme-pine': '#0C140E',
-          };
-          var lightBg =
-            localStorage.getItem('hamsterstash_splash_bg_light_v1') ||
-            (uiStyle === 'modern' ? '#F3F4F6' : paperMap[lightTheme] || '#EEF4ED');
-          var darkBg =
-            localStorage.getItem('hamsterstash_splash_bg_dark_v1') ||
-            (uiStyle === 'modern' ? '#090A0D' : paperMap[darkTheme] || '#141311');
-          var bg = isDark ? darkBg : lightBg;
+          var isDark = mode === 'dark' || (mode === 'auto' && sysDark) || (!mode && sysDark);
+          var polarityMatches = cachedDark === (isDark ? '1' : '0');
+          var bg = (cachedBg && polarityMatches) ? cachedBg : (isDark ? '#090A0D' : '#F3F4F6');
           var fg = isDark ? '#F5F6F8' : '#111318';
           var muted = isDark ? 'rgba(245,246,248,0.45)' : 'rgba(17,19,24,0.45)';
           var track = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(17,19,24,0.1)';
@@ -60,19 +41,7 @@
           root.style.colorScheme = isDark ? 'dark' : 'light';
           if (isDark) root.classList.add('dark');
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (mode === 'auto') {
-            if (meta) {
-              meta.setAttribute('media', '(prefers-color-scheme: light)');
-              meta.setAttribute('content', lightBg);
-            }
-            var darkMeta = document.createElement('meta');
-            darkMeta.setAttribute('name', 'theme-color');
-            darkMeta.setAttribute('media', '(prefers-color-scheme: dark)');
-            darkMeta.setAttribute('content', darkBg);
-            if (document.head) document.head.appendChild(darkMeta);
-          } else if (meta) {
-            meta.setAttribute('content', bg);
-          }
+          if (meta) meta.setAttribute('content', bg);
         } catch (e) {}
       })();
 
