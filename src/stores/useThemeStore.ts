@@ -20,20 +20,21 @@ export interface ThemeOption {
   subName: string;
   isDark: boolean;
   colorDot: string;
+  pairedId: string;
 }
 
 export const THEME_OPTIONS: ThemeOption[] = [
-  { id: 'theme-sage', name: '竹青素笺', subName: 'Sage Green', isDark: false, colorDot: '#3F8256' },
-  { id: 'theme-cotton', name: '特种米白', subName: 'Cotton White', isDark: false, colorDot: '#78634B' },
-  { id: 'theme-kraft', name: '复古牛皮', subName: 'Kraft Paper', isDark: false, colorDot: '#BA6E38' },
-  { id: 'theme-mist', name: '雾霭蓝卡', subName: 'Mist Blue', isDark: false, colorDot: '#3D7299' },
-  { id: 'theme-cherry', name: '樱落绯灰', subName: 'Cherry Ash', isDark: false, colorDot: '#AC495E' },
+  { id: 'theme-sage', name: '竹青素笺', subName: 'Sage Green', isDark: false, colorDot: '#3F8256', pairedId: 'theme-pine' },
+  { id: 'theme-cotton', name: '特种米白', subName: 'Cotton White', isDark: false, colorDot: '#78634B', pairedId: 'theme-carbon' },
+  { id: 'theme-kraft', name: '复古牛皮', subName: 'Kraft Paper', isDark: false, colorDot: '#BA6E38', pairedId: 'theme-espresso' },
+  { id: 'theme-mist', name: '雾霭蓝卡', subName: 'Mist Blue', isDark: false, colorDot: '#3D7299', pairedId: 'theme-indigo' },
+  { id: 'theme-cherry', name: '樱落绯灰', subName: 'Cherry Ash', isDark: false, colorDot: '#AC495E', pairedId: 'theme-crimson' },
 
-  { id: 'theme-carbon', name: '复写碳纸', subName: 'Carbon Paper', isDark: true, colorDot: '#B5935A' },
-  { id: 'theme-indigo', name: '古法靛蓝', subName: 'Indigo Night', isDark: true, colorDot: '#5289B3' },
-  { id: 'theme-espresso', name: '深焙浓缩', subName: 'Espresso Dark', isDark: true, colorDot: '#CC814B' },
-  { id: 'theme-obsidian', name: '黑曜石金', subName: 'Obsidian Gold', isDark: true, colorDot: '#C7A76E' },
-  { id: 'theme-pine', name: '幽林松柏', subName: 'Forest Pine', isDark: true, colorDot: '#529E6C' },
+  { id: 'theme-pine', name: '幽林松柏', subName: 'Forest Pine', isDark: true, colorDot: '#529E6C', pairedId: 'theme-sage' },
+  { id: 'theme-carbon', name: '复写碳纸', subName: 'Carbon Paper', isDark: true, colorDot: '#B5935A', pairedId: 'theme-cotton' },
+  { id: 'theme-espresso', name: '深焙浓缩', subName: 'Espresso Dark', isDark: true, colorDot: '#CC814B', pairedId: 'theme-kraft' },
+  { id: 'theme-indigo', name: '古法靛蓝', subName: 'Indigo Night', isDark: true, colorDot: '#5289B3', pairedId: 'theme-mist' },
+  { id: 'theme-crimson', name: '绯夜绛笺', subName: 'Crimson Night', isDark: true, colorDot: '#D16B80', pairedId: 'theme-cherry' },
 ];
 
 const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
@@ -49,11 +50,11 @@ const PAPER_THEME_BASE_COLORS: Record<string, string> = {
   'theme-kraft': '#EFE5D4',
   'theme-mist': '#E7EFF5',
   'theme-cherry': '#F6ECEE',
-  'theme-carbon': '#141311',
-  'theme-indigo': '#0E131C',
-  'theme-espresso': '#14100D',
-  'theme-obsidian': '#0B0B0B',
   'theme-pine': '#0C140E',
+  'theme-carbon': '#141311',
+  'theme-espresso': '#14100D',
+  'theme-indigo': '#0E131C',
+  'theme-crimson': '#160E10',
 };
 
 const resolveChromeBackground = (themeId: string, uiStyle: UiStyle, isDark: boolean): string => {
@@ -64,7 +65,7 @@ const resolveChromeBackground = (themeId: string, uiStyle: UiStyle, isDark: bool
   if (uiStyle === 'modern') {
     return isDark ? '#090A0D' : '#F3F4F6';
   }
-  return PAPER_THEME_BASE_COLORS[themeId] || (isDark ? '#141311' : '#EEF4ED');
+  return PAPER_THEME_BASE_COLORS[themeId] || (isDark ? '#0C140E' : '#EEF4ED');
 };
 
 const applyChromeMetaAndRoot = (bg: string, isDark: boolean) => {
@@ -167,7 +168,7 @@ const getInitialThemeSlots = (): {
   const savedMode = safeGetStorage(COLOR_MODE_STORAGE_KEY);
 
   const lightThemeId = savedLight && isLightTheme(savedLight) ? savedLight : 'theme-sage';
-  const darkThemeId = savedDark && isDarkTheme(savedDark) ? savedDark : 'theme-carbon';
+  const darkThemeId = savedDark && isDarkTheme(savedDark) ? savedDark : 'theme-pine';
   const colorMode: ColorMode =
     savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto' ? savedMode : 'light';
 
@@ -390,8 +391,8 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       if (!theme) return 'applied';
 
       const state = get();
-      const nextLight = theme.isDark ? state.lightThemeId : theme.id;
-      const nextDark = theme.isDark ? theme.id : state.darkThemeId;
+      const nextLight = theme.isDark ? theme.pairedId : theme.id;
+      const nextDark = theme.isDark ? theme.id : theme.pairedId;
 
       if (state.colorMode === 'auto') {
         syncStateAndPersist({

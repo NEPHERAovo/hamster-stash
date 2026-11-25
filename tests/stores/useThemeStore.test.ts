@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useThemeStore } from '../../src/stores/useThemeStore';
+import { THEME_OPTIONS, useThemeStore } from '../../src/stores/useThemeStore';
 
 describe('useThemeStore iOS status bar & root chrome sync', () => {
   beforeEach(() => {
@@ -61,5 +61,32 @@ describe('useThemeStore iOS status bar & root chrome sync', () => {
     expect(updatedMetas[0]).not.toBe(firstMetaNode);
     expect(updatedMetas[0].getAttribute('content')).toBe('#0C140E');
     expect(localStorage.getItem('hamsterstash_splash_dark_v1')).toBe('1');
+  });
+
+  it('pairs every light and dark theme 1-to-1 in matching order and syncs counterpart on selection', () => {
+    const lightThemes = THEME_OPTIONS.filter((t) => !t.isDark);
+    const darkThemes = THEME_OPTIONS.filter((t) => t.isDark);
+
+    expect(lightThemes).toHaveLength(5);
+    expect(darkThemes).toHaveLength(5);
+
+    lightThemes.forEach((light, idx) => {
+      const dark = darkThemes[idx];
+      expect(light.pairedId).toBe(dark.id);
+      expect(dark.pairedId).toBe(light.id);
+    });
+
+    useThemeStore.getState().setUiStyle('paper');
+    useThemeStore.getState().setTheme('theme-cherry');
+    expect(useThemeStore.getState().lightThemeId).toBe('theme-cherry');
+    expect(useThemeStore.getState().darkThemeId).toBe('theme-crimson');
+
+    useThemeStore.getState().setColorMode('dark');
+    expect(useThemeStore.getState().currentThemeId).toBe('theme-crimson');
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#160E10');
+
+    useThemeStore.getState().setTheme('theme-indigo');
+    expect(useThemeStore.getState().darkThemeId).toBe('theme-indigo');
+    expect(useThemeStore.getState().lightThemeId).toBe('theme-mist');
   });
 });
