@@ -214,7 +214,7 @@ export class IndexedDBAdapter implements DataAdapter {
   async update<T extends StoredEntity>(
     collection: string,
     id: string,
-    data: Partial<Omit<T, 'id' | 'createdAt'>>
+    data: Partial<Omit<T, 'id'>>
   ): Promise<T> {
     const db = this.getDB();
     const item = await db.get(collection, id);

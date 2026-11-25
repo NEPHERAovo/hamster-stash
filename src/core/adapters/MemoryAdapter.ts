@@ -54,7 +54,7 @@ export class MemoryAdapter implements DataAdapter {
   async update<T extends StoredEntity>(
     collection: string,
     id: string,
-    data: Partial<Omit<T, 'id' | 'createdAt'>>
+    data: Partial<Omit<T, 'id'>>
   ): Promise<T> {
     const col = this.getCollection(collection);
     const item = col.get(id);

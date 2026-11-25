@@ -669,5 +669,29 @@ describe('AddTransactionModal - Amortization (分期支出)', () => {
       expect(screen.queryByText('流出')).toBeNull();
       expect(screen.queryByText('流入')).toBeNull();
     });
+
+    it('guards against double-tap duplicate submission while async submit is in flight', async () => {
+      let resolveSubmit!: (val: { id: string }) => void;
+      const recordSpy = vi.fn().mockImplementation(
+        () => new Promise<{ id: string }>((resolve) => {
+          resolveSubmit = resolve;
+        })
+      );
+      useLedgerStore.setState({ recordTransaction: recordSpy });
+
+      render(<AddTransactionModal isOpen={true} onClose={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole('button', { name: '5' }));
+      const submitBtn = screen.getByRole('button', { name: '完成' });
+
+      fireEvent.click(submitBtn);
+      fireEvent.click(submitBtn);
+
+      expect(recordSpy).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolveSubmit({ id: 'tx_single' });
+      });
+    });
   });
 });

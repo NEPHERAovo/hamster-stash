@@ -306,6 +306,33 @@ describe('TransactionService & Core Bookkeeping Logic', () => {
       acct = await acctRepo.findById('acct_wechat');
       expect(acct?.balance).toBe(95000);
     });
+
+    it('updates transaction in-place preserving id and createdAt without duplicating records', async () => {
+      const tx = await txService.recordTransaction({
+        type: 'expense',
+        amount: 2000,
+        accountId: 'acct_wechat',
+        categoryId: 'cat_food',
+        date: '2026-10-09',
+        note: '原始记录',
+        createdAt: '2026-10-09T08:00:00.000Z',
+      });
+
+      const updated = await txService.updateTransaction(tx.id, {
+        amount: 3500,
+        accountId: 'acct_bank',
+        note: '修改后记录',
+      });
+
+      expect(updated.id).toBe(tx.id);
+      expect(updated.createdAt).toBe('2026-10-09T08:00:00.000Z');
+      expect(updated.note).toBe('修改后记录');
+
+      const allTxs = await txRepo.findAll();
+      expect(allTxs.length).toBe(1);
+      expect((await acctRepo.findById('acct_wechat'))?.balance).toBe(100000);
+      expect((await acctRepo.findById('acct_bank'))?.balance).toBe(496500);
+    });
   });
 
   describe('财务结余与汇算规则 (Financial Calculations)', () => {

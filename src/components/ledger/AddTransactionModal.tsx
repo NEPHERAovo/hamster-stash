@@ -128,6 +128,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const isClosingRef = useRef(false);
+  const isSubmittingRef = useRef(false);
   const dragYRef = useRef(0);
   const smootherRef = useRef<GestureSmoother | null>(null);
   const sheetVelocityRef = useRef(new VelocityTracker(100));
@@ -153,6 +154,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         onClose();
         setShouldRender(false);
         isClosingRef.current = false;
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
         dragYRef.current = 0;
         smootherRef.current?.reset(0);
       }, duration);
@@ -257,6 +260,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     prevEditingIdRef.current = currentEditingId;
 
     if (isOpen && (!wasOpen || editingChanged)) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
       setIsDateTimePickerOpen(false);
       setIsAcctTrayOpen(false);
       setIsVoucherTrayOpen(false);
@@ -476,6 +481,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   const handleSubmit = async (keepOpen = false) => {
+    if (isSubmittingRef.current || isClosingRef.current) return;
     triggerHaptic();
     const finalAmountYuan = evaluateArithmetic(expr);
     const amountCents = yuanToCents(finalAmountYuan);
@@ -495,7 +501,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+    let closing = false;
     try {
       const createdAtISO = combineLocalDateTimeToIso(dateStr, timeStr);
       const loanPayload =
@@ -542,6 +550,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         });
 
         onSuccess?.(editingTransaction.id);
+        closing = true;
         closeWithAnimation(240);
         return;
       }
@@ -575,12 +584,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setIsCustomAmortize(false);
         setCustomAmortizeInput('');
       } else {
+        closing = true;
         closeWithAnimation(240);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '保存失败');
     } finally {
-      setIsSubmitting(false);
+      if (!closing) {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+      }
     }
   };
 

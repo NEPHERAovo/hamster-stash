@@ -59,7 +59,7 @@ export class TransactionRepository {
     return this.adapter.create<Transaction>(STORES.TRANSACTIONS, data);
   }
 
-  async update(id: string, data: Partial<Omit<Transaction, 'id' | 'createdAt'>>): Promise<Transaction> {
+  async update(id: string, data: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> {
     return this.adapter.update<Transaction>(STORES.TRANSACTIONS, id, data);
   }
 
