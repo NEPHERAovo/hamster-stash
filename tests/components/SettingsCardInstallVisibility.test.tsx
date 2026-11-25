@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { SettingsCard } from '../../src/components/assets/SettingsCard';
+import { SettingsCard } from '../../src/components/settings/SettingsCard';
 import { usePwaStore } from '../../src/stores/usePwaStore';
 
-vi.mock('../../src/components/assets/WebDavSyncSection', () => ({
+vi.mock('../../src/components/settings/WebDavSyncSection', () => ({
   WebDavSyncSection: () => <div data-testid="mock-webdav" />,
 }));
 

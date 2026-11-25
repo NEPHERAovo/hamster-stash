@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
-import { PwaInstallGuideModal } from '../../src/components/assets/PwaInstallGuideModal';
+import { PwaInstallGuideModal } from '../../src/components/settings/PwaInstallGuideModal';
 import { usePwaStore, type BeforeInstallPromptEvent } from '../../src/stores/usePwaStore';
 
 describe('PwaInstallGuideModal', () => {

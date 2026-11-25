@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
-import { WebDavSyncSection } from '../../src/components/assets/WebDavSyncSection';
+import { WebDavSyncSection } from '../../src/components/settings/WebDavSyncSection';
 import { syncService } from '../../src/domain/sync/syncService';
 
 vi.mock('../../src/domain/sync/syncService', () => ({

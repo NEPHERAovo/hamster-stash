@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
-import { SyncReviewModal } from '../../src/components/assets/SyncReviewModal';
+import { SyncReviewModal } from '../../src/components/settings/SyncReviewModal';
 import { buildThreeWaySyncPlan } from '../../src/domain/sync/diffMerger';
 import type { ExportData } from '../../src/types/adapter';
 import type { Transaction } from '../../src/types/transaction';

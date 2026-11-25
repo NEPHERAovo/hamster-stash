@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { CategoryManageSubPage } from '../../src/components/assets/CategoryManageSubPage';
+import { CategoryManageSubPage } from '../../src/components/settings/CategoryManageSubPage';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
 import type { Category } from '../../src/types/category';
 import { getCategoryIcon } from '../../src/utils/categoryIcons';

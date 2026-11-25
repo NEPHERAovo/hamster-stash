@@ -1,9 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DataManageSubPage } from '../../src/components/assets/DataManageSubPage';
+import { DataManageSubPage } from '../../src/components/settings/DataManageSubPage';
 
-vi.mock('../../src/components/assets/WebDavSyncSection', () => ({
+vi.mock('../../src/components/settings/WebDavSyncSection', () => ({
   WebDavSyncSection: () => <div data-testid="mock-cloud-sync">云端同步组件</div>,
 }));
 

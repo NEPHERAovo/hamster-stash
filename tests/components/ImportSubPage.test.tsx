@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ImportSubPage } from '../../src/components/assets/ImportSubPage';
+import { ImportSubPage } from '../../src/components/settings/ImportSubPage';
 import { useCategoryStore } from '../../src/stores/useCategoryStore';
 import { useAccountStore } from '../../src/stores/useAccountStore';
 import { useLedgerStore } from '../../src/stores/useLedgerStore';
