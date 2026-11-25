@@ -161,6 +161,10 @@ export function App() {
         .then((result) => {
           if (!result.ran) return;
           if (result.success) {
+            if (result.needsReview) {
+              toast.warning(`检测到 ${result.reviewCount || 0} 项云端变更或差异，请在「数据与备份」确认同步`);
+              return;
+            }
             if (result.changedLocal) {
               void Promise.all([
                 loadAccounts(),
@@ -168,6 +172,7 @@ export function App() {
                 loadTransactions(),
                 loadSettlementSummary(),
                 useThemeStore.getState().loadThemeFromDB(),
+                usePreferenceStore.getState().loadPreferencesFromDB(),
               ]);
             }
             const attHint =

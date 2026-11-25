@@ -10,6 +10,10 @@ vi.mock('../../src/domain/sync/syncService', () => ({
     saveWebDavConfig: vi.fn(),
     testConnection: vi.fn(),
     sync: vi.fn(),
+    prepareWebDavSync: vi.fn(),
+    commitWebDavSync: vi.fn(),
+    getPendingReview: vi.fn(),
+    clearPendingReview: vi.fn(),
   },
 }));
 

@@ -10,12 +10,15 @@ import {
   EyeSlashIcon as EyeSlash,
 } from '@phosphor-icons/react';
 import { syncService } from '../../domain/sync/syncService';
+import type { SyncDiffPlan, SyncResolutionChoice } from '../../domain/sync/diffMerger';
 import { webdavClient, type WebDavConfig, type WebDavProxyMode } from '../../domain/sync/webdavClient';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { toast } from '../../stores/useToastStore';
+import { SyncReviewModal } from './SyncReviewModal';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperChip } from '../ui/PaperChip';
 import { PaperIconButton } from '../ui/PaperIconButton';
@@ -110,6 +113,7 @@ export const WebDavSyncSection: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [reviewPlan, setReviewPlan] = useState<SyncDiffPlan | null>(null);
 
   const { loadAccounts } = useAccountStore();
   const { loadCategories } = useCategoryStore();
@@ -142,6 +146,10 @@ export const WebDavSyncSection: React.FC = () => {
         }
         setAutoSyncDaily(autoDaily);
         setSyncAttachments(syncAtt);
+        const pending = syncService.getPendingReview?.();
+        if (pending?.plan) {
+          setReviewPlan(pending.plan);
+        }
       });
     return () => {
       mounted = false;
@@ -233,6 +241,17 @@ export const WebDavSyncSection: React.FC = () => {
     }
   };
 
+  const reloadAllStoresAfterSync = async () => {
+    await Promise.all([
+      loadAccounts(),
+      loadCategories(),
+      loadMonth(),
+      loadTransactions(),
+      loadThemeFromDB(),
+      usePreferenceStore.getState().loadPreferencesFromDB(),
+    ]);
+  };
+
   const handleSync = async () => {
     if (!currentConfig.url || !currentConfig.username || !currentConfig.password) {
       toast.error('请先配置 WebDAV 服务器信息');
@@ -243,24 +262,38 @@ export const WebDavSyncSection: React.FC = () => {
     setIsSyncing(true);
     try {
       await syncService.saveWebDavConfig(currentConfig, { autoSyncDaily, syncAttachments });
-      const res = await syncService.syncWithWebDav(currentConfig, { syncAttachments });
+      const prep = await syncService.prepareWebDavSync(currentConfig, { syncAttachments });
 
-      await Promise.all([
-        loadAccounts(),
-        loadCategories(),
-        loadMonth(),
-        loadTransactions(),
-        loadThemeFromDB(),
-      ]);
+      if (prep.status === 'needs_review' && prep.plan) {
+        setReviewPlan(prep.plan);
+        return;
+      }
+
+      if (prep.stats && (prep.stats.addedLocal + prep.stats.updatedLocal + prep.stats.deletedLocal) > 0) {
+        await reloadAllStoresAfterSync();
+      }
 
       const now = new Date().toISOString();
       setLastSyncAt(now);
-      toast.success(res.message);
+      toast.success(prep.message);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'WebDAV 同步失败');
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const handleConfirmReview = async (resolutions: Record<string, SyncResolutionChoice>) => {
+    if (!reviewPlan) return;
+    const res = await syncService.commitWebDavSync(reviewPlan, resolutions, currentConfig, {
+      syncAttachments,
+    });
+    setReviewPlan(null);
+    if (res.changedLocal) {
+      await reloadAllStoresAfterSync();
+    }
+    setLastSyncAt(new Date().toISOString());
+    toast.success(res.message);
   };
 
   return (
@@ -538,6 +571,16 @@ export const WebDavSyncSection: React.FC = () => {
           />
         </div>
       </div>
+
+      <SyncReviewModal
+        isOpen={Boolean(reviewPlan)}
+        plan={reviewPlan}
+        onClose={() => {
+          syncService.clearPendingReview?.();
+          setReviewPlan(null);
+        }}
+        onConfirm={handleConfirmReview}
+      />
     </div>
   );
 };
