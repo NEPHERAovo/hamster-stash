@@ -382,4 +382,25 @@ describe('TransactionGroup component', () => {
       window.IntersectionObserver = origObserver;
     }
   });
+
+  it('supports multi-keyword and subsequence fuzzy search across fields', () => {
+    render(
+      <TransactionGroup
+        transactions={mockTransactions}
+        searchTransactions={mockTransactions}
+        categories={mockCategories}
+        accounts={mockAccounts}
+      />
+    );
+
+    const input = screen.getByPlaceholderText('搜索备注、分类、账户...');
+
+    fireEvent.change(input, { target: { value: '手咖 招卡' } });
+    expect(screen.getByText('耶加雪菲手冲咖啡')).toBeInTheDocument();
+    expect(screen.queryByText('客户拜访高铁票')).toBeNull();
+
+    fireEvent.change(input, { target: { value: '11月12日 待报销' } });
+    expect(screen.getByText('客户拜访高铁票')).toBeInTheDocument();
+    expect(screen.queryByText('耶加雪菲手冲咖啡')).toBeNull();
+  });
 });

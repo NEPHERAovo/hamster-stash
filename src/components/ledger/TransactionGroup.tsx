@@ -8,7 +8,7 @@ import { ModernTransactionGroup } from './ModernTransactionGroup';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperEmptyState } from '../ui/PaperEmptyState';
-import { centsToYuan } from '../../domain/finance/balanceCalculator';
+import { fuzzyMatchTransaction } from '../../utils/fuzzySearch';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
@@ -114,17 +114,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
     }
 
     if (trimmedQuery) {
-      const q = trimmedQuery.toLowerCase();
-      list = list.filter((t) => {
-        const noteMatch = t.note?.toLowerCase().includes(q);
-        const cat = catMap.get(t.categoryId);
-        const catMatch = cat?.name.toLowerCase().includes(q);
-        const acct = acctMap.get(t.accountId);
-        const acctMatch = acct?.name.toLowerCase().includes(q);
-        const amtMatch = centsToYuan(t.amount).includes(q);
-        const dateMatch = t.date.includes(q);
-        return noteMatch || catMatch || acctMatch || amtMatch || dateMatch;
-      });
+      list = list.filter((t) => fuzzyMatchTransaction(t, trimmedQuery, catMap, acctMap));
     }
 
     return list;
