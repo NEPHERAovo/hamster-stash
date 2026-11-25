@@ -9,11 +9,12 @@ import {
   PaperIconButton,
   SegToggle,
 } from '../../../plugin-sdk';
-import type { Item } from '../types';
+import type { Item, ItemStatus } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 import {
   computeItemMetrics,
   computeOverallItemMetrics,
+  isItemDisposed,
 } from '../domain/itemCalculator';
 
 export interface ItemListSubPageProps {
@@ -33,7 +34,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   const [kindFilter, setKindFilter] = useState<KindTab>('all');
 
   const overallSummary = useMemo(() => {
-    const soldItems = items.filter((i) => i.status === 'sold' || i.status === 'scrapped' || i.status === 'gifted');
+    const soldItems = items.filter((i) => isItemDisposed(i.status));
 
     const m = computeOverallItemMetrics(items, transactions);
     return {
@@ -52,39 +53,35 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
       if (!matchKind) return false;
 
-      const isEnded = i.status === 'sold' || i.status === 'scrapped' || i.status === 'gifted';
       if (activeTab === 'all') return true;
-      if (activeTab === 'sold') return isEnded;
-      return !isEnded;
+      if (activeTab === 'sold') return isItemDisposed(i.status);
+      return !isItemDisposed(i.status);
     });
   }, [items, activeTab, kindFilter]);
 
+  const getPhysicalStatusLabel = (status: ItemStatus): string => {
+    if (status === 'idle') return '闲置';
+    if (status === 'sold') return '已出';
+    if (status === 'scrapped') return '报废';
+    if (status === 'gifted') return '已赠';
+    return '在用';
+  };
+
   const getStatusStamp = (item: Item) => {
     const isSub = item.kind === 'subscription';
-    if (item.status === 'sold') {
+    const disposed = isItemDisposed(item.status);
+    if (disposed) {
       return (
         <span className="real-stamp text-[9px] text-(--ink-tertiary) select-none">
-          <span>{isSub ? '已退' : '已出'}</span>
+          <span>{isSub ? '已退' : getPhysicalStatusLabel(item.status)}</span>
         </span>
       );
     }
-    if (item.status === 'gifted') {
-      return (
-        <span className="real-stamp text-[9px] text-(--color-income) select-none">
-          <span>已转赠</span>
-        </span>
-      );
-    }
-    if (item.status === 'scrapped') {
-      return (
-        <span className="real-stamp text-[9px] text-(--color-expense) select-none">
-          <span>已报废</span>
-        </span>
-      );
-    }
+    const label = isSub ? '在订' : getPhysicalStatusLabel(item.status);
+    const colorClass = item.status === 'idle' ? 'text-(--ink-secondary)' : 'text-(--color-income)';
     return (
-      <span className="real-stamp text-[9px] text-(--color-income) select-none">
-        <span>{isSub ? '在订' : '在用'}</span>
+      <span className={cn('real-stamp text-[9px] select-none', colorClass)}>
+        <span>{label}</span>
       </span>
     );
   };

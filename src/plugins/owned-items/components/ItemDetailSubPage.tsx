@@ -1,5 +1,16 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, TrashIcon as Trash2, PencilSimpleIcon as Edit2, CoinsIcon as DollarSign, ArrowCounterClockwiseIcon as RotateCcw, CalendarBlankIcon as CalendarBlank, MagnifyingGlassIcon as Search, XIcon as X } from '@phosphor-icons/react';
+import {
+  CaretLeftIcon as ChevronLeft,
+  PlusIcon as Plus,
+  TrashIcon as Trash2,
+  PencilSimpleIcon as Edit2,
+  CoinsIcon as DollarSign,
+  TrendUpIcon as TrendUp,
+  ArrowCounterClockwiseIcon as RotateCcw,
+  CalendarBlankIcon as CalendarBlank,
+  MagnifyingGlassIcon as Search,
+  XIcon as X,
+} from '@phosphor-icons/react';
 import {
   useHostTransactions,
   useHostAccounts,
@@ -24,7 +35,7 @@ import {
 import { type ItemStatus, getOwnedItemExt } from '../types';
 import type { Transaction } from '../../../plugin-sdk';
 import { usePluginItemStore } from '../store/usePluginItemStore';
-import { computeItemMetrics } from '../domain/itemCalculator';
+import { computeItemMetrics, isItemDisposed } from '../domain/itemCalculator';
 
 export interface ItemDetailSubPageProps {
   onClose: () => void;
@@ -64,13 +75,16 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   };
 
   const [isSellPanelOpen, setIsSellPanelOpen] = useState(false);
-  const [dispositionMode, setDispositionMode] = useState<'sold' | 'gifted' | 'scrapped'>('sold');
+  const [incomeRole, setIncomeRole] = useState<'sell' | 'profit'>('sell');
+  const [incomeSource, setIncomeSource] = useState<'new' | 'existing'>('new');
+  const [selectedIncomeTxId, setSelectedIncomeTxId] = useState<string>('');
   const [sellPriceYuan, setSellPriceYuan] = useState('');
   const [sellAccountId, setSellAccountId] = useState(accounts[0]?.id || '');
   const [sellDate, setSellDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSellDateOpen, setIsSellDateOpen] = useState(false);
   const [sellNote, setSellNote] = useState('');
   const [isSubmittingSell, setIsSubmittingSell] = useState(false);
+  const isSubmittingSellRef = useRef(false);
 
   const [isMaintPanelOpen, setIsMaintPanelOpen] = useState(false);
   const [maintMode, setMaintMode] = useState<'existing' | 'new'>('existing');
@@ -81,8 +95,20 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const [isMaintDateOpen, setIsMaintDateOpen] = useState(false);
   const [maintNote, setMaintNote] = useState('');
   const [isSubmittingMaint, setIsSubmittingMaint] = useState(false);
+  const isSubmittingMaintRef = useRef(false);
 
   const isSub = item?.kind === 'subscription';
+
+  const candidateIncomeTxs = useMemo(() => {
+    return transactions
+      .filter(
+        (t) =>
+          t.type === 'income' &&
+          !t.offsetTransactionId &&
+          !getOwnedItemExt(t.ext)?.itemId
+      )
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [transactions]);
 
   const itemTransactions = useMemo(() => {
     if (!item) return [];
@@ -126,9 +152,9 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     if (!hasBuy && (!item.kind || item.kind === 'physical')) {
       const asBuy = await confirmAction({
         title: '选择关联角色',
-        message: `是否将这笔「¥${centsToYuan(tx.amount)}」设为「${item.name}」的【初始购入账单】？（点击取消则作为配件/保养支出）`,
+        message: `是否将这笔「¥${centsToYuan(tx.amount)}」设为「${item.name}」的【初始购入账单】？（点击取消则作为配件支出）`,
         confirmText: '设为初始购入',
-        cancelText: '作为配件保养',
+        cancelText: '作为配件支出',
         isDestructive: false,
       });
       role = asBuy ? 'buy' : 'maintenance';
@@ -192,6 +218,41 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
   const handleConfirmSell = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (isSubmittingSellRef.current) return;
+
+    if (incomeSource === 'existing') {
+      const targetTx = candidateIncomeTxs.find((t) => t.id === selectedIncomeTxId);
+      if (!targetTx) {
+        toast.error('请选择要关联的收入记录');
+        return;
+      }
+      isSubmittingSellRef.current = true;
+      setIsSubmittingSell(true);
+      try {
+        await updateTransaction(targetTx.id, {
+          ext: {
+            ...(targetTx.ext || {}),
+            'owned-items': {
+              itemId: item.id,
+              itemRole: incomeRole,
+              kind: item.kind,
+            },
+          },
+        });
+        if (incomeRole === 'sell') {
+          await changeStatus(item.id, 'sold', targetTx.date);
+        }
+        setIsSellPanelOpen(false);
+        setSelectedIncomeTxId('');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '关联失败');
+      } finally {
+        isSubmittingSellRef.current = false;
+        setIsSubmittingSell(false);
+      }
+      return;
+    }
+
     const priceNum = parseFloat(sellPriceYuan);
     if (isNaN(priceNum) || priceNum < 0) {
       toast.error('请输入有效的金额');
@@ -202,6 +263,9 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       return;
     }
 
+    const defaultIncomeNote = incomeRole === 'sell' ? `二手售出: ${item.name}` : `物品收益: ${item.name}`;
+
+    isSubmittingSellRef.current = true;
     setIsSubmittingSell(true);
     try {
       await recordTransaction({
@@ -210,119 +274,39 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         accountId: sellAccountId,
         categoryId: 'cat_shop',
         date: sellDate,
-        note: sellNote.trim() || `二手售出: ${item.name}`,
+        note: sellNote.trim() || defaultIncomeNote,
         ext: {
           'owned-items': {
             itemId: item.id,
-            itemRole: 'sell',
+            itemRole: incomeRole,
+            kind: item.kind,
           },
         },
       });
 
-      await changeStatus(item.id, 'sold', sellDate);
+      if (incomeRole === 'sell') {
+        await changeStatus(item.id, 'sold', sellDate);
+      }
       setIsSellPanelOpen(false);
       setSellPriceYuan('');
+      setSellNote('');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '记录失败');
     } finally {
+      isSubmittingSellRef.current = false;
       setIsSubmittingSell(false);
-    }
-  };
-
-  const handleConfirmGift = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setIsSubmittingSell(true);
-    try {
-      if (sellNote.trim()) {
-        await updateItem(item.id, { note: sellNote.trim() });
-      }
-      await changeStatus(item.id, 'gifted', sellDate);
-      setIsSellPanelOpen(false);
-      setSellNote('');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '记录转赠失败');
-    } finally {
-      setIsSubmittingSell(false);
-    }
-  };
-
-  const handleConfirmScrap = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setIsSubmittingSell(true);
-    try {
-      if (sellNote.trim()) {
-        await updateItem(item.id, { note: sellNote.trim() });
-      }
-      await changeStatus(item.id, 'scrapped', sellDate);
-      setIsSellPanelOpen(false);
-      setSellNote('');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '记录报废失败');
-    } finally {
-      setIsSubmittingSell(false);
-    }
-  };
-
-  const handleResumeUsing = async () => {
-    const confirmed = await confirmAction({
-      title: '恢复在用',
-      message: `确定将「${item.name}」恢复为在用状态吗？`,
-      confirmText: '确认恢复',
-      isDestructive: false,
-    });
-    if (!confirmed) return;
-
-    try {
-      await changeStatus(item.id, 'using', undefined);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '恢复失败');
     }
   };
 
   const getRecoveredTitle = () => {
-    if (item.status === 'gifted') return '已转赠';
-    if (item.status === 'scrapped') return '已报废';
-    return '售出回款';
-  };
-
-  const getDispositionDateLabel = () => {
-    if (dispositionMode === 'sold') return '售出日期';
-    if (dispositionMode === 'gifted') return '转赠日期';
-    return '报废日期';
-  };
-
-  const getDispositionNoteLabel = () => {
-    if (dispositionMode === 'sold') return '售出备注';
-    if (dispositionMode === 'gifted') return '转赠对象/备注';
-    return '报废原因';
-  };
-
-  const getDispositionNotePlaceholder = () => {
-    if (dispositionMode === 'sold') return '输入售出说明';
-    if (dispositionMode === 'gifted') return '如：赠予好友';
-    return '如：损坏丢弃';
-  };
-
-  const getDispositionButtonLabel = () => {
-    if (dispositionMode === 'sold') return '确认售出';
-    if (dispositionMode === 'gifted') return '确认转赠';
-    return '确认报废';
-  };
-
-  const handleDispositionSubmit = (e: React.SyntheticEvent) => {
-    if (dispositionMode === 'sold') {
-      void handleConfirmSell(e);
-      return;
-    }
-    if (dispositionMode === 'gifted') {
-      void handleConfirmGift(e);
-      return;
-    }
-    void handleConfirmScrap(e);
+    if (item.status === 'gifted') return '已赠';
+    if (item.status === 'scrapped') return '报废';
+    return '回款收益';
   };
 
   const handleConfirmMaint = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (isSubmittingMaintRef.current) return;
     const priceNum = parseFloat(maintPriceYuan);
     if (isNaN(priceNum) || priceNum <= 0) {
       toast.error('请输入有效的金额');
@@ -333,6 +317,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
       return;
     }
 
+    isSubmittingMaintRef.current = true;
     setIsSubmittingMaint(true);
     try {
       await recordTransaction({
@@ -341,7 +326,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         accountId: maintAccountId,
         categoryId: isSub ? 'cat_digital' : 'cat_shop',
         date: maintDate,
-        note: maintNote.trim() || (isSub ? `订阅续费: ${item.name}` : `配件/保养: ${item.name}`),
+        note: maintNote.trim() || (isSub ? `订阅续费: ${item.name}` : `配件支出: ${item.name}`),
         ext: {
           'owned-items': {
             itemId: item.id,
@@ -357,6 +342,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '记录支出失败');
     } finally {
+      isSubmittingMaintRef.current = false;
       setIsSubmittingMaint(false);
     }
   };
@@ -378,12 +364,39 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     }
   };
 
+  const handleDisposeStatus = async (targetStatus: 'scrapped' | 'gifted') => {
+    const label = targetStatus === 'scrapped' ? '报废' : '赠送';
+    const today = new Date().toISOString().split('T')[0];
+    const confirmed = await confirmAction({
+      title: `确认${label}`,
+      message: `确定将「${item.name}」标记为${label}吗？`,
+      confirmText: label,
+      isDestructive: targetStatus === 'scrapped',
+    });
+    if (!confirmed) return;
+
+    try {
+      await changeStatus(item.id, targetStatus, today);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '操作失败');
+    }
+  };
+
+  const handleToggleIdle = async () => {
+    const nextStatus: ItemStatus = item.status === 'idle' ? 'using' : 'idle';
+    try {
+      await changeStatus(item.id, nextStatus, undefined);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '操作失败');
+    }
+  };
+
   const handleCancelSubscription = async () => {
     const today = new Date().toISOString().split('T')[0];
     const confirmed = await confirmAction({
-      title: '退订服务',
+      title: '确认退订',
       message: `确定将「${item.name}」标记为已退吗？`,
-      confirmText: '确认退订',
+      confirmText: '退订',
       isDestructive: false,
     });
     if (!confirmed) return;
@@ -395,7 +408,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     }
   };
 
-  const handleResumeSubscription = async () => {
+  const handleResumeItem = async () => {
     try {
       await changeStatus(item.id, 'using', undefined);
     } catch (err) {
@@ -403,31 +416,28 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     }
   };
 
+  const getPhysicalStatusLabel = (status: ItemStatus): string => {
+    if (status === 'idle') return '闲置';
+    if (status === 'sold') return '已出';
+    if (status === 'scrapped') return '报废';
+    if (status === 'gifted') return '已赠';
+    return '在用';
+  };
+
   const getStatusStamp = (status: ItemStatus) => {
-    if (status === 'sold') {
+    const disposed = isItemDisposed(status);
+    if (disposed) {
       return (
         <span className="real-stamp text-[9px] text-(--ink-tertiary) select-none">
-          <span>{isSub ? '已退' : '已出'}</span>
+          <span>{isSub ? '已退' : getPhysicalStatusLabel(status)}</span>
         </span>
       );
     }
-    if (status === 'gifted') {
-      return (
-        <span className="real-stamp text-[9px] text-(--color-income) select-none">
-          <span>已转赠</span>
-        </span>
-      );
-    }
-    if (status === 'scrapped') {
-      return (
-        <span className="real-stamp text-[9px] text-(--color-expense) select-none">
-          <span>已报废</span>
-        </span>
-      );
-    }
+    const label = isSub ? '在订' : getPhysicalStatusLabel(status);
+    const colorClass = status === 'idle' ? 'text-(--ink-secondary)' : 'text-(--color-income)';
     return (
-      <span className="real-stamp text-[9px] text-(--color-income) select-none">
-        <span>{isSub ? '在订' : '在用'}</span>
+      <span className={cn('real-stamp text-[9px] select-none', colorClass)}>
+        <span>{label}</span>
       </span>
     );
   };
@@ -452,14 +462,14 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     if (role === 'buy') {
       return (
         <span className="rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[9px] text-(--ink-secondary)">
-          {isSub ? '首次订阅' : '购入'}
+          {isSub ? '首订' : '购入'}
         </span>
       );
     }
     if (role === 'maintenance') {
       return (
         <span className="rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[9px] text-(--ink-secondary)">
-          {isSub ? '续费支出' : '配件保养'}
+          {isSub ? '续费' : '配件'}
         </span>
       );
     }
@@ -470,64 +480,167 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
         </span>
       );
     }
+    if (role === 'profit') {
+      return (
+        <span className="rounded-(--badge-radius) bg-(--color-income-bg) px-1.5 py-0.5 font-mono text-[9px] font-semibold text-(--color-income)">
+          收益
+        </span>
+      );
+    }
     return (
       <span className="rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 font-mono text-[9px] text-(--ink-tertiary)">
-        关联记录
+        关联
       </span>
     );
   };
 
-  const renderSecondaryActionButton = () => {
+  const openIncomePanel = (role: 'sell' | 'profit') => {
+    if (isSellPanelOpen && incomeRole === role) {
+      setIsSellPanelOpen(false);
+      return;
+    }
+    setIncomeRole(role);
+    setIncomeSource('new');
+    setSelectedIncomeTxId('');
+    setIsSellPanelOpen(true);
+    setIsMaintPanelOpen(false);
+  };
+
+  const openMaintPanel = () => {
+    if (isSub && item.renewalAmountCents && !maintPriceYuan) {
+      setMaintPriceYuan(centsToYuan(item.renewalAmountCents));
+    }
+    setIsMaintPanelOpen((prev) => !prev);
+    setIsSellPanelOpen(false);
+  };
+
+  const renderActionButtons = () => {
     if (isSub) {
-      if (item.status === 'using') {
-        return (
+      return (
+        <div className="grid grid-cols-2 gap-2 font-mono text-xs">
           <PaperButton
             variant="secondary"
             size="compact"
-            onClick={handleCancelSubscription}
+            leftIcon={<Plus className="size-3.5 stroke-2 text-(--color-expense)" />}
+            onClick={openMaintPanel}
           >
-            退订服务
+            续费
           </PaperButton>
-        );
-      }
-      return (
-        <PaperButton
-          variant="income"
-          size="compact"
-          leftIcon={<RotateCcw className="size-3.5 stroke-2" />}
-          onClick={handleResumeSubscription}
-        >
-          恢复在订
-        </PaperButton>
+
+          {item.status === 'using' ? (
+            <PaperButton
+              variant="secondary"
+              size="compact"
+              onClick={handleCancelSubscription}
+            >
+              退订
+            </PaperButton>
+          ) : (
+            <PaperButton
+              variant="income"
+              size="compact"
+              leftIcon={<RotateCcw className="size-3.5 stroke-2" />}
+              onClick={handleResumeItem}
+            >
+              续订
+            </PaperButton>
+          )}
+        </div>
       );
     }
 
-    const isEnded = item.status === 'sold' || item.status === 'gifted' || item.status === 'scrapped';
-    if (!isEnded) {
+    const disposed = isItemDisposed(item.status);
+
+    if (disposed) {
       return (
-        <PaperButton
-          variant="income"
-          size="compact"
-          leftIcon={<DollarSign className="size-3.5 stroke-2" />}
-          onClick={() => {
-            setIsSellPanelOpen((prev) => !prev);
-            setIsMaintPanelOpen(false);
-          }}
-        >
-          售出 / 处置
-        </PaperButton>
+        <div className="grid grid-cols-3 gap-2 font-mono text-xs">
+          <PaperButton
+            variant="secondary"
+            size="compact"
+            leftIcon={<Plus className="size-3.5 stroke-2 text-(--color-expense)" />}
+            onClick={openMaintPanel}
+          >
+            支出
+          </PaperButton>
+
+          <PaperButton
+            variant="income"
+            size="compact"
+            leftIcon={<TrendUp className="size-3.5 stroke-2" />}
+            onClick={() => openIncomePanel('profit')}
+          >
+            收益
+          </PaperButton>
+
+          <PaperButton
+            variant="secondary"
+            size="compact"
+            leftIcon={<RotateCcw className="size-3.5 stroke-2" />}
+            onClick={handleResumeItem}
+          >
+            恢复
+          </PaperButton>
+        </div>
       );
     }
 
     return (
-      <PaperButton
-        variant="secondary"
-        size="compact"
-        leftIcon={<RotateCcw className="size-3.5 stroke-2" />}
-        onClick={handleResumeUsing}
-      >
-        恢复在用
-      </PaperButton>
+      <div className="space-y-2 font-mono text-xs">
+        <div className="grid grid-cols-3 gap-2">
+          <PaperButton
+            variant="secondary"
+            size="compact"
+            leftIcon={<Plus className="size-3.5 stroke-2 text-(--color-expense)" />}
+            onClick={openMaintPanel}
+          >
+            支出
+          </PaperButton>
+
+          <PaperButton
+            variant="income"
+            size="compact"
+            leftIcon={<DollarSign className="size-3.5 stroke-2" />}
+            onClick={() => openIncomePanel('sell')}
+          >
+            售出
+          </PaperButton>
+
+          <PaperButton
+            variant="income"
+            size="compact"
+            leftIcon={<TrendUp className="size-3.5 stroke-2" />}
+            onClick={() => openIncomePanel('profit')}
+          >
+            收益
+          </PaperButton>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <PaperButton
+            variant="sunken"
+            size="compact"
+            onClick={handleToggleIdle}
+          >
+            {item.status === 'idle' ? '启用' : '闲置'}
+          </PaperButton>
+
+          <PaperButton
+            variant="sunken"
+            size="compact"
+            onClick={() => void handleDisposeStatus('scrapped')}
+          >
+            报废
+          </PaperButton>
+
+          <PaperButton
+            variant="sunken"
+            size="compact"
+            onClick={() => void handleDisposeStatus('gifted')}
+          >
+            赠送
+          </PaperButton>
+        </div>
+      </div>
     );
   };
 
@@ -676,30 +789,13 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-          <PaperButton
-            variant="secondary"
-            size="compact"
-            leftIcon={<Plus className="size-3.5 stroke-2 text-(--color-expense)" />}
-            onClick={() => {
-              if (isSub && item.renewalAmountCents && !maintPriceYuan) {
-                setMaintPriceYuan(centsToYuan(item.renewalAmountCents));
-              }
-              setIsMaintPanelOpen((prev) => !prev);
-              setIsSellPanelOpen(false);
-            }}
-          >
-            {isSub ? '续费支出' : '关联支出'}
-          </PaperButton>
-
-          {renderSecondaryActionButton()}
-        </div>
+        {renderActionButtons()}
 
         {isMaintPanelOpen && (
           <div className="paper-card space-y-3 rounded-(--radius-md) border border-(--rule-strong) bg-(--paper-sheet) p-3.5 shadow-xs">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="text-xs font-semibold text-(--ink-solid)">
-                {isSub ? '关联续费' : '关联支出'}
+                {isSub ? '续费记录' : '配件支出'}
               </div>
               <SegToggle
                 options={[
@@ -865,94 +961,132 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
         {isSellPanelOpen && (
           <form
-            onSubmit={handleDispositionSubmit}
+            onSubmit={handleConfirmSell}
             className="paper-card space-y-3 rounded-(--radius-md) border border-(--rule-strong) bg-(--paper-sheet) p-3.5 shadow-xs"
           >
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold text-(--ink-solid)">处置物品</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-semibold text-(--ink-solid)">
+                {incomeRole === 'sell' ? '售出' : '收益'}
+              </div>
               <SegToggle
                 options={[
-                  { value: 'sold', label: '二手售出' },
-                  { value: 'gifted', label: '转赠他人' },
-                  { value: 'scrapped', label: '废弃报废' },
+                  { value: 'new', label: '新建收入' },
+                  { value: 'existing', label: '已有收入' },
                 ]}
-                value={dispositionMode}
-                onChange={(val) => setDispositionMode(val as 'sold' | 'gifted' | 'scrapped')}
+                value={incomeSource}
+                onChange={(val) => setIncomeSource(val as 'new' | 'existing')}
                 size="sm"
                 fullWidth={false}
               />
             </div>
 
-            {dispositionMode === 'sold' && (
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                    售出金额
-                  </label>
-                  <AmountInput
-                    size="sm"
-                    value={sellPriceYuan}
-                    onChange={setSellPriceYuan}
-                    placeholder="0.00"
-                  />
+            {incomeSource === 'existing' ? (
+              <div className="max-h-44 space-y-1 divide-y divide-dashed divide-(--rule-hairline)/60 overflow-y-auto">
+                {candidateIncomeTxs.length === 0 ? (
+                  <div className="py-4 text-center font-mono text-xs text-(--ink-tertiary)">
+                    暂无可关联的收入记录
+                  </div>
+                ) : (
+                  candidateIncomeTxs.map((tx) => {
+                    const isSelected = selectedIncomeTxId === tx.id;
+                    return (
+                      <PaperButton
+                        key={tx.id}
+                        type="button"
+                        variant={isSelected ? 'sunken' : 'ghost'}
+                        size="compact"
+                        fullWidth
+                        onClick={() => setSelectedIncomeTxId(tx.id)}
+                        className="h-auto justify-between px-2.5 py-2 text-left font-normal"
+                      >
+                        <div className="min-w-0 flex-1 pr-2">
+                          <div className="truncate text-xs font-medium text-(--ink-primary)">
+                            {tx.note || '收入'}
+                          </div>
+                          <div className="font-mono text-[10px] text-(--ink-tertiary)">
+                            {tx.date}
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-mono text-xs font-semibold text-(--color-income) tabular-nums">
+                          +¥{centsToYuan(tx.amount)}
+                        </span>
+                      </PaperButton>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      {incomeRole === 'sell' ? '售出金额' : '收益金额'}
+                    </label>
+                    <AmountInput
+                      size="sm"
+                      value={sellPriceYuan}
+                      onChange={setSellPriceYuan}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      入账账户
+                    </label>
+                    <PaperSelect
+                      size="sm"
+                      value={sellAccountId}
+                      onChange={(e) => setSellAccountId(e.target.value)}
+                    >
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </PaperSelect>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                    入账账户
-                  </label>
-                  <PaperSelect
-                    size="sm"
-                    value={sellAccountId}
-                    onChange={(e) => setSellAccountId(e.target.value)}
-                  >
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </PaperSelect>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      入账日期
+                    </label>
+                    <PaperButton
+                      variant="sunken"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setIsSellDateOpen(true)}
+                      className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
+                      leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
+                    >
+                      <span>{sellDate || '选择日期'}</span>
+                    </PaperButton>
+                    <PaperDatePickerModal
+                      isOpen={isSellDateOpen}
+                      onClose={() => setIsSellDateOpen(false)}
+                      mode="date"
+                      value={sellDate}
+                      onChange={(val) => setSellDate(val)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
+                      备注
+                    </label>
+                    <PaperInput
+                      size="sm"
+                      type="text"
+                      value={sellNote}
+                      onChange={(e) => setSellNote(e.target.value)}
+                      placeholder="输入备注"
+                    />
+                  </div>
                 </div>
-              </div>
+              </>
             )}
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                  {getDispositionDateLabel()}
-                </label>
-                <PaperButton
-                  variant="sunken"
-                  size="sm"
-                  fullWidth
-                  onClick={() => setIsSellDateOpen(true)}
-                  className="justify-start gap-2 border-(--rule-hairline) px-2.5 font-mono text-xs text-(--ink-primary) hover:border-(--border-strong)"
-                  leftIcon={<CalendarBlank className="size-3 shrink-0 text-(--ink-tertiary)" />}
-                >
-                  <span>{sellDate || '选择日期'}</span>
-                </PaperButton>
-                <PaperDatePickerModal
-                  isOpen={isSellDateOpen}
-                  onClose={() => setIsSellDateOpen(false)}
-                  mode="date"
-                  value={sellDate}
-                  onChange={(val) => setSellDate(val)}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block font-mono text-[10px] text-(--ink-tertiary)">
-                  {getDispositionNoteLabel()}
-                </label>
-                <PaperInput
-                  size="sm"
-                  type="text"
-                  value={sellNote}
-                  onChange={(e) => setSellNote(e.target.value)}
-                  placeholder={getDispositionNotePlaceholder()}
-                />
-              </div>
-            </div>
 
             <div className="flex items-center justify-end gap-2 pt-1 font-mono text-xs">
               <PaperButton
@@ -968,7 +1102,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
                 type="submit"
                 disabled={isSubmittingSell}
               >
-                {getDispositionButtonLabel()}
+                确认
               </PaperButton>
             </div>
           </form>

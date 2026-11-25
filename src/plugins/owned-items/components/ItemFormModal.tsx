@@ -109,6 +109,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
   const [costYuan, setCostYuan] = useState('');
   const [selectedAcctId, setSelectedAcctId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = React.useRef(false);
 
   useEffect(() => {
     if (editingItem) {
@@ -144,6 +145,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     if (!name.trim()) {
       toast.error(kind === 'subscription' ? '请输入服务名称' : '请输入物品名称');
       return;
@@ -153,6 +155,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const renewalAmountCents = renewalAmountYuan && !isNaN(parseFloat(renewalAmountYuan))
@@ -211,6 +214,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '保存失败');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

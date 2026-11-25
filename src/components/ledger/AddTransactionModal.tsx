@@ -351,14 +351,25 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   }, [txType, currentCategories, selectedCatId, editingTransaction, allTransactions, timeStr]);
 
   useEffect(() => {
-    if (txType !== 'expense') {
-      setExt((prev) => {
-        if (!('owned-items' in prev)) return prev;
-        const rest = { ...prev };
-        delete rest['owned-items'];
-        return rest;
-      });
-    }
+    setExt((prev) => {
+      if (!('owned-items' in prev)) return prev;
+      const owned = prev['owned-items'] as { itemRole?: string; createNewItem?: boolean } | undefined;
+      let incompatible = false;
+      if (txType === 'loan') {
+        incompatible = true;
+      } else if (txType === 'expense') {
+        incompatible = owned?.itemRole === 'sell' || owned?.itemRole === 'profit';
+      } else if (txType === 'income') {
+        incompatible =
+          Boolean(owned?.createNewItem) ||
+          owned?.itemRole === 'buy' ||
+          owned?.itemRole === 'maintenance';
+      }
+      if (!incompatible) return prev;
+      const rest = { ...prev };
+      delete rest['owned-items'];
+      return rest;
+    });
   }, [txType]);
 
   useEffect(() => {

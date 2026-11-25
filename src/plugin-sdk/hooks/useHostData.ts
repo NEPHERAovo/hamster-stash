@@ -14,6 +14,11 @@ export function useHostTransactions(): Transaction[] {
   return allTransactions.length > 0 ? allTransactions : transactions;
 }
 
+export function getHostTransactions(): Transaction[] {
+  const state = useLedgerStore.getState();
+  return state.allTransactions.length > 0 ? state.allTransactions : state.transactions;
+}
+
 /**
  * 宿主账户列表响应式读取 Hook
  */

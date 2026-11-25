@@ -24,15 +24,17 @@ export const ItemRowBadge: React.FC<ItemRowBadgeProps> = ({ context }) => {
   if (!item) return null;
 
   const getRoleLabel = () => {
-    if (itemRole === 'buy') return '购入';
-    if (itemRole === 'maintenance') return '保养';
+    const isSub = item.kind === 'subscription';
+    if (itemRole === 'buy') return isSub ? '首订' : '购入';
+    if (itemRole === 'maintenance') return isSub ? '续费' : '配件';
     if (itemRole === 'sell') return '售出';
+    if (itemRole === 'profit') return '收益';
     return '物品';
   };
 
   const getColorClass = () => {
     if (itemRole === 'buy') return 'text-(--color-expense)';
-    if (itemRole === 'sell') return 'text-(--color-income)';
+    if (itemRole === 'sell' || itemRole === 'profit') return 'text-(--color-income)';
     return 'text-(--ink-secondary)';
   };
 

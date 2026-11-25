@@ -4,7 +4,7 @@ export type ItemKind = 'physical' | 'subscription';
 
 export type SubscriptionCycle = 'monthly' | 'yearly' | 'weekly' | 'quarterly';
 
-export type ItemRole = 'buy' | 'maintenance' | 'sell';
+export type ItemRole = 'buy' | 'maintenance' | 'sell' | 'profit';
 
 export interface Item {
   id: string;

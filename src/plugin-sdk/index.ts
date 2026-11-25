@@ -22,6 +22,7 @@ export type { Category, CategoryType } from './types/common';
 
 export {
   useHostTransactions,
+  getHostTransactions,
   useHostAccounts,
   useHostCategories,
   getHostCategories,

@@ -461,4 +461,188 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(metrics.dailyCost).toBe(Math.round(88000 / 11));
     expect(metrics.retentionRate).toBeNull();
   });
+
+  it('blocks expense transactions from linking as sell or profit in middleware', async () => {
+    await manager.init();
+    await manager.enablePlugin('owned-items');
+
+    const item = await usePluginItemStore.getState().createItem({
+      name: 'Sony A7C2',
+      icon: 'camera',
+      status: 'using',
+      buyDate: '2026-01-01',
+    });
+
+    await expect(
+      manager.runMiddleware(
+        'transaction:record',
+        {
+          input: {
+            type: 'expense',
+            amount: 50000,
+            date: '2026-06-01',
+            accountId: 'acct_1',
+            categoryId: 'cat_digital',
+            ext: { 'owned-items': { itemId: item.id, itemRole: 'sell' } },
+          } as CreateTransactionInput,
+        },
+        async () => ({ id: 'tx_invalid_sell' })
+      )
+    ).rejects.toThrow('支出记录不能关联为售出或收益');
+
+    await expect(
+      manager.runMiddleware(
+        'transaction:update',
+        {
+          id: 'tx_existing',
+          patch: {
+            type: 'expense',
+            ext: { 'owned-items': { itemId: item.id, itemRole: 'profit' } },
+          },
+        },
+        async () => ({ id: 'tx_existing' })
+      )
+    ).rejects.toThrow('支出记录不能关联为售出或收益');
+  });
+
+  it('supports linking income as profit without changing status to sold and reverts sold status when sell tx is deleted', async () => {
+    await manager.init();
+    await manager.enablePlugin('owned-items');
+
+    const item = await usePluginItemStore.getState().createItem({
+      name: 'Mac Mini M4',
+      icon: 'laptop',
+      status: 'using',
+      buyDate: '2026-01-01',
+    });
+
+    await manager.runMiddleware(
+      'transaction:record',
+      {
+        input: {
+          type: 'income',
+          amount: 100000,
+          date: '2026-01-10',
+          accountId: 'acct_1',
+          categoryId: 'cat_digital',
+          ext: { 'owned-items': { itemId: item.id, itemRole: 'profit' } },
+        } as CreateTransactionInput,
+      },
+      async () => ({ id: 'tx_profit', type: 'income', date: '2026-01-10' } as Transaction)
+    );
+
+    expect(usePluginItemStore.getState().items.find((i) => i.id === item.id)?.status).toBe('using');
+
+    const sellTx: Transaction = {
+      id: 'tx_sell_1',
+      type: 'income',
+      amount: 300000,
+      accountId: 'acct_1',
+      categoryId: 'cat_digital',
+      date: '2026-02-01',
+      ext: { 'owned-items': { itemId: item.id, itemRole: 'sell' } },
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    await manager.runMiddleware(
+      'transaction:update',
+      { id: sellTx.id, patch: { ext: sellTx.ext }, previousTx: { ...sellTx, ext: undefined } },
+      async () => sellTx
+    );
+
+    expect(usePluginItemStore.getState().items.find((i) => i.id === item.id)?.status).toBe('sold');
+
+    await manager.runMiddleware(
+      'transaction:delete',
+      { id: sellTx.id, deletedTx: sellTx },
+      async () => undefined
+    );
+
+    expect(usePluginItemStore.getState().items.find((i) => i.id === item.id)?.status).toBe('using');
+  });
+
+  it('ItemRowBadge renders 配件 for physical maintenance, 续费 for subscription maintenance, and 收益 for profit', () => {
+    usePluginItemStore.setState({
+      items: [
+        {
+          id: 'item_cam',
+          name: '相机',
+          icon: 'camera',
+          kind: 'physical',
+          status: 'using',
+          buyDate: '2026-01-01',
+          createdAt: '',
+          updatedAt: '',
+        },
+        {
+          id: 'sub_ai',
+          name: 'Claude',
+          icon: 'sparkles',
+          kind: 'subscription',
+          status: 'using',
+          buyDate: '2026-01-01',
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+    });
+
+    const makeTx = (itemId: string, itemRole: 'buy' | 'maintenance' | 'sell' | 'profit'): Transaction => ({
+      id: `tx_${itemId}_${itemRole}`,
+      type: itemRole === 'sell' || itemRole === 'profit' ? 'income' : 'expense',
+      amount: 1000,
+      accountId: 'acct_1',
+      categoryId: 'cat_digital',
+      date: '2026-05-20',
+      ext: { 'owned-items': { itemId, itemRole } },
+      createdAt: '',
+      updatedAt: '',
+    });
+
+    const { getByText, queryByText, rerender } = render(
+      React.createElement(ItemRowBadge, { context: { transaction: makeTx('item_cam', 'maintenance') } })
+    );
+    expect(getByText('配件·相机')).toBeInTheDocument();
+    expect(queryByText(/保养/)).toBeNull();
+
+    rerender(React.createElement(ItemRowBadge, { context: { transaction: makeTx('sub_ai', 'maintenance') } }));
+    expect(getByText('续费·Claude')).toBeInTheDocument();
+
+    rerender(React.createElement(ItemRowBadge, { context: { transaction: makeTx('item_cam', 'profit') } }));
+    expect(getByText('收益·相机')).toBeInTheDocument();
+  });
+
+  it('ItemMetaTrayPanel supports income mode with 售出 and 收益 toggle without expense creation options', () => {
+    usePluginItemStore.setState({
+      items: [
+        {
+          id: 'item_switch',
+          name: 'Switch',
+          icon: 'gamepad',
+          kind: 'physical',
+          status: 'using',
+          buyDate: '2026-01-01',
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+    });
+
+    const setExtKeySpy = vi.fn();
+    const { getByRole, queryByText } = render(
+      React.createElement(ItemMetaTrayPanel, {
+        context: {
+          txType: 'income',
+          dateStr: '2026-11-24',
+          ext: { 'owned-items': { isTrayOpen: true } },
+          setExtKey: setExtKeySpy,
+        },
+      })
+    );
+
+    expect(queryByText('记为新物品')).toBeNull();
+    expect(getByRole('button', { name: '售出' })).toBeInTheDocument();
+    expect(getByRole('button', { name: '收益' })).toBeInTheDocument();
+  });
 });

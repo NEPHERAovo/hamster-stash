@@ -1,5 +1,15 @@
 import type { Transaction } from '../../../plugin-sdk';
-import { type Item, type ItemMetrics, type OverallItemMetrics, getOwnedItemExt } from '../types';
+import {
+  type Item,
+  type ItemMetrics,
+  type ItemStatus,
+  type OverallItemMetrics,
+  getOwnedItemExt,
+} from '../types';
+
+export function isItemDisposed(status: ItemStatus): boolean {
+  return status === 'sold' || status === 'scrapped' || status === 'gifted';
+}
 
 function parseDateUtc(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -31,7 +41,7 @@ export function computeItemMetrics(item: Item, transactions: Transaction[]): Ite
   for (const tx of itemTxs) {
     const role = getOwnedItemExt(tx.ext)?.itemRole;
 
-    if (role === 'sell' || tx.type === 'income') {
+    if (tx.type === 'income' && (role === 'sell' || role === 'profit' || !role)) {
       recoveredAmount += tx.amount;
     } else {
       grossCost += tx.amount;
@@ -42,7 +52,7 @@ export function computeItemMetrics(item: Item, transactions: Transaction[]): Ite
   const effectiveRecovered = isSubscription ? 0 : recoveredAmount;
   const netCost = isSubscription ? grossCost : grossCost - effectiveRecovered;
   const holdingDays = calculateHoldingDays(item.buyDate, item.endDate);
-  const dailyCost = Math.round(netCost / holdingDays);
+  const dailyCost = Math.max(0, Math.round(netCost / holdingDays));
 
   let retentionRate: number | null = null;
   if (!isSubscription && grossCost > 0 && effectiveRecovered > 0) {
@@ -63,14 +73,14 @@ export function computeOverallItemMetrics(
   items: Item[],
   transactions: Transaction[]
 ): OverallItemMetrics {
-  const usingItems = items.filter((i) => i.status === 'using');
+  const activeItems = items.filter((i) => !isItemDisposed(i.status));
 
   let totalUsingNetCost = 0;
   let totalUsingDailyCost = 0;
   let physicalCount = 0;
   let subscriptionCount = 0;
 
-  for (const item of usingItems) {
+  for (const item of activeItems) {
     const m = computeItemMetrics(item, transactions);
     totalUsingNetCost += m.netCost;
     totalUsingDailyCost += m.dailyCost;
@@ -82,7 +92,7 @@ export function computeOverallItemMetrics(
   }
 
   return {
-    usingCount: usingItems.length,
+    usingCount: activeItems.length,
     totalUsingNetCost,
     totalUsingDailyCost,
     physicalCount,

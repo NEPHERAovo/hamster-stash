@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { OwnedItemsSummaryCard } from '../../src/plugins/owned-items/components/OwnedItemsSummaryCard';
 import { ItemDetailSubPage } from '../../src/plugins/owned-items/components/ItemDetailSubPage';
@@ -98,5 +98,75 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('订阅详情');
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Netflix');
+  });
+
+  it('renders 2-character disposal actions and supports linking existing income as sell or profit', async () => {
+    const existingIncome: Transaction = {
+      id: 'tx_existing_inc',
+      type: 'income',
+      amount: 150000,
+      accountId: 'acct_1',
+      categoryId: 'cat_other_in',
+      date: '2026-06-15',
+      note: '闲鱼出卡带',
+      createdAt: '2026-06-15T10:00:00.000Z',
+      updatedAt: '2026-06-15T10:00:00.000Z',
+    };
+    const existingExpense: Transaction = {
+      id: 'tx_existing_exp',
+      type: 'expense',
+      amount: 5000,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-06-16',
+      note: '普通支出不应出现',
+      createdAt: '2026-06-16T10:00:00.000Z',
+      updatedAt: '2026-06-16T10:00:00.000Z',
+    };
+
+    const updateSpy = vi.fn().mockResolvedValue(existingIncome);
+    const changeStatusSpy = vi.fn().mockResolvedValue({ ...dummyItem, status: 'sold' });
+    usePluginItemStore.setState({ items: [dummyItem], changeStatus: changeStatusSpy });
+    useLedgerStore.setState({
+      transactions: [dummyTx, existingIncome, existingExpense],
+      allTransactions: [dummyTx, existingIncome, existingExpense],
+      updateTransaction: updateSpy,
+    });
+
+    render(<ItemDetailSubPage onClose={() => {}} params={{ itemId: 'item_switch' }} />);
+
+    expect(screen.getByRole('button', { name: '支出' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '售出' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '收益' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '闲置' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '报废' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '赠送' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '闲置' }));
+    expect(changeStatusSpy).toHaveBeenCalledWith('item_switch', 'idle', undefined);
+
+    fireEvent.click(screen.getByRole('button', { name: '售出' }));
+    fireEvent.click(screen.getByRole('button', { name: '已有收入' }));
+
+    expect(screen.getByText('闲鱼出卡带')).toBeInTheDocument();
+    expect(screen.queryByText('普通支出不应出现')).toBeNull();
+
+    fireEvent.click(screen.getByText('闲鱼出卡带'));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith(
+        'tx_existing_inc',
+        expect.objectContaining({
+          ext: expect.objectContaining({
+            'owned-items': expect.objectContaining({
+              itemId: 'item_switch',
+              itemRole: 'sell',
+            }),
+          }),
+        })
+      );
+    });
+    expect(changeStatusSpy).toHaveBeenCalledWith('item_switch', 'sold', '2026-06-15');
   });
 });

@@ -16,11 +16,11 @@ export interface ItemMetaBarBadgeProps {
 export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) => {
   const items = usePluginItemStore((s) => s.items);
 
-  if (context.txType !== 'expense') return null;
+  if (context.txType === 'loan') return null;
 
   const itemExt = getOwnedItemExt(context.ext);
   const selectedItemId = itemExt?.itemId;
-  const isCreateNew = Boolean(itemExt?.createNewItem);
+  const isCreateNew = context.txType === 'expense' && Boolean(itemExt?.createNewItem);
   const isTrayOpen = Boolean(itemExt?.isTrayOpen);
 
   const selectedItem = items.find((i) => i.id === selectedItemId);
@@ -38,7 +38,13 @@ export const ItemMetaBarBadge: React.FC<ItemMetaBarBadgeProps> = ({ context }) =
   if (isCreateNew) {
     displayText = itemExt?.kind === 'subscription' ? '+ 新订阅' : '+ 新物品';
   } else if (selectedItem) {
-    displayText = selectedItem.name;
+    if (context.txType === 'income' && itemExt?.itemRole === 'profit') {
+      displayText = `收益·${selectedItem.name}`;
+    } else if (context.txType === 'income' && itemExt?.itemRole === 'sell') {
+      displayText = `售出·${selectedItem.name}`;
+    } else {
+      displayText = selectedItem.name;
+    }
   }
 
   let badgeTitle = '关联物品';
