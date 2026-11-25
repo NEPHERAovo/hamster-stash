@@ -88,3 +88,15 @@
 - **Why**: Developing on top of an outdated local branch diverges from upstream changes, resulting in avoidable multi-file merge conflicts, duplicated refactors, and risky rebase resolutions later.
 - **Evidence**: Encountered 21 unpulled upstream commits while rebasing local feature commits onto `origin/main` (`98a878b`), requiring manual conflict resolution across the `owned-items` plugin and `StatsView.tsx`.
 - **Seen**: 1
+
+### 13. 4-Layer Data Isolation & Service DI
+- **Rule**: Keep UI components and Zustand stores strictly isolated from `DataAdapter` and `BaseRepository` (`UI / Stores -> Domain Services (DI via CoreContext) -> Repositories -> DataAdapter`). Never instantiate duplicate `IndexedDBAdapter` instances or run raw soft-delete/query filtering outside repositories.
+- **Why**: Direct adapter calls from stores/UI scatter tombstone checks (`!item.deletedAt`), create split IndexedDB instances or transaction races, and make swappable storage backends unsafe.
+- **Evidence**: Enforced in `CoreContext`, `SeedService`, and `tests/contracts/architectureBoundary.test.ts` (commits `f22a6dd`..`4e6d930`).
+- **Seen**: 1
+
+### 14. Zero-`!important` Tailwind v4 Cascade & `tailwind-merge`
+- **Rule**: Place dual-skin CSS overrides in unlayered rules in `src/index.css` without `!important` (except inside `@media (prefers-reduced-motion: reduce)`), wrap `clsx` with `tailwind-merge` inside `cn()`, and place shared `@utility` classes inside `src/styles/utilities.css`.
+- **Why**: In Tailwind v4, unlayered selectors naturally win over `@layer utilities` without specificity hacks, `tailwind-merge` resolves caller className overrides deterministically, and keeping `@utility` helpers separate keeps `src/index.css` concise and maintainable.
+- **Evidence**: Enforced in `tests/contracts/styleAndInvariantContracts.test.tsx` (commit `adaea3f`).
+- **Seen**: 1

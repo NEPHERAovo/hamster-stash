@@ -8,12 +8,12 @@ A minimal, local-first personal expense, item & asset stash progressive web app 
 
 ## Highlights
 
-- **Crafted Stationery Design**: Delicate warm paper surfaces, authentic pulp micro-noise (`<feTurbulence>`), tactile torn-receipt deckle edges (`.paper-deckle`), washi tape tabs, and physical ink bleed stamps.
+- **Dual-Skin System (Paper & Modern Liquid Glass)**: Switch seamlessly between tactile Paper Stationery surfaces (micro-noise, torn-receipt deckle edges, washi tape tabs, physical ink bleed stamps) and a monochrome Modern Liquid Glass dock driven by a custom WebGL lens shader.
 - **Per-Day Receipt Grouping**: Daily transactions grouped cleanly into cohesive paper receipt sheets with dashed hairlines, eliminating distracting ledger grid lines and clutter.
-- **Notepad Bottom Sheet**: Seamless sliding drawer equipped with an integrated 4x4 desktop calculator keypad, a 3-column mechanical drum-wheel date/time picker, and stamp-block category grids.
+- **Notepad Bottom Sheet**: Seamless sliding drawer equipped with an integrated 4x4 desktop calculator keypad, a calendar + 2-column mechanical drum-wheel time picker, and stamp-block category grids.
 - **AA Bill-Splitting & Expense Offsetting**: True double-entry style offset accounting. Shared expense reimbursements link directly to original expenses, preventing artificial income inflation while adjusting net consumption.
-- **Local-First & Offline Privacy**: Data persists directly within browser IndexedDB via a pluggable `DataAdapter`. Fully functional without network connectivity; full JSON and CSV backup/restore supported.
-- **10 Paper Stationery Themes**: 5 Light themes (Sage, Cotton, Kraft, Mist, Cherry) and 5 Dark themes (Carbon, Indigo, Espresso, Obsidian, Pine) mapped entirely through semantic CSS tokens.
+- **Local-First & Pluggable 4-Layer Persistence**: Data persists locally in IndexedDB behind strict `UI / Stores -> Domain Services (DI) -> Repositories -> DataAdapter` boundaries. Offline-capable PWA with JSON/CSV backup and WebDAV sync.
+- **10 Paired Paper Stationery Themes**: 5 Light themes (Sage, Cotton, Kraft, Mist, Cherry) paired 1-to-1 with 5 Dark themes (Pine, Carbon, Espresso, Indigo, Crimson) via semantic CSS tokens, plus dedicated Light/Dark palettes for Modern mode.
 - **Micro-Kernel Plugin SDK**: Extensible micro-kernel architecture (`src/plugin-sdk/`) supporting UI slot insertion, component overrides, onion middleware, and zero-migration plugin storage. Ships with a reference `Owned Items` plugin for tracking asset lifecycles and daily holding costs.
 
 ---
@@ -23,7 +23,7 @@ A minimal, local-first personal expense, item & asset stash progressive web app 
 - **Framework**: React 19 + TypeScript
 - **Bundler & Tooling**: Vite + `@vite-pwa/plugin`
 - **Styling**: Tailwind CSS v4 + Semantic CSS Variables
-- **Icons**: Lucide React (vector line iconography only; zero emojis in UI)
+- **Icons**: `@phosphor-icons/react` (vector line iconography only; zero emojis in UI)
 - **State Management**: Zustand
 - **Persistence**: `idb` (IndexedDB Promise wrapper)
 - **Testing**: Vitest + React Testing Library

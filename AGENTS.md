@@ -15,7 +15,7 @@
   - Natural low-saturation functional colors (cypress green income, terra-cotta red expense).
   - Clean vector line icons (`@phosphor-icons/react` with duotone paper ink accents) exclusively—emojis are strictly banned from UI chrome.
   - Flat paper sheets with hairline rules and physical deckle/sawtooth cuts instead of heavy glassmorphism.
-- **Pluggable Data Layer**: Storage abstracted via `DataAdapter` interface, completely decoupling UI from persistence (IndexedDB by default; WebDAV/cloud sync ready).
+- **Pluggable Layered Data Architecture**: Four strict layers (`UI / Stores -> Domain Services -> Repositories -> DataAdapter`) decouple UI and Zustand state from IndexedDB/cloud persistence via DI (`CoreContext`).
 - **Mobile-First Offline PWA**: Optimized for vertical mobile viewport, fully installable and operational without network access.
 
 ---
@@ -69,10 +69,10 @@ To ensure professional engineering collaboration and seamless user localization:
    - Drawer top edge features a genuine receipt sawtooth cut (`.paper-sawtooth-top`). Outer containers must maintain `overflow: visible` to prevent tooth clipping.
    - Washi tape strip (`.washi-tape`) pinned at the top center.
    - Integrated 4x4 desktop calculator keypad with an inline `4x2` stamp-block category grid.
-   - 3-column mechanical drum-wheel picker for date and time.
+   - Calendar grid plus 2-column mechanical drum-wheel time picker (`PaperDatePickerModal`).
 4. **Theme Semantic Variables**:
    - **Zero Hardcoded Colors**: Cards, sheets, and cut edges must use semantic tokens (`bg-(--paper-sheet)`, `bg-(--paper-sunken)`, `var(--rule-hairline)`).
-   - Built-in 10 themes: 5 Light (Sage, Cotton, Kraft, Mist, Cherry) and 5 Dark (Carbon, Indigo, Espresso, Obsidian, Pine).
+   - Built-in 10 themes paired 1-to-1 across Light and Dark: 5 Light (`Sage`, `Cotton`, `Kraft`, `Mist`, `Cherry`) paired with 5 Dark (`Pine`, `Carbon`, `Espresso`, `Indigo`, `Crimson`).
 5. **Dual Typography Axis**:
    - Financial figures & tabular metrics: Strict `Geist Mono` (`tabular-nums`).
    - Mastheads & journal receipts: Literary `Instrument Serif`.
@@ -86,8 +86,9 @@ The application supports two distinct aesthetic skins (`paper` and `modern`), go
    - Core and plugins render exclusively through semantic UI primitives (`PaperCard`, `CategoryBadge`, `SegToggle`, `PaperButton`, `PaperInput`) with zero conditional JS branches checking `uiStyle`.
 
 2. **Layer 2 — Pure CSS-Driven Leaf Primitives (Zero Inline Skin Ternaries)**:
-   - Leaf UI primitives (`PaperCard`, `PaperButton`, `PaperInput`, `CategoryBadge`, `SegToggle`, `PaperKeypad`, `PaperModal`, `Toast`) encapsulate their presentation using CSS design tokens (`--paper-sheet`, `--paper-sunken`, `--rule-hairline`, `--btn-radius`, `--input-radius`, `--keypad-radius`, etc.).
-   - Visual enhancements (such as `backdrop-filter: blur(20px)`, pill radii, and glow shadows under `[data-ui-style="modern"]`) are applied purely via CSS rules in `src/index.css`. No inline JS `isModern ? ... : ...` ternaries are allowed inside leaf primitives.
+   - Leaf UI primitives (`PaperCard`, `PaperSummaryCard`, `PaperButton`, `PaperInput`, `PaperDateField`, `CategoryBadge`, `SegToggle`, `FloatingActionButton`, `SettingList`, `PaperModal`, `Toast`) encapsulate their presentation using CSS design tokens (`--paper-sheet`, `--paper-sunken`, `--rule-hairline`, `--rule-style`, `--btn-radius`, `--input-radius`, `--keypad-radius`, etc.).
+   - Class composition uses `cn()` (`clsx` + `tailwind-merge` in `src/utils/cn.ts`) to prevent conflicting utility overrides, and shared Tailwind v4 `@utility` helpers live in `src/styles/utilities.css`.
+   - Visual enhancements (such as `backdrop-filter: blur(20px)`, pill radii, and glow shadows under `[data-ui-style="modern"]`) are applied purely via unlayered CSS rules in `src/index.css` without `!important`. No inline JS `isModern ? ... : ...` ternaries are allowed inside leaf primitives.
 
 3. **Layer 3 — Dedicated Implementations for Structurally Divergent Shells**:
    - Where physical mechanics, layout topology, or DOM hierarchy fundamentally differ, components are split into dedicated skin shells rather than mixing conditional JSX:
@@ -104,10 +105,10 @@ The application supports two distinct aesthetic skins (`paper` and `modern`), go
      - *Light*: Canvas `#F3F4F6`, Sheet/Card `#FFFFFF` (`rgba(255, 255, 255, 0.92)`), Sunken `#EBEDF0`, Inks `#111318` / `#5A606E` / `#8C93A3`, Hairline `rgba(17, 19, 24, 0.06)`.
      - *Dark*: Canvas `#090A0D`, Sheet/Card `#18191E`, Sunken `#24262E`, Inks `#F5F6F8` / `#9BA1B0` / `#666C7A`, Hairline `rgba(255, 255, 255, 0.08)`.
    - **Borderless Cards & Zero Double-Nested Borders**:
-     - Surface cards (`.paper-card`, `.paper-summary-card`) use borderless geometry (`border: none !important; border-radius: 20px-24px; box-shadow: var(--shadow-sm);`).
+     - Surface cards (`.paper-card`, `.paper-summary-card`) use borderless geometry (`border-width: 0px`, `border-radius: 20px-24px`, `box-shadow: var(--shadow-sm)`), governed via unlayered selectors without `!important`.
      - Outer rectangular card frames around segmented toggles (`SegToggle`) are eliminated (native iOS style).
      - Ledger groups render as single borderless `rounded-[22px]` cards; rows inside remain transparent and are demarcated by subtle solid hairlines (`border-b border-(--rule-hairline)` with `last:border-b-0`), preventing nested grey bubbles.
-   - **Receipt Dashed-Line Ban**: In Modern Mode, a global CSS reset transforms all `.border-dashed` and `.border-dotted` into clean solid hairlines (`border-style: solid !important;`).
+   - **Receipt Dashed-Line Ban**: In Modern Mode, `--rule-style` switches to `solid` and unlayered CSS rules convert receipt dashed/dotted borders into crisp solid hairlines cleanly without `!important` (except `@media (prefers-reduced-motion: reduce)`).
    - **Keypad & Modal Geometry**: Keypads sit on a sunken tray (`gap: 8px`) with rounded keys (`--keypad-radius: 16px`); category selectors use a borderless 4x2 grid; metadata controls render as cool-gray pill tags (`--btn-radius: 9999px`).
    - **Subpage Navigation Visibility**: Bottom navigation (`BottomNav` / `LiquidGlassDock`) is strictly hidden and unmounted when subpages (`SettingsSubPage`, `ImportSubPage`, `AccountDetailSubPage`) are open.
 
@@ -133,8 +134,8 @@ To ensure optimal navigation on both Android and iOS without gesture collisions:
    - Close signals are managed by `useCloseWatcher`, binding directly to `window.CloseWatcher` (Chrome 120+, Android WebView, and PWA standalone). Android edge-swipe back navigation, hardware/software back buttons, and Android 14+ predictive back gestures trigger component exit animations without exiting the PWA or popping external browser history.
    - Multiple overlay layers follow automatic LIFO (last-in-first-out) dismissal.
 2. **iOS Touch Gesture Preservation**:
-   - Subpages (`SubPageShell`) calibrate edge touch interception to a disciplined `edgeThreshold: 36px` (narrowed from legacy over-wide bounds), preserving iOS native-feeling edge-swipe dismissing while avoiding accidental triggers during vertical content reading.
-   - Bottom sheets preserve downward touch dragging via `GestureSmoother` and `rubberBand`.
+   - Subpages (`SubPageShell`) calibrate edge touch interception to a disciplined `edgeThreshold: 36px` via the shared `useEdgeSwipeGesture` hook, preserving iOS native-feeling edge-swipe dismissing while avoiding accidental triggers during vertical content reading.
+   - Bottom sheets preserve downward touch dragging via `useSheetDismissGesture`, `GestureSmoother`, and `rubberBand`.
 3. **TDD Quality Gate for Overlays**:
    - Every floating overlay component must maintain automated unit tests covering:
      1. Platform close trigger via `CloseWatcher.onclose` with smooth exit settlement.
@@ -192,6 +193,7 @@ HamsterStash features an extensible micro-kernel architecture where feature modu
   - TypeScript triple-slash directives (`/// <reference ... />`).
 
 ### 7.2 TypeScript, Linting & Architecture Discipline
+- **4-Layer Backend Boundary**: `UI / Stores -> Domain Services (DI via CoreContext) -> Repositories (BaseRepository soft-delete tombstones & domain queries) -> DataAdapter (pure CRUD + runInTransaction)`, with `SeedService` handling idempotent bootstrap data and `CoreContext` wiring a single shared `IndexedDBAdapter` instance. UI components and Zustand stores must never import adapters or repositories directly. Static boundary and styling contracts are enforced by `tests/contracts/architectureBoundary.test.ts` and `tests/contracts/styleAndInvariantContracts.test.tsx`.
 - TypeScript strict mode enabled: zero `any` allowed (use `unknown` or specific generics).
 - ESLint: Zero errors, zero warnings. Run `pnpm lint` and resolve every report.
 - Tailwind CSS: Always use canonical class names (e.g., `stroke-2` instead of `stroke-[2]`).
