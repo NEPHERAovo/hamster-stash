@@ -24,6 +24,7 @@ import {
   confirmAction,
   cn,
   PaperButton,
+  PageHeader,
   PaperIconButton,
   PaperInput,
   PaperSelect,
@@ -69,25 +70,6 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
   const { recordTransaction, updateTransaction } = useHostTransactionActions();
   const { openModal } = usePluginNavigation();
   const subPage = useSubPage();
-  const lastHeaderTapRef = useRef(0);
-
-  const handleHeaderDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('button, a, input, select')) return;
-    subPage?.scrollToTop?.();
-  };
-
-  const handleHeaderTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('button, a, input, select')) return;
-    const now = performance.now();
-    if (now - lastHeaderTapRef.current < 300) {
-      subPage?.scrollToTop?.();
-      lastHeaderTapRef.current = 0;
-    } else {
-      lastHeaderTapRef.current = now;
-    }
-  };
 
   const [isDisposePanelOpen, setIsDisposePanelOpen] = useState(false);
   const [dispositionMode, setDispositionMode] = useState<'sold' | 'idle' | 'gifted' | 'scrapped'>('sold');
@@ -650,45 +632,39 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
 
   return (
     <div className="w-full pb-20 select-none">
-      <div
-        className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-3 pt-[calc(0.25rem+var(--safe-top))] pb-1 sm:px-4"
-        onDoubleClick={handleHeaderDoubleClick}
-        onTouchEnd={handleHeaderTouchEnd}
-      >
-        <div className="flex min-w-0 items-center gap-2">
+      <PageHeader
+        title={isSub ? '订阅详情' : '物品详情'}
+        onDoubleClick={() => subPage?.scrollToTop?.()}
+        leftAction={
           <PaperIconButton
             icon={ChevronLeft}
             size="md"
             variant="surface"
-            onClick={onClose}
+            onClick={() => (subPage ? subPage.requestClose() : onClose())}
             aria-label="返回清单"
           />
-          <div className="min-w-0">
-            <h1 className="truncate font-serif text-xl leading-none text-(--ink-solid) not-italic sm:text-2xl">
-              {isSub ? '订阅详情' : '物品详情'}
-            </h1>
+        }
+        rightAction={
+          <div className="flex shrink-0 items-center gap-1.5">
+            <PaperIconButton
+              icon={Edit2}
+              size="md"
+              variant="surface"
+              onClick={() => openModal('item-form', { item })}
+              title="编辑信息"
+              aria-label="编辑信息"
+            />
+            <PaperIconButton
+              icon={Trash2}
+              size="md"
+              variant="surface"
+              onClick={handleDelete}
+              title="移除"
+              aria-label="移除"
+            />
           </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          <PaperIconButton
-            icon={Edit2}
-            size="md"
-            variant="surface"
-            onClick={() => openModal('item-form', { item })}
-            title="编辑信息"
-            aria-label="编辑信息"
-          />
-          <PaperIconButton
-            icon={Trash2}
-            size="md"
-            variant="surface"
-            onClick={handleDelete}
-            title="移除"
-            aria-label="移除"
-          />
-        </div>
-      </div>
+        }
+      />
 
       <div className="space-y-4 px-4 pt-3.5">
         <div className="paper-summary-card paper-deckle-bottom relative border border-(--rule-hairline) bg-(--paper-sheet) pb-4 text-(--ink-solid) shadow-xs">

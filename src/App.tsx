@@ -241,22 +241,32 @@ export function App() {
       .map((t) => t.id);
   }, [pluginNavTabs]);
 
+  const hasPluginModal = usePluginUIStore((s) => Boolean(s.activeModal));
+
+  const isTransactionModalOpen = isAddOpen || Boolean(editingTx);
+
+  const hasActiveSubPage = [
+    activeDetailAccount,
+    isSettingsOpen,
+    isCategoryManageOpen,
+    isDataManageOpen,
+    isImportOpen,
+    activeCategoryDrilldown,
+    hasPluginSubPage,
+  ].some(Boolean);
+
   const isSwipeBlocked =
-    isAddOpen ||
-    Boolean(editingTx) ||
-    isCreateAccountOpen ||
-    Boolean(editingAccount) ||
-    isLoanHubOpen ||
-    Boolean(activeDetailAccount) ||
-    isImportOpen ||
-    isCategoryManageOpen ||
-    isDataManageOpen ||
-    isSettingsOpen ||
-    Boolean(reconcileAccount) ||
-    isTransferOpen ||
-    Boolean(editingTransferTx) ||
-    Boolean(activeCategoryDrilldown) ||
-    hasPluginSubPage;
+    hasActiveSubPage ||
+    [
+      isTransactionModalOpen,
+      isCreateAccountOpen,
+      editingAccount,
+      isLoanHubOpen,
+      reconcileAccount,
+      isTransferOpen,
+      editingTransferTx,
+      hasPluginModal,
+    ].some(Boolean);
 
   useTabSwipeGesture({
     currentTab,
@@ -616,11 +626,11 @@ export function App() {
         )}
       </SubPageShell>
 
-      {!isSettingsOpen && !isImportOpen && !isCategoryManageOpen && !isDataManageOpen && !activeDetailAccount && !activeCategoryDrilldown && !hasPluginSubPage && (
+      {!hasActiveSubPage && (
         <BottomNav
           currentTab={currentTab}
           showAddButton={currentTab === 'ledger' || currentTab === 'items' || currentTab === 'assets'}
-          isAddOpen={isAddOpen || Boolean(editingTx)}
+          isAddOpen={isTransactionModalOpen}
           onTabChange={(tab) => {
             if (tab === currentTab) {
               mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -643,7 +653,7 @@ export function App() {
       )}
 
       <AddTransactionModal
-        isOpen={isAddOpen || Boolean(editingTx)}
+        isOpen={isTransactionModalOpen}
         editingTransaction={editingTx}
         onClose={() => {
           setIsAddOpen(false);

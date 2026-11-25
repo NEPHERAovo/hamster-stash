@@ -3,6 +3,7 @@ import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, PackageIcon as Package 
 import {
   useHostTransactions,
   usePluginNavigation,
+  useSubPage,
   centsToYuan,
   getCategoryIcon,
   cn,
@@ -45,6 +46,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   const setSortOption = usePluginItemStore((s) => s.setSortOption);
   const transactions = useHostTransactions();
   const { openSubPage, openModal } = usePluginNavigation();
+  const subPage = useSubPage();
 
   const [activeTab, setActiveTab] = useState<FilterTab>('using');
   const [kindFilter, setKindFilter] = useState<KindTab>('all');
@@ -128,12 +130,13 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
         <PageHeader
           title="Items"
           modernTitle="物品"
+          onDoubleClick={() => subPage?.scrollToTop?.()}
           leftAction={
             <PaperIconButton
               icon={ChevronLeft}
               size="md"
               variant="surface"
-              onClick={onClose}
+              onClick={() => (subPage ? subPage.requestClose() : onClose())}
               aria-label="返回"
             />
           }
