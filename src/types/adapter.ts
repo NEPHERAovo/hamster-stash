@@ -41,7 +41,11 @@ export interface DataAdapter {
 
   create<T extends StoredEntity>(
     collection: string,
-    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string }
+    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: string;
+      updatedAt?: string;
+    }
   ): Promise<T>;
   read<T extends StoredEntity>(collection: string, id: string): Promise<T | null>;
   update<T extends StoredEntity>(collection: string, id: string, data: Partial<Omit<T, 'id'>>): Promise<T>;

@@ -2,7 +2,7 @@ import type { ComponentType, ReactNode } from 'react';
 import type { BasePlugin, PluginContext, MiddlewareHandler } from './types';
 import { usePluginUIStore } from './SlotStore';
 import { MiddlewarePipeline } from './MiddlewarePipeline';
-import { PluginStorageManager } from './PluginStorageManager';
+import { PluginStorageManager, type AdapterResolver } from './PluginStorageManager';
 import type { DataAdapter } from '../../types/adapter';
 
 export class PluginRegistry {
@@ -10,16 +10,23 @@ export class PluginRegistry {
   private activeContexts = new Map<string, PluginContext>();
   private pipeline = new MiddlewarePipeline();
   private storageManager: PluginStorageManager;
-  private adapter: DataAdapter;
+  private adapterResolver?: AdapterResolver;
   private eventListeners = new Map<string, Map<string, Set<(...args: unknown[]) => void>>>();
 
-  constructor(adapter: DataAdapter) {
-    this.adapter = adapter;
+  constructor(adapter?: AdapterResolver) {
+    this.adapterResolver = adapter;
     this.storageManager = new PluginStorageManager(adapter);
   }
 
-  getAdapter(): DataAdapter {
-    return this.adapter;
+  setAdapter(adapter: AdapterResolver): void {
+    this.adapterResolver = adapter;
+    this.storageManager.setAdapter(adapter);
+  }
+
+  getAdapter(): DataAdapter | undefined {
+    return typeof this.adapterResolver === 'function'
+      ? this.adapterResolver()
+      : this.adapterResolver;
   }
 
   getPipeline(): MiddlewarePipeline {
@@ -165,7 +172,7 @@ export class PluginRegistry {
     if (!plugin) throw new Error(`Plugin "${pluginId}" not found`);
 
     if (this.activeContexts.has(pluginId)) {
-      return; // 已经处于激活状态
+      return;
     }
 
     const ctx = this.createContext(pluginId);

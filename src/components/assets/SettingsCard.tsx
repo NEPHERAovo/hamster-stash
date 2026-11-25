@@ -133,6 +133,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
   const handleClearAllData = async () => {
     await core.init();
     await core.adapter.clearAll();
+    await core.seedService.ensureSeeded();
 
     await loadAccounts();
     await loadCategories();

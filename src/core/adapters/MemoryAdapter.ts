@@ -36,18 +36,23 @@ export class MemoryAdapter implements DataAdapter {
 
   async create<T extends StoredEntity>(
     collection: string,
-    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string }
+    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: string;
+      updatedAt?: string;
+    }
   ): Promise<T> {
     const col = this.getCollection(collection);
     const now = new Date().toISOString();
     const createdAt = data.createdAt || now;
+    const updatedAt = data.updatedAt || now;
     const id = data.id || `mem_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     const entity = {
       ...data,
       id,
       createdAt,
-      updatedAt: now,
+      updatedAt,
     } as unknown as T;
     delete (entity as StoredEntity).deletedAt;
 

@@ -2,6 +2,8 @@ import type { DataAdapter } from '../../types/adapter';
 import type { PluginCollection } from './types';
 import { STORES } from '../db/schema';
 
+export type AdapterResolver = DataAdapter | (() => DataAdapter);
+
 interface PluginDataRecord {
   id: string;
   pluginId: string;
@@ -19,22 +21,36 @@ interface PluginSettingsRecord {
 }
 
 export class PluginStorageManager {
-  private adapter: DataAdapter;
+  private adapterResolver?: AdapterResolver;
 
-  constructor(adapter: DataAdapter) {
-    this.adapter = adapter;
+  constructor(adapter?: AdapterResolver) {
+    this.adapterResolver = adapter;
+  }
+
+  setAdapter(adapter: AdapterResolver): void {
+    this.adapterResolver = adapter;
+  }
+
+  private getAdapter(): DataAdapter {
+    const resolved =
+      typeof this.adapterResolver === 'function' ? this.adapterResolver() : this.adapterResolver;
+    if (!resolved) {
+      throw new Error('PluginStorageManager adapter is not configured.');
+    }
+    return resolved;
   }
 
   createCollection<T extends { id: string }>(
     pluginId: string,
     collectionName: string
   ): PluginCollection<T> {
-    const adapter = this.adapter;
+    const getAdapter = () => this.getAdapter();
 
     const buildKey = (entityId: string) => `${pluginId}_${collectionName}_${entityId}`;
 
     return {
       async findById(id: string): Promise<T | null> {
+        const adapter = getAdapter();
         const fullId = buildKey(id);
         const record = await adapter.read<PluginDataRecord>(STORES.PLUGIN_DATA, fullId);
         if (!record || record.pluginId !== pluginId || record.collection !== collectionName) {
@@ -44,6 +60,7 @@ export class PluginStorageManager {
       },
 
       async findAll(filter?: Partial<T>): Promise<T[]> {
+        const adapter = getAdapter();
         const records = await adapter.query<PluginDataRecord>(STORES.PLUGIN_DATA, {
           filters: {
             pluginId,
@@ -66,6 +83,7 @@ export class PluginStorageManager {
       },
 
       async create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<T> {
+        const adapter = getAdapter();
         const now = new Date().toISOString();
         const entityId = data.id || `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
         const fullId = buildKey(entityId);
@@ -88,6 +106,7 @@ export class PluginStorageManager {
       },
 
       async update(id: string, patch: Partial<T>): Promise<T> {
+        const adapter = getAdapter();
         const fullId = buildKey(id);
         const record = await adapter.read<PluginDataRecord>(STORES.PLUGIN_DATA, fullId);
         if (!record) {
@@ -110,6 +129,7 @@ export class PluginStorageManager {
       },
 
       async delete(id: string): Promise<void> {
+        const adapter = getAdapter();
         const fullId = buildKey(id);
         await adapter.delete(STORES.PLUGIN_DATA, fullId);
       },
@@ -117,10 +137,11 @@ export class PluginStorageManager {
   }
 
   createSettingsAccessor(pluginId: string) {
-    const adapter = this.adapter;
+    const getAdapter = () => this.getAdapter();
 
     return {
       async get<T>(key: string, defaultValue?: T): Promise<T> {
+        const adapter = getAdapter();
         const record = await adapter.read<PluginSettingsRecord>(STORES.PLUGIN_SETTINGS, pluginId);
         if (!record || !record.settings || record.settings[key] === undefined) {
           return defaultValue as T;
@@ -129,6 +150,7 @@ export class PluginStorageManager {
       },
 
       async set<T>(key: string, value: T): Promise<void> {
+        const adapter = getAdapter();
         const record = await adapter.read<PluginSettingsRecord>(STORES.PLUGIN_SETTINGS, pluginId);
         const settings = record?.settings || {};
         settings[key] = value;

@@ -1,6 +1,6 @@
-import { core } from '../index';
 import { STORES } from '../db/schema';
 import type { DataAdapter, StoredEntity } from '../../types/adapter';
+import type { AdapterResolver } from '../plugin/PluginStorageManager';
 
 export interface AttachmentRecord extends StoredEntity {
   id: string;
@@ -43,16 +43,29 @@ export async function computeAttachmentId(dataUrl: string): Promise<string> {
 }
 
 export class AttachmentStore {
-  private customAdapter?: DataAdapter;
+  private adapterResolver?: AdapterResolver;
+  private ensureReady?: () => Promise<void>;
 
-  constructor(adapter?: DataAdapter) {
-    this.customAdapter = adapter;
+  constructor(adapter?: AdapterResolver, ensureReady?: () => Promise<void>) {
+    this.adapterResolver = adapter;
+    this.ensureReady = ensureReady;
+  }
+
+  bindAdapter(adapter: AdapterResolver, ensureReady?: () => Promise<void>): void {
+    this.adapterResolver = adapter;
+    this.ensureReady = ensureReady;
   }
 
   private async getAdapter(): Promise<DataAdapter> {
-    if (this.customAdapter) return this.customAdapter;
-    await core.init();
-    return core.adapter;
+    if (this.ensureReady) {
+      await this.ensureReady();
+    }
+    const resolved =
+      typeof this.adapterResolver === 'function' ? this.adapterResolver() : this.adapterResolver;
+    if (!resolved) {
+      throw new Error('AttachmentStore adapter is not configured.');
+    }
+    return resolved;
   }
 
   async saveAttachment(input: {

@@ -96,6 +96,7 @@ describe('WebDAV daily auto-sync scheduler', () => {
       core.acctRepo = new (core.acctRepo.constructor as typeof core.acctRepo)(memAdapter);
       core.catRepo = new (core.catRepo.constructor as typeof core.catRepo)(memAdapter);
       vi.restoreAllMocks();
+      vi.spyOn(core, 'init').mockResolvedValue(undefined);
     });
 
     it('skips both putFile and import when local and remote payloads are strictly equal', async () => {

@@ -1,6 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import { DB_VERSION, STORES, getActiveDbName, isSandboxModeActive } from '../db/schema';
-import { DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES, getSandboxSeedData } from '../db/defaultData';
+import { DB_VERSION, STORES, getActiveDbName } from '../db/schema';
 import type {
   DataAdapter,
   ExportData,
@@ -12,7 +11,6 @@ import type { Account } from '../../types/account';
 import type { Category } from '../../types/category';
 import type { Transaction } from '../../types/transaction';
 
-const DEFAULT_SEED_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 const TOMBSTONE_COLLECTIONS = new Set<string>([
   STORES.TRANSACTIONS,
   STORES.ACCOUNTS,
@@ -96,90 +94,12 @@ export class IndexedDBAdapter implements DataAdapter {
             }
           }
 
-          await this.seedDefaultsIfEmpty();
         } finally {
           this.initPromise = null;
         }
       })();
     }
     await this.initPromise;
-  }
-
-  private async seedDefaultsIfEmpty(): Promise<void> {
-    if (!this.db) return;
-
-    const now = new Date().toISOString();
-    const catCount = await this.db.count(STORES.CATEGORIES);
-    if (catCount === 0) {
-      const tx = this.db.transaction(STORES.CATEGORIES, 'readwrite');
-      for (const cat of DEFAULT_CATEGORIES) {
-        await tx.store.put({
-          ...cat,
-          createdAt: DEFAULT_SEED_TIMESTAMP,
-          updatedAt: DEFAULT_SEED_TIMESTAMP,
-        });
-      }
-      await tx.done;
-    } else {
-      const tx = this.db.transaction(STORES.CATEGORIES, 'readwrite');
-      for (const cat of DEFAULT_CATEGORIES) {
-        const existing = await tx.store.get(cat.id);
-        if (!existing) {
-          await tx.store.put({
-            ...cat,
-            isArchived: cat.isArchived ?? true,
-            createdAt: DEFAULT_SEED_TIMESTAMP,
-            updatedAt: DEFAULT_SEED_TIMESTAMP,
-          });
-        } else if (existing.isSystem && !existing.deletedAt) {
-          const shouldUpdateName =
-            existing.name &&
-            typeof existing.name === 'string' &&
-            existing.name !== cat.name &&
-            existing.name.length > 2;
-          if (shouldUpdateName) {
-            await tx.store.put({
-              ...existing,
-              name: cat.name,
-              updatedAt: now,
-            });
-          }
-        }
-      }
-      await tx.done;
-    }
-
-    const acctCount = await this.db.count(STORES.ACCOUNTS);
-    if (acctCount === 0) {
-      const tx = this.db.transaction(STORES.ACCOUNTS, 'readwrite');
-      for (const acct of DEFAULT_ACCOUNTS) {
-        await tx.store.put({
-          ...acct,
-          createdAt: DEFAULT_SEED_TIMESTAMP,
-          updatedAt: DEFAULT_SEED_TIMESTAMP,
-        });
-      }
-      await tx.done;
-    }
-
-    if (isSandboxModeActive()) {
-      const txCount = await this.db.count(STORES.TRANSACTIONS);
-      if (txCount === 0) {
-        const tx = this.db.transaction([STORES.ACCOUNTS, STORES.TRANSACTIONS], 'readwrite');
-        const acctStore = tx.objectStore(STORES.ACCOUNTS);
-        const txStore = tx.objectStore(STORES.TRANSACTIONS);
-
-        const { sampleAccounts, sampleTransactions } = getSandboxSeedData(now);
-        for (const acct of sampleAccounts) {
-          await acctStore.put(acct);
-        }
-        for (const t of sampleTransactions) {
-          await txStore.put(t);
-        }
-
-        await tx.done;
-      }
-    }
   }
 
   async destroy(): Promise<void> {
@@ -196,18 +116,23 @@ export class IndexedDBAdapter implements DataAdapter {
 
   async create<T extends StoredEntity>(
     collection: string,
-    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string }
+    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: string;
+      updatedAt?: string;
+    }
   ): Promise<T> {
     const db = this.getDB();
     const now = new Date().toISOString();
     const createdAt = data.createdAt || now;
+    const updatedAt = data.updatedAt || now;
     const id = data.id || `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     const entity = {
       ...data,
       id,
       createdAt,
-      updatedAt: now,
+      updatedAt,
     } as unknown as T;
     delete (entity as StoredEntity).deletedAt;
 
@@ -397,6 +322,5 @@ export class IndexedDBAdapter implements DataAdapter {
       await tx.objectStore(storeName).clear();
     }
     await tx.done;
-    await this.seedDefaultsIfEmpty();
   }
 }

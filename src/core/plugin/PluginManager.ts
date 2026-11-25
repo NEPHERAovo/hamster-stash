@@ -1,16 +1,22 @@
 import type { BasePlugin, LazyPluginDefinition } from './types';
 import { LazyPluginWrapper } from './LazyPluginWrapper';
 import { PluginRegistry } from './PluginRegistry';
-import type { DataAdapter } from '../../types/adapter';
-import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
+import type { AdapterResolver } from './PluginStorageManager';
 
 export class PluginManager {
   private registry: PluginRegistry;
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
+  private ensureReady: (() => Promise<void>) | null = null;
 
-  constructor(adapter?: DataAdapter) {
-    const actAdapter = adapter || new IndexedDBAdapter();
-    this.registry = new PluginRegistry(actAdapter);
+  constructor(adapter?: AdapterResolver, ensureReady?: () => Promise<void>) {
+    this.registry = new PluginRegistry(adapter);
+    this.ensureReady = ensureReady ?? null;
+  }
+
+  bindAdapter(adapter: AdapterResolver, ensureReady?: () => Promise<void>): void {
+    this.registry.setAdapter(adapter);
+    this.ensureReady = ensureReady ?? null;
   }
 
   getRegistry(): PluginRegistry {
@@ -32,37 +38,51 @@ export class PluginManager {
 
   async init(): Promise<void> {
     if (this.initialized) return;
-    this.initialized = true;
-
-    const adapter = this.registry.getAdapter();
-    if (adapter && typeof adapter.initialize === 'function') {
-      try {
-        await adapter.initialize();
-      } catch (err) {
-        console.error('Failed to initialize adapter in PluginManager:', err);
-      }
-    }
-
-    const storage = this.registry.getStorageManager();
-    const plugins = this.registry.getPlugins();
-
-    for (const plugin of plugins) {
-      const id = plugin.manifest.id;
-      const settings = storage.createSettingsAccessor(id);
-      const enabled = await settings.get<boolean>('enabled', plugin.manifest.defaultEnabled);
-      if (enabled) {
+    if (!this.initPromise) {
+      this.initPromise = (async () => {
         try {
-          await this.registry.activate(id);
+          if (this.ensureReady) {
+            await this.ensureReady();
+          } else {
+            const adapter = this.registry.getAdapter();
+            if (adapter && typeof adapter.initialize === 'function') {
+              await adapter.initialize();
+            }
+          }
+
+          const storage = this.registry.getStorageManager();
+          const plugins = this.registry.getPlugins();
+
+          for (const plugin of plugins) {
+            const id = plugin.manifest.id;
+            const settings = storage.createSettingsAccessor(id);
+            const enabled = await settings.get<boolean>('enabled', plugin.manifest.defaultEnabled);
+            if (enabled) {
+              try {
+                await this.registry.activate(id);
+              } catch (err) {
+                console.error(`Failed to activate plugin "${id}":`, err);
+              }
+            }
+          }
+          this.initialized = true;
         } catch (err) {
-          console.error(`Failed to activate plugin "${id}":`, err);
+          console.error('Failed to initialize plugins in PluginManager:', err);
+        } finally {
+          this.initPromise = null;
         }
-      }
+      })();
     }
+    await this.initPromise;
   }
 
   async enablePlugin(id: string): Promise<void> {
     const plugin = this.registry.getPlugin(id);
     if (!plugin) return;
+
+    if (this.ensureReady) {
+      await this.ensureReady();
+    }
 
     await this.registry.activate(id);
     const storage = this.registry.getStorageManager();
@@ -71,6 +91,10 @@ export class PluginManager {
   }
 
   async disablePlugin(id: string): Promise<void> {
+    if (this.ensureReady) {
+      await this.ensureReady();
+    }
+
     await this.registry.deactivate(id);
     const storage = this.registry.getStorageManager();
     const settings = storage.createSettingsAccessor(id);
