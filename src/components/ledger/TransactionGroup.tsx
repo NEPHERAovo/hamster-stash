@@ -69,7 +69,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const isSearching = searchQuery.trim().length > 0;
-  const scopeKey = `${isSearching ? 'search' : transactions.length}:${transactions[0]?.id || ''}:${filter}:${searchQuery.trim()}`;
+  const scopeKey = `${isSearching ? 'search' : 'list'}:${filter}:${searchQuery.trim()}`;
   const [pagination, setPagination] = useState<{ key: string; count: number }>({
     key: scopeKey,
     count: pageSize,

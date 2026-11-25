@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { TransactionGroup } from '../../src/components/ledger/TransactionGroup';
 import { useThemeStore } from '../../src/stores/useThemeStore';
@@ -316,5 +316,70 @@ describe('TransactionGroup component', () => {
     expect(rows[0]).toHaveTextContent('晚餐');
     expect(rows[1]).toHaveTextContent('午餐');
     expect(rows[2]).toHaveTextContent('早餐');
+  });
+
+  it('preserves loaded pagination count when transactions are deleted', () => {
+    let observerCb: IntersectionObserverCallback | null = null;
+    const origObserver = window.IntersectionObserver;
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        observerCb = cb;
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+      takeRecords() { return []; }
+      root = null;
+      rootMargin = '';
+      thresholds = [];
+    }
+    window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+
+    try {
+      const manyTxs: Transaction[] = Array.from({ length: 20 }, (_, i) => {
+        const day = String(20 - i).padStart(2, '0');
+        return {
+          id: `tx_day_${day}`,
+          type: 'expense',
+          amount: 1000,
+          categoryId: 'cat_food',
+          accountId: 'acct_1',
+          date: `2026-11-${day}`,
+          createdAt: `2026-11-${day}T10:00:00.000Z`,
+          updatedAt: `2026-11-${day}T10:00:00.000Z`,
+          note: `Day ${day}`,
+        };
+      });
+
+      const { container, rerender } = render(
+        <TransactionGroup
+          transactions={manyTxs}
+          categories={mockCategories}
+          accounts={mockAccounts}
+          pageSize={10}
+        />
+      );
+
+      expect(container.querySelectorAll('.day-divider').length).toBe(10);
+
+      act(() => {
+        observerCb?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+      });
+
+      expect(container.querySelectorAll('.day-divider').length).toBe(20);
+
+      rerender(
+        <TransactionGroup
+          transactions={manyTxs.slice(1)}
+          categories={mockCategories}
+          accounts={mockAccounts}
+          pageSize={10}
+        />
+      );
+
+      expect(container.querySelectorAll('.day-divider').length).toBe(19);
+    } finally {
+      window.IntersectionObserver = origObserver;
+    }
   });
 });
