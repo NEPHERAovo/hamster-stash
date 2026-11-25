@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
+import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react';
 import { dataLifecycleService } from '../../domain/data/dataLifecycleService';
 import type { ExportData } from '../../types/adapter';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -11,6 +11,7 @@ import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
+import { SettingSection, SettingRow } from '../ui/SettingList';
 import { ExportCsvModal } from './ExportCsvModal';
 import { WebDavSyncSection } from './WebDavSyncSection';
 import { todayDate } from '../../utils/date';
@@ -96,89 +97,42 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
     <div className="w-full space-y-4 px-4 pt-2 pb-12 select-none">
       <WebDavSyncSection />
 
-      <div className="space-y-1.5">
-        <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary)">
-          <span>完整备份与恢复</span>
-        </div>
+      <SettingSection title="完整备份与恢复">
+        <SettingRow
+          icon={<DownloadSimple className="stroke-1.75 size-3.5" />}
+          title="导出完整备份"
+          onClick={() => setIsBackupConfirmOpen(true)}
+          chevron
+        />
+        <SettingRow
+          icon={<UploadSimple className="stroke-1.75 size-3.5" />}
+          title="恢复完整备份"
+          onClick={() => jsonFileInputRef.current?.click()}
+          chevron
+        />
+        <input
+          ref={jsonFileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImportJson}
+          className="hidden"
+        />
+      </SettingSection>
 
-        <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 shadow-xs">
-          <div
-            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
-            onClick={() => setIsBackupConfirmOpen(true)}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                <DownloadSimple className="stroke-1.75 size-3.5" />
-              </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">导出完整备份</span>
-            </div>
-            <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-              <ChevronRight className="size-3.5" />
-            </div>
-          </div>
-
-          <div
-            className="flex cursor-pointer items-center justify-between py-2.5 select-none last:border-b-0"
-            onClick={() => jsonFileInputRef.current?.click()}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                <UploadSimple className="stroke-1.75 size-3.5" />
-              </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">恢复完整备份</span>
-            </div>
-            <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-              <ChevronRight className="size-3.5" />
-            </div>
-          </div>
-
-          <input
-            ref={jsonFileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImportJson}
-            className="hidden"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary)">
-          <span>账目导入与导出</span>
-        </div>
-
-        <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 shadow-xs">
-          <div
-            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
-            onClick={onOpenImport}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                <UploadSimple className="stroke-1.75 size-3.5" />
-              </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">导入账本</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
-              <ChevronRight className="size-3.5" />
-            </div>
-          </div>
-
-          <div
-            className="flex cursor-pointer items-center justify-between py-2.5 select-none last:border-b-0"
-            onClick={() => setIsExportCsvOpen(true)}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                <FileSpreadsheet className="stroke-1.75 size-3.5" />
-              </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">导出账本</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
-              <ChevronRight className="size-3.5" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <SettingSection title="账目导入与导出">
+        <SettingRow
+          icon={<UploadSimple className="stroke-1.75 size-3.5" />}
+          title="导入账本"
+          onClick={onOpenImport}
+          chevron
+        />
+        <SettingRow
+          icon={<FileSpreadsheet className="stroke-1.75 size-3.5" />}
+          title="导出账本"
+          onClick={() => setIsExportCsvOpen(true)}
+          chevron
+        />
+      </SettingSection>
 
       <PaperModal
         isOpen={isBackupConfirmOpen}

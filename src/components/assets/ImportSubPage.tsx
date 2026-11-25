@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { UploadSimpleIcon as FileUp, CheckIcon as Check, WarningCircleIcon as AlertCircle, ArrowRightIcon as ArrowRight, ArrowLeftIcon as ArrowLeft, PlusIcon as Plus, SparkleIcon as Sparkles, SlidersIcon as Sliders, ArrowsClockwiseIcon as RefreshCw, FolderSimpleIcon as FolderSync } from '@phosphor-icons/react';
-import { PaperButton } from '../ui/PaperButton';
-import { PaperSelect } from '../ui/PaperSelect';
-import { PaperSwitch } from '../ui/PaperSwitch';
+import { CheckIcon as Check, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react';
 import { parseCsv, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {
   inferColumnMapping,
@@ -21,12 +18,13 @@ import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
 import { toast } from '../../stores/useToastStore';
-import { centsToYuan } from '../../domain/finance/balanceCalculator';
-import { getCategoryIcon } from '../../utils/categoryIcons';
 import { useSubPage } from '../layout/SubPageContext';
 import { cn } from '../../utils/cn';
-import { formatTime } from '../../utils/date';
 import type { TransactionType } from '../../types/transaction';
+import { ImportStep1Upload } from './import/ImportStep1Upload';
+import { ImportStep2Columns } from './import/ImportStep2Columns';
+import { ImportStep3CategoryMatch } from './import/ImportStep3CategoryMatch';
+import { ImportStep4Preview } from './import/ImportStep4Preview';
 
 export interface ImportSubPageProps {
   onClose?: () => void;
@@ -313,11 +311,6 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     }
   };
 
-  const getColOptions = () => [
-    { label: '（未指定）', value: '' },
-    ...parsed.headers.map((h) => ({ label: h, value: h })),
-  ];
-
   return (
     <div className="w-full space-y-4 px-4 pt-1 pb-12 text-(--ink-primary)">
       <div className="rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 shadow-xs">
@@ -369,434 +362,73 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       )}
 
       {currentStep === 1 && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {IMPORT_PRESETS.map((preset) => {
-              const isSelected = selectedPresetId === preset.id;
-              const IconComp = preset.id === 'elephant' ? Sparkles : Sliders;
-              return (
-                <div
-                  key={preset.id}
-                  onClick={() => {
-                    setSelectedPresetId(preset.id);
-                    if (parsed.headers.length > 0) {
-                      const inferred = inferColumnMapping(parsed.headers);
-                      const pMap = preset.defaultMapping || {};
-                      setMapping({
-                        dateCol: (pMap.dateCol && parsed.headers.includes(pMap.dateCol)) ? pMap.dateCol : inferred.dateCol,
-                        amountCol: (pMap.amountCol && parsed.headers.includes(pMap.amountCol)) ? pMap.amountCol : inferred.amountCol,
-                        typeCol: (pMap.typeCol && parsed.headers.includes(pMap.typeCol)) ? pMap.typeCol : inferred.typeCol,
-                        categoryCol: (pMap.categoryCol && parsed.headers.includes(pMap.categoryCol)) ? pMap.categoryCol : inferred.categoryCol,
-                        accountCol: (pMap.accountCol && parsed.headers.includes(pMap.accountCol)) ? pMap.accountCol : inferred.accountCol,
-                        noteCol: (pMap.noteCol && parsed.headers.includes(pMap.noteCol)) ? pMap.noteCol : inferred.noteCol,
-                        reimburseCol: (pMap.reimburseCol && parsed.headers.includes(pMap.reimburseCol)) ? pMap.reimburseCol : inferred.reimburseCol,
-                      });
-                    }
-                  }}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-3 rounded-(--radius-md) border p-3.5 transition-all',
-                    isSelected
-                      ? 'border-(--ink-primary) bg-(--paper-sheet) shadow-xs ring-1 ring-(--ink-primary)'
-                      : 'border-(--rule-hairline) bg-(--paper-sheet) hover:border-(--ink-tertiary)'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'flex size-8 shrink-0 items-center justify-center rounded-(--badge-radius)',
-                      isSelected ? 'bg-(--color-income-bg) text-(--color-income)' : 'bg-(--paper-sunken) text-(--ink-secondary)'
-                    )}
-                  >
-                    <IconComp className="stroke-1.8 size-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-bold text-(--ink-primary)">{preset.name}</div>
-                    <div className="mt-0.5 truncate text-[11px] text-(--ink-tertiary)">{preset.shortDesc}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              'cursor-pointer rounded-(--radius-md) border-2 border-dashed bg-(--paper-sheet) px-4 py-8 text-center transition-all',
-              fileName
-                ? 'border-(--color-income)'
-                : 'border-(--rule-hairline) hover:border-(--ink-tertiary) hover:bg-(--paper-hover)/40'
-            )}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            {fileName ? (
-              <div className="space-y-1.5">
-                <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-(--color-income-bg) text-(--color-income)">
-                  <Check className="stroke-2.2 size-5" />
-                </div>
-                <div className="text-xs font-bold text-(--ink-primary)">{fileName}</div>
-                <div className="font-mono text-[11px] text-(--ink-tertiary)">
-                  {fileSizeStr} · 共 {parsed.rows.length} 行
-                </div>
-                <PaperButton
-                  variant="income"
-                  size="xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                >
-                  更换文件
-                </PaperButton>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-(--paper-sunken) text-(--ink-secondary)">
-                  <FileUp className="stroke-1.8 size-5" />
-                </div>
-                <div className="text-xs font-semibold text-(--ink-primary)">
-                  点击选择 CSV 文件
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <PaperButton variant="secondary" size="sm" onClick={handleClose}>
-              取消
-            </PaperButton>
-            <PaperButton
-              variant="ink"
-              size="sm"
-              disabled={parsed.rows.length === 0}
-              onClick={() => setCurrentStep(2)}
-            >
-              <span>下一步：确认字段</span>
-              <ArrowRight className="ml-1 size-3.5" />
-            </PaperButton>
-          </div>
-        </div>
+        <ImportStep1Upload
+          selectedPresetId={selectedPresetId}
+          onSelectPreset={setSelectedPresetId}
+          headers={parsed.headers}
+          rowCount={parsed.rows.length}
+          onUpdateMapping={setMapping}
+          fileName={fileName}
+          fileSizeStr={fileSizeStr}
+          fileInputRef={fileInputRef}
+          onFileChange={handleFileChange}
+          onCancel={handleClose}
+          onNext={() => setCurrentStep(2)}
+        />
       )}
 
       {currentStep === 2 && (
-        <div className="space-y-4">
-          <div className="divide-y divide-(--rule-hairline) rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-xs shadow-xs">
-            {[
-              { key: 'dateCol', label: '日期时间列', required: true, desc: '交易发生时间' },
-              { key: 'amountCol', label: '金额列', required: true, desc: '交易金额数值' },
-              { key: 'typeCol', label: '收支类型列', required: false, desc: '支出 / 收入' },
-              { key: 'categoryCol', label: '分类名称列', required: false, desc: '账单分类名称' },
-              { key: 'accountCol', label: '账户渠道列', required: false, desc: '支付方式 / 账户' },
-              { key: 'noteCol', label: '备注说明列', required: false, desc: '商户或备注信息' },
-              {
-                key: 'reimburseCol',
-                label: '是否报销列',
-                required: false,
-                desc: !isReimbursementEnabled ? '报销标记（设置中已停用报销）' : '报销标记',
-              },
-            ].map((field) => (
-              <div key={field.key} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                <div>
-                  <div className="flex items-center gap-1 font-semibold text-(--ink-primary)">
-                    {field.required && <span className="text-(--color-expense)">*</span>}
-                    {field.label}
-                  </div>
-                  <div className="text-[10px] text-(--ink-tertiary)">{field.desc}</div>
-                </div>
-                <PaperSelect
-                  value={(mapping as Record<string, string | undefined>)[field.key] || ''}
-                  onChange={(e) =>
-                    setMapping({
-                      ...mapping,
-                      [field.key]: e.target.value || undefined,
-                    })
-                  }
-                  containerClassName="max-w-40"
-                  className="bg-(--paper-sunken)"
-                >
-                  {getColOptions().map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </PaperSelect>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <PaperButton variant="secondary" size="sm" onClick={() => setCurrentStep(1)}>
-              <ArrowLeft className="mr-1 size-3.5" />
-              <span>上一步</span>
-            </PaperButton>
-            <PaperButton
-              variant="ink"
-              size="sm"
-              disabled={!mapping.dateCol || !mapping.amountCol}
-              onClick={() => {
-                if (!mapping.dateCol || !mapping.amountCol) {
-                  setErrorMsg('请至少指定「日期」和「金额」列');
-                  return;
-                }
-                setErrorMsg('');
-                setCurrentStep(3);
-              }}
-            >
-              <span>下一步：分类匹配</span>
-              <ArrowRight className="ml-1 size-3.5" />
-            </PaperButton>
-          </div>
-        </div>
+        <ImportStep2Columns
+          headers={parsed.headers}
+          mapping={mapping}
+          onChangeMapping={setMapping}
+          isReimbursementEnabled={isReimbursementEnabled}
+          onPrev={() => setCurrentStep(1)}
+          onNext={() => {
+            if (!mapping.dateCol || !mapping.amountCol) {
+              setErrorMsg('请至少指定「日期」和「金额」列');
+              return;
+            }
+            setErrorMsg('');
+            setCurrentStep(3);
+          }}
+        />
       )}
 
       {currentStep === 3 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 text-xs shadow-xs">
-            <span className="text-[11px] text-(--ink-secondary)">
-              共解析出 {extractedCategoryStats.length} 个分类
-            </span>
-            <PaperButton
-              variant="secondary"
-              size="compact"
-              leftIcon={<Plus className="size-3 text-(--color-income)" />}
-              onClick={handleBatchCreateMissingCategories}
-              disabled={isCreatingCategory}
-            >
-              批量新建未匹配分类
-            </PaperButton>
-          </div>
-
-          {extractedCategoryStats.length === 0 ? (
-            <div className="rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) py-8 text-center text-xs text-(--ink-tertiary)">
-              未指定分类列，将统一使用默认分类入库。
-            </div>
-          ) : (
-            <div className="max-h-90 divide-y divide-(--rule-hairline) overflow-hidden overflow-y-auto rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
-              {extractedCategoryStats.map((stat) => {
-                const currentMappedCatId =
-                  categoryMapping[stat.rawName] ||
-                  stat.suggestedCategoryId ||
-                  (stat.dominantType === 'income' ? defaultIncomeCat : defaultExpenseCat);
-                const isExactExistInSystem = categories.some(
-                  (c) => c.name.trim().toLowerCase() === stat.rawName.trim().toLowerCase()
-                );
-
-                return (
-                  <div key={stat.rawName} className="flex items-center justify-between gap-2 p-2.5 text-xs">
-                    <div className="flex min-w-20 shrink-0 items-center gap-1.5">
-                      <span className="max-w-25 truncate font-semibold text-(--ink-primary)">
-                        {stat.rawName}
-                      </span>
-                      <span className="text-[10px] text-(--ink-tertiary) tabular-nums">
-                        ({stat.count})
-                      </span>
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                      <ArrowRight className="size-3.5 shrink-0 text-(--ink-tertiary)" />
-                      <PaperSelect
-                        value={currentMappedCatId}
-                        onChange={(e) =>
-                          setCategoryMapping({
-                            ...categoryMapping,
-                            [stat.rawName]: e.target.value,
-                          })
-                        }
-                        containerClassName="min-w-0 flex-1"
-                        className="bg-(--paper-sunken)"
-                      >
-                        <optgroup label="支出">
-                          {categories.filter((c) => c.type === 'expense').map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="收入">
-                          {categories.filter((c) => c.type === 'income').map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </optgroup>
-                      </PaperSelect>
-                    </div>
-
-                    {!isExactExistInSystem && (
-                      <PaperButton
-                        variant="secondary"
-                        size="xs"
-                        leftIcon={<Plus className="size-3 text-(--color-income)" />}
-                        onClick={() => handleCreateCategoryForRaw(stat.rawName, stat.dominantType)}
-                        disabled={isCreatingCategory}
-                        title="新建分类"
-                      >
-                        新建
-                      </PaperButton>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {extractedTypeStats.length > 0 && (
-            <div className="divide-y divide-(--rule-hairline) rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-xs shadow-xs">
-              {extractedTypeStats.map((t) => {
-                const currentMappedType = typeMapping[t.rawName] || t.suggestedType;
-                return (
-                  <div key={t.rawName} className="flex items-center justify-between gap-2 p-2.5">
-                    <span className="font-semibold text-(--ink-primary)">
-                      {t.rawName} <span className="text-[10px] text-(--ink-tertiary)">({t.count}笔)</span>
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <ArrowRight className="size-3.5 text-(--ink-tertiary)" />
-                      <PaperSelect
-                        value={currentMappedType}
-                        onChange={(e) =>
-                          setTypeMapping({
-                            ...typeMapping,
-                            [t.rawName]: e.target.value as TransactionType | 'skip',
-                          })
-                        }
-                        containerClassName="w-24"
-                        className="bg-(--paper-sunken)"
-                      >
-                        <option value="expense">支出</option>
-                        <option value="income">收入</option>
-                        <option value="transfer">转账</option>
-                        <option value="loan">借贷</option>
-                        <option value="skip">跳过</option>
-                      </PaperSelect>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-2">
-            <PaperButton variant="secondary" size="sm" onClick={() => setCurrentStep(2)}>
-              <ArrowLeft className="mr-1 size-3.5" />
-              <span>上一步</span>
-            </PaperButton>
-            <PaperButton variant="ink" size="sm" onClick={() => setCurrentStep(4)}>
-              <span>下一步：确认导入</span>
-              <ArrowRight className="ml-1 size-3.5" />
-            </PaperButton>
-          </div>
-        </div>
+        <ImportStep3CategoryMatch
+          categories={categories}
+          extractedCategoryStats={extractedCategoryStats}
+          extractedTypeStats={extractedTypeStats}
+          categoryMapping={categoryMapping}
+          typeMapping={typeMapping}
+          defaultExpenseCat={defaultExpenseCat}
+          defaultIncomeCat={defaultIncomeCat}
+          isCreatingCategory={isCreatingCategory}
+          onChangeCategoryMapping={setCategoryMapping}
+          onChangeTypeMapping={setTypeMapping}
+          onCreateCategoryForRaw={handleCreateCategoryForRaw}
+          onBatchCreateMissingCategories={handleBatchCreateMissingCategories}
+          onPrev={() => setCurrentStep(2)}
+          onNext={() => setCurrentStep(4)}
+        />
       )}
 
       {currentStep === 4 && (
-        <div className="space-y-4">
-          <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 text-xs shadow-xs">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <span className="block font-semibold text-(--ink-primary)">默认入账账户</span>
-                <span className="text-[10px] text-(--ink-tertiary)">未指定账户时归属此项</span>
-              </div>
-              <PaperSelect
-                value={defaultAccountId}
-                onChange={(e) => setDefaultAccountId(e.target.value)}
-                containerClassName="max-w-40"
-                className="bg-(--paper-sunken)"
-              >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </PaperSelect>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-(--rule-hairline) pt-2.5">
-              <span className="font-semibold text-(--ink-primary)">
-                自动创建表格中出现的新账户
-              </span>
-              <PaperSwitch
-                checked={autoCreateAccounts}
-                onChange={setAutoCreateAccounts}
-                aria-label="自动创建表格中出现的新账户"
-              />
-            </div>
-          </div>
-
-          {previewData.some((r) => r.isReimbursable) && !isReimbursementEnabled && (
-            <div className="flex items-center gap-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-[11px] text-(--ink-secondary)">
-              <AlertCircle className="size-3.5 shrink-0 text-(--ink-tertiary)" />
-              <span>表格中包含待报销流水。当前设置中已停用报销功能，导入后可随时在设置中开启报销查看。</span>
-            </div>
-          )}
-
-          <div className="divide-y divide-(--rule-hairline) overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
-            <div className="bg-(--paper-sunken) px-3.5 py-2 text-[11px] font-semibold text-(--ink-tertiary)">
-              数据预览 (前 {previewData.length} 笔)
-            </div>
-            {previewData.map((rec, i) => {
-              const cat = categories.find((c) => c.id === rec.categoryId);
-              const acct = accounts.find((a) => a.id === rec.accountId);
-              const Icon = getCategoryIcon(cat?.icon || 'shopping-cart');
-              const formattedTime = formatTime(rec.createdAt);
-              const timePart = formattedTime ? ` ${formattedTime}` : '';
-
-              return (
-                <div key={i} className="flex items-center justify-between p-2.5 text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                      <Icon className="stroke-1.8 size-4" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-(--ink-primary)">{cat?.name || '默认'}</div>
-                      <div className="font-mono text-[10px] text-(--ink-tertiary)">
-                        {rec.date}{timePart} · {rec.rawAccountName || acct?.name || '默认'}
-                        {rec.note && ` · ${rec.note}`}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={cn(
-                        'font-mono text-sm font-bold tabular-nums',
-                        rec.type === 'income' ? 'text-(--color-income)' : 'text-(--color-expense)'
-                      )}
-                    >
-                      {rec.type === 'income' ? '+' : '-'} ¥{centsToYuan(rec.amount)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <PaperButton
-              variant="secondary"
-              size="sm"
-              onClick={() => setCurrentStep(3)}
-              disabled={isImporting}
-            >
-              <ArrowLeft className="mr-1 size-3.5" />
-              <span>上一步</span>
-            </PaperButton>
-            <PaperButton
-              variant="ink"
-              size="sm"
-              disabled={isImporting || parsed.rows.length === 0}
-              onClick={handleStartImport}
-            >
-              {isImporting ? (
-                <>
-                  <RefreshCw className="mr-1 size-3.5 animate-spin" />
-                  <span>导入中...</span>
-                </>
-              ) : (
-                <>
-                  <FolderSync className="mr-1 size-3.5" />
-                  <span>确认导入 ({parsed.rows.length} 笔)</span>
-                </>
-              )}
-            </PaperButton>
-          </div>
-        </div>
+        <ImportStep4Preview
+          accounts={accounts}
+          categories={categories}
+          defaultAccountId={defaultAccountId}
+          onChangeDefaultAccountId={setDefaultAccountId}
+          autoCreateAccounts={autoCreateAccounts}
+          onChangeAutoCreateAccounts={setAutoCreateAccounts}
+          isReimbursementEnabled={isReimbursementEnabled}
+          previewData={previewData}
+          totalRowsCount={parsed.rows.length}
+          isImporting={isImporting}
+          onPrev={() => setCurrentStep(3)}
+          onConfirmImport={handleStartImport}
+        />
       )}
     </div>
   );

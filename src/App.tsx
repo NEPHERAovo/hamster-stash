@@ -201,7 +201,6 @@ export function App() {
       await loadTransactions();
       await loadSettlementSummary();
       setActiveDetailAccount(null);
-      toast.success(`已删除账户「${acct.name}」`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '删除账户失败');
     }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SlidersHorizontalIcon as SlidersHorizontal, ReceiptIcon as ReceiptText, CalendarCheckIcon as CalendarClock, TagIcon as Tags, DatabaseIcon as Database, CaretRightIcon as ChevronRight, SquaresFourIcon as Blocks, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCw, DownloadSimpleIcon as Download, FlaskIcon as Flask } from '@phosphor-icons/react';
+import { SlidersHorizontalIcon as SlidersHorizontal, ReceiptIcon as ReceiptText, CalendarCheckIcon as CalendarClock, TagIcon as Tags, DatabaseIcon as Database, SquaresFourIcon as Blocks, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCw, DownloadSimpleIcon as Download, FlaskIcon as Flask } from '@phosphor-icons/react';
 import { dataLifecycleService } from '../../domain/data/dataLifecycleService';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from '../../core/db/schema';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -16,13 +16,13 @@ import { PaperSwitch } from '../ui/PaperSwitch';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperChip } from '../ui/PaperChip';
+import { SettingSection, SettingRow } from '../ui/SettingList';
 import { ClearAllDataModal } from './ClearAllDataModal';
 import { PwaInstallGuideModal } from './PwaInstallGuideModal';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
 import { cn } from '../../utils/cn';
-import { todayDate } from '../../utils/date';
 
 export interface SettingsCardProps {
   onOpenImport?: () => void;
@@ -36,7 +36,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 }) => {
   const { accounts, loadAccounts } = useAccountStore();
   const { transactions, loadTransactions, loadSettlementSummary } = useLedgerStore();
-  const { categories, loadCategories } = useCategoryStore();
+  const { loadCategories } = useCategoryStore();
   const { uiStyle, setUiStyle, colorMode, setColorMode } = useThemeStore();
   const {
     majorThresholdYuan,
@@ -58,8 +58,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
   const [isMajorModalOpen, setIsMajorModalOpen] = useState(false);
   const [majorInput, setMajorInput] = useState(String(majorThresholdYuan));
-  const [isBackupConfirmOpen, setIsBackupConfirmOpen] = useState(false);
-  const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const [isClearAllOpen, setIsClearAllOpen] = useState(false);
   const [isInstallGuideOpen, setIsInstallGuideOpen] = useState(false);
 
@@ -85,12 +84,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
     try {
       if (currentEnabled) {
         await pluginManager.disablePlugin(id);
-        const p = plugins.find((x) => x.manifest.id === id);
-        toast.info(`已停用插件: ${p?.manifest.name || id}`);
       } else {
         await pluginManager.enablePlugin(id);
-        const p = plugins.find((x) => x.manifest.id === id);
-        toast.success(`已启用插件: ${p?.manifest.name || id}`);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '切换插件失败');
@@ -104,27 +99,6 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
       if (outcome === 'accepted') return;
     }
     setIsInstallGuideOpen(true);
-  };
-
-  const handleExportJson = async () => {
-    setIsExportingBackup(true);
-    try {
-      const exportData = await dataLifecycleService.exportData();
-      const jsonStr = JSON.stringify(exportData, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HamsterStash_backup_${todayDate()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setIsBackupConfirmOpen(false);
-      toast.success('JSON 备份导出成功');
-    } catch {
-      toast.error('导出 JSON 备份失败');
-    } finally {
-      setIsExportingBackup(false);
-    }
   };
 
   const handleClearAllData = async () => {
@@ -179,137 +153,101 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </>
       )}
 
-      <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary) uppercase">
-        <span>设置</span>
-      </div>
-
-      <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 shadow-xs">
-
-        <div
-          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+      <SettingSection title="设置" uppercase>
+        <SettingRow
+          icon={<Tags className="stroke-1.75 size-3.5" />}
+          title="分类管理"
           onClick={onOpenCategories}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <Tags className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">分类管理</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
-            <ChevronRight className="size-3.5" />
-          </div>
-        </div>
-
-        <div
-          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+          chevron
+        />
+        <SettingRow
+          icon={<SlidersHorizontal className="stroke-1.75 size-3.5" />}
+          title="大额阈值"
+          value={<span>≥ ¥{majorThresholdYuan}</span>}
           onClick={openMajorModal}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <SlidersHorizontal className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">大额阈值</span>
-          </div>
-          <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-            <span>≥ ¥{majorThresholdYuan}</span>
-            <ChevronRight className="size-3.5" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <ReceiptText className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">报销功能</span>
-          </div>
-          <PaperSwitch
-            checked={isReimbursementEnabled}
-            onChange={(checked) => setReimbursementEnabled(checked)}
-            aria-label="报销功能"
-          />
-        </div>
-
-        <div className="flex items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <CalendarClock className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">分期支出</span>
-          </div>
-          <PaperSwitch
-            checked={isAmortizationEnabled}
-            onChange={(checked) => setAmortizationEnabled(checked)}
-            aria-label="分期支出"
-          />
-        </div>
-
-        <div className="flex items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <Flask className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">沙盒测试模式</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {isSandboxModeActive() && (
-              <PaperButton
-                variant="ghost"
-                size="xs"
-                onClick={() => void resetSandboxData()}
-              >
-                重置演示数据
-              </PaperButton>
-            )}
+          chevron
+        />
+        <SettingRow
+          icon={<ReceiptText className="stroke-1.75 size-3.5" />}
+          title="报销功能"
+          right={
             <PaperSwitch
-              checked={isSandboxModeActive()}
-              onChange={(checked) => setSandboxMode(checked)}
-              aria-label="沙盒测试模式"
+              checked={isReimbursementEnabled}
+              onChange={(checked) => setReimbursementEnabled(checked)}
+              aria-label="报销功能"
             />
-          </div>
-        </div>
-
-        <div
-          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+          }
+        />
+        <SettingRow
+          icon={<CalendarClock className="stroke-1.75 size-3.5" />}
+          title="分期支出"
+          right={
+            <PaperSwitch
+              checked={isAmortizationEnabled}
+              onChange={(checked) => setAmortizationEnabled(checked)}
+              aria-label="分期支出"
+            />
+          }
+        />
+        <SettingRow
+          icon={<Flask className="stroke-1.75 size-3.5" />}
+          title="沙盒测试模式"
+          right={
+            <div className="flex items-center gap-2">
+              {isSandboxModeActive() && (
+                <PaperButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => void resetSandboxData()}
+                >
+                  重置演示数据
+                </PaperButton>
+              )}
+              <PaperSwitch
+                checked={isSandboxModeActive()}
+                onChange={(checked) => setSandboxMode(checked)}
+                aria-label="沙盒测试模式"
+              />
+            </div>
+          }
+        />
+        <SettingRow
+          icon={<Database className="stroke-1.75 size-3.5" />}
+          title="数据与备份"
           onClick={onOpenDataManage}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <Database className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">数据与备份</span>
-          </div>
-          <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-            <ChevronRight className="size-3.5" />
-          </div>
-        </div>
-
+          chevron
+        />
         {!isInstalled && (
-          <div
-            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
-            onClick={handleInstallClick}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                <Download className="stroke-1.75 size-3.5" />
-              </div>
-              <span className="text-[13px] font-medium text-(--ink-primary)">添加到桌面</span>
-            </div>
-            <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-              {installPrompt ? (
+          <SettingRow
+            icon={<Download className="stroke-1.75 size-3.5" />}
+            title="添加到桌面"
+            value={
+              installPrompt ? (
                 <span className="rounded-full bg-(--color-income-bg) px-1.5 py-0.5 text-[10px] font-semibold text-(--color-income)">
                   直接安装
                 </span>
               ) : (
                 <span>安装指引</span>
-              )}
-              <ChevronRight className="size-3.5" />
-            </div>
-          </div>
+              )
+            }
+            onClick={handleInstallClick}
+            chevron
+          />
         )}
-
-        <div
-          className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
+        <SettingRow
+          icon={<RefreshCw className={cn('stroke-1.75 size-3.5', isChecking && 'animate-spin')} />}
+          title="检查更新"
+          value={
+            <>
+              {needRefresh && (
+                <span className="rounded-full bg-(--color-income-bg) px-1.5 py-0.5 text-[10px] font-semibold text-(--color-income)">
+                  有新版本
+                </span>
+              )}
+              {isChecking && <span>检查中...</span>}
+            </>
+          }
+          chevron
           onClick={async () => {
             if (needRefresh) {
               await applyUpdate();
@@ -324,106 +262,69 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
               toast.info('当前环境未启用离线缓存更新');
             }
           }}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-              <RefreshCw className={cn('stroke-1.75 size-3.5', isChecking && 'animate-spin')} />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">检查更新</span>
-          </div>
-          <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-            {needRefresh && (
-              <span className="rounded-full bg-(--color-income-bg) px-1.5 py-0.5 text-[10px] font-semibold text-(--color-income)">
-                有新版本
-              </span>
-            )}
-            {isChecking && <span>检查中...</span>}
-            <ChevronRight className="size-3.5" />
-          </div>
+        />
+        <div>
+          <SettingRow
+            className="py-3"
+            icon={
+              <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-(--badge-radius) border border-(--rule-hairline) bg-(--paper-sunken)">
+                <img src="/pwa-64x64.png" alt="仓鼠囤囤" className="size-full object-cover" />
+              </div>
+            }
+            title="关于"
+            value={<span>v0.2.2</span>}
+            chevron
+            onClick={() => setIsAboutExpanded((prev) => !prev)}
+          />
+          {isAboutExpanded && (
+            <p className="pb-2.5 pl-8.5 font-mono text-[11px] leading-relaxed text-(--ink-tertiary)">
+              集日常收支、物品收纳与资产管理于一体的本地优先个人账本。
+            </p>
+          )}
         </div>
-
-        <div
-          className="flex cursor-pointer items-center justify-between py-3 select-none"
-          onClick={() => toast.info('仓鼠囤囤 v0.2.2 - 集日常收支、物品收纳与资产管理于一体的轻量化个人账本')}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-(--badge-radius) border border-(--rule-hairline) bg-(--paper-sunken)">
-              <img src="/pwa-64x64.png" alt="仓鼠囤囤" className="size-full object-cover" />
-            </div>
-            <span className="text-[13px] font-medium text-(--ink-primary)">关于</span>
-          </div>
-          <div className="flex items-center gap-1 font-mono text-xs text-(--ink-tertiary)">
-            <span>v0.2.2</span>
-            <ChevronRight className="size-3.5" />
-          </div>
-        </div>
-      </div>
+      </SettingSection>
 
       {plugins.length > 0 && (
-        <>
-          <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--ink-tertiary)">
-            <span>插件扩展</span>
-          </div>
-
-          <div className="paper-card divide-y divide-dashed divide-(--rule-hairline)/60 overflow-hidden rounded-(--radius-lg) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 shadow-xs">
-            {plugins.map((p) => {
-              const isEnabled = enabledPlugins[p.manifest.id] ?? p.manifest.defaultEnabled ?? true;
-              return (
-                <div
-                  key={p.manifest.id}
-                  className="flex items-center justify-between py-2.5 select-none"
-                >
-                  <div className="flex min-w-0 items-center gap-2.5 pr-2">
-                    <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                      <Blocks className="stroke-1.75 size-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-[13px] font-medium text-(--ink-primary)">
-                          {p.manifest.name}
-                        </span>
-                        <span className="font-mono text-[10px] text-(--ink-tertiary)">
-                          v{p.manifest.version}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 truncate text-[11px] leading-tight text-(--ink-tertiary)">
-                        {p.manifest.description}
-                      </p>
-                    </div>
+        <SettingSection title="插件扩展">
+          {plugins.map((p) => {
+            const isEnabled = enabledPlugins[p.manifest.id] ?? p.manifest.defaultEnabled ?? true;
+            return (
+              <SettingRow
+                key={p.manifest.id}
+                icon={<Blocks className="stroke-1.75 size-3.5" />}
+                title={
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate">{p.manifest.name}</span>
+                    <span className="font-mono text-[10px] text-(--ink-tertiary)">
+                      v{p.manifest.version}
+                    </span>
                   </div>
-
+                }
+                description={p.manifest.description}
+                right={
                   <PaperSwitch
                     checked={isEnabled}
                     onChange={() => handleTogglePlugin(p.manifest.id, isEnabled)}
                     aria-label={p.manifest.name}
                   />
-                </div>
-              );
-            })}
-          </div>
-        </>
+                }
+              />
+            );
+          })}
+        </SettingSection>
       )}
 
       <PluginSlot name="settings.sections" />
 
-      <div className="px-1 pt-1 font-mono text-xs tracking-wider text-(--color-expense) uppercase">
-        <span>危险操作</span>
-      </div>
-
-      <div className="paper-card overflow-hidden rounded-(--radius-lg) border border-(--color-expense)/30 bg-(--paper-sheet) px-3.5 shadow-xs">
-        <div
-          className="flex cursor-pointer items-center justify-between py-2.5 select-none"
+      <SettingSection title="危险操作" uppercase danger>
+        <SettingRow
+          icon={<Trash2 className="stroke-1.75 size-3.5" />}
+          title="清空所有数据"
+          danger
+          chevron
           onClick={() => setIsClearAllOpen(true)}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--color-expense-bg) text-(--color-expense)">
-              <Trash2 className="stroke-1.75 size-3.5" />
-            </div>
-            <span className="text-[13px] font-medium text-(--color-expense)">清空所有数据</span>
-          </div>
-          <ChevronRight className="size-3.5 text-(--color-expense)/70" />
-        </div>
-      </div>
+        />
+      </SettingSection>
 
       <PaperModal
         isOpen={isMajorModalOpen}
@@ -482,60 +383,15 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
       </PaperModal>
 
-      <PaperModal
-        isOpen={isBackupConfirmOpen}
-        onClose={() => setIsBackupConfirmOpen(false)}
-        title="确认全量备份"
-      >
-        <div className="space-y-4 p-4 select-none">
-          <div className="space-y-1.5 rounded-(--radius-sm) border border-dashed border-(--rule-hairline) bg-(--paper-sunken)/70 p-3 font-mono text-xs">
-            <div className="flex items-center justify-between text-(--ink-secondary)">
-              <span>记账流水</span>
-              <span className="font-semibold text-(--ink-solid)">{transactions.length} 笔</span>
-            </div>
-            <div className="flex items-center justify-between text-(--ink-secondary)">
-              <span>资金账户</span>
-              <span className="font-semibold text-(--ink-solid)">{accounts.length} 个</span>
-            </div>
-            <div className="flex items-center justify-between text-(--ink-secondary)">
-              <span>收支分类</span>
-              <span className="font-semibold text-(--ink-solid)">{categories.length} 项</span>
-            </div>
-          </div>
-
-          <p className="text-xs leading-relaxed text-(--ink-tertiary)">
-            备份文件包含全部流水、账户、分类、偏好配置与插件扩展数据，可用于跨设备迁移或覆盖恢复。
-          </p>
-
-          <div className="flex items-center gap-2 pt-1 pb-(--safe-bottom)">
-            <PaperButton
-              type="button"
-              variant="sunken"
-              className="flex-1"
-              onClick={() => setIsBackupConfirmOpen(false)}
-            >
-              取消
-            </PaperButton>
-            <PaperButton
-              type="button"
-              variant="primary"
-              className="flex-1"
-              disabled={isExportingBackup}
-              loading={isExportingBackup}
-              onClick={handleExportJson}
-            >
-              {isExportingBackup ? '导出中...' : '确认导出备份'}
-            </PaperButton>
-          </div>
-        </div>
-      </PaperModal>
-
       <ClearAllDataModal
         isOpen={isClearAllOpen}
         transactionCount={transactions.length}
         accountCount={accounts.length}
         onClose={() => setIsClearAllOpen(false)}
-        onRequestBackup={() => setIsBackupConfirmOpen(true)}
+        onRequestBackup={() => {
+          setIsClearAllOpen(false);
+          onOpenDataManage?.();
+        }}
         onConfirmClear={handleClearAllData}
       />
 

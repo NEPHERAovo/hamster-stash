@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { XIcon as X, TrashIcon as Trash2, PaperclipIcon as Paperclip, CaretDownIcon as CaretDown } from '@phosphor-icons/react';
+import { XIcon as X, TrashIcon as Trash2 } from '@phosphor-icons/react';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { usePreferenceStore } from '../../stores/usePreferenceStore';
-import { getCategoryIcon } from '../../utils/categoryIcons';
 import { evaluateArithmetic } from '../../utils/math';
 import { yuanToCents, centsToYuan } from '../../domain/finance/balanceCalculator';
 import { predictFrequentCategory } from '../../domain/category/categoryPredictor';
@@ -12,15 +11,14 @@ import type { VoucherAttachment, Transaction } from '../../types/transaction';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { TransactionKeypad } from './TransactionKeypad';
-import { OffsetTrayPanel } from './OffsetTrayPanel';
-import { AmortizeTrayPanel } from './AmortizeTrayPanel';
 import { VoucherPreviewModal } from './VoucherPreviewModal';
-import { PluginSlot } from '../../plugin-sdk/components/PluginSlot';
+import { CategoryStampGrid } from './CategoryStampGrid';
+import { LOAN_FLOW_OPTIONS } from './loanFlowOptions';
+import { TransactionMetaBar } from './TransactionMetaBar';
+import { useCalculatorInput, triggerHaptic } from './useCalculatorInput';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperIconButton } from '../ui/PaperIconButton';
-import { PaperChip } from '../ui/PaperChip';
-import { PaperSelect } from '../ui/PaperSelect';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperDatePickerModal } from '../ui/PaperDatePickerModal';
 import { cn } from '../../utils/cn';
@@ -42,41 +40,6 @@ export interface AddTransactionModalProps {
   onSuccess?: (txId: string) => void;
 }
 
-const LOAN_FLOW_OPTIONS = [
-  {
-    id: 'cat_lend_out',
-    label: '借给他人',
-    icon: 'arrow-up-right',
-    direction: 'lend' as const,
-    role: 'origin' as const,
-    isInflow: false,
-  },
-  {
-    id: 'cat_borrow_in',
-    label: '向人借款',
-    icon: 'arrow-down-left',
-    direction: 'borrow' as const,
-    role: 'origin' as const,
-    isInflow: true,
-  },
-  {
-    id: 'cat_loan_repay',
-    label: '收回还款',
-    icon: 'check-circle-2',
-    direction: 'lend' as const,
-    role: 'repayment' as const,
-    isInflow: true,
-  },
-  {
-    id: 'cat_debt_clear',
-    label: '偿还欠款',
-    icon: 'corner-down-right',
-    direction: 'borrow' as const,
-    role: 'repayment' as const,
-    isInflow: false,
-  },
-];
-
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   isOpen,
   onClose,
@@ -90,7 +53,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const { accounts } = useAccountStore();
 
   const [txType, setTxType] = useState<'expense' | 'income' | 'loan'>('expense');
-  const [expr, setExpr] = useState('0');
+  const {
+    expr,
+    setExpr,
+    hasOperator,
+    evaluatedVal,
+    handleDigit,
+    handleOperator,
+    handleBackspace,
+    handleEqual,
+    handleClear,
+  } = useCalculatorInput('0');
   const [selectedCatId, setSelectedCatId] = useState<string>('');
   const [selectedAcctId, setSelectedAcctId] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
@@ -210,16 +183,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setIsOffsetTrayOpen(false);
   };
 
-  const triggerHaptic = () => {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate(8);
-      } catch {
-        void 0;
-      }
-    }
-  };
-
   const prevIsOpenRef = useRef(false);
   const prevEditingIdRef = useRef<string | undefined>(undefined);
 
@@ -285,7 +248,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         setSelectedCatId('');
       }
     }
-  }, [isOpen, editingTransaction, initialExt]);
+  }, [isOpen, editingTransaction, initialExt, setExpr]);
 
   const currentCategories = useMemo(() => {
     if (txType === 'loan') return [];
@@ -348,119 +311,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setSelectedAcctId(accounts[0].id);
     }
   }, [accounts, selectedAcctId]);
-
-  const hasOperator = useMemo(() => /[+\-×÷*/]/.test(expr), [expr]);
-
-  const evaluatedVal = useMemo(() => {
-    return evaluateArithmetic(expr);
-  }, [expr]);
-
-  const handleDigit = (digit: string) => {
-    triggerHaptic();
-    setExpr((prev) => {
-      if (prev === '0' && digit !== '.') return digit;
-      if (digit === '.') {
-        const segs = prev.split(/[+\-×÷*/]/);
-        const curSeg = segs[segs.length - 1] || '';
-        if (curSeg.includes('.')) return prev;
-      }
-      return prev + digit;
-    });
-  };
-
-  const handleOperator = (op: '+' | '-' | '×' | '÷' | 'add-mul' | 'sub-div') => {
-    triggerHaptic();
-    setExpr((prev) => {
-      const trimmed = prev.trim();
-      if (trimmed === '' || trimmed === '0') return '0';
-
-      if (op === 'add-mul') {
-        if (trimmed.endsWith('+')) {
-          return trimmed.slice(0, -1).trim() + ' × ';
-        }
-        if (trimmed.endsWith('×') || trimmed.endsWith('*')) {
-          return trimmed.slice(0, -1).trim() + ' + ';
-        }
-        if (/[+\-×÷*/]$/.test(trimmed)) {
-          return trimmed.slice(0, -1).trim() + ' + ';
-        }
-        return `${trimmed} + `;
-      }
-
-      if (op === 'sub-div') {
-        if (trimmed.endsWith('-')) {
-          return trimmed.slice(0, -1).trim() + ' ÷ ';
-        }
-        if (trimmed.endsWith('÷') || trimmed.endsWith('/')) {
-          return trimmed.slice(0, -1).trim() + ' - ';
-        }
-        if (/[+\-×÷*/]$/.test(trimmed)) {
-          return trimmed.slice(0, -1).trim() + ' - ';
-        }
-        return `${trimmed} - `;
-      }
-
-      if (op === '+') {
-        if (trimmed.endsWith('+')) {
-          return trimmed.slice(0, -1).trim() + ' × ';
-        }
-        if (/[+\-×÷*/]$/.test(trimmed)) {
-          return trimmed.slice(0, -1).trim() + ' + ';
-        }
-        return `${trimmed} + `;
-      }
-
-      if (op === '-') {
-        if (trimmed.endsWith('-')) {
-          return trimmed.slice(0, -1).trim() + ' ÷ ';
-        }
-        if (/[+\-×÷*/]$/.test(trimmed)) {
-          return trimmed.slice(0, -1).trim() + ' - ';
-        }
-        return `${trimmed} - `;
-      }
-
-      if (op === '×') {
-        if (/[+\-×÷*/]$/.test(trimmed)) {
-          return trimmed.slice(0, -1).trim() + ' × ';
-        }
-        return `${trimmed} × `;
-      }
-
-      if (op === '÷') {
-        if (/[+\-×÷*/]$/.test(trimmed)) {
-          return trimmed.slice(0, -1).trim() + ' ÷ ';
-        }
-        return `${trimmed} ÷ `;
-      }
-
-      return prev;
-    });
-  };
-
-  const handleBackspace = () => {
-    triggerHaptic();
-    setExpr((prev) => {
-      const trimmed = prev.trim();
-      if (trimmed.length <= 1) return '0';
-      if (/[+\-×÷*/]$/.test(trimmed)) {
-        return trimmed.slice(0, -1).trim();
-      }
-      return trimmed.slice(0, -1);
-    });
-  };
-
-  const handleEqual = () => {
-    triggerHaptic();
-    const result = evaluateArithmetic(expr);
-    const cleanNum = Math.round(result * 100) / 100;
-    setExpr(String(cleanNum));
-  };
-
-  const handleClear = () => {
-    triggerHaptic();
-    setExpr('0');
-  };
 
   const handleSubmit = async (keepOpen = false) => {
     if (isSubmittingRef.current || isClosingRef.current) return;
@@ -612,8 +462,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   if (!shouldRender) return null;
 
-  const activeAccount = accounts.find((a) => a.id === selectedAcctId);
-
   const formattedDateStr = dateStr ? dateStr.slice(5) : '';
 
   const isAnyTrayOpen =
@@ -738,350 +586,117 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
         </div>
 
-        <div className="px-3.5 py-1.5">
-          {txType === 'loan' ? (
-            <div className="category-grid grid grid-cols-4 gap-0 py-0.5 select-none">
-              {LOAN_FLOW_OPTIONS.map((flow, idx) => {
-                const isSelected = selectedLoanFlow.id === flow.id;
-                const IconComp = getCategoryIcon(flow.icon);
-                const hasRightBorder = idx < 3;
+        <CategoryStampGrid
+          txType={txType}
+          categories={currentCategories}
+          selectedCatId={selectedCatId}
+          selectedLoanFlowId={selectedLoanFlow.id}
+          isCompact={isAnyTrayOpen}
+          onSelectCategory={setSelectedCatId}
+        />
 
-                return (
-                  <PaperButton
-                    key={flow.id}
-                    variant={isSelected ? 'sunken' : 'ghost'}
-                    size="compact"
-                    onClick={() => setSelectedCatId(flow.id)}
-                    className={cn(
-                      'relative flex h-auto flex-col items-center justify-center rounded-none border-t-0 border-l-0 px-1 py-2 font-normal',
-                      hasRightBorder ? 'border-r border-dotted border-(--rule-hairline)' : 'border-r-0',
-                      isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs ring-1 ring-(--rule-hairline) ring-inset'
-                    )}
-                  >
-                    <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center">
-                      <IconComp
-                        className={cn(
-                          'stroke-1.8 size-4',
-                          flow.isInflow ? 'text-(--color-income)' : 'text-(--color-expense)'
-                        )}
-                      />
-                    </div>
-                    <span className="w-full truncate text-center text-[10px] leading-tight">
-                      {flow.label}
-                    </span>
-                  </PaperButton>
-                );
-              })}
-            </div>
-          ) : (
-            <div
-              className={cn(
-                '[scrollbar-width:thin] overflow-x-hidden overflow-y-auto pr-0.5 transition-[max-height] duration-200 ease-out',
-                isAnyTrayOpen ? 'max-h-[16vh]' : 'max-h-[38vh]'
-              )}
-            >
-              <div className="category-grid grid grid-cols-4 gap-0 py-0.5 select-none">
-                {currentCategories.map((cat, idx) => {
-                  const isSelected = selectedCatId === cat.id;
-                  const IconComp = getCategoryIcon(cat.icon);
-                  const col = idx % 4;
-                  const row = Math.floor(idx / 4);
-                  const totalRows = Math.ceil(currentCategories.length / 4);
-                  const hasRightBorder = col < 3;
-                  const hasBottomBorder = row < totalRows - 1;
-                  let iconColor = 'text-(--ink-secondary)';
-                  if (isSelected) {
-                    iconColor = 'text-(--ink-solid)';
-                  } else if (txType === 'income') {
-                    iconColor = 'text-(--color-income)';
-                  }
-
-                  return (
-                    <PaperButton
-                      key={cat.id}
-                      variant={isSelected ? 'sunken' : 'ghost'}
-                      size="compact"
-                      onClick={() => {
-                        setSelectedCatId(cat.id);
-                      }}
-                      className={cn(
-                        'relative flex h-auto flex-col items-center justify-center rounded-none border-t-0 border-l-0 px-1 py-2 font-normal',
-                        hasRightBorder ? 'border-r border-dotted border-(--rule-hairline)' : 'border-r-0',
-                        hasBottomBorder ? 'border-b border-dotted border-(--rule-hairline)' : 'border-b-0',
-                        isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs ring-1 ring-(--rule-hairline) ring-inset'
-                      )}
-                    >
-                      <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center">
-                        <IconComp
-                          className={cn(
-                            'stroke-1.8 size-4',
-                            iconColor
-                          )}
-                        />
-                      </div>
-                      <span className="w-full truncate text-center text-[10px] leading-tight">
-                        {cat.name}
-                      </span>
-                    </PaperButton>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1.5 border-y border-dashed border-(--rule-hairline) px-4 py-1.5">
-          <div className="metadata-bar no-scrollbar flex min-w-0 flex-nowrap items-center justify-between gap-1 overflow-x-auto font-mono text-xs select-none">
-            <PaperChip
-              selected={isAcctTrayOpen}
-              rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
-              className="max-w-28 shrink-0"
-              onClick={() => {
-                setIsAcctTrayOpen((prev) => !prev);
-                setIsDateTimePickerOpen(false);
-                setIsAmortizeTrayOpen(false);
-                setIsVoucherTrayOpen(false);
-                setIsOffsetTrayOpen(false);
-              }}
-            >
-              <span className="max-w-20 truncate">{activeAccount?.name || '选择账户'}</span>
-            </PaperChip>
-
-            <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-
-            <PaperChip
-              selected={isDateTimePickerOpen}
-              rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
-              className="shrink-0"
-              onClick={() => {
-                setIsDateTimePickerOpen(true);
-                setIsAcctTrayOpen(false);
-                setIsAmortizeTrayOpen(false);
-                setIsVoucherTrayOpen(false);
-                setIsOffsetTrayOpen(false);
-              }}
-            >
-              <span className="shrink-0">{formattedDateStr} {timeStr}</span>
-            </PaperChip>
-
-            {txType === 'expense' && (
-              <>
-                <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                {(isReimbursementEnabled || isReimbursable) && (
-                  <PaperChip
-                    variant="expense"
-                    selected={isReimbursable}
-                    className="shrink-0"
-                    onClick={() => {
-                      setIsReimbursable((prev) => {
-                        const next = !prev;
-                        if (!next) {
-                          setVoucher(null);
-                        }
-                        return next;
-                      });
-                    }}
-                  >
-                    {isReimbursable ? '待报销 ✓' : '报销'}
-                  </PaperChip>
-                )}
-
-                {(isReimbursable || Boolean(voucher)) && (
-                  <>
-                    <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                    <PaperChip
-                      variant={voucher ? 'brass' : 'default'}
-                      selected={Boolean(voucher)}
-                      leftIcon={<Paperclip className="size-3 stroke-2" />}
-                      title={voucher ? voucher.name : '添加凭证附件'}
-                      className="max-w-28 shrink-0"
-                      onClick={() => {
-                        if (voucher) {
-                          setIsVoucherTrayOpen((prev) => !prev);
-                          setIsAcctTrayOpen(false);
-                          setIsDateTimePickerOpen(false);
-                          setIsAmortizeTrayOpen(false);
-                        } else {
-                          fileInputRef.current?.click();
-                        }
-                      }}
-                    >
-                      <span className="max-w-20 truncate">{voucher ? voucher.name || '已附凭证' : '凭证'}</span>
-                    </PaperChip>
-                  </>
-                )}
-
-                {(isAmortizationEnabled || Boolean(amortizeMonths)) && (
-                  <>
-                    <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                    <PaperChip
-                      selected={Boolean(amortizeMonths) || isAmortizeTrayOpen}
-                      rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
-                      className="shrink-0"
-                      onClick={() => {
-                        setIsAmortizeTrayOpen((prev) => !prev);
-                        setIsAcctTrayOpen(false);
-                        setIsDateTimePickerOpen(false);
-                        setIsVoucherTrayOpen(false);
-                      }}
-                    >
-                      <span className="shrink-0">{amortizeMonths ? `分期: ${amortizeMonths}期` : '分期'}</span>
-                    </PaperChip>
-                  </>
-                )}
-              </>
-            )}
-
-            {txType === 'income' && (
-              <>
-                <span className="metadata-sep shrink-0 text-(--ink-faint) select-none">·</span>
-                <PaperChip
-                  variant="income"
-                  selected={Boolean(offsetTransactionId) || isOffsetTrayOpen}
-                  rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}
-                  className="max-w-36 shrink-0"
-                  onClick={() => {
-                    setIsOffsetTrayOpen((prev) => !prev);
-                    setIsAcctTrayOpen(false);
-                    setIsDateTimePickerOpen(false);
-                  }}
-                >
-                  <span className="max-w-26 truncate">
-                    {selectedOffsetTx
-                      ? `抵扣 · ${selectedOffsetTx.note || categories.find((c) => c.id === selectedOffsetTx.categoryId)?.name || '支出'}`
-                      : '抵扣支出'}
-                  </span>
-                </PaperChip>
-              </>
-            )}
-
-            <PluginSlot name="tx.modal.metaBar" context={modalContext} />
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-            accept="image/*,.pdf"
-          />
-
-          {isVoucherTrayOpen && voucher && (
-            <div className="flex items-center justify-between gap-2 border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-1 font-mono text-xs">
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-(--ink-primary)">{voucher.name}</div>
-                <div className="text-[10px] text-(--ink-tertiary)">{voucher.size}</div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <PaperButton
-                  variant="primary"
-                  size="xs"
-                  onClick={() => setIsVoucherPreviewOpen(true)}
-                >
-                  查看
-                </PaperButton>
-                <PaperButton
-                  variant="secondary"
-                  size="xs"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  更换
-                </PaperButton>
-                <PaperButton
-                  variant="danger"
-                  size="xs"
-                  onClick={() => {
-                    setVoucher(null);
-                    setIsVoucherTrayOpen(false);
-                  }}
-                >
-                  移除
-                </PaperButton>
-              </div>
-            </div>
-          )}
-
-          {isAcctTrayOpen && (
-            <div className="picker-fade-enter border-t border-dashed border-(--rule-hairline)/60 pt-2 pb-0.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {accounts.map((a) => (
-                  <PaperChip
-                    key={a.id}
-                    selected={selectedAcctId === a.id}
-                    onClick={() => {
-                      setSelectedAcctId(a.id);
-                      setIsAcctTrayOpen(false);
-                    }}
-                    className="max-w-36"
-                  >
-                    {a.name}
-                  </PaperChip>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {txType === 'expense' && isAmortizeTrayOpen && (
-            <AmortizeTrayPanel
-              expr={expr}
-              amortizeMonths={amortizeMonths}
-              isCustomAmortize={isCustomAmortize}
-              customAmortizeInput={customAmortizeInput}
-              onSelectMonths={(optMonths) => {
-                setAmortizeMonths(optMonths);
-                setIsCustomAmortize(false);
-                setCustomAmortizeInput('');
-                setIsAmortizeTrayOpen(false);
-              }}
-              onCustomAmortizeToggle={(active, initVal) => {
-                setIsCustomAmortize(active);
-                setCustomAmortizeInput(initVal);
-              }}
-              onCustomAmortizeChange={(val) => {
-                setCustomAmortizeInput(val);
-                const num = parseInt(val, 10);
-                if (Number.isFinite(num) && num > 1) {
-                  setAmortizeMonths(num);
-                } else {
-                  setAmortizeMonths(null);
-                }
-              }}
-            />
-          )}
-
-          {txType === 'income' && isOffsetTrayOpen && (
-            <OffsetTrayPanel
-              candidateExpenses={candidateExpenses}
-              categories={categories}
-              offsetTransactionId={offsetTransactionId}
-              offsetSummaryMap={offsetSummaryMap}
-              onSelectOffsetExpense={handleSelectOffsetExpense}
-              onClearOffsetExpense={handleClearOffsetExpense}
-            />
-          )}
-
-          <PluginSlot name="tx.modal.metaTray" context={modalContext} />
-
-          {txType === 'loan' && selectedLoanFlow.role === 'repayment' && settlementSummary && (
-            <div className="pt-1 font-mono text-[11px] text-(--ink-secondary)">
-              <div className="flex items-center gap-1.5">
-                <span className="text-(--ink-tertiary)">关联借据:</span>
-                <PaperSelect
-                  value={relatedLoanId}
-                  onChange={(e) => setRelatedLoanId(e.target.value)}
-                  className="py-1 text-xs"
-                >
-                  <option value="none">无关联 (单笔独立借贷)</option>
-                  {settlementSummary.pendingLoans.map((l: Transaction) => (
-                    <option key={l.id} value={l.id}>
-                      {l.note || l.loanParty || '借款'} (¥{((l.amount - (l.repaidAmount || 0)) / 100).toFixed(2)})
-                    </option>
-                  ))}
-                </PaperSelect>
-              </div>
-            </div>
-          )}
-        </div>
+        <TransactionMetaBar
+          txType={txType}
+          expr={expr}
+          accounts={accounts}
+          categories={categories}
+          selectedAcctId={selectedAcctId}
+          onSelectAccount={(acctId) => {
+            setSelectedAcctId(acctId);
+            setIsAcctTrayOpen(false);
+          }}
+          formattedDateStr={formattedDateStr}
+          timeStr={timeStr}
+          isReimbursementEnabled={isReimbursementEnabled}
+          isReimbursable={isReimbursable}
+          onToggleReimbursable={() => {
+            setIsReimbursable((prev) => {
+              const next = !prev;
+              if (!next) {
+                setVoucher(null);
+              }
+              return next;
+            });
+          }}
+          isAmortizationEnabled={isAmortizationEnabled}
+          amortizeMonths={amortizeMonths}
+          isCustomAmortize={isCustomAmortize}
+          customAmortizeInput={customAmortizeInput}
+          onSelectAmortizeMonths={(optMonths) => {
+            setAmortizeMonths(optMonths);
+            setIsCustomAmortize(false);
+            setCustomAmortizeInput('');
+            setIsAmortizeTrayOpen(false);
+          }}
+          onCustomAmortizeToggle={(active, initVal) => {
+            setIsCustomAmortize(active);
+            setCustomAmortizeInput(initVal);
+          }}
+          onCustomAmortizeChange={(val) => {
+            setCustomAmortizeInput(val);
+            const num = parseInt(val, 10);
+            if (Number.isFinite(num) && num > 1) {
+              setAmortizeMonths(num);
+            } else {
+              setAmortizeMonths(null);
+            }
+          }}
+          voucher={voucher}
+          onRemoveVoucher={() => {
+            setVoucher(null);
+            setIsVoucherTrayOpen(false);
+          }}
+          onOpenVoucherPreview={() => setIsVoucherPreviewOpen(true)}
+          fileInputRef={fileInputRef}
+          onFileChange={handleFileChange}
+          offsetTransactionId={offsetTransactionId}
+          selectedOffsetTx={selectedOffsetTx}
+          candidateExpenses={candidateExpenses}
+          offsetSummaryMap={offsetSummaryMap}
+          onSelectOffsetExpense={handleSelectOffsetExpense}
+          onClearOffsetExpense={handleClearOffsetExpense}
+          loanRole={selectedLoanFlow.role}
+          settlementSummary={settlementSummary}
+          relatedLoanId={relatedLoanId}
+          onChangeRelatedLoanId={setRelatedLoanId}
+          isAcctTrayOpen={isAcctTrayOpen}
+          onToggleAcctTray={() => {
+            setIsAcctTrayOpen((prev) => !prev);
+            setIsDateTimePickerOpen(false);
+            setIsAmortizeTrayOpen(false);
+            setIsVoucherTrayOpen(false);
+            setIsOffsetTrayOpen(false);
+          }}
+          isDateTimePickerOpen={isDateTimePickerOpen}
+          onOpenDateTimePicker={() => {
+            setIsDateTimePickerOpen(true);
+            setIsAcctTrayOpen(false);
+            setIsAmortizeTrayOpen(false);
+            setIsVoucherTrayOpen(false);
+            setIsOffsetTrayOpen(false);
+          }}
+          isVoucherTrayOpen={isVoucherTrayOpen}
+          onToggleVoucherTray={() => {
+            setIsVoucherTrayOpen((prev) => !prev);
+            setIsAcctTrayOpen(false);
+            setIsDateTimePickerOpen(false);
+            setIsAmortizeTrayOpen(false);
+          }}
+          isAmortizeTrayOpen={isAmortizeTrayOpen}
+          onToggleAmortizeTray={() => {
+            setIsAmortizeTrayOpen((prev) => !prev);
+            setIsAcctTrayOpen(false);
+            setIsDateTimePickerOpen(false);
+            setIsVoucherTrayOpen(false);
+          }}
+          isOffsetTrayOpen={isOffsetTrayOpen}
+          onToggleOffsetTray={() => {
+            setIsOffsetTrayOpen((prev) => !prev);
+            setIsAcctTrayOpen(false);
+            setIsDateTimePickerOpen(false);
+          }}
+          modalContext={modalContext}
+        />
 
         <div className="px-4 py-2">
           <PaperInput
