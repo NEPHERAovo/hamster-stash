@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
+import { FileCsvIcon as FileSpreadsheet, UploadSimpleIcon as UploadSimple, DownloadSimpleIcon as DownloadSimple, CaretRightIcon as ChevronRight, BroomIcon as Broom } from '@phosphor-icons/react';
 import { core } from '../../core';
 import { pluginManager } from '../../core/plugin/PluginManager';
 import type { ExportData } from '../../types/adapter';
@@ -14,6 +14,7 @@ import { PaperModal } from '../ui/PaperModal';
 import { PaperButton } from '../ui/PaperButton';
 import { ExportCsvModal } from './ExportCsvModal';
 import { WebDavSyncSection } from './WebDavSyncSection';
+import { DuplicateScanModal } from './DuplicateScanModal';
 import { todayDate } from '../../utils/date';
 
 export interface DataManageSubPageProps {
@@ -32,6 +33,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
   const [isExportCsvOpen, setIsExportCsvOpen] = useState(false);
   const [isBackupConfirmOpen, setIsBackupConfirmOpen] = useState(false);
   const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [isDuplicateScanOpen, setIsDuplicateScanOpen] = useState(false);
 
   const handleExportJson = async () => {
     setIsExportingBackup(true);
@@ -168,7 +170,7 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
           </div>
 
           <div
-            className="flex cursor-pointer items-center justify-between py-2.5 select-none last:border-b-0"
+            className="flex cursor-pointer items-center justify-between border-b border-dashed border-(--rule-hairline)/60 py-2.5 select-none"
             onClick={() => setIsExportCsvOpen(true)}
           >
             <div className="flex items-center gap-2.5">
@@ -176,6 +178,21 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
                 <FileSpreadsheet className="stroke-1.75 size-3.5" />
               </div>
               <span className="text-[13px] font-medium text-(--ink-primary)">导出账本</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
+              <ChevronRight className="size-3.5" />
+            </div>
+          </div>
+
+          <div
+            className="flex cursor-pointer items-center justify-between py-2.5 select-none last:border-b-0"
+            onClick={() => setIsDuplicateScanOpen(true)}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                <Broom className="stroke-1.75 size-3.5" />
+              </div>
+              <span className="text-[13px] font-medium text-(--ink-primary)">重复账单排查</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-(--ink-tertiary)">
               <ChevronRight className="size-3.5" />
@@ -217,6 +234,11 @@ export const DataManageSubPage: React.FC<DataManageSubPageProps> = ({
       <ExportCsvModal
         isOpen={isExportCsvOpen}
         onClose={() => setIsExportCsvOpen(false)}
+      />
+
+      <DuplicateScanModal
+        isOpen={isDuplicateScanOpen}
+        onClose={() => setIsDuplicateScanOpen(false)}
       />
     </div>
   );
