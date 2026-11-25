@@ -19,6 +19,11 @@ export function todayDate(): string {
   return dayjs().format('YYYY-MM-DD');
 }
 
+export function getLogicalSyncDay(input?: ConfigType, cutoffHour = 6): string {
+  const d = input === undefined || input === null || input === '' ? dayjs() : dayjs(input);
+  return d.isValid() ? d.subtract(cutoffHour, 'hour').format('YYYY-MM-DD') : '';
+}
+
 export function currentYearMonth(): string {
   return dayjs().format('YYYY-MM');
 }

@@ -19,15 +19,25 @@ describe('WebDAV daily auto-sync scheduler', () => {
     ).toBe(false);
   });
 
-  it('runs auto-sync when never synced or last sync was on a previous local day', () => {
-    expect(service.shouldRunDailyAutoSync(validConfig, true, undefined, '2026-11-18')).toBe(true);
+  it('runs auto-sync when never synced or last sync was on a previous logical day after 06:00 AM', () => {
+    expect(service.shouldRunDailyAutoSync(validConfig, true, undefined, new Date(2026, 10, 18, 8, 0, 0))).toBe(true);
     const yesterday = new Date(2026, 10, 17, 22, 0, 0).toISOString();
-    expect(service.shouldRunDailyAutoSync(validConfig, true, yesterday, '2026-11-18')).toBe(true);
+    expect(service.shouldRunDailyAutoSync(validConfig, true, yesterday, new Date(2026, 10, 18, 6, 0, 0))).toBe(true);
   });
 
-  it('skips auto-sync when already synced today', () => {
+  it('skips auto-sync late at night after midnight before 06:00 AM morning cutoff', () => {
+    const lateEveningSync = new Date(2026, 10, 17, 22, 30, 0).toISOString();
+    const pastMidnight = new Date(2026, 10, 18, 0, 30, 0);
+    const beforeMorning = new Date(2026, 10, 18, 5, 59, 0);
+
+    expect(service.shouldRunDailyAutoSync(validConfig, true, lateEveningSync, pastMidnight)).toBe(false);
+    expect(service.shouldRunDailyAutoSync(validConfig, true, lateEveningSync, beforeMorning)).toBe(false);
+  });
+
+  it('skips auto-sync when already synced in the same logical day', () => {
     const todayMorning = new Date(2026, 10, 18, 8, 30, 0).toISOString();
-    expect(service.shouldRunDailyAutoSync(validConfig, true, todayMorning, '2026-11-18')).toBe(false);
+    expect(service.shouldRunDailyAutoSync(validConfig, true, todayMorning, new Date(2026, 10, 18, 21, 0, 0))).toBe(false);
+    expect(service.shouldRunDailyAutoSync(validConfig, true, todayMorning, new Date(2026, 10, 19, 1, 15, 0))).toBe(false);
   });
 
   it('strips inline base64 voucher payloads while retaining lightweight attachment references', () => {

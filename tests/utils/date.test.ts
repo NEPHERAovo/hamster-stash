@@ -11,6 +11,7 @@ import {
   combineLocalDateTimeToIso,
   parseCsvDateTime,
   getIsoWeekBounds,
+  getLogicalSyncDay,
 } from '../../src/utils/date';
 
 describe('Date utility wrapper (dayjs)', () => {
@@ -88,5 +89,12 @@ describe('Date utility wrapper (dayjs)', () => {
     expect(sundayWeek.start.format('YYYY-MM-DD')).toBe('2026-10-05');
     expect(sundayWeek.end.format('YYYY-MM-DD')).toBe('2026-10-11');
     expect(sundayWeek.weekNumber).toBe(fridayWeek.weekNumber);
+  });
+
+  it('computes logical sync day using morning 06:00 AM cutoff boundary', () => {
+    expect(getLogicalSyncDay(new Date(2026, 10, 18, 5, 59, 0), 6)).toBe('2026-11-17');
+    expect(getLogicalSyncDay(new Date(2026, 10, 18, 6, 0, 0), 6)).toBe('2026-11-18');
+    expect(getLogicalSyncDay(new Date(2026, 10, 18, 23, 55, 0), 6)).toBe('2026-11-18');
+    expect(getLogicalSyncDay(new Date(2026, 10, 19, 0, 30, 0), 6)).toBe('2026-11-18');
   });
 });

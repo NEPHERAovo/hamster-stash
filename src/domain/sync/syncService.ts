@@ -4,7 +4,9 @@ import { webdavClient, type WebDavConfig } from './webdavClient';
 import { mergeSyncPayloads, type DiffStats } from './diffMerger';
 import type { ExportData, StoredEntity } from '../../types/adapter';
 import type { Transaction } from '../../types/transaction';
-import { formatDate, todayDate } from '../../utils/date';
+import { getLogicalSyncDay, type ConfigType } from '../../utils/date';
+
+export const SYNC_DAY_CUTOFF_HOUR = 6;
 
 export interface WebDavSettingRecord extends StoredEntity {
   id: 'webdav_config';
@@ -139,14 +141,19 @@ export class SyncService {
     config: WebDavConfig | null,
     autoSyncDaily: boolean,
     lastSyncAt?: string,
-    today: string = todayDate()
+    now: ConfigType = new Date()
   ): boolean {
     if (!autoSyncDaily) return false;
     if (!config || !config.url.trim() || !config.username.trim() || !config.password.trim()) {
       return false;
     }
     if (!lastSyncAt) return true;
-    return formatDate(lastSyncAt) !== today;
+    const currentLogicalDay =
+      typeof now === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(now)
+        ? now
+        : getLogicalSyncDay(now, SYNC_DAY_CUTOFF_HOUR);
+    const lastLogicalDay = getLogicalSyncDay(lastSyncAt, SYNC_DAY_CUTOFF_HOUR);
+    return lastLogicalDay !== currentLogicalDay;
   }
 
   async runAutoSyncIfNeeded(callbacks?: { onStart?: () => void }): Promise<AutoSyncRunResult> {
