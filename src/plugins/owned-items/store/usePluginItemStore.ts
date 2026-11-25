@@ -86,7 +86,7 @@ export const usePluginItemStore = create<PluginItemState>((set, get) => ({
 
   changeStatus: async (id, status, endDate) => {
     const patch: Partial<Item> = { status };
-    if (status === 'sold' || status === 'scrapped' || status === 'gifted') {
+    if (status === 'sold' || status === 'scrapped' || status === 'gifted' || status === 'idle') {
       patch.endDate = endDate || new Date().toISOString().split('T')[0];
     } else {
       patch.endDate = undefined;

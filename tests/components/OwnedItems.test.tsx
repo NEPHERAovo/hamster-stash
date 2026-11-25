@@ -102,7 +102,7 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Netflix');
   });
 
-  it('renders 2-character disposal actions and supports linking existing income as sell or profit', async () => {
+  it('groups 支出/收益 under 关联账单 and 售出/闲置/赠送/报废 under 处置 with date support', async () => {
     const existingIncome: Transaction = {
       id: 'tx_existing_inc',
       type: 'income',
@@ -121,7 +121,7 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
       accountId: 'acct_1',
       categoryId: 'cat_shop',
       date: '2026-06-16',
-      note: '普通支出不应出现',
+      note: '普通支出不应出现在售出中',
       createdAt: '2026-06-16T10:00:00.000Z',
       updatedAt: '2026-06-16T10:00:00.000Z',
     };
@@ -137,21 +137,42 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
 
     render(<ItemDetailSubPage onClose={() => {}} params={{ itemId: 'item_switch' }} />);
 
+    expect(screen.getByRole('button', { name: '关联账单' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '处置' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '闲置' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '报废' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '赠送' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '关联账单' }));
     expect(screen.getByRole('button', { name: '支出' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '售出' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '收益' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '收益' }));
+    expect(screen.getByText('闲鱼出卡带')).toBeInTheDocument();
+    expect(screen.queryByText('普通支出不应出现在售出中')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '处置' }));
+    expect(screen.getByRole('button', { name: '售出' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '闲置' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '报废' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '赠送' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '报废' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '闲置' }));
-    expect(changeStatusSpy).toHaveBeenCalledWith('item_switch', 'idle', undefined);
+    expect(screen.getByText('闲置日期')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    await waitFor(() => {
+      expect(changeStatusSpy).toHaveBeenCalledWith(
+        'item_switch',
+        'idle',
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      );
+    });
 
+    fireEvent.click(screen.getByRole('button', { name: '处置' }));
     fireEvent.click(screen.getByRole('button', { name: '售出' }));
     fireEvent.click(screen.getByRole('button', { name: '已有收入' }));
 
     expect(screen.getByText('闲鱼出卡带')).toBeInTheDocument();
-    expect(screen.queryByText('普通支出不应出现')).toBeNull();
+    expect(screen.queryByText('普通支出不应出现在售出中')).toBeNull();
 
     fireEvent.click(screen.getByText('闲鱼出卡带'));
     fireEvent.click(screen.getByRole('button', { name: '确认' }));
