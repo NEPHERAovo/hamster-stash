@@ -4,6 +4,7 @@ import React from 'react';
 import { OwnedItemsSummaryCard } from '../../src/plugins/owned-items/components/OwnedItemsSummaryCard';
 import { ItemDetailSubPage } from '../../src/plugins/owned-items/components/ItemDetailSubPage';
 import { ItemListSubPage } from '../../src/plugins/owned-items/components/ItemListSubPage';
+import { ItemFormModal } from '../../src/plugins/owned-items/components/ItemFormModal';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { useLedgerStore } from '../../src/stores/useLedgerStore';
@@ -196,5 +197,70 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
     fireEvent.click(soldBtn);
     expect(screen.getByText('Sony Camera')).toBeInTheDocument();
     expect(screen.queryByText('Nintendo Switch')).toBeNull();
+  });
+
+  it('links an existing unlinked expense in-place when creating a new item in ItemFormModal', async () => {
+    const existingExpense: Transaction = {
+      id: 'tx_unlinked_buy',
+      type: 'expense',
+      amount: 129900,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-24',
+      note: 'AirPods Pro',
+      createdAt: '2026-11-24T14:00:00.000Z',
+      updatedAt: '2026-11-24T14:00:00.000Z',
+    };
+
+    const recordSpy = vi.fn();
+    const updateSpy = vi.fn().mockResolvedValue(existingExpense);
+    const createItemSpy = vi.fn().mockResolvedValue({
+      ...dummyItem,
+      id: 'item_airpods',
+      name: 'AirPods Pro',
+      buyDate: '2026-11-24',
+    });
+
+    usePluginItemStore.setState({
+      items: [],
+      createItem: createItemSpy,
+    });
+    useLedgerStore.setState({
+      transactions: [existingExpense],
+      allTransactions: [existingExpense],
+      recordTransaction: recordSpy,
+      updateTransaction: updateSpy,
+    });
+
+    const onClose = vi.fn();
+    render(<ItemFormModal onClose={onClose} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '关联已有账单' }));
+    fireEvent.click(screen.getByText('AirPods Pro'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '确认添加' }));
+    });
+
+    expect(createItemSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'AirPods Pro',
+        buyDate: '2026-11-24',
+      })
+    );
+    expect(updateSpy).toHaveBeenCalledWith(
+      'tx_unlinked_buy',
+      expect.objectContaining({
+        ext: expect.objectContaining({
+          'owned-items': {
+            itemId: 'item_airpods',
+            itemRole: 'buy',
+            kind: 'physical',
+          },
+        }),
+      })
+    );
+    expect(recordSpy).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
   });
 });

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckIcon as Check, CalendarBlankIcon as CalendarBlank, DotsThreeIcon as DotsThree } from '@phosphor-icons/react';
+import { CheckIcon as Check, CalendarBlankIcon as CalendarBlank, DotsThreeIcon as DotsThree, MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import {
   useHostAccounts,
+  useHostCategories,
+  useHostTransactions,
   useHostTransactionActions,
   yuanToCents,
   centsToYuan,
@@ -20,7 +22,7 @@ import {
   PaperDatePickerModal,
   PaperIconPickerModal,
 } from '../../../plugin-sdk';
-import type { Item, ItemStatus, ItemKind, SubscriptionCycle } from '../types';
+import { getOwnedItemExt, type Item, type ItemStatus, type ItemKind, type SubscriptionCycle } from '../types';
 import { usePluginItemStore } from '../store/usePluginItemStore';
 
 export interface ItemFormModalProps {
@@ -90,7 +92,9 @@ const POPULAR_SUB_ICONS = [
 export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params }) => {
   const editingItem = params?.item;
   const accounts = useHostAccounts();
-  const { recordTransaction } = useHostTransactionActions();
+  const categories = useHostCategories();
+  const transactions = useHostTransactions();
+  const { recordTransaction, updateTransaction } = useHostTransactionActions();
   const { createItem, updateItem } = usePluginItemStore();
 
   const [kind, setKind] = useState<ItemKind>('physical');
@@ -108,8 +112,28 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
   const [costYuan, setCostYuan] = useState('');
   const [selectedAcctId, setSelectedAcctId] = useState('');
+  const [expenseSource, setExpenseSource] = useState<'new' | 'existing'>('new');
+  const [billSearchQuery, setBillSearchQuery] = useState('');
+  const [selectedExpenseId, setSelectedExpenseId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = React.useRef(false);
+
+  const candidateExpenseTxs = useMemo(() => {
+    const q = billSearchQuery.trim().toLowerCase();
+    return transactions
+      .filter((tx) => {
+        if (tx.type !== 'expense') return false;
+        if (getOwnedItemExt(tx.ext)?.itemId) return false;
+        if (!q) return true;
+        const cat = categories.find((c) => c.id === tx.categoryId);
+        const acct = accounts.find((a) => a.id === tx.accountId);
+        const haystack = [tx.note || '', cat?.name || '', acct?.name || '', centsToYuan(tx.amount), tx.date]
+          .join(' ')
+          .toLowerCase();
+        return q.split(/\s+/).every((part) => haystack.includes(part));
+      })
+      .slice(0, 30);
+  }, [transactions, categories, accounts, billSearchQuery]);
 
   useEffect(() => {
     if (editingItem) {
@@ -140,6 +164,9 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
       setRenewalAmountYuan(initialCost);
       setNextRenewalDate(calculateNextRenewalDate(initialDate, 'monthly'));
       setSelectedAcctId(accounts[0]?.id || '');
+      setExpenseSource('new');
+      setBillSearchQuery('');
+      setSelectedExpenseId('');
     }
   }, [editingItem, accounts, params]);
 
@@ -176,22 +203,42 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
         });
         onClose();
       } else {
+        const linkedTx =
+          expenseSource === 'existing'
+            ? transactions.find((t) => t.id === selectedExpenseId)
+            : undefined;
+        if (expenseSource === 'existing' && !linkedTx) {
+          toast.error('请选择要关联的已有消费账单');
+          return;
+        }
+
         const costNum = parseFloat(costYuan);
-        const hasCost = !isNaN(costNum) && costNum > 0;
+        const hasCost = expenseSource === 'new' && !isNaN(costNum) && costNum > 0;
 
         const created = await createItem({
           name: name.trim(),
           icon,
           kind,
           status,
-          buyDate,
+          buyDate: linkedTx ? linkedTx.date : buyDate,
           billingCycle: kind === 'subscription' ? billingCycle : undefined,
           renewalAmountCents: kind === 'subscription' ? renewalAmountCents : undefined,
           nextRenewalDate: kind === 'subscription' && nextRenewalDate ? nextRenewalDate : undefined,
           note: note.trim() || undefined,
         });
 
-        if (hasCost && selectedAcctId) {
+        if (linkedTx) {
+          await updateTransaction(linkedTx.id, {
+            ext: {
+              ...(linkedTx.ext || {}),
+              'owned-items': {
+                itemId: created.id,
+                itemRole: 'buy',
+                kind,
+              },
+            },
+          });
+        } else if (hasCost && selectedAcctId) {
           await recordTransaction({
             type: 'expense',
             amount: yuanToCents(costNum),
@@ -328,41 +375,118 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
 
         {!editingItem && (
           <div className="space-y-2.5 border-t border-dashed border-(--rule-hairline) pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                  {kind === 'subscription' ? '首次支出' : '购入金额'}
-                </label>
-                <AmountInput
-                  size="sm"
-                  value={costYuan}
-                  onChange={(val) => {
-                    setCostYuan(val);
-                    if (!editingItem && (renewalAmountYuan === '' || renewalAmountYuan === costYuan)) {
-                      setRenewalAmountYuan(val);
-                    }
-                  }}
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
-                  支出账户
-                </label>
-                <PaperSelect
-                  size="sm"
-                  value={selectedAcctId}
-                  onChange={(e) => setSelectedAcctId(e.target.value)}
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </PaperSelect>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[11px] text-(--ink-tertiary)">
+                {kind === 'subscription' ? '首次扣费' : '购买账单'}
+              </span>
+              <SegToggle
+                options={[
+                  { value: 'new', label: '新建消费' },
+                  { value: 'existing', label: '关联已有账单' },
+                ]}
+                value={expenseSource}
+                onChange={(val) => setExpenseSource(val as 'new' | 'existing')}
+                size="xs"
+                fullWidth={false}
+              />
             </div>
+
+            {expenseSource === 'new' ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                    {kind === 'subscription' ? '首次支出' : '购入金额'}
+                  </label>
+                  <AmountInput
+                    size="sm"
+                    value={costYuan}
+                    onChange={(val) => {
+                      setCostYuan(val);
+                      if (!editingItem && (renewalAmountYuan === '' || renewalAmountYuan === costYuan)) {
+                        setRenewalAmountYuan(val);
+                      }
+                    }}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-mono text-[11px] text-(--ink-tertiary)">
+                    支出账户
+                  </label>
+                  <PaperSelect
+                    size="sm"
+                    value={selectedAcctId}
+                    onChange={(e) => setSelectedAcctId(e.target.value)}
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </PaperSelect>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <PaperInput
+                  size="sm"
+                  value={billSearchQuery}
+                  onChange={(e) => setBillSearchQuery(e.target.value)}
+                  placeholder="搜索备注、分类、账户、金额..."
+                  leftIcon={<Search className="size-3.5 text-(--ink-tertiary)" />}
+                  clearable={Boolean(billSearchQuery)}
+                  onClear={() => setBillSearchQuery('')}
+                />
+
+                <div className="max-h-36 space-y-1 overflow-y-auto pr-0.5">
+                  {candidateExpenseTxs.length === 0 ? (
+                    <div className="py-4 text-center font-mono text-xs text-(--ink-tertiary)">
+                      暂无未关联物品的消费记录
+                    </div>
+                  ) : (
+                    candidateExpenseTxs.map((tx) => {
+                      const cat = categories.find((c) => c.id === tx.categoryId);
+                      const acct = accounts.find((a) => a.id === tx.accountId);
+                      const isSelected = selectedExpenseId === tx.id;
+                      return (
+                        <PaperButton
+                          key={tx.id}
+                          type="button"
+                          variant={isSelected ? 'sunken' : 'ghost'}
+                          size="compact"
+                          fullWidth
+                          onClick={() => {
+                            setSelectedExpenseId(tx.id);
+                            setBuyDate(tx.date);
+                            if (!name.trim()) {
+                              setName(tx.note || cat?.name || '');
+                            }
+                            if (kind === 'subscription') {
+                              setRenewalAmountYuan(centsToYuan(tx.amount));
+                              setNextRenewalDate(calculateNextRenewalDate(tx.date, billingCycle));
+                            }
+                          }}
+                          className="h-auto justify-between px-2.5 py-2 text-left font-normal"
+                        >
+                          <div className="min-w-0 flex-1 pr-2">
+                            <div className="truncate text-xs font-medium text-(--ink-primary)">
+                              {tx.note || cat?.name || '支出'}
+                            </div>
+                            <div className="font-mono text-[10px] text-(--ink-tertiary)">
+                              {tx.date} · {acct?.name || '账户'}
+                            </div>
+                          </div>
+                          <span className="shrink-0 font-mono text-xs font-semibold text-(--ink-solid) tabular-nums">
+                            -¥{centsToYuan(tx.amount)}
+                          </span>
+                        </PaperButton>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
