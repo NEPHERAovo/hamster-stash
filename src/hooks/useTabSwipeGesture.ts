@@ -32,8 +32,6 @@ export function useTabSwipeGesture(options: UseTabSwipeGestureOptions): void {
           node.tagName === 'INPUT' ||
           node.tagName === 'TEXTAREA' ||
           node.tagName === 'SELECT' ||
-          node.tagName === 'BUTTON' ||
-          node.getAttribute('role') === 'button' ||
           node.getAttribute('role') === 'slider' ||
           node.getAttribute('role') === 'combobox' ||
           node.getAttribute('role') === 'listbox' ||
@@ -46,7 +44,7 @@ export function useTabSwipeGesture(options: UseTabSwipeGestureOptions): void {
         const style = window.getComputedStyle(node);
         if (
           (style.overflowX === 'auto' || style.overflowX === 'scroll') &&
-          node.scrollWidth > node.clientWidth
+          node.scrollWidth > node.clientWidth + 1
         ) {
           return true;
         }

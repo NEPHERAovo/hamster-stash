@@ -176,6 +176,63 @@ describe('useTabSwipeGesture Hook', () => {
     expect(onTabChange).not.toHaveBeenCalled();
   });
 
+  it('allows tab swipe when touch starts on button or role="button" item cards', () => {
+    const itemCard = document.createElement('div');
+    itemCard.setAttribute('role', 'button');
+    const cardTitle = document.createElement('span');
+    cardTitle.textContent = 'MacBook Air';
+    itemCard.appendChild(cardTitle);
+    container.appendChild(itemCard);
+
+    const filterBtn = document.createElement('button');
+    filterBtn.textContent = '在用';
+    container.appendChild(filterBtn);
+
+    renderHook(() =>
+      useTabSwipeGesture({
+        currentTab: 'items',
+        tabs,
+        onTabChange,
+        targetRef: { current: container },
+      })
+    );
+
+    cardTitle.dispatchEvent(createTouchEvent('touchstart', [{ clientX: 200, clientY: 200 }], cardTitle));
+    cardTitle.dispatchEvent(createTouchEvent('touchmove', [{ clientX: 130, clientY: 202 }], cardTitle));
+    cardTitle.dispatchEvent(createTouchEvent('touchend', [{ clientX: 90, clientY: 204 }], cardTitle));
+
+    expect(onTabChange).toHaveBeenCalledWith('assets');
+
+    filterBtn.dispatchEvent(createTouchEvent('touchstart', [{ clientX: 100, clientY: 200 }], filterBtn));
+    filterBtn.dispatchEvent(createTouchEvent('touchmove', [{ clientX: 150, clientY: 201 }], filterBtn));
+    filterBtn.dispatchEvent(createTouchEvent('touchend', [{ clientX: 190, clientY: 202 }], filterBtn));
+
+    expect(onTabChange).toHaveBeenCalledWith('stats');
+  });
+
+  it('ignores touches inside horizontally scrollable containers that overflow by more than 1px', () => {
+    const scroller = document.createElement('div');
+    scroller.style.overflowX = 'auto';
+    Object.defineProperty(scroller, 'clientWidth', { value: 200 });
+    Object.defineProperty(scroller, 'scrollWidth', { value: 280 });
+    container.appendChild(scroller);
+
+    renderHook(() =>
+      useTabSwipeGesture({
+        currentTab: 'items',
+        tabs,
+        onTabChange,
+        targetRef: { current: container },
+      })
+    );
+
+    scroller.dispatchEvent(createTouchEvent('touchstart', [{ clientX: 200, clientY: 200 }], scroller));
+    scroller.dispatchEvent(createTouchEvent('touchmove', [{ clientX: 140, clientY: 200 }], scroller));
+    scroller.dispatchEvent(createTouchEvent('touchend', [{ clientX: 90, clientY: 200 }], scroller));
+
+    expect(onTabChange).not.toHaveBeenCalled();
+  });
+
   it('cleans up event listeners on unmount', () => {
     const removeSpy = vi.spyOn(container, 'removeEventListener');
 
