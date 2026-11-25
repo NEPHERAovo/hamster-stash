@@ -40,4 +40,16 @@ describe('useThemeStore iOS status bar & root chrome sync', () => {
     expect(document.documentElement.style.backgroundColor).toBe('rgb(238, 244, 237)');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#EEF4ED');
   });
+
+  it('maintains dual media-qualified theme-color meta tags in auto mode for iOS PWA transitions', () => {
+    useThemeStore.getState().setUiStyle('paper');
+    useThemeStore.getState().setTheme('theme-sage');
+    useThemeStore.getState().setTheme('theme-pine');
+    useThemeStore.getState().setColorMode('auto');
+
+    const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
+    const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+    expect(lightMeta?.getAttribute('content')).toBe('#EEF4ED');
+    expect(darkMeta?.getAttribute('content')).toBe('#0C140E');
+  });
 });
