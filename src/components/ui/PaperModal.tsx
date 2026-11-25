@@ -151,9 +151,23 @@ export const PaperModal: React.FC<PaperModalProps> = ({
     let startX = 0;
     let startY = 0;
 
+    const isInsideScrollable = (target: EventTarget | null): boolean => {
+      let node = target as HTMLElement | null;
+      while (node && node !== el) {
+        if (node.dataset?.sheetNoDrag === 'true') return true;
+        const style = window.getComputedStyle(node);
+        const canScrollY =
+          (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+          node.scrollHeight > node.clientHeight + 1;
+        if (canScrollY && node.scrollTop > 0) return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
       if (isClosingRef.current || e.touches.length !== 1) return;
-      if (scrollRef.current && scrollRef.current.contains(e.target as Node) && scrollRef.current.scrollTop > 0) {
+      if (isInsideScrollable(e.target)) {
         return;
       }
       const touch = e.touches[0];

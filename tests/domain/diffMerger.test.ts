@@ -316,4 +316,66 @@ describe('diffMerger', () => {
     expect(twinInMerged?.deletedAt).toBeTruthy();
     expect(resolved.merged.transactions.filter((t) => !(t as StoredEntity).deletedAt)).toHaveLength(1);
   });
+
+  it('never generates account conflicts when balances diverge due to transactions and reconciles balance from bills', () => {
+    const baseAcct: Account = {
+      id: 'acct_1',
+      name: 'Wallet',
+      type: 'savings',
+      balance: 10000,
+      currency: 'CNY',
+      icon: 'wallet',
+      sortOrder: 1,
+      createdAt: '2026-11-20T00:00:00.000Z',
+      updatedAt: '2026-11-20T00:00:00.000Z',
+    };
+    const localTx: Transaction = {
+      id: 'tx_loc_spend',
+      type: 'expense',
+      amount: 1500,
+      accountId: 'acct_1',
+      categoryId: 'cat_food',
+      date: '2026-11-25',
+      createdAt: '2026-11-25T09:00:00.000Z',
+      updatedAt: '2026-11-25T09:00:00.000Z',
+    };
+    const remoteTx: Transaction = {
+      id: 'tx_rem_spend',
+      type: 'expense',
+      amount: 2500,
+      accountId: 'acct_1',
+      categoryId: 'cat_shop',
+      date: '2026-11-25',
+      createdAt: '2026-11-25T10:00:00.000Z',
+      updatedAt: '2026-11-25T10:00:00.000Z',
+    };
+
+    const base = createBaseExport();
+    base.accounts.push(baseAcct);
+
+    const local = createBaseExport();
+    local.accounts.push({
+      ...baseAcct,
+      balance: 8500,
+      updatedAt: '2026-11-25T09:00:00.000Z',
+    });
+    local.transactions.push(localTx);
+
+    const remote = createBaseExport();
+    remote.accounts.push({
+      ...baseAcct,
+      balance: 7500,
+      updatedAt: '2026-11-25T10:00:00.000Z',
+    });
+    remote.transactions.push(remoteTx);
+
+    const plan = buildThreeWaySyncPlan(local, remote, base);
+    expect(plan.conflictItems.every((i) => i.collection !== 'accounts')).toBe(true);
+    expect(plan.incomingItems.every((i) => i.collection !== 'accounts')).toBe(true);
+    expect(plan.incomingItems).toHaveLength(1);
+    expect(plan.incomingItems[0].id).toBe('tx_rem_spend');
+
+    const resolved = resolveSyncPlan(plan, { 'transactions:tx_rem_spend': 'remote' });
+    expect(resolved.merged.accounts[0].balance).toBe(6000);
+  });
 });

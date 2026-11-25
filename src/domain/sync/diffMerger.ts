@@ -49,6 +49,14 @@ export interface SyncDiffItem {
   reason: SyncConflictReason;
 }
 
+export interface AutoAccountMergeEntry {
+  id: string;
+  localEntity?: Account;
+  remoteEntity?: Account;
+  winner?: Account;
+  baselineFromRemote: boolean;
+}
+
 export interface SyncDiffPlan {
   isStrictlyEqual: boolean;
   requiresReview: boolean;
@@ -63,6 +71,7 @@ export interface SyncDiffPlan {
     settings: Record<string, unknown>;
     pluginSettings: Record<string, unknown>;
   };
+  autoAccounts: AutoAccountMergeEntry[];
   localSnapshot: ExportData;
   remoteSnapshot: ExportData;
   baseSnapshot: ExportData | null;
@@ -546,6 +555,130 @@ function classifyRecordSettings(params: {
   return { unchanged, incoming, conflict, push };
 }
 
+type SyncAccount = Account & { deletedAt?: string };
+
+function stripVolatileAccountFields(acct: SyncAccount | undefined): Record<string, unknown> | undefined {
+  if (!acct) return undefined;
+  const copy: Record<string, unknown> = { ...acct };
+  delete copy.balance;
+  delete copy.updatedAt;
+  return copy;
+}
+
+function classifyAccountCollection(params: {
+  localList: SyncAccount[];
+  remoteList: SyncAccount[];
+  baseList: SyncAccount[] | null;
+  nowMs: number;
+}): {
+  unchanged: Account[];
+  autoAccounts: AutoAccountMergeEntry[];
+} {
+  const { localList, remoteList, baseList, nowMs } = params;
+  const localMap = new Map<string, SyncAccount>(localList.map((a) => [a.id, a]));
+  const remoteMap = new Map<string, SyncAccount>(remoteList.map((a) => [a.id, a]));
+  const baseMap = new Map<string, SyncAccount>((baseList || []).map((a) => [a.id, a]));
+  const allIds = new Set<string>([
+    ...localMap.keys(),
+    ...remoteMap.keys(),
+    ...(baseList ? baseMap.keys() : []),
+  ]);
+
+  const unchanged: Account[] = [];
+  const autoAccounts: AutoAccountMergeEntry[] = [];
+
+  for (const id of allIds) {
+    const loc = localMap.get(id);
+    const rem = remoteMap.get(id);
+    const bas = baseList ? baseMap.get(id) : undefined;
+
+    if (areValuesCanonicallyEqual(loc, rem)) {
+      if (loc && !isExpiredTombstone(loc, nowMs)) {
+        unchanged.push(loc);
+      }
+      continue;
+    }
+
+    if (!loc && rem?.deletedAt) {
+      if (!isExpiredTombstone(rem, nowMs)) {
+        unchanged.push(rem);
+      }
+      continue;
+    }
+
+    if (!loc && rem) {
+      autoAccounts.push({
+        id,
+        localEntity: undefined,
+        remoteEntity: rem,
+        winner: rem,
+        baselineFromRemote: true,
+      });
+      continue;
+    }
+
+    if (loc && !rem) {
+      autoAccounts.push({
+        id,
+        localEntity: loc,
+        remoteEntity: undefined,
+        winner: loc,
+        baselineFromRemote: false,
+      });
+      continue;
+    }
+
+    if (loc && rem) {
+      const locTime = getEntityTimestampMs(loc);
+      const remTime = getEntityTimestampMs(rem);
+      const isFreshSeedUpgrade = locTime === DEFAULT_SEED_TIME_MS && remTime > DEFAULT_SEED_TIME_MS;
+
+      if (isFreshSeedUpgrade) {
+        autoAccounts.push({
+          id,
+          localEntity: loc,
+          remoteEntity: rem,
+          winner: rem,
+          baselineFromRemote: true,
+        });
+        continue;
+      }
+
+      const locMeta = stripVolatileAccountFields(loc);
+      const remMeta = stripVolatileAccountFields(rem);
+
+      if (areValuesCanonicallyEqual(locMeta, remMeta)) {
+        unchanged.push(loc);
+        continue;
+      }
+
+      const basMeta = stripVolatileAccountFields(bas);
+      let pickRemote = remTime > locTime;
+      if (baseList !== null) {
+        const eqLB = areValuesCanonicallyEqual(locMeta, basMeta);
+        const eqRB = areValuesCanonicallyEqual(remMeta, basMeta);
+        if (eqLB && !eqRB) pickRemote = true;
+        else if (!eqLB && eqRB) pickRemote = false;
+      }
+
+      const metaSource = pickRemote ? rem : loc;
+      const mergedAccount: SyncAccount = {
+        ...metaSource,
+        balance: pickRemote ? rem.balance : loc.balance,
+      };
+      autoAccounts.push({
+        id,
+        localEntity: loc,
+        remoteEntity: rem,
+        winner: mergedAccount,
+        baselineFromRemote: pickRemote,
+      });
+    }
+  }
+
+  return { unchanged, autoAccounts };
+}
+
 export function buildThreeWaySyncPlan(
   local: ExportData,
   remote: ExportData,
@@ -560,11 +693,10 @@ export function buildThreeWaySyncPlan(
     nowMs,
   });
 
-  const acctRes = classifyEntityCollection<Account>({
-    collection: 'accounts',
-    localList: local.accounts || [],
-    remoteList: remote.accounts || [],
-    baseList: base ? base.accounts || [] : null,
+  const acctRes = classifyAccountCollection({
+    localList: (local.accounts || []) as SyncAccount[],
+    remoteList: (remote.accounts || []) as SyncAccount[],
+    baseList: base ? ((base.accounts || []) as SyncAccount[]) : null,
     nowMs,
   });
 
@@ -600,7 +732,6 @@ export function buildThreeWaySyncPlan(
 
   const incomingItems = [
     ...txRes.incoming,
-    ...acctRes.incoming,
     ...catRes.incoming,
     ...pluginDataRes.incoming,
     ...settingsRes.incoming,
@@ -608,7 +739,6 @@ export function buildThreeWaySyncPlan(
   ];
   const conflictItems = [
     ...txRes.conflict,
-    ...acctRes.conflict,
     ...catRes.conflict,
     ...pluginDataRes.conflict,
     ...settingsRes.conflict,
@@ -616,7 +746,6 @@ export function buildThreeWaySyncPlan(
   ];
   const pushItems = [
     ...txRes.push,
-    ...acctRes.push,
     ...catRes.push,
     ...pluginDataRes.push,
     ...settingsRes.push,
@@ -624,7 +753,10 @@ export function buildThreeWaySyncPlan(
   ];
 
   const isStrictlyEqual =
-    incomingItems.length === 0 && conflictItems.length === 0 && pushItems.length === 0;
+    incomingItems.length === 0 &&
+    conflictItems.length === 0 &&
+    pushItems.length === 0 &&
+    acctRes.autoAccounts.length === 0;
   const requiresReview = incomingItems.length > 0 || conflictItems.length > 0;
 
   return {
@@ -641,6 +773,7 @@ export function buildThreeWaySyncPlan(
       settings: settingsRes.unchanged,
       pluginSettings: pluginSettingsRes.unchanged,
     },
+    autoAccounts: acctRes.autoAccounts,
     localSnapshot: local,
     remoteSnapshot: remote,
     baseSnapshot: base,
@@ -724,6 +857,33 @@ export function resolveSyncPlan(
   let changedRemote = false;
 
   const accountChoiceMap = new Map<string, SyncResolutionChoice>();
+  for (const autoAcct of plan.autoAccounts) {
+    if (autoAcct.baselineFromRemote) {
+      accountChoiceMap.set(autoAcct.id, 'remote');
+    }
+    if (autoAcct.winner) {
+      acctMap.set(autoAcct.id, autoAcct.winner);
+    }
+    const eqLocal = areValuesCanonicallyEqual(autoAcct.winner, autoAcct.localEntity);
+    const eqRemote = areValuesCanonicallyEqual(autoAcct.winner, autoAcct.remoteEntity);
+    if (!eqLocal) {
+      changedLocal = true;
+      const winDeleted = Boolean((autoAcct.winner as SyncAccount | undefined)?.deletedAt) || !autoAcct.winner;
+      const hadLocal = Boolean(autoAcct.localEntity) && !(autoAcct.localEntity as SyncAccount).deletedAt;
+      if (!hadLocal && !winDeleted) stats.addedLocal++;
+      else if (hadLocal && winDeleted) stats.deletedLocal++;
+      else if (hadLocal && !winDeleted) stats.updatedLocal++;
+    }
+    if (!eqRemote) {
+      changedRemote = true;
+      const winDeleted = Boolean((autoAcct.winner as SyncAccount | undefined)?.deletedAt) || !autoAcct.winner;
+      const hadRemote = Boolean(autoAcct.remoteEntity) && !(autoAcct.remoteEntity as SyncAccount).deletedAt;
+      if (!hadRemote && !winDeleted) stats.addedRemote++;
+      else if (hadRemote && winDeleted) stats.deletedRemote++;
+      else if (hadRemote && !winDeleted) stats.updatedRemote++;
+    }
+  }
+
   const resolvedTxItems: Array<{
     item: SyncDiffItem;
     choice: SyncResolutionChoice;
@@ -824,17 +984,31 @@ export function resolveSyncPlan(
     }
   }
 
+  const remoteAccountMap = new Map<string, SyncAccount>(
+    ((plan.remoteSnapshot.accounts || []) as SyncAccount[]).map((a) => [a.id, a])
+  );
+  const localAccountMap = new Map<string, SyncAccount>(
+    ((plan.localSnapshot.accounts || []) as SyncAccount[]).map((a) => [a.id, a])
+  );
+
   for (const [acctId, delta] of accountDeltas.entries()) {
     if (!delta) continue;
     const acct = acctMap.get(acctId);
     if (!acct || (acct as StoredEntity).deletedAt) continue;
-    acctMap.set(acctId, {
+    const nextAcct: Account = {
       ...acct,
       balance: acct.balance + delta,
       updatedAt: nowIso,
-    });
-    changedLocal = true;
-    changedRemote = true;
+    };
+    acctMap.set(acctId, nextAcct);
+    const locAcct = localAccountMap.get(acctId);
+    const remAcct = remoteAccountMap.get(acctId);
+    if (!locAcct || locAcct.balance !== nextAcct.balance) {
+      changedLocal = true;
+    }
+    if (!remAcct || remAcct.balance !== nextAcct.balance) {
+      changedRemote = true;
+    }
   }
 
   const filterRetained = <T extends StoredEntity>(list: T[]): T[] =>

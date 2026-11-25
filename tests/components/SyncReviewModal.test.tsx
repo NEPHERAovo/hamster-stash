@@ -91,7 +91,9 @@ describe('SyncReviewModal', () => {
     expect(screen.getByText('云端下发 1')).toBeInTheDocument();
 
     const remoteButtons = screen.getAllByRole('button', { name: '采用云端' });
+    expect(remoteButtons[0]).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(remoteButtons[0]);
+    expect(remoteButtons[0]).toHaveAttribute('aria-pressed', 'true');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '确认合并' }));
@@ -101,6 +103,29 @@ describe('SyncReviewModal', () => {
       'transactions:tx_conflict_1': 'remote',
       'transactions:tx_remote_add': 'remote',
     });
+  });
+
+  it('prevents dragging down inside the diff list from dismissing the modal', () => {
+    const plan = makePlan();
+    const onClose = vi.fn();
+
+    render(
+      <SyncReviewModal
+        isOpen={true}
+        plan={plan}
+        onClose={onClose}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    const listEl = document.querySelector('[data-sheet-no-drag="true"]') as HTMLElement;
+    expect(listEl).toBeTruthy();
+
+    fireEvent.touchStart(listEl, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchMove(listEl, { touches: [{ clientX: 100, clientY: 320 }] });
+    fireEvent.touchEnd(listEl);
+
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('closes via CloseWatcher.onclose, Escape fallback, and destroys watcher on unmount', async () => {

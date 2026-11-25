@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { CheckIcon as Check } from '@phosphor-icons/react';
 import type { SyncDiffItem, SyncDiffPlan, SyncResolutionChoice } from '../../domain/sync/diffMerger';
 import type { Transaction } from '../../types/transaction';
 import type { Account } from '../../types/account';
@@ -164,9 +165,14 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
           </div>
         </div>
 
-        <div className="max-h-72 space-y-2 overflow-y-auto pr-0.5">
+        <div
+          data-sheet-no-drag="true"
+          className="max-h-[52vh] space-y-2 overflow-y-auto pr-0.5"
+        >
           {reviewItems.map((item) => {
             const currentChoice = resolutions[item.key] || item.recommendedResolution;
+            const isLocalSelected = currentChoice === 'local';
+            const isRemoteSelected = currentChoice === 'remote';
             const isConflict = item.source === 'conflict';
             return (
               <div
@@ -192,19 +198,39 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
                   </span>
                 </div>
 
-                <div className="space-y-1 rounded-(--radius-xs) bg-(--paper-sunken)/50 p-2 font-mono text-[10px]">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="shrink-0 text-(--ink-tertiary)">本地</span>
-                    <span className="truncate text-(--ink-secondary)">
+                <div className="space-y-1 font-mono text-[10px]">
+                  <div
+                    className={cn(
+                      'flex items-center justify-between gap-2 rounded-(--radius-xs) border px-2 py-1.5 transition-colors',
+                      isLocalSelected
+                        ? 'border-(--ink-primary)/40 bg-(--paper-sunken) font-semibold text-(--ink-solid)'
+                        : 'border-transparent bg-(--paper-sunken)/40 text-(--ink-tertiary) opacity-55'
+                    )}
+                  >
+                    <span className="flex shrink-0 items-center gap-1">
+                      {isLocalSelected && <Check className="size-3 shrink-0 stroke-2 text-(--ink-solid)" />}
+                      <span>本地</span>
+                    </span>
+                    <span className="truncate">
                       {formatSideSummary(
                         item.collection,
                         item.localEntity as Record<string, unknown> | undefined
                       )}
                     </span>
                   </div>
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="shrink-0 text-(--ink-tertiary)">云端</span>
-                    <span className="truncate text-(--ink-primary)">
+                  <div
+                    className={cn(
+                      'flex items-center justify-between gap-2 rounded-(--radius-xs) border px-2 py-1.5 transition-colors',
+                      isRemoteSelected
+                        ? 'border-(--ink-primary)/40 bg-(--paper-sunken) font-semibold text-(--ink-solid)'
+                        : 'border-transparent bg-(--paper-sunken)/40 text-(--ink-tertiary) opacity-55'
+                    )}
+                  >
+                    <span className="flex shrink-0 items-center gap-1">
+                      {isRemoteSelected && <Check className="size-3 shrink-0 stroke-2 text-(--ink-solid)" />}
+                      <span>云端</span>
+                    </span>
+                    <span className="truncate">
                       {formatSideSummary(
                         item.collection,
                         item.remoteEntity as Record<string, unknown> | undefined
@@ -216,7 +242,10 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
                 <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
                   <PaperButton
                     size="xs"
-                    variant={currentChoice === 'local' ? 'primary' : 'sunken'}
+                    variant={isLocalSelected ? 'primary' : 'ghost'}
+                    aria-pressed={isLocalSelected}
+                    leftIcon={isLocalSelected ? <Check className="size-3 stroke-2" /> : undefined}
+                    className={cn(!isLocalSelected && 'border border-(--rule-hairline) opacity-65')}
                     onClick={() =>
                       setResolutions((prev) => ({ ...prev, [item.key]: 'local' }))
                     }
@@ -226,7 +255,10 @@ export const SyncReviewModal: React.FC<SyncReviewModalProps> = ({
                   </PaperButton>
                   <PaperButton
                     size="xs"
-                    variant={currentChoice === 'remote' ? 'income' : 'sunken'}
+                    variant={isRemoteSelected ? 'primary' : 'ghost'}
+                    aria-pressed={isRemoteSelected}
+                    leftIcon={isRemoteSelected ? <Check className="size-3 stroke-2" /> : undefined}
+                    className={cn(!isRemoteSelected && 'border border-(--rule-hairline) opacity-65')}
                     onClick={() =>
                       setResolutions((prev) => ({ ...prev, [item.key]: 'remote' }))
                     }
