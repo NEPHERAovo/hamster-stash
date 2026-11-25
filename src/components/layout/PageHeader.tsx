@@ -61,17 +61,17 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       onTouchEnd={handleTouchEnd}
       className={cn(
         'sticky top-0 z-40 box-border flex min-h-[calc(3rem+var(--safe-top))] cursor-pointer items-center justify-between pt-[calc(0.25rem+var(--safe-top))] pb-1 select-none',
-        leftAction || centerTitle ? 'px-3 sm:px-4' : 'px-4',
+        leftAction || centerTitle ? 'px-2 sm:px-3' : 'px-4',
         'page-header-bar border-b border-(--rule-hairline) bg-(--paper-base)',
         className
       )}
     >
       {centerTitle ? (
-        <>
-          <div className="flex min-w-9 items-center justify-start">
+        <div className="relative flex min-h-10 w-full items-center justify-between">
+          <div className="relative z-10 flex items-center justify-start">
             {leftAction}
           </div>
-          <div className="flex-1 px-2 text-center">
+          <div className="pointer-events-none absolute top-1/2 left-1/2 max-w-[calc(100%-8.5rem)] -translate-1/2 px-2 text-center">
             {metaPill && (
               <div className="mb-0.5 justify-center font-mono text-[9px] tracking-wider text-(--ink-tertiary) uppercase">
                 <span>{metaPill}</span>
@@ -84,10 +84,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <p className="mt-0.5 font-mono text-[10px] text-(--ink-tertiary)">{subtitle}</p>
             )}
           </div>
-          <div className="flex min-w-9 items-center justify-end text-(--ink-secondary)">
+          <div className="relative z-10 flex items-center justify-end text-(--ink-secondary)">
             {rightAction}
           </div>
-        </>
+        </div>
       ) : (
         <>
           <div className="flex items-center gap-2 sm:gap-3">

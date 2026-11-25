@@ -13,7 +13,7 @@ export interface PaperButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
     | 'danger-ghost'
     | 'ghost'
     | 'nav';
-  size?: 'xs' | 'compact' | 'sm' | 'md' | 'lg' | 'icon';
+  size?: 'xs' | 'compact' | 'sm' | 'md' | 'lg' | 'icon' | 'flush';
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -47,7 +47,7 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
       danger: 'bg-(--color-expense-bg) text-(--color-expense) border border-(--color-expense)/25 active:scale-[0.98]',
       'danger-ghost': 'bg-transparent text-(--color-expense) hover:bg-(--color-expense-bg)/40 active:scale-[0.98]',
       ghost: 'bg-transparent text-(--ink-secondary) hover:bg-(--paper-sunken) hover:text-(--ink-primary) active:scale-[0.98]',
-      nav: 'bg-transparent text-(--ink-secondary) hover:text-(--ink-primary) p-0 font-semibold active:scale-[0.98]',
+      nav: 'bg-transparent text-(--ink-secondary) hover:text-(--ink-primary) font-semibold active:scale-[0.98]',
     };
 
     const sizeStyles = {
@@ -57,6 +57,7 @@ export const PaperButton = React.forwardRef<HTMLButtonElement, PaperButtonProps>
       md: 'h-10 px-4 text-sm rounded-(--btn-radius) gap-2 leading-none',
       lg: 'h-12 px-5.5 text-base rounded-(--btn-radius) gap-2.5 leading-none',
       icon: 'h-9 w-9 p-0 rounded-(--btn-radius) justify-center leading-none',
+      flush: 'h-auto py-1.5 pl-0 pr-2 text-xs rounded-(--btn-radius) gap-0.5 leading-none',
     };
 
     return (

@@ -35,7 +35,7 @@ describe('PageHeader component', () => {
   });
 
   it('renders centered title for subpages when centerTitle is true', () => {
-    render(
+    const { container } = render(
       <PageHeader
         title="招商银行卡"
         centerTitle={true}
@@ -44,7 +44,11 @@ describe('PageHeader component', () => {
     );
 
     expect(screen.getByTestId('back-btn')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('招商银行卡');
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent('招商银行卡');
+    expect(heading.parentElement?.className).toContain('left-1/2');
+    expect(heading.parentElement?.className).toContain('-translate-1/2');
+    expect(container.querySelector('header')?.className).toContain('px-2');
   });
 
   it('triggers onDoubleClick when header is double clicked directly', () => {

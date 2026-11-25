@@ -65,6 +65,8 @@ describe('SubPageShell', () => {
     );
 
     const backButton = screen.getByText('Back');
+    expect(backButton.closest('button')?.className).toContain('pl-0');
+    expect(backButton.closest('button')?.className).not.toContain('px-2.5');
     fireEvent.click(backButton);
 
     expect(handleClose).not.toHaveBeenCalled();
