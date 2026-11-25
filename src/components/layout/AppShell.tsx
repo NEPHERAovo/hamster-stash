@@ -20,7 +20,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       <div
         className={cn(
-          'relative mx-auto flex size-full min-h-0 max-w-[430px] flex-1 flex-col overflow-hidden bg-transparent shadow-[-1px_0_0_var(--rule-hairline),1px_0_0_var(--rule-hairline)] transition-colors duration-300',
+          'relative mx-auto flex size-full min-h-0 max-w-[430px] flex-1 flex-col overflow-hidden bg-transparent shadow-[-1px_0_0_var(--rule-hairline),1px_0_0_var(--rule-hairline)]',
           className
         )}
       >

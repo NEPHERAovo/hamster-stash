@@ -228,7 +228,6 @@ body {
   background-color: var(--paper-base, var(--bg-base));
   color: var(--ink-primary);
   line-height: 1.5;
-  transition: background-color var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
