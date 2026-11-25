@@ -218,7 +218,7 @@ const TimeWheelColumn: React.FC<TimeWheelColumnProps> = ({
       onScroll={handleScroll}
       onPointerDown={handlePointerDown}
       onWheel={handleWheel}
-      className="h-24 flex-1 snap-y snap-mandatory [scrollbar-width:none] overflow-y-auto overscroll-contain select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      className="no-scrollbar h-24 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain select-none"
     >
       <div className="pointer-events-none h-8 shrink-0" aria-hidden="true" />
       {items.map((item, idx) => {
@@ -619,7 +619,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
 
     if (mode === 'range') {
       return (
-        <div className="flex [scrollbar-width:none] items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
           <button
             type="button"
             onClick={() => {
@@ -912,7 +912,7 @@ export const PaperDatePickerModal: React.FC<PaperDatePickerModalProps> = ({
 
             {mode === 'datetime' && (
               <div className="mt-3.5 border-t border-(--rule-hairline)/60 pt-2.5">
-                <div className="flex [scrollbar-width:none] items-center gap-1 overflow-x-auto pb-2 select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="no-scrollbar flex items-center gap-1 overflow-x-auto pb-2 select-none">
                   {['现在', '08:00', '12:00', '18:00', '20:00'].map((preset) => (
                     <button
                       key={preset}

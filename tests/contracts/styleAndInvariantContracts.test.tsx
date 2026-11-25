@@ -120,6 +120,9 @@ describe('Style & Invariant Contracts', () => {
       expect(cssContent.includes(selector)).toBe(false);
     }
 
+    const [stylesBeforeReducedMotion] = cssContent.split('@media (prefers-reduced-motion: reduce)');
+    expect(stylesBeforeReducedMotion.includes('!important')).toBe(false);
+
     const lineCount = cssContent.split('\n').length;
     expect(lineCount).toBeLessThan(700);
   });

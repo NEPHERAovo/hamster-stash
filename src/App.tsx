@@ -94,9 +94,6 @@ export function App() {
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
-  const { uiStyle } = useThemeStore();
-  const isModern = uiStyle === 'modern';
-
   const {
     currentMonth,
     setCurrentMonth,
@@ -137,9 +134,8 @@ export function App() {
   const [currentYearNum, currentMonthNum] = currentMonth.split('-').map(Number);
   const currentMonthName = MONTH_NAMES[(currentMonthNum || 1) - 1] || `${currentMonthNum}月`;
   const shortMonthName = SHORT_MONTH_NAMES[(currentMonthNum || 1) - 1] || `${currentMonthNum}月`;
-  const folioMonthTitle = isModern
-    ? `${shortMonthName}, ${currentYearNum}`
-    : `${currentMonthName} ${currentYearNum}`;
+  const paperMonthTitle = `${currentMonthName} ${currentYearNum}`;
+  const modernMonthTitle = `${shortMonthName}, ${currentYearNum}`;
 
   useEffect(() => {
     loadAccounts();
@@ -309,7 +305,8 @@ export function App() {
     if (currentTab === 'ledger') {
       return (
         <PageHeader
-          title={folioMonthTitle}
+          title={paperMonthTitle}
+          modernTitle={modernMonthTitle}
           showMonthStep={true}
           onPrevMonth={() => stepMonth(-1)}
           onNextMonth={() => stepMonth(1)}
@@ -323,7 +320,8 @@ export function App() {
     if (currentTab === 'stats') {
       return (
         <PageHeader
-          title={isModern ? '统计' : 'Statistics'}
+          title="Statistics"
+          modernTitle="统计"
           onDoubleClick={handleScrollToTop}
           rightAction={
             <SegToggle
@@ -344,13 +342,10 @@ export function App() {
     }
 
     if (activeNavTab) {
-      let pageTitle = activeNavTab.label;
-      if (activeNavTab.id === 'items') {
-        pageTitle = isModern ? '物品' : 'Owned Items';
-      }
       return (
         <PageHeader
-          title={pageTitle}
+          title={activeNavTab.id === 'items' ? 'Owned Items' : activeNavTab.label}
+          modernTitle={activeNavTab.id === 'items' ? '物品' : activeNavTab.label}
           onDoubleClick={handleScrollToTop}
         />
       );
@@ -358,7 +353,8 @@ export function App() {
 
     return (
       <PageHeader
-        title={isModern ? '资产' : 'Assets'}
+        title="Assets"
+        modernTitle="资产"
         onDoubleClick={handleScrollToTop}
         rightAction={
           <PaperIconButton
@@ -529,7 +525,8 @@ export function App() {
         onClose={() => setIsSettingsOpen(false)}
         header={
           <PageHeader
-            title={isModern ? '设置' : 'Settings'}
+            title="Settings"
+            modernTitle="设置"
             centerTitle={true}
             leftAction={<SubPageBackButton label="资产" />}
           />

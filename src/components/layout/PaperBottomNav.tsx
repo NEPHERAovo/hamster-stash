@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { BookBookmarkIcon as NotebookText, ChartBarIcon as BarChart3, WalletIcon as Wallet, PlusIcon as Plus, type Icon as LucideIcon } from '@phosphor-icons/react';
+import { BookBookmarkIcon as NotebookText, ChartBarIcon as BarChart3, WalletIcon as Wallet, type Icon as LucideIcon } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { getCategoryIcon } from '../../utils/categoryIcons';
+import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { cn } from '../../utils/cn';
 
 export interface PaperBottomNavProps {
@@ -59,22 +60,12 @@ export const PaperBottomNav: React.FC<PaperBottomNavProps> = ({
       />
 
       {showAddButton && onAddClick && (
-        <div className="pointer-events-none fixed bottom-[calc(68px+var(--dock-bottom))] left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2">
-          <button
-            type="button"
-            onClick={onAddClick}
-            title={resolvedAddTitle}
-            aria-label={resolvedAddTitle}
-            className="pointer-events-auto absolute right-4.5 bottom-0 flex size-[46px] cursor-pointer items-center justify-center rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 active:scale-95 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)]"
-          >
-            <Plus
-              className={cn(
-                'stroke-2.2 size-5 transition-transform duration-200',
-                isAddOpen && 'rotate-45'
-              )}
-            />
-          </button>
-        </div>
+        <FloatingActionButton
+          onClick={onAddClick}
+          title={resolvedAddTitle}
+          rotated={isAddOpen}
+          placement="dock"
+        />
       )}
 
       <nav className={cn('pointer-events-none fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 px-4 pb-(--dock-bottom) select-none', className)}>

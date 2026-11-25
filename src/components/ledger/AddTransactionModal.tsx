@@ -1045,7 +1045,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </div>
 
         <div className="space-y-1.5 border-y border-dashed border-(--rule-hairline) px-4 py-1.5">
-          <div className="metadata-bar flex min-w-0 [scrollbar-width:none] flex-nowrap items-center justify-between gap-1 overflow-x-auto font-mono text-xs select-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="metadata-bar no-scrollbar flex min-w-0 flex-nowrap items-center justify-between gap-1 overflow-x-auto font-mono text-xs select-none">
             <PaperChip
               selected={isAcctTrayOpen}
               rightIcon={<CaretDown className="size-3.5 shrink-0 opacity-70" weight="bold" />}

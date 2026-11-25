@@ -51,6 +51,7 @@ export { SegToggle, type SegToggleProps, type SegToggleOption } from '../compone
 export { PaperSwitch, type PaperSwitchProps } from '../components/ui/PaperSwitch';
 export { PaperDatePickerModal, type PaperDatePickerModalProps } from '../components/ui/PaperDatePickerModal';
 export { PaperIconPickerModal, type PaperIconPickerModalProps } from '../components/ui/PaperIconPickerModal';
+export { PageHeader, type PageHeaderProps } from '../components/layout/PageHeader';
 export { TransactionKeypad, type TransactionKeypadProps } from '../components/ledger/TransactionKeypad';
 
 export { toast } from '../stores/useToastStore';

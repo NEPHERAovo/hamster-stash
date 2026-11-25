@@ -6,6 +6,7 @@ import {
   centsToYuan,
   getCategoryIcon,
   cn,
+  PageHeader,
   PaperIconButton,
   PaperSelect,
   type PaperSelectOption,
@@ -124,8 +125,10 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
   return (
     <div className="w-full pb-20 select-none">
       {onClose && (
-        <div className="sticky top-0 z-30 box-border flex min-h-[calc(3rem+var(--safe-top))] items-center justify-between border-b border-(--rule-hairline) bg-(--paper-base) px-3 pt-[calc(0.25rem+var(--safe-top))] pb-1 sm:px-4">
-          <div className="flex items-center gap-2">
+        <PageHeader
+          title="Items"
+          modernTitle="物品"
+          leftAction={
             <PaperIconButton
               icon={ChevronLeft}
               size="md"
@@ -133,14 +136,8 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               onClick={onClose}
               aria-label="返回"
             />
-            <div>
-              <h1 className="mt-0.5 font-serif text-2xl leading-none text-(--ink-solid) not-italic sm:text-[28px]">
-                <span className="paper-title inline">Items</span>
-                <span className="modern-title hidden">物品</span>
-              </h1>
-            </div>
-          </div>
-        </div>
+          }
+        />
       )}
 
       <div className={cn('space-y-3.5 px-4', onClose ? 'pt-3' : 'pt-2')}>
@@ -179,7 +176,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
         </div>
 
         <div className="tab-stagger-2 w-full space-y-3">
-          <div className="flex [scrollbar-width:none] items-center justify-between gap-1.5 overflow-x-auto border-b border-(--rule-hairline) pb-2.5 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="no-scrollbar flex items-center justify-between gap-1.5 overflow-x-auto border-b border-(--rule-hairline) pb-2.5">
             <SegToggle
               options={[
                 { value: 'all', label: '全部' },

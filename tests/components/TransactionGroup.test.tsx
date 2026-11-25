@@ -70,10 +70,10 @@ describe('TransactionGroup component', () => {
     expect(rows.length).toBe(3);
 
     expect(rows[1].getAttribute('data-is-last')).toBe('true');
-    expect(rows[1].className).toContain('!border-b-0');
+    expect(rows[1].className).toContain('border-b-0');
 
     expect(rows[2].getAttribute('data-is-last')).toBe('true');
-    expect(rows[2].className).toContain('!border-b-0');
+    expect(rows[2].className).toContain('border-b-0');
   });
 
   it('filters by reimbursable transactions when filter pill is clicked', () => {

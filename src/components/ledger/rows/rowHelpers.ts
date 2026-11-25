@@ -15,7 +15,7 @@ export function getBaseRowClass(isFresh = false, isLastInGroup = false, classNam
     'entry-row relative flex cursor-pointer items-center justify-between px-3.5 py-2 transition-all duration-150 select-none',
     'border-b border-dashed border-(--rule-hairline)/60 hover:bg-(--paper-hover)/50 active:bg-(--paper-sunken)/40',
     isFresh && 'fresh-entry',
-    isLastInGroup && '!border-b-0',
+    isLastInGroup && 'border-b-0',
     className
   );
 }

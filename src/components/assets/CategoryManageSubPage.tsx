@@ -2,7 +2,6 @@ import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { PlusIcon as Plus, TrashIcon as Trash2, DotsSixVerticalIcon as GripVertical } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../stores/useCategoryStore';
-import { useThemeStore } from '../../stores/useThemeStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 import { SegToggle } from '../ui/SegToggle';
@@ -14,6 +13,7 @@ import { PaperSwitch } from '../ui/PaperSwitch';
 import { PaperButton } from '../ui/PaperButton';
 import { PaperInput } from '../ui/PaperInput';
 import { PaperIconButton } from '../ui/PaperIconButton';
+import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { cn } from '../../utils/cn';
 
 const CATEGORY_ICON_CHOICES = [
@@ -201,8 +201,6 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
 };
 
 export const CategoryManageSubPage: React.FC = () => {
-  const uiStyle = useThemeStore((s) => s.uiStyle);
-  const isModern = uiStyle === 'modern';
   const { categories, createCategory, updateCategory, removeCategory, reorderCategories } =
     useCategoryStore();
   const [activeType, setActiveType] = useState<'expense' | 'income'>('expense');
@@ -718,22 +716,12 @@ export const CategoryManageSubPage: React.FC = () => {
         </form>
       </PaperModal>
 
-      <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2">
-        <PaperIconButton
-          icon={Plus}
-          onClick={openCreateModal}
-          title="新增分类"
-          aria-label="新增分类"
-          variant="primary"
-          rounded={isModern ? 'full' : 'normal'}
-          className={cn(
-            'pointer-events-auto absolute right-4.5 bottom-0 flex cursor-pointer items-center justify-center transition-all',
-            isModern
-              ? 'size-14 bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-[0_4px_12px_-2px_var(--color-accent-bg)] active:scale-90 [&>svg]:size-6 [&>svg]:stroke-2'
-              : 'size-[46px] rounded-md bg-(--ink-solid) text-(--paper-sheet) shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:scale-95 dark:shadow-[0_2px_10px_rgba(0,0,0,0.3)] [&>svg]:size-5 [&>svg]:stroke-2'
-          )}
-        />
-      </div>
+      <FloatingActionButton
+        icon={Plus}
+        onClick={openCreateModal}
+        title="新增分类"
+        placement="corner"
+      />
     </div>
   );
 };

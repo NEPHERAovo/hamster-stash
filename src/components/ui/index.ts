@@ -13,6 +13,7 @@ export * from './Toast';
 export * from './ConfirmDialog';
 export * from './PaperDayPicker';
 export * from './PaperIconButton';
+export * from './FloatingActionButton';
 export * from './PaperChip';
 export * from './PaperEmptyState';
 export * from './PaperSelect';

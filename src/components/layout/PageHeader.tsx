@@ -2,10 +2,12 @@ import React from 'react';
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
 import { PaperIconButton } from '../ui/PaperIconButton';
 import { PaperButton } from '../ui/PaperButton';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {
   title: string;
+  modernTitle?: string;
   subtitle?: string;
   metaPill?: string;
   leftAction?: React.ReactNode;
@@ -22,6 +24,7 @@ export interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
+  modernTitle,
   subtitle,
   metaPill,
   leftAction,
@@ -35,6 +38,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   onDoubleClick,
   className,
 }) => {
+  const uiStyle = useThemeStore((s) => s.uiStyle);
+  const resolvedTitle = uiStyle === 'modern' && modernTitle ? modernTitle : title;
   const lastTapRef = React.useRef(0);
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -78,7 +83,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               </div>
             )}
             <h1 className="truncate text-lg font-semibold text-(--ink-solid) sm:text-xl">
-              {title}
+              {resolvedTitle}
             </h1>
             {subtitle && (
               <p className="mt-0.5 font-mono text-[10px] text-(--ink-tertiary)">{subtitle}</p>
@@ -99,7 +104,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 </div>
               )}
               <h1 className="font-serif text-2xl leading-none tracking-tight text-(--ink-solid) not-italic sm:text-[28px]">
-                {title}
+                {resolvedTitle}
               </h1>
               {subtitle && (
                 <p className="mt-0.5 font-mono text-[10px] text-(--ink-tertiary)">{subtitle}</p>

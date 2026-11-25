@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { PlusIcon as Plus } from '@phosphor-icons/react';
 import { usePluginUIStore } from '../../core/plugin/SlotStore';
 import { LiquidGlassDock } from '../ui/liquid-glass/LiquidGlassDock';
 import type { DockTabItem } from '../ui/liquid-glass/drawDockTexture';
+import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { cn } from '../../utils/cn';
 
 export interface ModernBottomNavProps {
@@ -60,22 +60,12 @@ export const ModernBottomNav: React.FC<ModernBottomNavProps> = ({
   return (
     <>
       {showAddButton && onAddClick && (
-        <div className="pointer-events-none fixed bottom-[calc(72px+var(--dock-bottom))] left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2">
-          <button
-            type="button"
-            onClick={onAddClick}
-            title={resolvedAddTitle}
-            aria-label={resolvedAddTitle}
-            className="pointer-events-auto absolute right-4 bottom-0 flex size-14 cursor-pointer items-center justify-center rounded-full bg-(--btn-primary-bg) text-(--btn-primary-fg) shadow-[0_4px_12px_-2px_var(--color-accent-bg)] transition-all active:scale-90"
-          >
-            <Plus
-              className={cn(
-                'stroke-2.4 size-6 transition-transform duration-200',
-                isAddOpen && 'rotate-45'
-              )}
-            />
-          </button>
-        </div>
+        <FloatingActionButton
+          onClick={onAddClick}
+          title={resolvedAddTitle}
+          rotated={isAddOpen}
+          placement="dock"
+        />
       )}
 
       <div
