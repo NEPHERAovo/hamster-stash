@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import React from 'react';
 import { OwnedItemsSummaryCard } from '../../src/plugins/owned-items/components/OwnedItemsSummaryCard';
 import { ItemDetailSubPage } from '../../src/plugins/owned-items/components/ItemDetailSubPage';
+import { ItemListSubPage } from '../../src/plugins/owned-items/components/ItemListSubPage';
 import { usePluginItemStore } from '../../src/plugins/owned-items/store/usePluginItemStore';
 import { usePluginUIStore } from '../../src/core/plugin/SlotStore';
 import { useLedgerStore } from '../../src/stores/useLedgerStore';
@@ -168,5 +169,32 @@ describe('OwnedItemsSummaryCard (持有插件总览卡片)', () => {
       );
     });
     expect(changeStatusSpy).toHaveBeenCalledWith('item_switch', 'sold', '2026-06-15');
+  });
+
+  it('displays item filter counts without parentheses using compact sizing in ItemListSubPage', () => {
+    const soldItem: Item = {
+      ...dummyItem,
+      id: 'item_camera',
+      name: 'Sony Camera',
+      status: 'sold',
+      endDate: '2026-06-01',
+    };
+
+    act(() => {
+      usePluginItemStore.setState({ items: [dummyItem, soldItem], loading: false });
+    });
+
+    render(<ItemListSubPage />);
+
+    const usingBtn = screen.getByRole('button', { name: '在用1' });
+    const soldBtn = screen.getByRole('button', { name: '已出1' });
+    expect(usingBtn).toHaveTextContent('在用1');
+    expect(soldBtn).toHaveTextContent('已出1');
+    expect(usingBtn.textContent).not.toMatch(/\(|\)|（|）/);
+    expect(usingBtn.className).toContain('px-1.5');
+
+    fireEvent.click(soldBtn);
+    expect(screen.getByText('Sony Camera')).toBeInTheDocument();
+    expect(screen.queryByText('Nintendo Switch')).toBeNull();
   });
 });

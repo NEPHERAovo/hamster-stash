@@ -4,6 +4,7 @@ import { cn } from '../../utils/cn';
 export interface SegToggleOption<T extends string | number> {
   value: T;
   label: string;
+  count?: number;
   icon?: React.ReactNode;
 }
 
@@ -11,7 +12,7 @@ export interface SegToggleProps<T extends string | number> {
   options: SegToggleOption<T>[];
   value: T;
   onChange: (value: T) => void;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   fullWidth?: boolean;
   className?: string;
 }
@@ -25,6 +26,7 @@ export function SegToggle<T extends string | number>({
   className,
 }: SegToggleProps<T>) {
   const sizeStyles = {
+    xs: 'text-xs py-1 px-1.5',
     sm: 'text-xs py-1 px-2.5',
     md: 'text-sm py-1.5 px-3.5',
   };
@@ -32,7 +34,8 @@ export function SegToggle<T extends string | number>({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-(--toggle-radius) border border-(--rule-hairline) bg-(--toggle-bg) p-1 transition-colors duration-200 select-none',
+        'inline-flex items-center rounded-(--toggle-radius) border border-(--rule-hairline) bg-(--toggle-bg) transition-colors duration-200 select-none',
+        size === 'xs' ? 'p-0.5' : 'p-1',
         fullWidth && 'w-full',
         className
       )}
@@ -45,7 +48,7 @@ export function SegToggle<T extends string | number>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--toggle-item-radius) font-medium whitespace-nowrap tabular-nums transition-[color,background-color,box-shadow] duration-150',
+              'inline-flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-(--toggle-item-radius) font-medium whitespace-nowrap tabular-nums transition-[color,background-color,box-shadow] duration-150',
               sizeStyles[size],
               isSelected
                 ? 'bg-(--toggle-active-bg) text-(--toggle-active-fg) shadow-xs'
@@ -55,7 +58,19 @@ export function SegToggle<T extends string | number>({
             {option.icon && (
               <span className="flex shrink-0 items-center">{option.icon}</span>
             )}
-            <span>{option.label}</span>
+            <span className="inline-flex items-baseline gap-0.5">
+              <span>{option.label}</span>
+              {option.count !== undefined && (
+                <span
+                  className={cn(
+                    'font-mono text-[10px] leading-none font-normal tabular-nums',
+                    isSelected ? 'text-(--toggle-active-fg) opacity-65' : 'opacity-70'
+                  )}
+                >
+                  {option.count}
+                </span>
+              )}
+            </span>
           </button>
         );
       })}

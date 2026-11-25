@@ -159,7 +159,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
         </div>
 
         <div className="tab-stagger-2 w-full space-y-3">
-          <div className="no-scrollbar flex items-center justify-between gap-2 overflow-x-auto border-b border-(--rule-hairline) pb-2.5 font-mono text-xs">
+          <div className="no-scrollbar flex items-center justify-between gap-1.5 overflow-x-auto border-b border-(--rule-hairline) pb-2.5">
             <SegToggle
               options={[
                 { value: 'all', label: '全部' },
@@ -168,19 +168,19 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
               ]}
               value={kindFilter}
               onChange={(val) => setKindFilter(val as KindTab)}
-              size="sm"
+              size="xs"
               fullWidth={false}
             />
 
             <SegToggle
               options={[
-                { value: 'using', label: `在用 (${overallSummary.usingCount})` },
-                { value: 'sold', label: `已出 (${overallSummary.soldCount})` },
-                { value: 'all', label: `全部 (${overallSummary.totalCount})` },
+                { value: 'using', label: '在用', count: overallSummary.usingCount },
+                { value: 'sold', label: '已出', count: overallSummary.soldCount },
+                { value: 'all', label: '全部', count: overallSummary.totalCount },
               ]}
               value={activeTab}
               onChange={(val) => setActiveTab(val as FilterTab)}
-              size="sm"
+              size="xs"
               fullWidth={false}
             />
           </div>

@@ -31,4 +31,37 @@ describe('SegToggle Component', () => {
     fireEvent.click(soldBtn);
     expect(handleChange).toHaveBeenCalledWith('sold');
   });
+
+  it('renders optional count without parentheses using compact typography and distinct ink tone', () => {
+    const handleChange = vi.fn();
+    render(
+      <SegToggle
+        options={[
+          { value: 'using', label: '在用', count: 12 },
+          { value: 'sold', label: '已出', count: 105 },
+          { value: 'all', label: '全部', count: 117 },
+        ]}
+        value="using"
+        onChange={handleChange}
+        size="xs"
+      />
+    );
+
+    expect(screen.queryByText(/\(|\)|（|）/)).toBeNull();
+
+    const activeBtn = screen.getByRole('button', { name: /在用/ });
+    const inactiveBtn = screen.getByRole('button', { name: /已出/ });
+    expect(activeBtn.className).toContain('px-1.5');
+
+    const activeCount = screen.getByText('12');
+    const inactiveCount = screen.getByText('105');
+
+    expect(activeCount.className).toContain('text-[10px]');
+    expect(activeCount.className).toContain('opacity-65');
+    expect(inactiveCount.className).toContain('text-[10px]');
+    expect(inactiveCount.className).toContain('opacity-70');
+
+    fireEvent.click(inactiveBtn);
+    expect(handleChange).toHaveBeenCalledWith('sold');
+  });
 });
