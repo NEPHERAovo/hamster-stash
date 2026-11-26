@@ -197,7 +197,8 @@ HamsterStash features an extensible micro-kernel architecture where feature modu
 - TypeScript strict mode enabled: zero `any` allowed (use `unknown` or specific generics).
 - ESLint: Zero errors, zero warnings. Run `pnpm lint` and resolve every report.
 - Tailwind CSS: Always use canonical class names (e.g., `stroke-2` instead of `stroke-[2]`).
-- Zero backward-compatibility shims inside domain or UI components. The product is in active pre-release development: runtime code must never maintain backward-compatibility branches, legacy aliases, fallback storage keys, or obsolete schema shims. When schemas evolve, transform data directly without carrying historical compatibility baggage in runtime code. Version upgrades must use standalone migration modules under `src/core/db/`.
+- Zero backward-compatibility shims inside domain or UI components. The product is in active pre-release development: runtime code must never maintain backward-compatibility branches, legacy aliases, fallback storage keys, `legacy_` ID prefixes, or obsolete schema shims. When schemas evolve, transform non-conforming records directly into canonical form at boundaries without carrying historical compatibility baggage in runtime or sync code. Version upgrades must use standalone migration modules under `src/core/db/` or deterministic boundary normalizers.
+- Proactive clean-architecture review on change: whenever modifying features, store loaders, or sync/import pipelines, actively evaluate whether a cleaner root-cause abstraction (canonical IDs over wrapper metadata, `"everything is a transaction"` via `reconcile`, single-pass loading, sharded WebDAV sync) keeps the codebase leaner instead of deferring cleanup until requested.
 
 ---
 

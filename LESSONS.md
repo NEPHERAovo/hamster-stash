@@ -100,3 +100,15 @@
 - **Why**: In Tailwind v4, unlayered selectors naturally win over `@layer utilities` without specificity hacks, `tailwind-merge` resolves caller className overrides deterministically, and keeping `@utility` helpers separate keeps `src/index.css` concise and maintainable.
 - **Evidence**: Enforced in `tests/contracts/styleAndInvariantContracts.test.tsx` (commit `adaea3f`).
 - **Seen**: 1
+
+### 15. Proactive Clean-Architecture Evaluation During Feature Evolution
+- **Rule**: Whenever a feature expands, changes data flow, or touches schema/sync boundaries, proactively audit and propose the cleanest root-cause design (eliminating redundant metadata wrappers, duplicate full-table scans, monolithic blobs, or compatibility tiers) instead of layering workarounds until the user asks for cleanup.
+- **Why**: Incremental feature patches (such as stuffing duplicate-detection metadata inside `tx.ext`, computing opening balances via fake income/expense rows, double-scanning all transactions per load, or serializing entire books into a single formatted sync file) compound cognitive and maintenance debt rapidly. Addressing design cleanliness upfront yields leaner diffs and durable primitives.
+- **Evidence**: Retrospectively streamlined WeChat/Alipay bill import, reconcile opening balances, and sharded WebDAV sync in commits `2d78fb1` and `3fbf6d8`.
+- **Seen**: 1
+
+### 16. Canonical Prefixed IDs, Direct Boundary Conversion & Sharded WebDAV Manifests
+- **Rule**: Encode entity identity cleanly through one canonical prefix system (`acct_*`, `cat_*`, `tx_*`, `wx_*`, `ali_*`, `wealth_*`, `csv_*`), convert non-conforming or missing IDs directly with atomic foreign-key cascades at database/import boundaries rather than maintaining `legacy_` tiers, and partition WebDAV backups via content-hashed `manifest.json` shards (`settings.json`, `meta.json`, `transactions/YYYY.json`).
+- **Why**: Source-encoded IDs make external imports self-deduplicating without extra `ext` metadata; direct boundary normalization prevents dual-path logic inside runtime and sync layers; manifest-hashed sharding avoids monolithic full-book uploads/downloads and preserves clean diffs across years.
+- **Evidence**: Enforced via `src/domain/data/idNormalizer.ts` (`tests/domain/idNormalizer.test.ts`), `src/domain/sync/syncShards.ts` (`tests/domain/syncShards.test.ts`), and `tests/domain/autoSync.test.ts`.
+- **Seen**: 1
