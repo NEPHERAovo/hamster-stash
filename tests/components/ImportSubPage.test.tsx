@@ -247,7 +247,7 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
 
     fireEvent.click(screen.getByText(/下一步：分类匹配/));
     expect(screen.getByText('关闭/退款 1 笔')).toBeInTheDocument();
-    expect(screen.getByText('理财日收益 1 笔按月汇总')).toBeInTheDocument();
+    expect(screen.getByText('理财日收益 1 笔 · 按月汇总')).toBeInTheDocument();
     const neutralTypeEl = screen.getByText((content, node) =>
       Boolean(node?.tagName === 'SPAN' && content.includes('不计收支') && node.textContent?.includes('(1笔)'))
     );

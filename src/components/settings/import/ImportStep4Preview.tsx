@@ -132,14 +132,34 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
       </div>
 
       {(skippedCount > 0 || duplicateCount > 0 || wealthRollupCount > 0) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-2.5 font-mono text-[11px] text-(--ink-secondary) tabular-nums shadow-xs">
-          <span>待导入 {finalImportCount} 笔</span>
-          {wealthRollupCount > 0 && <span>含理财月结 {wealthRollupCount} 笔</span>}
-          {neutralCount > 0 && <span>不计收支 {neutralCount} 笔</span>}
-          {filteredStatusCount > 0 && <span>关闭/退款 {filteredStatusCount} 笔</span>}
-          {duplicateCount > 0 && <span>重复 {duplicateCount} 笔</span>}
+        <div className="flex flex-wrap items-center gap-1.5 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-2.5 font-mono text-[11px] tabular-nums shadow-xs">
+          <span className="inline-flex items-center rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-0.5 font-semibold text-(--ink-primary)">
+            待导入 {finalImportCount} 笔
+          </span>
+          {wealthRollupCount > 0 && (
+            <span className="inline-flex items-center rounded-(--badge-radius) bg-(--color-income-bg) px-2 py-0.5 text-(--color-income)">
+              含理财月结 {wealthRollupCount} 笔
+            </span>
+          )}
+          {neutralCount > 0 && (
+            <span className="inline-flex items-center rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-0.5 text-(--ink-secondary)">
+              不计收支 {neutralCount} 笔
+            </span>
+          )}
+          {filteredStatusCount > 0 && (
+            <span className="inline-flex items-center rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-0.5 text-(--ink-secondary)">
+              关闭/退款 {filteredStatusCount} 笔
+            </span>
+          )}
+          {duplicateCount > 0 && (
+            <span className="inline-flex items-center rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-0.5 text-(--ink-secondary)">
+              重复 {duplicateCount} 笔
+            </span>
+          )}
           {neutralCount === 0 && filteredStatusCount === 0 && skippedCount > 0 && (
-            <span>过滤/跳过 {skippedCount} 笔</span>
+            <span className="inline-flex items-center rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-0.5 text-(--ink-secondary)">
+              过滤/跳过 {skippedCount} 笔
+            </span>
           )}
         </div>
       )}
