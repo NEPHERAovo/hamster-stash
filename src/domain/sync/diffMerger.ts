@@ -81,9 +81,7 @@ export const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 const DEFAULT_SEED_TIME_MS = Date.parse('1970-01-01T00:00:00.000Z');
 
 export function canonicalizeValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(canonicalizeValue);
-  }
+  if (Array.isArray(value)) return value.map(canonicalizeValue);
   if (typeof value === 'object' && value !== null) {
     const record = value as Record<string, unknown>;
     const normalized: Record<string, unknown> = {};
@@ -108,15 +106,14 @@ export function canonicalizeValue(value: unknown): unknown {
 
 export function areValuesCanonicallyEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
-  if (a === undefined || b === undefined) return false;
-  if (a === null || b === null) return false;
+  if (a === undefined || b === undefined || a === null || b === null) return false;
   return JSON.stringify(canonicalizeValue(a)) === JSON.stringify(canonicalizeValue(b));
 }
 
 function getEntityTimestampMs(entity: StoredEntity | Record<string, unknown> | undefined): number {
   if (!entity) return 0;
-  const record = entity as { updatedAt?: string; createdAt?: string; deletedAt?: string };
-  const raw = record.updatedAt || record.deletedAt || record.createdAt;
+  const rec = entity as { updatedAt?: string; createdAt?: string; deletedAt?: string };
+  const raw = rec.updatedAt || rec.deletedAt || rec.createdAt;
   if (!raw) return 0;
   const ms = Date.parse(raw);
   return Number.isNaN(ms) ? 0 : ms;
@@ -124,21 +121,15 @@ function getEntityTimestampMs(entity: StoredEntity | Record<string, unknown> | u
 
 function isExpiredTombstone(entity: StoredEntity | undefined, nowMs: number): boolean {
   if (!entity?.deletedAt) return false;
-  const deletedMs = Date.parse(entity.deletedAt);
-  if (Number.isNaN(deletedMs)) return false;
-  return nowMs - deletedMs > TOMBSTONE_RETENTION_MS;
+  const ms = Date.parse(entity.deletedAt);
+  return !Number.isNaN(ms) && nowMs - ms > TOMBSTONE_RETENTION_MS;
 }
 
 type SyncTx = Transaction & { deletedAt?: string };
 
 function getOwnedItemId(tx: SyncTx | undefined): string | undefined {
-  if (!tx?.ext) return undefined;
-  const owned = tx.ext['owned-items'] as { itemId?: string } | undefined;
+  const owned = tx?.ext?.['owned-items'] as { itemId?: string } | undefined;
   return owned?.itemId || undefined;
-}
-
-function hasOwnedItemLink(tx: SyncTx | undefined): boolean {
-  return Boolean(getOwnedItemId(tx));
 }
 
 function isSameCorePurchase(a: SyncTx, b: SyncTx): boolean {
@@ -151,14 +142,9 @@ function isSameCorePurchase(a: SyncTx, b: SyncTx): boolean {
   );
 }
 
-function findCrossIdDuplicateTwin(
-  remoteTx: SyncTx,
-  localTransactions: SyncTx[]
-): SyncTx | undefined {
-  if (remoteTx.deletedAt || remoteTx.offsetTransactionId || remoteTx.relatedLoanId) {
-    return undefined;
-  }
-  return localTransactions.find((localTx) => {
+function findCrossIdDuplicateTwin(remoteTx: SyncTx, localTxs: SyncTx[]): SyncTx | undefined {
+  if (remoteTx.deletedAt || remoteTx.offsetTransactionId || remoteTx.relatedLoanId) return undefined;
+  return localTxs.find((localTx) => {
     if (localTx.deletedAt || localTx.id === remoteTx.id) return false;
     if (!isSameCorePurchase(localTx, remoteTx)) return false;
     if ((localTx.note || '').trim() !== (remoteTx.note || '').trim()) return false;
@@ -169,16 +155,14 @@ function findCrossIdDuplicateTwin(
 
 function recommendTransactionResolution(loc: SyncTx, rem: SyncTx): SyncResolutionChoice {
   if (!loc.deletedAt && !rem.deletedAt && isSameCorePurchase(loc, rem)) {
-    const locLinked = hasOwnedItemLink(loc);
-    const remLinked = hasOwnedItemLink(rem);
-    if (locLinked !== remLinked) {
-      return locLinked ? 'local' : 'remote';
-    }
+    const locLinked = Boolean(getOwnedItemId(loc));
+    const remLinked = Boolean(getOwnedItemId(rem));
+    if (locLinked !== remLinked) return locLinked ? 'local' : 'remote';
   }
   return getEntityTimestampMs(loc) >= getEntityTimestampMs(rem) ? 'local' : 'remote';
 }
 
-function resolveChangeKind(
+function resolveEntityChangeKind(
   loc: StoredEntity | undefined,
   rem: StoredEntity | undefined,
   perspective: 'incoming' | 'push' | 'conflict'
@@ -198,28 +182,114 @@ function resolveChangeKind(
   return 'modify';
 }
 
+function resolveSettingChangeKind(
+  loc: unknown,
+  rem: unknown,
+  perspective: 'incoming' | 'push' | 'conflict'
+): SyncChangeKind {
+  if (perspective === 'incoming') {
+    if (loc === undefined) return 'add';
+    return rem === undefined ? 'delete' : 'modify';
+  }
+  if (perspective === 'push') {
+    if (rem === undefined) return 'add';
+    return loc === undefined ? 'delete' : 'modify';
+  }
+  return 'modify';
+}
+
+function routeThreeWayDiff(params: {
+  collection: SyncEntityCollection;
+  id: string;
+  loc: unknown;
+  rem: unknown;
+  bas: unknown;
+  hasBase: boolean;
+  locEntity?: StoredEntity | Record<string, unknown>;
+  remEntity?: StoredEntity | Record<string, unknown>;
+  basEntity?: StoredEntity | Record<string, unknown>;
+  getKind: (perspective: 'incoming' | 'push' | 'conflict') => SyncChangeKind;
+  getRecommendedConflict: () => SyncResolutionChoice;
+  isFreshSeedUpgrade?: boolean;
+  incoming: SyncDiffItem[];
+  conflict: SyncDiffItem[];
+  push: SyncDiffItem[];
+}): void {
+  const {
+    collection,
+    id,
+    loc,
+    rem,
+    bas,
+    hasBase,
+    locEntity,
+    remEntity,
+    basEntity,
+    getKind,
+    getRecommendedConflict,
+    isFreshSeedUpgrade,
+    incoming,
+    conflict,
+    push,
+  } = params;
+
+  const emit = (
+    target: SyncDiffItem[],
+    source: SyncDiffItem['source'],
+    recommendedResolution: SyncResolutionChoice,
+    reason: SyncConflictReason,
+    baseVal?: StoredEntity | Record<string, unknown>
+  ) => {
+    target.push({
+      key: `${collection}:${id}`,
+      collection,
+      id,
+      kind: getKind(source),
+      source,
+      localEntity: locEntity,
+      remoteEntity: remEntity,
+      ...(baseVal !== undefined ? { baseEntity: baseVal } : {}),
+      recommendedResolution,
+      reason,
+    });
+  };
+
+  if (hasBase) {
+    const eqLB = areValuesCanonicallyEqual(loc, bas);
+    const eqRB = areValuesCanonicallyEqual(rem, bas);
+    if (eqLB && !eqRB) {
+      emit(incoming, 'incoming', 'remote', 'remote_only', basEntity);
+    } else if (!eqLB && eqRB) {
+      emit(push, 'push', 'local', 'local_only', basEntity);
+    } else {
+      emit(conflict, 'conflict', getRecommendedConflict(), 'both_modified', basEntity);
+    }
+    return;
+  }
+
+  if (loc === undefined && rem !== undefined) {
+    emit(incoming, 'incoming', 'remote', 'remote_only');
+  } else if (loc !== undefined && rem === undefined) {
+    emit(push, 'push', 'local', 'local_only');
+  } else if (isFreshSeedUpgrade) {
+    emit(incoming, 'incoming', 'remote', 'remote_only');
+  } else {
+    emit(conflict, 'conflict', getRecommendedConflict(), 'no_base_diverged');
+  }
+}
+
 function classifyEntityCollection<T extends StoredEntity>(params: {
   collection: 'transactions' | 'accounts' | 'categories' | 'plugin_data';
   localList: T[];
   remoteList: T[];
   baseList: T[] | null;
   nowMs: number;
-}): {
-  unchanged: T[];
-  incoming: SyncDiffItem[];
-  conflict: SyncDiffItem[];
-  push: SyncDiffItem[];
-} {
+}) {
   const { collection, localList, remoteList, baseList, nowMs } = params;
-  const localMap = new Map<string, T>(localList.map((item) => [item.id, item]));
-  const remoteMap = new Map<string, T>(remoteList.map((item) => [item.id, item]));
-  const baseMap = new Map<string, T>((baseList || []).map((item) => [item.id, item]));
-
-  const allIds = new Set<string>([
-    ...localMap.keys(),
-    ...remoteMap.keys(),
-    ...(baseList ? baseMap.keys() : []),
-  ]);
+  const localMap = new Map(localList.map((item) => [item.id, item]));
+  const remoteMap = new Map(remoteList.map((item) => [item.id, item]));
+  const baseMap = new Map((baseList || []).map((item) => [item.id, item]));
+  const allIds = new Set([...localMap.keys(), ...remoteMap.keys(), ...(baseList ? baseMap.keys() : [])]);
 
   const unchanged: T[] = [];
   const incoming: SyncDiffItem[] = [];
@@ -231,31 +301,23 @@ function classifyEntityCollection<T extends StoredEntity>(params: {
     const loc = localMap.get(id);
     const rem = remoteMap.get(id);
     const bas = baseList ? baseMap.get(id) : undefined;
-    const key = `${collection}:${id}`;
 
     if (areValuesCanonicallyEqual(loc, rem)) {
-      if (loc && !isExpiredTombstone(loc, nowMs)) {
-        unchanged.push(loc);
-      }
+      if (loc && !isExpiredTombstone(loc, nowMs)) unchanged.push(loc);
       continue;
     }
-
     if (!loc && rem?.deletedAt) {
-      if (!isExpiredTombstone(rem, nowMs)) {
-        unchanged.push(rem);
-      }
+      if (!isExpiredTombstone(rem, nowMs)) unchanged.push(rem);
       continue;
     }
-
     if (loc?.deletedAt && !rem) {
       push.push({
-        key,
+        key: `${collection}:${id}`,
         collection,
         id,
         kind: 'delete',
         source: 'push',
         localEntity: loc,
-        remoteEntity: undefined,
         baseEntity: bas,
         recommendedResolution: 'local',
         reason: 'local_only',
@@ -264,18 +326,11 @@ function classifyEntityCollection<T extends StoredEntity>(params: {
     }
 
     if (collection === 'transactions' && !loc && rem) {
-      const twin = findCrossIdDuplicateTwin(
-        rem as unknown as SyncTx,
-        localList as unknown as SyncTx[]
-      );
+      const twin = findCrossIdDuplicateTwin(rem as unknown as SyncTx, localList as unknown as SyncTx[]);
       if (twin) {
         matchedTwinIds.add(twin.id);
-        const rec: SyncResolutionChoice = recommendTransactionResolution(
-          twin,
-          rem as unknown as SyncTx
-        );
         conflict.push({
-          key,
+          key: `${collection}:${id}`,
           collection,
           id,
           kind: 'modify',
@@ -283,156 +338,50 @@ function classifyEntityCollection<T extends StoredEntity>(params: {
           localEntity: twin as unknown as StoredEntity,
           remoteEntity: rem,
           baseEntity: bas,
-          recommendedResolution: rec,
+          recommendedResolution: recommendTransactionResolution(twin, rem as unknown as SyncTx),
           reason: 'cross_id_duplicate',
         });
         continue;
       }
     }
 
-    if (baseList !== null) {
-      const eqLB = areValuesCanonicallyEqual(loc, bas);
-      const eqRB = areValuesCanonicallyEqual(rem, bas);
+    const locTime = getEntityTimestampMs(loc);
+    const remTime = getEntityTimestampMs(rem);
+    const isFreshSeedUpgrade =
+      (collection === 'accounts' || collection === 'categories') &&
+      locTime === DEFAULT_SEED_TIME_MS &&
+      remTime > DEFAULT_SEED_TIME_MS;
 
-      if (eqLB && !eqRB) {
-        incoming.push({
-          key,
-          collection,
-          id,
-          kind: resolveChangeKind(loc, rem, 'incoming'),
-          source: 'incoming',
-          localEntity: loc,
-          remoteEntity: rem,
-          baseEntity: bas,
-          recommendedResolution: 'remote',
-          reason: 'remote_only',
-        });
-      } else if (!eqLB && eqRB) {
-        push.push({
-          key,
-          collection,
-          id,
-          kind: resolveChangeKind(loc, rem, 'push'),
-          source: 'push',
-          localEntity: loc,
-          remoteEntity: rem,
-          baseEntity: bas,
-          recommendedResolution: 'local',
-          reason: 'local_only',
-        });
-      } else {
-        let recommended: SyncResolutionChoice =
-          getEntityTimestampMs(loc) >= getEntityTimestampMs(rem) ? 'local' : 'remote';
+    routeThreeWayDiff({
+      collection,
+      id,
+      loc,
+      rem,
+      bas,
+      hasBase: baseList !== null,
+      locEntity: loc,
+      remEntity: rem,
+      basEntity: bas,
+      getKind: (perspective) => resolveEntityChangeKind(loc, rem, perspective),
+      getRecommendedConflict: () => {
         if (collection === 'transactions' && loc && rem) {
-          recommended = recommendTransactionResolution(
-            loc as unknown as Transaction,
-            rem as unknown as Transaction
-          );
+          return recommendTransactionResolution(loc as unknown as Transaction, rem as unknown as Transaction);
         }
-        conflict.push({
-          key,
-          collection,
-          id,
-          kind: resolveChangeKind(loc, rem, 'conflict'),
-          source: 'conflict',
-          localEntity: loc,
-          remoteEntity: rem,
-          baseEntity: bas,
-          recommendedResolution: recommended,
-          reason: 'both_modified',
-        });
-      }
-      continue;
-    }
-
-    if (!loc && rem) {
-      incoming.push({
-        key,
-        collection,
-        id,
-        kind: resolveChangeKind(loc, rem, 'incoming'),
-        source: 'incoming',
-        localEntity: undefined,
-        remoteEntity: rem,
-        recommendedResolution: 'remote',
-        reason: 'remote_only',
-      });
-    } else if (loc && !rem) {
-      push.push({
-        key,
-        collection,
-        id,
-        kind: resolveChangeKind(loc, rem, 'push'),
-        source: 'push',
-        localEntity: loc,
-        remoteEntity: undefined,
-        recommendedResolution: 'local',
-        reason: 'local_only',
-      });
-    } else if (loc && rem) {
-      const locTime = getEntityTimestampMs(loc);
-      const remTime = getEntityTimestampMs(rem);
-      const isFreshSeedUpgrade =
-        (collection === 'accounts' || collection === 'categories') &&
-        locTime === DEFAULT_SEED_TIME_MS &&
-        remTime > DEFAULT_SEED_TIME_MS;
-
-      if (isFreshSeedUpgrade) {
-        incoming.push({
-          key,
-          collection,
-          id,
-          kind: resolveChangeKind(loc, rem, 'incoming'),
-          source: 'incoming',
-          localEntity: loc,
-          remoteEntity: rem,
-          recommendedResolution: 'remote',
-          reason: 'remote_only',
-        });
-      } else {
-        let recommended: SyncResolutionChoice = locTime >= remTime ? 'local' : 'remote';
-        if (collection === 'transactions') {
-          recommended = recommendTransactionResolution(
-            loc as unknown as Transaction,
-            rem as unknown as Transaction
-          );
-        }
-        conflict.push({
-          key,
-          collection,
-          id,
-          kind: resolveChangeKind(loc, rem, 'conflict'),
-          source: 'conflict',
-          localEntity: loc,
-          remoteEntity: rem,
-          recommendedResolution: recommended,
-          reason: 'no_base_diverged',
-        });
-      }
-    }
+        return locTime >= remTime ? 'local' : 'remote';
+      },
+      isFreshSeedUpgrade,
+      incoming,
+      conflict,
+      push,
+    });
   }
 
-  const filteredPush =
-    matchedTwinIds.size > 0
-      ? push.filter((item) => !matchedTwinIds.has(item.id))
-      : push;
-
-  return { unchanged, incoming, conflict, push: filteredPush };
-}
-
-function resolveRecordSettingKind(
-  loc: unknown,
-  rem: unknown,
-  perspective: 'incoming' | 'push'
-): SyncChangeKind {
-  if (perspective === 'incoming') {
-    if (loc === undefined) return 'add';
-    if (rem === undefined) return 'delete';
-    return 'modify';
-  }
-  if (rem === undefined) return 'add';
-  if (loc === undefined) return 'delete';
-  return 'modify';
+  return {
+    unchanged,
+    incoming,
+    conflict,
+    push: matchedTwinIds.size > 0 ? push.filter((item) => !matchedTwinIds.has(item.id)) : push,
+  };
 }
 
 function classifyRecordSettings(params: {
@@ -440,14 +389,9 @@ function classifyRecordSettings(params: {
   localMap: Record<string, unknown>;
   remoteMap: Record<string, unknown>;
   baseMap: Record<string, unknown> | null;
-}): {
-  unchanged: Record<string, unknown>;
-  incoming: SyncDiffItem[];
-  conflict: SyncDiffItem[];
-  push: SyncDiffItem[];
-} {
+}) {
   const { collection, localMap, remoteMap, baseMap } = params;
-  const allKeys = new Set<string>([
+  const allKeys = new Set([
     ...Object.keys(localMap),
     ...Object.keys(remoteMap),
     ...(baseMap ? Object.keys(baseMap) : []),
@@ -458,112 +402,42 @@ function classifyRecordSettings(params: {
   const conflict: SyncDiffItem[] = [];
   const push: SyncDiffItem[] = [];
 
+  const asRecord = (val: unknown) =>
+    typeof val === 'object' && val !== null ? (val as Record<string, unknown>) : undefined;
+
   for (const id of allKeys) {
     const loc = localMap[id];
     const rem = remoteMap[id];
     const bas = baseMap ? baseMap[id] : undefined;
-    const key = `${collection}:${id}`;
 
     if (areValuesCanonicallyEqual(loc, rem)) {
-      if (loc !== undefined) {
-        unchanged[id] = loc;
-      }
+      if (loc !== undefined) unchanged[id] = loc;
       continue;
     }
 
-    const locEntity =
-      typeof loc === 'object' && loc !== null ? (loc as Record<string, unknown>) : undefined;
-    const remEntity =
-      typeof rem === 'object' && rem !== null ? (rem as Record<string, unknown>) : undefined;
-    const basEntity =
-      typeof bas === 'object' && bas !== null ? (bas as Record<string, unknown>) : undefined;
+    const locEntity = asRecord(loc);
+    const remEntity = asRecord(rem);
+    const basEntity = asRecord(bas);
 
-    if (baseMap !== null) {
-      const eqLB = areValuesCanonicallyEqual(loc, bas);
-      const eqRB = areValuesCanonicallyEqual(rem, bas);
-
-      if (eqLB && !eqRB) {
-        incoming.push({
-          key,
-          collection,
-          id,
-          kind: resolveRecordSettingKind(loc, rem, 'incoming'),
-          source: 'incoming',
-          localEntity: locEntity,
-          remoteEntity: remEntity,
-          baseEntity: basEntity,
-          recommendedResolution: 'remote',
-          reason: 'remote_only',
-        });
-      } else if (!eqLB && eqRB) {
-        push.push({
-          key,
-          collection,
-          id,
-          kind: resolveRecordSettingKind(loc, rem, 'push'),
-          source: 'push',
-          localEntity: locEntity,
-          remoteEntity: remEntity,
-          baseEntity: basEntity,
-          recommendedResolution: 'local',
-          reason: 'local_only',
-        });
-      } else {
-        conflict.push({
-          key,
-          collection,
-          id,
-          kind: 'modify',
-          source: 'conflict',
-          localEntity: locEntity,
-          remoteEntity: remEntity,
-          baseEntity: basEntity,
-          recommendedResolution: 'local',
-          reason: 'both_modified',
-        });
-      }
-      continue;
-    }
-
-    if (loc === undefined && rem !== undefined) {
-      incoming.push({
-        key,
-        collection,
-        id,
-        kind: 'add',
-        source: 'incoming',
-        localEntity: undefined,
-        remoteEntity: remEntity,
-        recommendedResolution: 'remote',
-        reason: 'remote_only',
-      });
-    } else if (loc !== undefined && rem === undefined) {
-      push.push({
-        key,
-        collection,
-        id,
-        kind: 'add',
-        source: 'push',
-        localEntity: locEntity,
-        remoteEntity: undefined,
-        recommendedResolution: 'local',
-        reason: 'local_only',
-      });
-    } else {
-      const locMs = getEntityTimestampMs(locEntity);
-      const remMs = getEntityTimestampMs(remEntity);
-      conflict.push({
-        key,
-        collection,
-        id,
-        kind: 'modify',
-        source: 'conflict',
-        localEntity: locEntity,
-        remoteEntity: remEntity,
-        recommendedResolution: locMs >= remMs ? 'local' : 'remote',
-        reason: 'no_base_diverged',
-      });
-    }
+    routeThreeWayDiff({
+      collection,
+      id,
+      loc,
+      rem,
+      bas,
+      hasBase: baseMap !== null,
+      locEntity,
+      remEntity,
+      basEntity,
+      getKind: (perspective) => resolveSettingChangeKind(loc, rem, perspective),
+      getRecommendedConflict: () =>
+        baseMap !== null || getEntityTimestampMs(locEntity) >= getEntityTimestampMs(remEntity)
+          ? 'local'
+          : 'remote',
+      incoming,
+      conflict,
+      push,
+    });
   }
 
   return { unchanged, incoming, conflict, push };
@@ -584,19 +458,12 @@ function classifyAccountCollection(params: {
   remoteList: SyncAccount[];
   baseList: SyncAccount[] | null;
   nowMs: number;
-}): {
-  unchanged: Account[];
-  autoAccounts: AutoAccountMergeEntry[];
-} {
+}): { unchanged: Account[]; autoAccounts: AutoAccountMergeEntry[] } {
   const { localList, remoteList, baseList, nowMs } = params;
-  const localMap = new Map<string, SyncAccount>(localList.map((a) => [a.id, a]));
-  const remoteMap = new Map<string, SyncAccount>(remoteList.map((a) => [a.id, a]));
-  const baseMap = new Map<string, SyncAccount>((baseList || []).map((a) => [a.id, a]));
-  const allIds = new Set<string>([
-    ...localMap.keys(),
-    ...remoteMap.keys(),
-    ...(baseList ? baseMap.keys() : []),
-  ]);
+  const localMap = new Map(localList.map((a) => [a.id, a]));
+  const remoteMap = new Map(remoteList.map((a) => [a.id, a]));
+  const baseMap = new Map((baseList || []).map((a) => [a.id, a]));
+  const allIds = new Set([...localMap.keys(), ...remoteMap.keys(), ...(baseList ? baseMap.keys() : [])]);
 
   const unchanged: Account[] = [];
   const autoAccounts: AutoAccountMergeEntry[] = [];
@@ -607,65 +474,34 @@ function classifyAccountCollection(params: {
     const bas = baseList ? baseMap.get(id) : undefined;
 
     if (areValuesCanonicallyEqual(loc, rem)) {
-      if (loc && !isExpiredTombstone(loc, nowMs)) {
-        unchanged.push(loc);
-      }
+      if (loc && !isExpiredTombstone(loc, nowMs)) unchanged.push(loc);
       continue;
     }
-
     if (!loc && rem?.deletedAt) {
-      if (!isExpiredTombstone(rem, nowMs)) {
-        unchanged.push(rem);
-      }
+      if (!isExpiredTombstone(rem, nowMs)) unchanged.push(rem);
       continue;
     }
-
     if (!loc && rem) {
-      autoAccounts.push({
-        id,
-        localEntity: undefined,
-        remoteEntity: rem,
-        winner: rem,
-        baselineFromRemote: true,
-      });
+      autoAccounts.push({ id, remoteEntity: rem, winner: rem, baselineFromRemote: true });
       continue;
     }
-
     if (loc && !rem) {
-      autoAccounts.push({
-        id,
-        localEntity: loc,
-        remoteEntity: undefined,
-        winner: loc,
-        baselineFromRemote: false,
-      });
+      autoAccounts.push({ id, localEntity: loc, winner: loc, baselineFromRemote: false });
       continue;
     }
-
     if (loc && rem) {
       const locTime = getEntityTimestampMs(loc);
       const remTime = getEntityTimestampMs(rem);
-      const isFreshSeedUpgrade = locTime === DEFAULT_SEED_TIME_MS && remTime > DEFAULT_SEED_TIME_MS;
-
-      if (isFreshSeedUpgrade) {
-        autoAccounts.push({
-          id,
-          localEntity: loc,
-          remoteEntity: rem,
-          winner: rem,
-          baselineFromRemote: true,
-        });
+      if (locTime === DEFAULT_SEED_TIME_MS && remTime > DEFAULT_SEED_TIME_MS) {
+        autoAccounts.push({ id, localEntity: loc, remoteEntity: rem, winner: rem, baselineFromRemote: true });
         continue;
       }
-
       const locMeta = stripVolatileAccountFields(loc);
       const remMeta = stripVolatileAccountFields(rem);
-
       if (areValuesCanonicallyEqual(locMeta, remMeta)) {
         unchanged.push(loc);
         continue;
       }
-
       const basMeta = stripVolatileAccountFields(bas);
       let pickRemote = remTime > locTime;
       if (baseList !== null) {
@@ -674,17 +510,12 @@ function classifyAccountCollection(params: {
         if (eqLB && !eqRB) pickRemote = true;
         else if (!eqLB && eqRB) pickRemote = false;
       }
-
       const metaSource = pickRemote ? rem : loc;
-      const mergedAccount: SyncAccount = {
-        ...metaSource,
-        balance: pickRemote ? rem.balance : loc.balance,
-      };
       autoAccounts.push({
         id,
         localEntity: loc,
         remoteEntity: rem,
-        winner: mergedAccount,
+        winner: { ...metaSource, balance: pickRemote ? rem.balance : loc.balance },
         baselineFromRemote: pickRemote,
       });
     }
@@ -706,14 +537,12 @@ export function buildThreeWaySyncPlan(
     baseList: base ? base.transactions || [] : null,
     nowMs,
   });
-
   const acctRes = classifyAccountCollection({
     localList: (local.accounts || []) as SyncAccount[],
     remoteList: (remote.accounts || []) as SyncAccount[],
     baseList: base ? ((base.accounts || []) as SyncAccount[]) : null,
     nowMs,
   });
-
   const catRes = classifyEntityCollection<Category>({
     collection: 'categories',
     localList: local.categories || [],
@@ -721,7 +550,6 @@ export function buildThreeWaySyncPlan(
     baseList: base ? base.categories || [] : null,
     nowMs,
   });
-
   const pluginDataRes = classifyEntityCollection<StoredEntity>({
     collection: 'plugin_data',
     localList: (local.plugins?.data as StoredEntity[]) || [],
@@ -729,14 +557,12 @@ export function buildThreeWaySyncPlan(
     baseList: base ? (base.plugins?.data as StoredEntity[]) || [] : null,
     nowMs,
   });
-
   const settingsRes = classifyRecordSettings({
     collection: 'settings',
     localMap: local.settings || {},
     remoteMap: remote.settings || {},
     baseMap: base ? base.settings || {} : null,
   });
-
   const pluginSettingsRes = classifyRecordSettings({
     collection: 'plugin_settings',
     localMap: local.plugins?.settings || {},
@@ -766,16 +592,13 @@ export function buildThreeWaySyncPlan(
     ...pluginSettingsRes.push,
   ];
 
-  const isStrictlyEqual =
-    incomingItems.length === 0 &&
-    conflictItems.length === 0 &&
-    pushItems.length === 0 &&
-    acctRes.autoAccounts.length === 0;
-  const requiresReview = incomingItems.length > 0 || conflictItems.length > 0;
-
   return {
-    isStrictlyEqual,
-    requiresReview,
+    isStrictlyEqual:
+      incomingItems.length === 0 &&
+      conflictItems.length === 0 &&
+      pushItems.length === 0 &&
+      acctRes.autoAccounts.length === 0,
+    requiresReview: incomingItems.length > 0 || conflictItems.length > 0,
     incomingItems,
     conflictItems,
     pushItems,
@@ -807,18 +630,14 @@ function getTransactionAccountEffects(tx: Transaction | undefined): Array<[strin
     return [[tx.accountId, tx.reconcileDiff]];
   }
   if (tx.type === 'loan') {
-    if (tx.loanDirection === 'lend' && tx.loanRole === 'origin') {
-      return [[tx.accountId, -tx.amount]];
-    }
-    if (tx.loanDirection === 'borrow' && tx.loanRole === 'origin') {
-      return [[tx.accountId, tx.amount]];
-    }
-    if (tx.loanDirection === 'lend' && tx.loanRole === 'repayment') {
-      return [[tx.accountId, tx.amount]];
-    }
-    if (tx.loanDirection === 'borrow' && tx.loanRole === 'repayment') {
-      return [[tx.accountId, -tx.amount]];
-    }
+    const isOutflow =
+      (tx.loanDirection === 'lend' && tx.loanRole === 'origin') ||
+      (tx.loanDirection === 'borrow' && tx.loanRole === 'repayment');
+    const isInflow =
+      (tx.loanDirection === 'borrow' && tx.loanRole === 'origin') ||
+      (tx.loanDirection === 'lend' && tx.loanRole === 'repayment');
+    if (isOutflow) return [[tx.accountId, -tx.amount]];
+    if (isInflow) return [[tx.accountId, tx.amount]];
   }
   return [];
 }
@@ -834,6 +653,24 @@ function accumulateBalanceMap(
   }
 }
 
+function recordSideDiffStat(
+  stats: DiffStats,
+  side: 'Local' | 'Remote',
+  hadBefore: boolean,
+  winnerDeleted: boolean
+): void {
+  if (!hadBefore && !winnerDeleted) {
+    if (side === 'Local') stats.addedLocal++;
+    else stats.addedRemote++;
+  } else if (hadBefore && winnerDeleted) {
+    if (side === 'Local') stats.deletedLocal++;
+    else stats.deletedRemote++;
+  } else if (hadBefore && !winnerDeleted) {
+    if (side === 'Local') stats.updatedLocal++;
+    else stats.updatedRemote++;
+  }
+}
+
 export function resolveSyncPlan(
   plan: SyncDiffPlan,
   resolutions: Record<string, SyncResolutionChoice> = {},
@@ -843,18 +680,10 @@ export function resolveSyncPlan(
   const nowIso = options?.nowIso || new Date().toISOString();
   const nowMs = Date.parse(nowIso);
 
-  const txMap = new Map<string, Transaction>(
-    plan.unchanged.transactions.map((t) => [t.id, t])
-  );
-  const acctMap = new Map<string, Account>(
-    plan.unchanged.accounts.map((a) => [a.id, a])
-  );
-  const catMap = new Map<string, Category>(
-    plan.unchanged.categories.map((c) => [c.id, c])
-  );
-  const pluginDataMap = new Map<string, StoredEntity>(
-    plan.unchanged.pluginData.map((p) => [p.id, p])
-  );
+  const txMap = new Map(plan.unchanged.transactions.map((t) => [t.id, t]));
+  const acctMap = new Map(plan.unchanged.accounts.map((a) => [a.id, a]));
+  const catMap = new Map(plan.unchanged.categories.map((c) => [c.id, c]));
+  const pluginDataMap = new Map(plan.unchanged.pluginData.map((p) => [p.id, p]));
   const settingsMap: Record<string, unknown> = { ...plan.unchanged.settings };
   const pluginSettingsMap: Record<string, unknown> = { ...plan.unchanged.pluginSettings };
 
@@ -866,125 +695,99 @@ export function resolveSyncPlan(
     updatedRemote: 0,
     deletedRemote: 0,
   };
-
   let changedLocal = false;
   let changedRemote = false;
 
   const accountChoiceMap = new Map<string, SyncResolutionChoice>();
   for (const autoAcct of plan.autoAccounts) {
-    if (autoAcct.baselineFromRemote) {
-      accountChoiceMap.set(autoAcct.id, 'remote');
-    }
-    if (autoAcct.winner) {
-      acctMap.set(autoAcct.id, autoAcct.winner);
-    }
-    const eqLocal = areValuesCanonicallyEqual(autoAcct.winner, autoAcct.localEntity);
-    const eqRemote = areValuesCanonicallyEqual(autoAcct.winner, autoAcct.remoteEntity);
-    if (!eqLocal) {
+    if (autoAcct.baselineFromRemote) accountChoiceMap.set(autoAcct.id, 'remote');
+    if (autoAcct.winner) acctMap.set(autoAcct.id, autoAcct.winner);
+
+    const winDeleted = Boolean((autoAcct.winner as SyncAccount | undefined)?.deletedAt) || !autoAcct.winner;
+    if (!areValuesCanonicallyEqual(autoAcct.winner, autoAcct.localEntity)) {
       changedLocal = true;
-      const winDeleted = Boolean((autoAcct.winner as SyncAccount | undefined)?.deletedAt) || !autoAcct.winner;
-      const hadLocal = Boolean(autoAcct.localEntity) && !(autoAcct.localEntity as SyncAccount).deletedAt;
-      if (!hadLocal && !winDeleted) stats.addedLocal++;
-      else if (hadLocal && winDeleted) stats.deletedLocal++;
-      else if (hadLocal && !winDeleted) stats.updatedLocal++;
+      recordSideDiffStat(
+        stats,
+        'Local',
+        Boolean(autoAcct.localEntity) && !(autoAcct.localEntity as SyncAccount).deletedAt,
+        winDeleted
+      );
     }
-    if (!eqRemote) {
+    if (!areValuesCanonicallyEqual(autoAcct.winner, autoAcct.remoteEntity)) {
       changedRemote = true;
-      const winDeleted = Boolean((autoAcct.winner as SyncAccount | undefined)?.deletedAt) || !autoAcct.winner;
-      const hadRemote = Boolean(autoAcct.remoteEntity) && !(autoAcct.remoteEntity as SyncAccount).deletedAt;
-      if (!hadRemote && !winDeleted) stats.addedRemote++;
-      else if (hadRemote && winDeleted) stats.deletedRemote++;
-      else if (hadRemote && !winDeleted) stats.updatedRemote++;
+      recordSideDiffStat(
+        stats,
+        'Remote',
+        Boolean(autoAcct.remoteEntity) && !(autoAcct.remoteEntity as SyncAccount).deletedAt,
+        winDeleted
+      );
     }
   }
 
-  const resolvedTxItems: Array<{
-    item: SyncDiffItem;
-    choice: SyncResolutionChoice;
-    winner: Transaction | undefined;
-  }> = [];
-
-  const allDiffs = [...plan.pushItems, ...plan.incomingItems, ...plan.conflictItems];
-
-  const isCountedCollection = (col: SyncEntityCollection) =>
+  const resolvedTxItems: Array<{ item: SyncDiffItem; winner: Transaction | undefined }> = [];
+  const isCounted = (col: SyncEntityCollection) =>
     col === 'transactions' || col === 'accounts' || col === 'categories';
 
-  for (const item of allDiffs) {
+  for (const item of [...plan.pushItems, ...plan.incomingItems, ...plan.conflictItems]) {
     const choice: SyncResolutionChoice = resolutions[item.key] || item.recommendedResolution;
-
-    if (item.collection === 'accounts') {
-      accountChoiceMap.set(item.id, choice);
-    }
+    if (item.collection === 'accounts') accountChoiceMap.set(item.id, choice);
 
     if (item.reason === 'cross_id_duplicate' && item.collection === 'transactions') {
       const localTwin = item.localEntity as StoredEntity | undefined;
       const remoteTx = item.remoteEntity as StoredEntity | undefined;
-
       if (choice === 'local' && localTwin) {
         txMap.set(localTwin.id, localTwin as unknown as Transaction);
         if (remoteTx) {
-          txMap.set(remoteTx.id, {
-            ...remoteTx,
-            deletedAt: nowIso,
-            updatedAt: nowIso,
-          } as unknown as Transaction);
+          txMap.set(remoteTx.id, { ...remoteTx, deletedAt: nowIso, updatedAt: nowIso } as unknown as Transaction);
           changedRemote = true;
           stats.deletedRemote++;
         }
-        resolvedTxItems.push({ item, choice, winner: localTwin as unknown as Transaction });
+        resolvedTxItems.push({ item, winner: localTwin as unknown as Transaction });
       } else if (choice === 'remote' && remoteTx) {
         txMap.set(remoteTx.id, remoteTx as unknown as Transaction);
         changedLocal = true;
         stats.addedLocal++;
         if (localTwin) {
-          txMap.set(localTwin.id, {
-            ...localTwin,
-            deletedAt: nowIso,
-            updatedAt: nowIso,
-          } as unknown as Transaction);
+          txMap.set(localTwin.id, { ...localTwin, deletedAt: nowIso, updatedAt: nowIso } as unknown as Transaction);
           stats.deletedLocal++;
           changedRemote = true;
         }
-        resolvedTxItems.push({ item, choice, winner: remoteTx as unknown as Transaction });
+        resolvedTxItems.push({ item, winner: remoteTx as unknown as Transaction });
       }
       continue;
     }
 
     const winner: StoredEntity | Record<string, unknown> | undefined =
       choice === 'local' ? item.localEntity : item.remoteEntity;
+    const winnerDeleted = Boolean((winner as StoredEntity | undefined)?.deletedAt) || !winner;
 
-    const equalToLocal = areValuesCanonicallyEqual(winner, item.localEntity);
-    const equalToRemote = areValuesCanonicallyEqual(winner, item.remoteEntity);
-
-    if (!equalToLocal) {
+    if (!areValuesCanonicallyEqual(winner, item.localEntity)) {
       changedLocal = true;
-      if (isCountedCollection(item.collection)) {
-        const winnerDeleted = Boolean((winner as StoredEntity | undefined)?.deletedAt) || !winner;
-        const hadLocal = Boolean(item.localEntity) && !(item.localEntity as StoredEntity).deletedAt;
-        if (!hadLocal && !winnerDeleted) stats.addedLocal++;
-        else if (hadLocal && winnerDeleted) stats.deletedLocal++;
-        else if (hadLocal && !winnerDeleted) stats.updatedLocal++;
+      if (isCounted(item.collection)) {
+        recordSideDiffStat(
+          stats,
+          'Local',
+          Boolean(item.localEntity) && !(item.localEntity as StoredEntity).deletedAt,
+          winnerDeleted
+        );
       }
     }
-
-    if (!equalToRemote) {
+    if (!areValuesCanonicallyEqual(winner, item.remoteEntity)) {
       changedRemote = true;
-      if (isCountedCollection(item.collection)) {
-        const winnerDeleted = Boolean((winner as StoredEntity | undefined)?.deletedAt) || !winner;
-        const hadRemote =
-          Boolean(item.remoteEntity) && !(item.remoteEntity as StoredEntity).deletedAt;
-        if (!hadRemote && !winnerDeleted) stats.addedRemote++;
-        else if (hadRemote && winnerDeleted) stats.deletedRemote++;
-        else if (hadRemote && !winnerDeleted) stats.updatedRemote++;
+      if (isCounted(item.collection)) {
+        recordSideDiffStat(
+          stats,
+          'Remote',
+          Boolean(item.remoteEntity) && !(item.remoteEntity as StoredEntity).deletedAt,
+          winnerDeleted
+        );
       }
     }
 
     if (item.collection === 'transactions') {
       const winnerTx = winner as Transaction | undefined;
-      resolvedTxItems.push({ item, choice, winner: winnerTx });
-      if (winnerTx) {
-        txMap.set(item.id, winnerTx);
-      }
+      resolvedTxItems.push({ item, winner: winnerTx });
+      if (winnerTx) txMap.set(item.id, winnerTx);
     } else if (item.collection === 'accounts' && winner) {
       acctMap.set(item.id, winner as Account);
     } else if (item.collection === 'categories' && winner) {
@@ -1002,77 +805,49 @@ export function resolveSyncPlan(
 
   const accountDeltas = new Map<string, number>();
   for (const { winner, item } of resolvedTxItems) {
-    const localTx = item.localEntity as Transaction | undefined;
-    const remoteTx = item.remoteEntity as Transaction | undefined;
     const winEffects = getTransactionAccountEffects(winner);
-    const locEffects = getTransactionAccountEffects(localTx);
-    const remEffects = getTransactionAccountEffects(remoteTx);
-
-    const affectedAccountIds = new Set<string>([
+    const locEffects = getTransactionAccountEffects(item.localEntity as Transaction | undefined);
+    const remEffects = getTransactionAccountEffects(item.remoteEntity as Transaction | undefined);
+    const affectedIds = new Set([
       ...winEffects.map(([a]) => a),
       ...locEffects.map(([a]) => a),
       ...remEffects.map(([a]) => a),
     ]);
-
-    for (const acctId of affectedAccountIds) {
-      const acctPickedRemote = accountChoiceMap.get(acctId) === 'remote';
-      const baselineEffects = acctPickedRemote ? remEffects : locEffects;
-      const desiredForAcct = winEffects.filter(([a]) => a === acctId);
-      const baselineForAcct = baselineEffects.filter(([a]) => a === acctId);
-      accumulateBalanceMap(accountDeltas, desiredForAcct, 1);
-      accumulateBalanceMap(accountDeltas, baselineForAcct, -1);
+    for (const acctId of affectedIds) {
+      const baseline = accountChoiceMap.get(acctId) === 'remote' ? remEffects : locEffects;
+      accumulateBalanceMap(accountDeltas, winEffects.filter(([a]) => a === acctId), 1);
+      accumulateBalanceMap(accountDeltas, baseline.filter(([a]) => a === acctId), -1);
     }
   }
 
-  const remoteAccountMap = new Map<string, SyncAccount>(
-    ((plan.remoteSnapshot.accounts || []) as SyncAccount[]).map((a) => [a.id, a])
-  );
-  const localAccountMap = new Map<string, SyncAccount>(
-    ((plan.localSnapshot.accounts || []) as SyncAccount[]).map((a) => [a.id, a])
-  );
-
+  const remoteAcctMap = new Map(((plan.remoteSnapshot.accounts || []) as SyncAccount[]).map((a) => [a.id, a]));
+  const localAcctMap = new Map(((plan.localSnapshot.accounts || []) as SyncAccount[]).map((a) => [a.id, a]));
   for (const [acctId, delta] of accountDeltas.entries()) {
     if (!delta) continue;
     const acct = acctMap.get(acctId);
     if (!acct || (acct as StoredEntity).deletedAt) continue;
-    const nextAcct: Account = {
-      ...acct,
-      balance: acct.balance + delta,
-      updatedAt: nowIso,
-    };
+    const nextAcct: Account = { ...acct, balance: acct.balance + delta, updatedAt: nowIso };
     acctMap.set(acctId, nextAcct);
-    const locAcct = localAccountMap.get(acctId);
-    const remAcct = remoteAccountMap.get(acctId);
-    if (!locAcct || locAcct.balance !== nextAcct.balance) {
-      changedLocal = true;
-    }
-    if (!remAcct || remAcct.balance !== nextAcct.balance) {
-      changedRemote = true;
-    }
+    if (localAcctMap.get(acctId)?.balance !== nextAcct.balance) changedLocal = true;
+    if (remoteAcctMap.get(acctId)?.balance !== nextAcct.balance) changedRemote = true;
   }
 
   const filterRetained = <T extends StoredEntity>(list: T[]): T[] =>
-    list.filter((entity) => {
-      if (!entity.deletedAt) return true;
-      if (!retainTombstones) return false;
-      return !isExpiredTombstone(entity, nowMs);
-    });
-
-  const merged: ExportData = {
-    version: '4.0.0',
-    exportedAt: nowIso,
-    transactions: filterRetained(Array.from(txMap.values())),
-    accounts: filterRetained(Array.from(acctMap.values())),
-    categories: filterRetained(Array.from(catMap.values())),
-    settings: settingsMap,
-    plugins: {
-      data: filterRetained(Array.from(pluginDataMap.values())),
-      settings: pluginSettingsMap,
-    },
-  };
+    list.filter((entity) => !entity.deletedAt || (retainTombstones && !isExpiredTombstone(entity, nowMs)));
 
   return {
-    merged,
+    merged: {
+      version: '4.0.0',
+      exportedAt: nowIso,
+      transactions: filterRetained(Array.from(txMap.values())),
+      accounts: filterRetained(Array.from(acctMap.values())),
+      categories: filterRetained(Array.from(catMap.values())),
+      settings: settingsMap,
+      plugins: {
+        data: filterRetained(Array.from(pluginDataMap.values())),
+        settings: pluginSettingsMap,
+      },
+    },
     stats,
     changedLocal,
     changedRemote,
@@ -1080,6 +855,5 @@ export function resolveSyncPlan(
 }
 
 export function mergeSyncPayloads(local: ExportData, remote: ExportData): DiffMergeResult {
-  const plan = buildThreeWaySyncPlan(local, remote, null);
-  return resolveSyncPlan(plan, {}, { retainTombstones: false });
+  return resolveSyncPlan(buildThreeWaySyncPlan(local, remote, null), {}, { retainTombstones: false });
 }

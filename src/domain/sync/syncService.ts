@@ -98,13 +98,10 @@ export function stripInlineVoucherPayloads(data: ExportData): ExportData {
   return {
     ...data,
     transactions: (data.transactions || []).map((tx: Transaction) => {
-      if (!tx.voucher || !tx.voucher.fileUrl) return tx;
+      if (!tx.voucher?.fileUrl) return tx;
       const voucherCopy = { ...tx.voucher };
       delete voucherCopy.fileUrl;
-      return {
-        ...tx,
-        voucher: voucherCopy,
-      };
+      return { ...tx, voucher: voucherCopy };
     }),
   };
 }
@@ -114,14 +111,10 @@ export function sanitizeSyncPayload(data: ExportData): ExportData {
   const cleanSettings: Record<string, unknown> = {};
   if (withoutVouchers.settings) {
     for (const [k, v] of Object.entries(withoutVouchers.settings)) {
-      if (LOCAL_ONLY_SETTING_KEYS.has(k)) continue;
-      cleanSettings[k] = v;
+      if (!LOCAL_ONLY_SETTING_KEYS.has(k)) cleanSettings[k] = v;
     }
   }
-  return {
-    ...withoutVouchers,
-    settings: cleanSettings,
-  };
+  return { ...withoutVouchers, settings: cleanSettings };
 }
 
 export class SyncService {
@@ -144,27 +137,17 @@ export class SyncService {
   }
 
   private get settingsService(): SettingsService {
-    if (!this.deps.settingsService) {
-      throw new Error('SyncService settingsService is not configured.');
-    }
+    if (!this.deps.settingsService) throw new Error('SyncService settingsService is not configured.');
     return this.deps.settingsService;
   }
 
   private get dataLifecycleService(): DataLifecycleService {
-    if (!this.deps.dataLifecycleService) {
-      throw new Error('SyncService dataLifecycleService is not configured.');
-    }
+    if (!this.deps.dataLifecycleService) throw new Error('SyncService dataLifecycleService is not configured.');
     return this.deps.dataLifecycleService;
   }
 
-  private get attachmentStore(): AttachmentStore | undefined {
-    return this.deps.attachmentStore;
-  }
-
   private async ensureReady(): Promise<void> {
-    if (this.deps.ensureReady) {
-      await this.deps.ensureReady();
-    }
+    if (this.deps.ensureReady) await this.deps.ensureReady();
   }
 
   getPendingReview(): {
@@ -173,11 +156,8 @@ export class SyncService {
     syncAttachments: boolean;
   } | null {
     if (!this.pendingReviewPlan) return null;
-    return {
-      plan: this.pendingReviewPlan.plan,
-      config: this.pendingReviewPlan.config,
-      syncAttachments: this.pendingReviewPlan.syncAttachments,
-    };
+    const { plan, config, syncAttachments } = this.pendingReviewPlan;
+    return { plan, config, syncAttachments };
   }
 
   clearPendingReview(): void {
@@ -194,7 +174,7 @@ export class SyncService {
     await this.ensureReady();
     try {
       const record = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
-      if (record && record.config) {
+      if (record?.config) {
         return {
           config: record.config,
           lastSyncAt: record.lastSyncAt,
@@ -208,70 +188,44 @@ export class SyncService {
     } catch {
       void 0;
     }
-    return {
-      config: null,
+    return { config: null, autoSyncDaily: false, syncAttachments: false, uploadedAttachmentIds: [] };
+  }
+
+  private async upsertWebDavSetting(
+    patch: Partial<Omit<WebDavSettingRecord, 'id' | 'createdAt' | 'updatedAt'>>
+  ): Promise<void> {
+    await this.ensureReady();
+    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
+    if (existing) {
+      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', patch);
+      return;
+    }
+    await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
+      config: { url: '', username: '', password: '' },
       autoSyncDaily: false,
       syncAttachments: false,
       uploadedAttachmentIds: [],
-    };
+      ...patch,
+    });
   }
 
   async saveWebDavConfig(
     config: WebDavConfig,
     options?: { autoSyncDaily?: boolean; syncAttachments?: boolean }
   ): Promise<void> {
-    await this.ensureReady();
-    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
-    if (existing) {
-      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', {
-        config,
-        ...(options?.autoSyncDaily !== undefined ? { autoSyncDaily: options.autoSyncDaily } : {}),
-        ...(options?.syncAttachments !== undefined
-          ? { syncAttachments: options.syncAttachments }
-          : {}),
-      });
-    } else {
-      await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
-        config,
-        autoSyncDaily: Boolean(options?.autoSyncDaily),
-        syncAttachments: Boolean(options?.syncAttachments),
-        uploadedAttachmentIds: [],
-      });
-    }
+    await this.upsertWebDavSetting({
+      config,
+      ...(options?.autoSyncDaily !== undefined ? { autoSyncDaily: options.autoSyncDaily } : {}),
+      ...(options?.syncAttachments !== undefined ? { syncAttachments: options.syncAttachments } : {}),
+    });
   }
 
   async setAutoSyncDaily(enabled: boolean): Promise<void> {
-    await this.ensureReady();
-    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
-    if (existing) {
-      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', {
-        autoSyncDaily: enabled,
-      });
-      return;
-    }
-    await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
-      config: { url: '', username: '', password: '' },
-      autoSyncDaily: enabled,
-      syncAttachments: false,
-      uploadedAttachmentIds: [],
-    });
+    await this.upsertWebDavSetting({ autoSyncDaily: enabled });
   }
 
   async setSyncAttachments(enabled: boolean): Promise<void> {
-    await this.ensureReady();
-    const existing = await this.settingsService.getSetting<WebDavSettingRecord>('webdav_config');
-    if (existing) {
-      await this.settingsService.patchSetting<WebDavSettingRecord>('webdav_config', {
-        syncAttachments: enabled,
-      });
-      return;
-    }
-    await this.settingsService.saveSetting<WebDavSettingRecord>('webdav_config', {
-      config: { url: '', username: '', password: '' },
-      autoSyncDaily: false,
-      syncAttachments: enabled,
-      uploadedAttachmentIds: [],
-    });
+    await this.upsertWebDavSetting({ syncAttachments: enabled });
   }
 
   shouldRunDailyAutoSync(
@@ -280,8 +234,7 @@ export class SyncService {
     lastSyncAt?: string,
     now: ConfigType = new Date()
   ): boolean {
-    if (!autoSyncDaily) return false;
-    if (!config || !config.url.trim() || !config.username.trim() || !config.password.trim()) {
+    if (!autoSyncDaily || !config?.url.trim() || !config.username.trim() || !config.password.trim()) {
       return false;
     }
     if (!lastSyncAt) return true;
@@ -289,24 +242,17 @@ export class SyncService {
       typeof now === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(now)
         ? now
         : getLogicalSyncDay(now, SYNC_DAY_CUTOFF_HOUR);
-    const lastLogicalDay = getLogicalSyncDay(lastSyncAt, SYNC_DAY_CUTOFF_HOUR);
-    return lastLogicalDay !== currentLogicalDay;
+    return getLogicalSyncDay(lastSyncAt, SYNC_DAY_CUTOFF_HOUR) !== currentLogicalDay;
   }
 
   async runAutoSyncIfNeeded(callbacks?: { onStart?: () => void }): Promise<AutoSyncRunResult> {
-    if (this.autoSyncReviewSuppressedForSession) {
-      return { ran: false };
-    }
-    if (this.pendingAutoSync) {
-      return this.pendingAutoSync;
-    }
+    if (this.autoSyncReviewSuppressedForSession) return { ran: false };
+    if (this.pendingAutoSync) return this.pendingAutoSync;
 
     this.pendingAutoSync = (async () => {
       try {
         const { config, lastSyncAt, autoSyncDaily } = await this.getWebDavConfig();
-        if (!this.shouldRunDailyAutoSync(config, autoSyncDaily, lastSyncAt)) {
-          return { ran: false };
-        }
+        if (!this.shouldRunDailyAutoSync(config, autoSyncDaily, lastSyncAt)) return { ran: false };
         callbacks?.onStart?.();
         const prep = await this.prepareWebDavSync(config!);
         if (prep.status === 'needs_review' && prep.plan) {
@@ -358,27 +304,12 @@ export class SyncService {
     try {
       const record = await this.settingsService.getSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID);
       if (record?.version === SYNC_MANIFEST_VERSION && record.snapshot && record.shardHashes) {
-        return {
-          ...record,
-          snapshot: sanitizeSyncPayload(record.snapshot),
-        };
+        return { ...record, snapshot: sanitizeSyncPayload(record.snapshot) };
       }
     } catch {
       void 0;
     }
     return null;
-  }
-
-  private async saveBaseSnapshot(
-    snapshot: ExportData,
-    shardHashes: Record<string, string>
-  ): Promise<void> {
-    const cleanSnapshot = sanitizeSyncPayload(snapshot);
-    await this.settingsService.saveSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID, {
-      version: SYNC_MANIFEST_VERSION,
-      shardHashes,
-      snapshot: cleanSnapshot,
-    });
   }
 
   private async uploadChangedShards(
@@ -388,12 +319,9 @@ export class SyncService {
     remoteShardHashes?: Record<string, string>
   ): Promise<void> {
     for (const [path, content] of serialized.shards.entries()) {
-      if (remoteShardHashes && remoteShardHashes[path] === serialized.hashes[path]) {
-        continue;
-      }
+      if (remoteShardHashes?.[path] === serialized.hashes[path]) continue;
       await webdavClient.putFile(config, path, content);
     }
-
     const manifest: SyncManifest = {
       version: SYNC_MANIFEST_VERSION,
       updatedAt: nowIso,
@@ -417,13 +345,11 @@ export class SyncService {
 
     for (const [path, remoteHash] of Object.entries(remoteManifest.files)) {
       let parsed: unknown;
-      if (baseRecord && baseRecord.shardHashes[path] === remoteHash && cachedShards.has(path)) {
+      if (baseRecord?.shardHashes[path] === remoteHash && cachedShards.has(path)) {
         parsed = cachedShards.get(path);
       } else {
         const raw = await webdavClient.fetchFile(config, path);
-        if (!raw) {
-          throw new Error('云端分片文件缺失，请检查云端目录完整性');
-        }
+        if (!raw) throw new Error('云端分片文件缺失，请检查云端目录完整性');
         try {
           parsed = JSON.parse(raw);
         } catch {
@@ -436,9 +362,7 @@ export class SyncService {
       } else if (path === SYNC_META_FILE) {
         metaShard = parsed as Partial<MetaShard>;
       } else if (path.startsWith('transactions/')) {
-        if (!Array.isArray(parsed)) {
-          throw new Error('解析云端账单分片格式无效');
-        }
+        if (!Array.isArray(parsed)) throw new Error('解析云端账单分片格式无效');
         txShards.push(parsed as Transaction[]);
       }
     }
@@ -452,10 +376,8 @@ export class SyncService {
     alreadyUploaded: string[]
   ): Promise<{ uploadedCount: number; nextUploadedIds: string[] }> {
     const uploadedSet = new Set(alreadyUploaded);
-    const store = this.attachmentStore;
-    if (!store) {
-      return { uploadedCount: 0, nextUploadedIds: Array.from(uploadedSet) };
-    }
+    const store = this.deps.attachmentStore;
+    if (!store) return { uploadedCount: 0, nextUploadedIds: Array.from(uploadedSet) };
 
     const referencedIds = new Set<string>();
     for (const tx of transactions) {
@@ -469,10 +391,8 @@ export class SyncService {
       if (uploadedSet.has(attId)) continue;
       const local = await store.getAttachment(attId);
       if (!local?.dataUrl) continue;
-
       const remotePath = `attachments/${attId}.json`;
-      const existsRemote = await webdavClient.fileExists(config, remotePath);
-      if (!existsRemote) {
+      if (!(await webdavClient.fileExists(config, remotePath))) {
         await webdavClient.putFile(
           config,
           remotePath,
@@ -489,19 +409,48 @@ export class SyncService {
       uploadedSet.add(attId);
     }
 
-    return {
-      uploadedCount,
-      nextUploadedIds: Array.from(uploadedSet),
-    };
+    return { uploadedCount, nextUploadedIds: Array.from(uploadedSet) };
+  }
+
+  private async finalizeSyncState(params: {
+    config: WebDavConfig;
+    transactions: Transaction[];
+    shouldBackupAttachments: boolean;
+    uploadedAttachmentIds: string[];
+    nowIso: string;
+    baseSnapshot?: { data: ExportData; shardHashes: Record<string, string> };
+  }): Promise<number> {
+    let uploadedCount = 0;
+    let nextUploadedIds = params.uploadedAttachmentIds;
+    if (params.shouldBackupAttachments) {
+      const res = await this.backupMissingAttachments(
+        params.config,
+        params.transactions,
+        params.uploadedAttachmentIds
+      );
+      uploadedCount = res.uploadedCount;
+      nextUploadedIds = res.nextUploadedIds;
+    }
+    if (params.baseSnapshot) {
+      await this.settingsService.saveSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID, {
+        version: SYNC_MANIFEST_VERSION,
+        shardHashes: params.baseSnapshot.shardHashes,
+        snapshot: sanitizeSyncPayload(params.baseSnapshot.data),
+      });
+    }
+    await this.recordSyncMetadata({
+      lastSyncAt: params.nowIso,
+      uploadedAttachmentIds: nextUploadedIds,
+    });
+    this.pendingReviewPlan = null;
+    this.autoSyncReviewSuppressedForSession = false;
+    return uploadedCount;
   }
 
   async fetchAttachmentFromWebDav(attachmentId: string): Promise<string | null> {
     const { config } = await this.getWebDavConfig();
-    if (!config || !config.url || !config.username || !config.password) {
-      return null;
-    }
-    const store = this.attachmentStore;
-    if (!store) return null;
+    const store = this.deps.attachmentStore;
+    if (!config?.url || !config.username || !config.password || !store) return null;
 
     try {
       const content = await webdavClient.fetchFile(config, `attachments/${attachmentId}.json`);
@@ -522,9 +471,7 @@ export class SyncService {
   }
 
   private resolveValidatedConfig(customConfig?: WebDavConfig): WebDavConfig {
-    if (!customConfig) {
-      throw new Error('未配置 WebDAV 服务器信息，请先设置');
-    }
+    if (!customConfig) throw new Error('未配置 WebDAV 服务器信息，请先设置');
     if (!customConfig.url || !customConfig.username || !customConfig.password) {
       throw new Error('WebDAV 服务器地址、账号或密码不能为空');
     }
@@ -548,24 +495,14 @@ export class SyncService {
 
     if (!remoteManifestContent) {
       await this.uploadChangedShards(config, localSerialized, now);
-      let uploadedAttachments = 0;
-      let nextUploadedIds = stored.uploadedAttachmentIds;
-      if (shouldBackupAttachments) {
-        const res = await this.backupMissingAttachments(
-          config,
-          localData.transactions,
-          stored.uploadedAttachmentIds
-        );
-        uploadedAttachments = res.uploadedCount;
-        nextUploadedIds = res.nextUploadedIds;
-      }
-      await this.saveBaseSnapshot(localData, localSerialized.hashes);
-      await this.recordSyncMetadata({
-        lastSyncAt: now,
-        uploadedAttachmentIds: nextUploadedIds,
+      const uploadedAttachments = await this.finalizeSyncState({
+        config,
+        transactions: localData.transactions,
+        shouldBackupAttachments,
+        uploadedAttachmentIds: stored.uploadedAttachmentIds,
+        nowIso: now,
+        baseSnapshot: { data: localData, shardHashes: localSerialized.hashes },
       });
-      this.pendingReviewPlan = null;
-      this.autoSyncReviewSuppressedForSession = false;
       return {
         status: 'first_backup',
         uploadedAttachments,
@@ -587,66 +524,37 @@ export class SyncService {
     }
 
     const baseRecord = await this.getBaseRecord();
-    if (
+    const hashesUnchanged =
       baseRecord &&
       areValuesCanonicallyEqual(parsedManifest.files, baseRecord.shardHashes) &&
-      areValuesCanonicallyEqual(localSerialized.hashes, baseRecord.shardHashes)
-    ) {
-      let uploadedAttachments = 0;
-      let nextUploadedIds = stored.uploadedAttachmentIds;
-      if (shouldBackupAttachments) {
-        const res = await this.backupMissingAttachments(
-          config,
-          localData.transactions,
-          stored.uploadedAttachmentIds
-        );
-        uploadedAttachments = res.uploadedCount;
-        nextUploadedIds = res.nextUploadedIds;
-      }
-      await this.recordSyncMetadata({
-        lastSyncAt: now,
-        uploadedAttachmentIds: nextUploadedIds,
+      areValuesCanonicallyEqual(localSerialized.hashes, baseRecord.shardHashes);
+
+    if (hashesUnchanged) {
+      const uploadedAttachments = await this.finalizeSyncState({
+        config,
+        transactions: localData.transactions,
+        shouldBackupAttachments,
+        uploadedAttachmentIds: stored.uploadedAttachmentIds,
+        nowIso: now,
       });
-      this.pendingReviewPlan = null;
-      this.autoSyncReviewSuppressedForSession = false;
-      const attSuffix =
-        uploadedAttachments > 0 ? `，另备份 ${uploadedAttachments} 个凭证附件` : '';
-      return {
-        status: 'up_to_date',
-        uploadedAttachments,
-        message: `同步完成：数据已是最新${attSuffix}`,
-      };
+      const attSuffix = uploadedAttachments > 0 ? `，另备份 ${uploadedAttachments} 个凭证附件` : '';
+      return { status: 'up_to_date', uploadedAttachments, message: `同步完成：数据已是最新${attSuffix}` };
     }
 
     const remoteData = await this.fetchRemoteExportData(config, parsedManifest, baseRecord);
     const plan = buildThreeWaySyncPlan(localData, remoteData, baseRecord?.snapshot ?? null);
 
     if (plan.isStrictlyEqual) {
-      let uploadedAttachments = 0;
-      let nextUploadedIds = stored.uploadedAttachmentIds;
-      if (shouldBackupAttachments) {
-        const res = await this.backupMissingAttachments(
-          config,
-          localData.transactions,
-          stored.uploadedAttachmentIds
-        );
-        uploadedAttachments = res.uploadedCount;
-        nextUploadedIds = res.nextUploadedIds;
-      }
-      await this.saveBaseSnapshot(localData, localSerialized.hashes);
-      await this.recordSyncMetadata({
-        lastSyncAt: now,
-        uploadedAttachmentIds: nextUploadedIds,
+      const uploadedAttachments = await this.finalizeSyncState({
+        config,
+        transactions: localData.transactions,
+        shouldBackupAttachments,
+        uploadedAttachmentIds: stored.uploadedAttachmentIds,
+        nowIso: now,
+        baseSnapshot: { data: localData, shardHashes: localSerialized.hashes },
       });
-      this.pendingReviewPlan = null;
-      this.autoSyncReviewSuppressedForSession = false;
-      const attSuffix =
-        uploadedAttachments > 0 ? `，另备份 ${uploadedAttachments} 个凭证附件` : '';
-      return {
-        status: 'up_to_date',
-        uploadedAttachments,
-        message: `同步完成：数据已是最新${attSuffix}`,
-      };
+      const attSuffix = uploadedAttachments > 0 ? `，另备份 ${uploadedAttachments} 个凭证附件` : '';
+      return { status: 'up_to_date', uploadedAttachments, message: `同步完成：数据已是最新${attSuffix}` };
     }
 
     if (!plan.requiresReview) {
@@ -693,10 +601,7 @@ export class SyncService {
       options?.remoteShardHashes ?? this.pendingReviewPlan?.remoteShardHashes;
     const now = new Date().toISOString();
 
-    const mergeResult = resolveSyncPlan(plan, resolutions, {
-      retainTombstones: true,
-      nowIso: now,
-    });
+    const mergeResult = resolveSyncPlan(plan, resolutions, { retainTombstones: true, nowIso: now });
     const cleanMerged = sanitizeSyncPayload(mergeResult.merged);
     const mergedSerialized = serializeExportDataToShards(cleanMerged);
 
@@ -708,33 +613,17 @@ export class SyncService {
     }
 
     if (mergeResult.changedRemote) {
-      await this.uploadChangedShards(
-        config,
-        mergedSerialized,
-        now,
-        effectiveRemoteShardHashes
-      );
+      await this.uploadChangedShards(config, mergedSerialized, now, effectiveRemoteShardHashes);
     }
 
-    let uploadedAttachments = 0;
-    let nextUploadedIds = stored.uploadedAttachmentIds;
-    if (shouldBackupAttachments) {
-      const res = await this.backupMissingAttachments(
-        config,
-        cleanMerged.transactions,
-        stored.uploadedAttachmentIds
-      );
-      uploadedAttachments = res.uploadedCount;
-      nextUploadedIds = res.nextUploadedIds;
-    }
-
-    await this.saveBaseSnapshot(cleanMerged, mergedSerialized.hashes);
-    await this.recordSyncMetadata({
-      lastSyncAt: now,
-      uploadedAttachmentIds: nextUploadedIds,
+    const uploadedAttachments = await this.finalizeSyncState({
+      config,
+      transactions: cleanMerged.transactions,
+      shouldBackupAttachments,
+      uploadedAttachmentIds: stored.uploadedAttachmentIds,
+      nowIso: now,
+      baseSnapshot: { data: cleanMerged, shardHashes: mergedSerialized.hashes },
     });
-    this.pendingReviewPlan = null;
-    this.autoSyncReviewSuppressedForSession = false;
 
     const localChanges =
       mergeResult.stats.addedLocal + mergeResult.stats.updatedLocal + mergeResult.stats.deletedLocal;
@@ -743,10 +632,10 @@ export class SyncService {
     const attachmentSuffix =
       uploadedAttachments > 0 ? `，另备份 ${uploadedAttachments} 个凭证附件` : '';
 
-    let message = `同步完成：数据已是最新${attachmentSuffix}`;
-    if (localChanges > 0 || remoteChanges > 0) {
-      message = `同步完成：本地合并 ${localChanges} 项，云端更新 ${remoteChanges} 项${attachmentSuffix}`;
-    }
+    const message =
+      localChanges > 0 || remoteChanges > 0
+        ? `同步完成：本地合并 ${localChanges} 项，云端更新 ${remoteChanges} 项${attachmentSuffix}`
+        : `同步完成：数据已是最新${attachmentSuffix}`;
 
     return {
       success: true,
