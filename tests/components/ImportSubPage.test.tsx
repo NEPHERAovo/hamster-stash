@@ -331,6 +331,7 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
       expect(importSpy).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
+            id: expect.stringMatching(/^tx_imp_elephant_[0-9a-f]{16}$/),
             categoryId: 'cat_shop',
             amount: 3500,
             type: 'expense',
@@ -401,13 +402,23 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
 
     fireEvent.click(screen.getByText(/下一步：确认字段/));
     expect(screen.getByText('理财日收益按月汇总入账')).toBeInTheDocument();
+    expect(screen.getByText('跳过已导入的重复账单')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/下一步：分类匹配/));
+    expect(screen.getByText('关闭/退款 1 笔')).toBeInTheDocument();
+    expect(screen.getByText('理财日收益 1 笔按月汇总')).toBeInTheDocument();
+    const neutralTypeEl = screen.getByText((content, node) =>
+      Boolean(node?.tagName === 'SPAN' && content.includes('不计收支') && node.textContent?.includes('(1笔)'))
+    );
+    expect(neutralTypeEl).toBeInTheDocument();
+
     fireEvent.click(screen.getByText(/下一步：确认导入/));
 
     await waitFor(() => {
       expect(screen.getByText('待导入 2 笔')).toBeInTheDocument();
       expect(screen.getByText('含理财月结 1 笔')).toBeInTheDocument();
+      expect(screen.getByText('不计收支 1 笔')).toBeInTheDocument();
+      expect(screen.getByText('关闭/退款 1 笔')).toBeInTheDocument();
       expect(screen.getByText('月度汇总')).toBeInTheDocument();
     });
 

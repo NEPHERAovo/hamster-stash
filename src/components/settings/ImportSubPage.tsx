@@ -6,10 +6,12 @@ import {
   mapConfiguredCsvRows,
   extractCategoriesFromCsv,
   extractTransactionTypesFromCsv,
+  summarizePreFilterCounts,
   type CsvColumnMapping,
   type ExtractedCategoryStat,
   type ExtractedTypeStat,
   type ConfiguredMappingResult,
+  type PreFilterSummary,
 } from '../../domain/import-export/csvMapper';
 import {
   detectBillSource,
@@ -207,26 +209,67 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       categories,
       activePreset.categoryAliases || {},
       {
+        amountColName: mapping.amountCol,
         statusColName: mapping.statusCol,
+        noteColName: mapping.noteCol,
         source: activeSource,
         skipClosedAndFullRefunds,
+        aggregateWealthEarningsMonthly,
       }
     );
   }, [
     parsed,
     mapping.categoryCol,
     mapping.typeCol,
+    mapping.amountCol,
     mapping.statusCol,
+    mapping.noteCol,
     categories,
     activePreset,
     activeSource,
     skipClosedAndFullRefunds,
+    aggregateWealthEarningsMonthly,
   ]);
 
   const extractedTypeStats = useMemo<ExtractedTypeStat[]>(() => {
     if (parsed.headers.length === 0 || parsed.rows.length === 0 || !mapping.typeCol) return [];
-    return extractTransactionTypesFromCsv(parsed.headers, parsed.rows, mapping.typeCol);
-  }, [parsed, mapping.typeCol]);
+    return extractTransactionTypesFromCsv(parsed.headers, parsed.rows, mapping.typeCol, {
+      categoryColName: mapping.categoryCol,
+      amountColName: mapping.amountCol,
+      statusColName: mapping.statusCol,
+      noteColName: mapping.noteCol,
+      source: activeSource,
+      skipClosedAndFullRefunds,
+      aggregateWealthEarningsMonthly,
+    });
+  }, [
+    parsed,
+    mapping.typeCol,
+    mapping.categoryCol,
+    mapping.amountCol,
+    mapping.statusCol,
+    mapping.noteCol,
+    activeSource,
+    skipClosedAndFullRefunds,
+    aggregateWealthEarningsMonthly,
+  ]);
+
+  const step3PreFilterSummary = useMemo<PreFilterSummary>(() => {
+    if (parsed.headers.length === 0 || parsed.rows.length === 0) {
+      return { filteredStatusCount: 0, invalidAmountCount: 0, wealthDailyRowCount: 0 };
+    }
+    return summarizePreFilterCounts(parsed.headers, parsed.rows, mapping, {
+      source: activeSource,
+      skipClosedAndFullRefunds,
+      aggregateWealthEarningsMonthly,
+    });
+  }, [
+    parsed,
+    mapping,
+    activeSource,
+    skipClosedAndFullRefunds,
+    aggregateWealthEarningsMonthly,
+  ]);
 
   useEffect(() => {
     if (currentStep === 3) {
@@ -554,6 +597,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           categories={categories}
           extractedCategoryStats={extractedCategoryStats}
           extractedTypeStats={extractedTypeStats}
+          preFilterSummary={step3PreFilterSummary}
           categoryMapping={categoryMapping}
           typeMapping={typeMapping}
           defaultExpenseCat={defaultExpenseCat}

@@ -2,7 +2,11 @@ import React from 'react';
 import { ArrowLeftIcon as ArrowLeft, ArrowRightIcon as ArrowRight, PlusIcon as Plus } from '@phosphor-icons/react';
 import { PaperButton } from '../../ui/PaperButton';
 import { PaperSelect } from '../../ui/PaperSelect';
-import type { ExtractedCategoryStat, ExtractedTypeStat } from '../../../domain/import-export/csvMapper';
+import type {
+  ExtractedCategoryStat,
+  ExtractedTypeStat,
+  PreFilterSummary,
+} from '../../../domain/import-export/csvMapper';
 import type { Category } from '../../../types/category';
 import type { TransactionType } from '../../../types/transaction';
 
@@ -10,6 +14,7 @@ export interface ImportStep3CategoryMatchProps {
   categories: Category[];
   extractedCategoryStats: ExtractedCategoryStat[];
   extractedTypeStats: ExtractedTypeStat[];
+  preFilterSummary?: PreFilterSummary;
   categoryMapping: Record<string, string>;
   typeMapping: Record<string, TransactionType | 'skip'>;
   defaultExpenseCat: string;
@@ -27,6 +32,7 @@ export const ImportStep3CategoryMatch: React.FC<ImportStep3CategoryMatchProps> =
   categories,
   extractedCategoryStats,
   extractedTypeStats,
+  preFilterSummary,
   categoryMapping,
   typeMapping,
   defaultExpenseCat,
@@ -39,6 +45,12 @@ export const ImportStep3CategoryMatch: React.FC<ImportStep3CategoryMatchProps> =
   onPrev,
   onNext,
 }) => {
+  const hasPreFilter = Boolean(
+    preFilterSummary &&
+      (preFilterSummary.filteredStatusCount > 0 ||
+        preFilterSummary.wealthDailyRowCount > 0 ||
+        preFilterSummary.invalidAmountCount > 0)
+  );
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3 text-xs shadow-xs">
@@ -123,6 +135,21 @@ export const ImportStep3CategoryMatch: React.FC<ImportStep3CategoryMatchProps> =
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasPreFilter && preFilterSummary && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-2.5 font-mono text-[11px] text-(--ink-secondary) tabular-nums shadow-xs">
+          <span>已按规则预过滤</span>
+          {preFilterSummary.filteredStatusCount > 0 && (
+            <span>关闭/退款 {preFilterSummary.filteredStatusCount} 笔</span>
+          )}
+          {preFilterSummary.wealthDailyRowCount > 0 && (
+            <span>理财日收益 {preFilterSummary.wealthDailyRowCount} 笔按月汇总</span>
+          )}
+          {preFilterSummary.invalidAmountCount > 0 && (
+            <span>无效金额 {preFilterSummary.invalidAmountCount} 笔</span>
+          )}
         </div>
       )}
 

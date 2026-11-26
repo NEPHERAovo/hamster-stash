@@ -5,6 +5,7 @@ import { generateCsv } from './csvParser';
 import {
   buildDeterministicImportId,
   buildExternalImportKey,
+  buildFingerprintImportId,
   buildWealthMonthlyOrderId,
   buildWealthMonthlyTxId,
   extractExistingImportIndex,
@@ -233,6 +234,187 @@ function findBestCategoryMatch(
   );
 }
 
+export interface CsvPreFilterOptions {
+  amountColName?: string;
+  statusColName?: string;
+  noteColName?: string;
+  source?: BillSource;
+  skipClosedAndFullRefunds?: boolean;
+  aggregateWealthEarningsMonthly?: boolean;
+}
+
+export interface PreFilterSummary {
+  filteredStatusCount: number;
+  invalidAmountCount: number;
+  wealthDailyRowCount: number;
+}
+
+type PreFilterDisposition = 'keep' | 'empty' | 'status' | 'invalid' | 'wealth';
+
+interface PreFilterContext {
+  typeIdx: number;
+  catIdx: number;
+  amountIdx: number;
+  statusIdx: number;
+  noteIdx: number;
+  productIdx: number;
+  counterpartyIdx: number;
+  source?: BillSource;
+  skipClosedAndFullRefunds: boolean;
+  aggregateWealthEarningsMonthly: boolean;
+}
+
+function createPreFilterContext(
+  headers: string[],
+  cols: {
+    typeColName?: string;
+    categoryColName?: string;
+    amountColName?: string;
+    statusColName?: string;
+    noteColName?: string;
+  },
+  options?: Pick<
+    CsvPreFilterOptions,
+    'source' | 'skipClosedAndFullRefunds' | 'aggregateWealthEarningsMonthly'
+  >
+): PreFilterContext {
+  const idx = (colName?: string): number => (colName ? headers.indexOf(colName) : -1);
+  const productIdx =
+    headers.indexOf('商品说明') >= 0 ? headers.indexOf('商品说明') : headers.indexOf('商品');
+
+  return {
+    typeIdx: idx(cols.typeColName),
+    catIdx: idx(cols.categoryColName),
+    amountIdx: idx(cols.amountColName),
+    statusIdx: idx(cols.statusColName),
+    noteIdx: idx(cols.noteColName),
+    productIdx,
+    counterpartyIdx: headers.indexOf('交易对方'),
+    source: options?.source,
+    skipClosedAndFullRefunds: Boolean(options?.skipClosedAndFullRefunds),
+    aggregateWealthEarningsMonthly: Boolean(options?.aggregateWealthEarningsMonthly),
+  };
+}
+
+function classifyRowPreFilter(
+  row: string[],
+  ctx: PreFilterContext
+): {
+  disposition: PreFilterDisposition;
+  cents: number;
+  inferredType?: TransactionType;
+  rawType?: string;
+  rawStatus?: string;
+} {
+  if (row.length === 0 || row.every((c) => !c.trim())) {
+    return { disposition: 'empty', cents: 0 };
+  }
+
+  const rawType = ctx.typeIdx >= 0 ? row[ctx.typeIdx]?.trim() : undefined;
+  const rawStatus = ctx.statusIdx >= 0 ? row[ctx.statusIdx]?.trim() : undefined;
+  const amountResult =
+    ctx.amountIdx >= 0
+      ? normalizeAmount(row[ctx.amountIdx] ?? '')
+      : { cents: 0, inferredType: undefined };
+
+  if (ctx.skipClosedAndFullRefunds && ctx.source) {
+    if (shouldSkipBillStatus(ctx.source, rawStatus, rawType)) {
+      return {
+        disposition: 'status',
+        cents: amountResult.cents,
+        inferredType: amountResult.inferredType,
+        rawType,
+        rawStatus,
+      };
+    }
+  }
+
+  if (ctx.amountIdx >= 0 && amountResult.cents <= 0) {
+    return {
+      disposition: 'invalid',
+      cents: 0,
+      inferredType: amountResult.inferredType,
+      rawType,
+      rawStatus,
+    };
+  }
+
+  if (
+    ctx.aggregateWealthEarningsMonthly &&
+    (ctx.source === 'alipay' || ctx.source === 'wechat')
+  ) {
+    const rawCat = ctx.catIdx >= 0 ? row[ctx.catIdx]?.trim() : undefined;
+    let rawProduct: string | undefined;
+    if (ctx.productIdx >= 0) {
+      rawProduct = row[ctx.productIdx]?.trim();
+    } else if (ctx.noteIdx >= 0) {
+      rawProduct = row[ctx.noteIdx]?.trim();
+    }
+    const rawCounterparty = ctx.counterpartyIdx >= 0 ? row[ctx.counterpartyIdx]?.trim() : undefined;
+
+    if (
+      isWealthDailyEarningRow(ctx.source, {
+        category: rawCat,
+        product: rawProduct,
+        counterparty: rawCounterparty,
+        direction: rawType,
+        status: rawStatus,
+      })
+    ) {
+      return {
+        disposition: 'wealth',
+        cents: amountResult.cents,
+        inferredType: amountResult.inferredType,
+        rawType,
+        rawStatus,
+      };
+    }
+  }
+
+  return {
+    disposition: 'keep',
+    cents: amountResult.cents,
+    inferredType: amountResult.inferredType,
+    rawType,
+    rawStatus,
+  };
+}
+
+export function summarizePreFilterCounts(
+  headers: string[],
+  rows: string[][],
+  mapping: CsvColumnMapping,
+  options: Pick<
+    CsvPreFilterOptions,
+    'source' | 'skipClosedAndFullRefunds' | 'aggregateWealthEarningsMonthly'
+  >
+): PreFilterSummary {
+  const ctx = createPreFilterContext(
+    headers,
+    {
+      typeColName: mapping.typeCol,
+      categoryColName: mapping.categoryCol,
+      amountColName: mapping.amountCol,
+      statusColName: mapping.statusCol,
+      noteColName: mapping.noteCol,
+    },
+    options
+  );
+
+  let filteredStatusCount = 0;
+  let invalidAmountCount = 0;
+  let wealthDailyRowCount = 0;
+
+  for (const row of rows) {
+    const res = classifyRowPreFilter(row, ctx);
+    if (res.disposition === 'status') filteredStatusCount++;
+    else if (res.disposition === 'invalid') invalidAmountCount++;
+    else if (res.disposition === 'wealth') wealthDailyRowCount++;
+  }
+
+  return { filteredStatusCount, invalidAmountCount, wealthDailyRowCount };
+}
+
 export function extractCategoriesFromCsv(
   headers: string[],
   rows: string[][],
@@ -240,24 +422,30 @@ export function extractCategoriesFromCsv(
   typeColName?: string,
   existingCategories: Category[] = [],
   presetAliases: Record<string, string | string[]> = {},
-  filterOptions?: { statusColName?: string; source?: BillSource; skipClosedAndFullRefunds?: boolean }
+  filterOptions?: CsvPreFilterOptions
 ): ExtractedCategoryStat[] {
   if (!categoryColName) return [];
   const catIdx = headers.indexOf(categoryColName);
   if (catIdx < 0) return [];
-  const typeIdx = typeColName ? headers.indexOf(typeColName) : -1;
-  const statusIdx = filterOptions?.statusColName
-    ? headers.indexOf(filterOptions.statusColName)
-    : -1;
+
+  const ctx = createPreFilterContext(
+    headers,
+    {
+      typeColName,
+      categoryColName,
+      amountColName: filterOptions?.amountColName,
+      statusColName: filterOptions?.statusColName,
+      noteColName: filterOptions?.noteColName,
+    },
+    filterOptions
+  );
 
   const statsMap = new Map<string, { count: number; expenseCount: number; incomeCount: number }>();
 
   for (const row of rows) {
-    const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : '';
-    if (filterOptions?.skipClosedAndFullRefunds && filterOptions.source && statusIdx >= 0) {
-      if (shouldSkipBillStatus(filterOptions.source, row[statusIdx], rawType)) {
-        continue;
-      }
+    const pre = classifyRowPreFilter(row, ctx);
+    if (pre.disposition !== 'keep') {
+      continue;
     }
 
     const rawCat = row[catIdx]?.trim();
@@ -266,7 +454,7 @@ export function extractCategoriesFromCsv(
     const stat = statsMap.get(rawCat) || { count: 0, expenseCount: 0, incomeCount: 0 };
     stat.count++;
 
-    const normType = normalizeTransactionType(rawType, 'expense');
+    const normType = normalizeTransactionType(pre.rawType || '', 'expense');
     if (normType === 'income') {
       stat.incomeCount++;
     } else {
@@ -334,14 +522,31 @@ export function extractCategoriesFromCsv(
 export function extractTransactionTypesFromCsv(
   headers: string[],
   rows: string[][],
-  typeColName?: string
+  typeColName?: string,
+  filterOptions?: CsvPreFilterOptions & { categoryColName?: string }
 ): ExtractedTypeStat[] {
   if (!typeColName) return [];
   const typeIdx = headers.indexOf(typeColName);
   if (typeIdx < 0) return [];
 
+  const ctx = createPreFilterContext(
+    headers,
+    {
+      typeColName,
+      categoryColName: filterOptions?.categoryColName,
+      amountColName: filterOptions?.amountColName,
+      statusColName: filterOptions?.statusColName,
+      noteColName: filterOptions?.noteColName,
+    },
+    filterOptions
+  );
+
   const counts = new Map<string, number>();
   for (const row of rows) {
+    const pre = classifyRowPreFilter(row, ctx);
+    if (pre.disposition !== 'keep') {
+      continue;
+    }
     const rawType = row[typeIdx]?.trim();
     if (!rawType) continue;
     counts.set(rawType, (counts.get(rawType) || 0) + 1);
@@ -417,18 +622,25 @@ export function mapConfiguredCsvRows(
   };
 
   const dateIdx = getColIndex(options.mapping.dateCol);
-  const amountIdx = getColIndex(options.mapping.amountCol);
-  const typeIdx = getColIndex(options.mapping.typeCol);
-  const catIdx = getColIndex(options.mapping.categoryCol);
   const acctIdx = getColIndex(options.mapping.accountCol);
-  const noteIdx = getColIndex(options.mapping.noteCol);
   const reimbIdx = getColIndex(options.mapping.reimburseCol);
-  const statusIdx = getColIndex(options.mapping.statusCol);
   const orderIdx = getColIndex(options.mapping.orderIdCol);
-
-  const productIdx =
-    headers.indexOf('商品说明') >= 0 ? headers.indexOf('商品说明') : headers.indexOf('商品');
-  const counterpartyIdx = headers.indexOf('交易对方');
+  const preCtx = createPreFilterContext(
+    headers,
+    {
+      typeColName: options.mapping.typeCol,
+      categoryColName: options.mapping.categoryCol,
+      amountColName: options.mapping.amountCol,
+      statusColName: options.mapping.statusCol,
+      noteColName: options.mapping.noteCol,
+    },
+    {
+      source: options.source,
+      skipClosedAndFullRefunds: options.skipClosedAndFullRefunds,
+      aggregateWealthEarningsMonthly: options.aggregateWealthEarningsMonthly,
+    }
+  );
+  const { catIdx, noteIdx } = preCtx;
 
   const catMapById = new Map<string, Category>(options.existingCategories.map((c) => [c.id, c]));
   const catMapByName = new Map<string, Category>(
@@ -441,6 +653,7 @@ export function mapConfiguredCsvRows(
     ? extractExistingImportIndex(options.existingTransactions)
     : undefined;
   const seenBatchKeys = new Set<string>();
+  const fpOccurrenceMap = new Map<string, number>();
   const seenWealthOrderIds = new Set<string>();
   const wealthBuckets = new Map<string, WealthMonthlyBucket>();
 
@@ -472,17 +685,18 @@ export function mapConfiguredCsvRows(
   };
 
   for (const row of rows) {
-    if (row.length === 0 || row.every((c) => !c.trim())) {
+    const pre = classifyRowPreFilter(row, preCtx);
+    if (pre.disposition === 'empty') {
       skippedCount++;
       continue;
     }
 
-    const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : undefined;
-    const rawStatus = statusIdx >= 0 ? row[statusIdx]?.trim() : undefined;
+    const rawType = pre.rawType;
+    const rawStatus = pre.rawStatus;
+    const cents = pre.cents;
+    const inferredType = pre.inferredType;
     const rawDate = dateIdx >= 0 ? row[dateIdx] : '';
     const { date, createdAt } = normalizeDateTime(rawDate);
-    const rawAmount = amountIdx >= 0 ? row[amountIdx] : '';
-    const { cents, inferredType } = normalizeAmount(rawAmount);
     const rawCat = catIdx >= 0 ? row[catIdx]?.trim() : undefined;
     const note = noteIdx >= 0 ? row[noteIdx]?.trim() || undefined : undefined;
     const candidateAcct = acctIdx >= 0 ? row[acctIdx]?.trim() : undefined;
@@ -490,24 +704,22 @@ export function mapConfiguredCsvRows(
     const rawOrderId = orderIdx >= 0 ? row[orderIdx]?.trim() : undefined;
     const cleanOrderId = rawOrderId && rawOrderId !== '/' ? rawOrderId : undefined;
 
-    if (options.skipClosedAndFullRefunds && options.source) {
-      if (shouldSkipBillStatus(options.source, rawStatus, rawType)) {
-        filteredStatusCount++;
-        skippedCount++;
-        pushSkipped('status', {
-          date,
-          amount: cents,
-          rawType,
-          rawStatus,
-          rawAccountName,
-          rawCategoryName: rawCat,
-          note,
-        });
-        continue;
-      }
+    if (pre.disposition === 'status') {
+      filteredStatusCount++;
+      skippedCount++;
+      pushSkipped('status', {
+        date,
+        amount: cents,
+        rawType,
+        rawStatus,
+        rawAccountName,
+        rawCategoryName: rawCat,
+        note,
+      });
+      continue;
     }
 
-    if (cents <= 0) {
+    if (pre.disposition === 'invalid') {
       skippedCount++;
       pushSkipped('invalid', {
         date,
@@ -521,25 +733,7 @@ export function mapConfiguredCsvRows(
       continue;
     }
 
-    let rawProduct: string | undefined;
-    if (productIdx >= 0) {
-      rawProduct = row[productIdx]?.trim();
-    } else if (noteIdx >= 0) {
-      rawProduct = row[noteIdx]?.trim();
-    }
-    const rawCounterparty = counterpartyIdx >= 0 ? row[counterpartyIdx]?.trim() : undefined;
-
-    if (
-      options.aggregateWealthEarningsMonthly &&
-      (options.source === 'alipay' || options.source === 'wechat') &&
-      isWealthDailyEarningRow(options.source, {
-        category: rawCat,
-        product: rawProduct,
-        counterparty: rawCounterparty,
-        direction: rawType,
-        status: rawStatus,
-      })
-    ) {
+    if (pre.disposition === 'wealth') {
       if (cleanOrderId) {
         if (seenWealthOrderIds.has(cleanOrderId)) {
           duplicateCount++;
@@ -626,47 +820,70 @@ export function mapConfiguredCsvRows(
       type = normalizeTransactionType(rawType, inferredType || 'expense');
     }
 
-    let deterministicId: string | undefined;
-    let ext: Record<string, unknown> | undefined;
+    const effectiveSource: BillSource = options.source ?? 'standard';
+    let deterministicId: string;
+    let resolvedOrderId: string;
 
-    if (options.source && cleanOrderId) {
-      const importKey = buildExternalImportKey(options.source, cleanOrderId);
-      deterministicId =
-        options.source === 'wechat' || options.source === 'alipay'
-          ? buildDeterministicImportId(options.source, cleanOrderId)
-          : undefined;
+    if (cleanOrderId && (effectiveSource === 'wechat' || effectiveSource === 'alipay')) {
+      deterministicId = buildDeterministicImportId(effectiveSource, cleanOrderId);
+      resolvedOrderId = cleanOrderId;
+    } else {
+      const baseFpKey = [
+        effectiveSource,
+        date,
+        createdAt || '',
+        type,
+        String(cents),
+        rawCat || '',
+        rawAccountName || '',
+        note || '',
+      ].join('|');
+      const occurrence = fpOccurrenceMap.get(baseFpKey) ?? 0;
+      fpOccurrenceMap.set(baseFpKey, occurrence + 1);
+      const fp = buildFingerprintImportId(effectiveSource, {
+        date,
+        createdAt,
+        type,
+        amount: cents,
+        rawCategory: rawCat,
+        rawAccount: rawAccountName,
+        note,
+        occurrence,
+      });
+      deterministicId = fp.id;
+      resolvedOrderId = fp.orderId;
+    }
 
-      if (options.skipDuplicates) {
-        const isExisting =
-          Boolean(options.existingImportKeys?.has(importKey)) ||
-          Boolean(existingIndex?.byKey.has(importKey)) ||
-          Boolean(deterministicId && existingIndex?.byId.has(deterministicId)) ||
-          seenBatchKeys.has(importKey);
-        if (isExisting) {
-          duplicateCount++;
-          skippedCount++;
-          pushSkipped('duplicate', {
-            date,
-            amount: cents,
-            rawType,
-            rawStatus,
-            rawAccountName,
-            rawCategoryName: rawCat,
-            note,
-          });
-          continue;
-        }
-      }
-      seenBatchKeys.add(importKey);
-      if (options.source === 'wechat' || options.source === 'alipay') {
-        ext = {
-          importMeta: {
-            source: options.source,
-            orderId: cleanOrderId,
-          },
-        };
+    const importKey = buildExternalImportKey(effectiveSource, resolvedOrderId);
+    if (options.skipDuplicates) {
+      const isExisting =
+        Boolean(options.existingImportKeys?.has(importKey)) ||
+        Boolean(existingIndex?.byKey.has(importKey)) ||
+        Boolean(existingIndex?.byId.has(deterministicId)) ||
+        seenBatchKeys.has(importKey);
+      if (isExisting) {
+        duplicateCount++;
+        skippedCount++;
+        pushSkipped('duplicate', {
+          date,
+          amount: cents,
+          rawType,
+          rawStatus,
+          rawAccountName,
+          rawCategoryName: rawCat,
+          note,
+        });
+        continue;
       }
     }
+    seenBatchKeys.add(importKey);
+
+    const ext: Record<string, unknown> = {
+      importMeta: {
+        source: effectiveSource,
+        orderId: resolvedOrderId,
+      },
+    };
 
     let categoryId =
       type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;

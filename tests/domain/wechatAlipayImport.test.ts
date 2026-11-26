@@ -27,6 +27,7 @@ import {
   extractCategoriesFromCsv,
   extractTransactionTypesFromCsv,
   mapConfiguredCsvRows,
+  mapElephantCsvRows,
 } from '../../src/domain/import-export/csvMapper';
 import { IMPORT_PRESETS } from '../../src/domain/import-export/importPresets';
 import { ImportService } from '../../src/domain/import-export/importService';
@@ -461,6 +462,22 @@ describe('WeChat & Alipay ImportService Integration', () => {
         skipDuplicates: true,
         aggregateWealthEarningsMonthly: true,
       });
+      const step3Types = extractTransactionTypesFromCsv(
+        aliHeaders,
+        aliRows,
+        alipayPreset.defaultMapping.typeCol,
+        {
+          categoryColName: alipayPreset.defaultMapping.categoryCol,
+          amountColName: alipayPreset.defaultMapping.amountCol,
+          statusColName: alipayPreset.defaultMapping.statusCol,
+          noteColName: alipayPreset.defaultMapping.noteCol,
+          source: 'alipay',
+          skipClosedAndFullRefunds: true,
+          aggregateWealthEarningsMonthly: true,
+        }
+      );
+      const step3NeutralCount = step3Types.find((t) => t.rawName === '不计收支')?.count ?? 0;
+      expect(step3NeutralCount).toBe(aliRollupMapped.neutralCount);
       expect(aliRollupMapped.wealthDailyRowCount).toBe(1226);
       expect(aliRollupMapped.wealthRollupCount).toBeGreaterThanOrEqual(36);
       const rollups = aliRollupMapped.records.filter((r) => r.isWealthMonthlyRollup);
@@ -468,6 +485,86 @@ describe('WeChat & Alipay ImportService Integration', () => {
       expect(rollups.every((r) => r.categoryId === 'cat_invest' && r.type === 'income')).toBe(true);
     }
   );
+
+  it('assigns deterministic fingerprint IDs to Elephant CSV rows and deduplicates re-imports even after local edits', async () => {
+    const headers = ['日期', '分类名称', '收支', '金额', '账户', '备注', '报销'];
+    const rows = [
+      ['2026/11/08 12:00', '吃饭', '支出', '15', '默认资产', '午餐', ''],
+      ['2026/11/08 12:00', '吃饭', '支出', '15', '默认资产', '午餐', ''],
+      ['2026/11/08 21:00', '购物', '支出', '33', '默认资产', '日用品', ''],
+    ];
+
+    const mapped = mapElephantCsvRows(headers, rows, {
+      defaultAccountId: defaultAccount.id,
+      defaultExpenseCategoryId: 'cat_other',
+      defaultIncomeCategoryId: 'cat_other_in',
+      existingCategories: categories,
+      existingAccounts: [defaultAccount],
+    });
+
+    expect(mapped.records).toHaveLength(3);
+    expect(mapped.records[0].id).toMatch(/^tx_imp_standard_[0-9a-f]{16}$/);
+    expect(mapped.records[1].id).toMatch(/^tx_imp_standard_[0-9a-f]{16}$/);
+    expect(mapped.records[0].id).not.toBe(mapped.records[1].id);
+    expect(mapped.records[0].ext?.importMeta).toBeDefined();
+
+    const elephantPreset = IMPORT_PRESETS.find((p) => p.id === 'elephant')!;
+    const importService = new ImportService();
+    const res1 = await importService.executeCsvImport({
+      headers,
+      rows,
+      mapping: elephantPreset.defaultMapping,
+      categoryMapping: { 吃饭: 'cat_food', 购物: 'cat_shop' },
+      typeMapping: { 支出: 'expense' },
+      defaultAccountId: defaultAccount.id,
+      defaultExpenseCategoryId: 'cat_other',
+      defaultIncomeCategoryId: 'cat_other_in',
+      existingCategories: categories,
+      existingAccounts: [defaultAccount],
+      autoCreateAccounts: false,
+      source: 'elephant',
+      skipDuplicates: true,
+      existingTransactions: [],
+      createAccount: (input) => acctService.createAccount(input),
+      importTransactions: (recs, sync) => txService.importTransactions(recs, sync),
+    });
+    expect(res1.importedCount).toBe(3);
+
+    const stored = await txRepo.findAll();
+    expect(stored.every((tx) => tx.id.startsWith('tx_imp_elephant_'))).toBe(true);
+
+    // Simulate local edits to category, note, and owned-items link on one record
+    await txService.updateTransaction(stored[0].id, {
+      categoryId: 'cat_shop',
+      note: '已修改备注',
+      ext: {
+        ...stored[0].ext,
+        'owned-items': { itemId: 'item_edited', itemRole: 'buy', kind: 'physical' },
+      },
+    });
+    const updatedStored = await txRepo.findAll();
+
+    const res2 = await importService.executeCsvImport({
+      headers,
+      rows,
+      mapping: elephantPreset.defaultMapping,
+      categoryMapping: { 吃饭: 'cat_food', 购物: 'cat_shop' },
+      typeMapping: { 支出: 'expense' },
+      defaultAccountId: defaultAccount.id,
+      defaultExpenseCategoryId: 'cat_other',
+      defaultIncomeCategoryId: 'cat_other_in',
+      existingCategories: categories,
+      existingAccounts: [defaultAccount],
+      autoCreateAccounts: false,
+      source: 'elephant',
+      skipDuplicates: true,
+      existingTransactions: updatedStored,
+      createAccount: (input) => acctService.createAccount(input),
+      importTransactions: (recs, sync) => txService.importTransactions(recs, sync),
+    });
+    expect(res2.importedCount).toBe(0);
+    expect(res2.duplicateCount).toBe(3);
+  });
 
   it('generates deterministic IDs and updates partial-month wealth rollup in place without balance drift', async () => {
     expect(buildDeterministicImportId('wechat', '4500000559')).toBe('tx_imp_wechat_4500000559');

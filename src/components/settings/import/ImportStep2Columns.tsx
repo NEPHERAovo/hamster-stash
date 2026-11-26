@@ -92,25 +92,29 @@ export const ImportStep2Columns: React.FC<ImportStep2ColumnsProps> = ({
         ))}
       </div>
 
-      {isBillPlatform && onChangeSkipClosedAndFullRefunds && onChangeSkipDuplicates && (
+      {(isBillPlatform || onChangeSkipDuplicates) && (
         <div className="divide-y divide-(--rule-hairline) rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) text-xs shadow-xs">
-          <div className="flex items-center justify-between px-3.5 py-2.5">
-            <span className="font-semibold text-(--ink-primary)">过滤已关闭与全额退款</span>
-            <PaperSwitch
-              checked={skipClosedAndFullRefunds}
-              onChange={onChangeSkipClosedAndFullRefunds}
-              aria-label="过滤已关闭与全额退款"
-            />
-          </div>
-          <div className="flex items-center justify-between px-3.5 py-2.5">
-            <span className="font-semibold text-(--ink-primary)">跳过已导入的重复账单</span>
-            <PaperSwitch
-              checked={skipDuplicates}
-              onChange={onChangeSkipDuplicates}
-              aria-label="跳过已导入的重复账单"
-            />
-          </div>
-          {onChangeAggregateWealthEarningsMonthly && (
+          {isBillPlatform && onChangeSkipClosedAndFullRefunds && (
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-semibold text-(--ink-primary)">过滤已关闭与全额退款</span>
+              <PaperSwitch
+                checked={skipClosedAndFullRefunds}
+                onChange={onChangeSkipClosedAndFullRefunds}
+                aria-label="过滤已关闭与全额退款"
+              />
+            </div>
+          )}
+          {onChangeSkipDuplicates && (
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-semibold text-(--ink-primary)">跳过已导入的重复账单</span>
+              <PaperSwitch
+                checked={skipDuplicates}
+                onChange={onChangeSkipDuplicates}
+                aria-label="跳过已导入的重复账单"
+              />
+            </div>
+          )}
+          {isBillPlatform && onChangeAggregateWealthEarningsMonthly && (
             <div className="flex items-center justify-between px-3.5 py-2.5">
               <span className="font-semibold text-(--ink-primary)">理财日收益按月汇总入账</span>
               <PaperSwitch

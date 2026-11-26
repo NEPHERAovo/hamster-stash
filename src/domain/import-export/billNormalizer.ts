@@ -331,6 +331,49 @@ export function hashStringShort(input: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
+export function hashString16(input: string): string {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x9e3779b9;
+  for (let i = 0; i < input.length; i++) {
+    const code = input.charCodeAt(i);
+    h1 ^= code;
+    h1 = Math.imul(h1, 0x01000193);
+    h2 ^= code + i;
+    h2 = Math.imul(h2, 0x85ebca6b);
+  }
+  return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+}
+
+export function buildFingerprintImportId(
+  source: BillSource,
+  fields: {
+    date: string;
+    createdAt?: string;
+    type: string;
+    amount: number;
+    rawCategory?: string;
+    rawAccount?: string;
+    note?: string;
+    occurrence: number;
+  }
+): { id: string; orderId: string } {
+  const payload = [
+    fields.date,
+    fields.createdAt || '',
+    fields.type,
+    String(fields.amount),
+    fields.rawCategory || '',
+    fields.rawAccount || '',
+    fields.note || '',
+    String(fields.occurrence),
+  ].join('|');
+  const digest = hashString16(payload);
+  return {
+    id: `tx_imp_${source}_${digest}`,
+    orderId: `fp:${digest}`,
+  };
+}
+
 export function buildDeterministicImportId(source: BillSource, orderId: string): string {
   const clean = orderId.trim();
   if (/^[a-zA-Z0-9_-]{1,64}$/.test(clean)) {
