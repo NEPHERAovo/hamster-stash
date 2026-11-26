@@ -306,8 +306,15 @@ export function App() {
     });
   }, [currentMonthTransactions, displayTransactions, includedAccountIds, currentMonth, isAmortizationEnabled]);
 
+  const scrollActiveTabToTop = (behavior: ScrollBehavior = 'smooth') => {
+    const scrollTarget =
+      mainScrollRef.current?.querySelector<HTMLElement>('.main-scroll-content') ??
+      mainScrollRef.current;
+    scrollTarget?.scrollTo({ top: 0, behavior });
+  };
+
   const handleScrollToTop = () => {
-    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollActiveTabToTop('smooth');
   };
 
   const renderHeader = () => {
@@ -411,9 +418,20 @@ export function App() {
 
       <main
         ref={mainScrollRef}
-        className="main-scroll-content min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-0 pb-[calc(76px+var(--dock-bottom))]"
+        className={
+          currentTab === 'stats'
+            ? 'flex min-h-0 w-full flex-1 flex-col overflow-hidden p-0'
+            : 'main-scroll-content min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-0 pb-[calc(76px+var(--dock-bottom))]'
+        }
       >
-        <div key={currentTab === 'ledger' ? `${currentTab}-${currentMonth}` : currentTab} className="tab-page-enter w-full">
+        <div
+          key={currentTab === 'ledger' ? `${currentTab}-${currentMonth}` : currentTab}
+          className={
+            currentTab === 'stats'
+              ? 'tab-page-enter flex min-h-0 w-full flex-1 flex-col'
+              : 'tab-page-enter w-full'
+          }
+        >
           {currentTab === 'ledger' && (
             <div className="w-full">
               <div className="tab-stagger-1 w-full">
@@ -438,7 +456,7 @@ export function App() {
           )}
 
           {currentTab === 'stats' && (
-            <div className="w-full px-4">
+            <div className="flex min-h-0 w-full flex-1 flex-col">
               <StatsView
                 allTransactions={statsTransactions}
                 categories={categories}
@@ -632,10 +650,10 @@ export function App() {
           isAddOpen={isTransactionModalOpen}
           onTabChange={(tab) => {
             if (tab === currentTab) {
-              mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+              scrollActiveTabToTop('smooth');
             } else {
               setCurrentTab(tab);
-              mainScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+              scrollActiveTabToTop('instant');
             }
           }}
           onAddClick={() => {
@@ -661,7 +679,7 @@ export function App() {
         onSuccess={(newId) => {
           setFreshTxId(newId);
           if (!editingTx) {
-            mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollActiveTabToTop('smooth');
           }
         }}
       />

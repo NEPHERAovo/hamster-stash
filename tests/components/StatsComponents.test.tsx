@@ -494,8 +494,17 @@ describe('Modular Stats & UI Components', () => {
     const rootEl = container.firstElementChild;
     expect(rootEl?.className).toContain('flex');
     expect(rootEl?.className).toContain('flex-col');
-    expect(rootEl?.className).toContain('gap-3.5');
-    expect(rootEl?.querySelector('.tab-stagger-1')).toBeInTheDocument();
-    expect(rootEl?.querySelector('.tab-stagger-2')).toBeInTheDocument();
+
+    const dateBar = screen.getByTitle('点击选择日期').parentElement;
+    expect(dateBar?.className).toContain('shrink-0');
+    expect(dateBar?.className).not.toContain('sticky');
+
+    const scrollBody = rootEl?.querySelector('.main-scroll-content');
+    expect(scrollBody?.className).toContain('flex');
+    expect(scrollBody?.className).toContain('flex-col');
+    expect(scrollBody?.className).toContain('gap-3.5');
+    expect(scrollBody?.className).toContain('overflow-y-auto');
+    expect(scrollBody?.querySelector('.tab-stagger-1')).toBeInTheDocument();
+    expect(scrollBody?.querySelector('.tab-stagger-2')).toBeInTheDocument();
   });
 });
