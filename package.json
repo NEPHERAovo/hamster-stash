@@ -2,7 +2,7 @@
   "name": "hamster-stash",
   "description": "A minimal, local-first personal expense, item & asset stash progressive web app (PWA)",
   "private": true,
-  "version": "1.0.26112601",
+  "version": "1.0.26112602",
   "license": "CC-BY-NC-4.0",
   "repository": {
     "type": "git",
