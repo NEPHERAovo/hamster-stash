@@ -2,19 +2,26 @@ import type { Transaction, TransactionType } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
 import { generateCsv } from './csvParser';
+import {
+  buildExternalImportKey,
+  shouldSkipBillStatus,
+  type BillSource,
+} from './billNormalizer';
 import { centsToYuan } from '../finance/balanceCalculator';
 import { parseCsvDateTime } from '../../utils/date';
 
-export type ImportMode = 'elephant' | 'standard' | 'preset';
+export type ImportMode = 'wechat' | 'alipay' | 'elephant' | 'standard' | 'preset';
 
 export interface CsvColumnMapping {
-  dateCol?: string;          // 日期列
-  amountCol?: string;        // 金额列
-  typeCol?: string;          // 收支类型列
-  categoryCol?: string;      // 分类列
-  accountCol?: string;       // 账户列
-  noteCol?: string;          // 备注列
-  reimburseCol?: string;     // 报销列
+  dateCol?: string;
+  amountCol?: string;
+  typeCol?: string;
+  categoryCol?: string;
+  accountCol?: string;
+  noteCol?: string;
+  reimburseCol?: string;
+  statusCol?: string;
+  orderIdCol?: string;
 }
 
 export interface ExtractedCategoryStat {
@@ -32,13 +39,17 @@ export interface ExtractedTypeStat {
 
 export interface AdvancedImportOptions {
   mapping: CsvColumnMapping;
-  categoryMapping: Record<string, string>; // rawCategoryName -> categoryId
-  typeMapping?: Record<string, TransactionType | 'skip'>; // rawTypeName -> targetType or 'skip'
+  categoryMapping: Record<string, string>;
+  typeMapping?: Record<string, TransactionType | 'skip'>;
   defaultAccountId: string;
   defaultExpenseCategoryId: string;
   defaultIncomeCategoryId: string;
   existingCategories: Category[];
   existingAccounts: Account[];
+  source?: BillSource;
+  skipClosedAndFullRefunds?: boolean;
+  skipDuplicates?: boolean;
+  existingImportKeys?: Set<string>;
 }
 
 export interface StandardImportOptions {
@@ -60,8 +71,8 @@ export interface ElephantImportOptions {
 
 export interface PreparedImportRecord {
   type: TransactionType;
-  amount: number;            // 整数分
-  date: string;              // YYYY-MM-DD
+  amount: number;
+  date: string;
   createdAt?: string;
   categoryId: string;
   accountId: string;
@@ -69,12 +80,17 @@ export interface PreparedImportRecord {
   rawCategoryName?: string;
   note?: string;
   isReimbursable?: boolean;
+  ext?: Record<string, unknown>;
   rawRow: string[];
 }
 
-/**
- * 自动根据 CSV 表头智能推断各系统字段对应的列名
- */
+export interface ConfiguredMappingResult {
+  records: PreparedImportRecord[];
+  skippedCount: number;
+  duplicateCount: number;
+  filteredStatusCount: number;
+}
+
 export function inferColumnMapping(headers: string[]): CsvColumnMapping {
   const findMatch = (patterns: RegExp[]): string | undefined => {
     for (const pattern of patterns) {
@@ -85,13 +101,44 @@ export function inferColumnMapping(headers: string[]): CsvColumnMapping {
   };
 
   return {
-    dateCol: findMatch([/^日期$/i, /日期/i, /时间/i, /date/i, /time/i]),
-    amountCol: findMatch([/^金额$/i, /金额/i, /amount/i, /数额/i, /money/i]),
-    typeCol: findMatch([/^收支$/i, /收支/i, /^类型$/i, /类型/i, /type/i, /收支类型/i, /^收\/支$/i]),
-    categoryCol: findMatch([/^分类名称$/i, /^交易分类$/i, /^交易类型$/i, /^分类$/i, /^类别$/i, /分类/i, /类目/i, /category/i]),
-    accountCol: findMatch([/^账户$/i, /^支付方式$/i, /^收\/付款方式$/i, /^资金渠道$/i, /账户/i, /资产/i, /account/i]),
-    noteCol: findMatch([/^备注$/i, /^商品$/i, /^商品说明$/i, /说明/i, /描述/i, /商户/i, /note/i, /desc/i]),
+    dateCol: findMatch([/^日期$/i, /^交易时间$/i, /日期/i, /时间/i, /date/i, /time/i]),
+    amountCol: findMatch([/^金额$/i, /^金额\(元\)$/i, /金额/i, /amount/i, /数额/i, /money/i]),
+    typeCol: findMatch([/^收支$/i, /^收\/支$/i, /收支/i, /^类型$/i, /类型/i, /type/i, /收支类型/i]),
+    categoryCol: findMatch([
+      /^智能分类$/i,
+      /^分类名称$/i,
+      /^交易分类$/i,
+      /^交易类型$/i,
+      /^分类$/i,
+      /^类别$/i,
+      /分类/i,
+      /类目/i,
+      /category/i,
+    ]),
+    accountCol: findMatch([
+      /^账户渠道$/i,
+      /^账户$/i,
+      /^支付方式$/i,
+      /^收\/付款方式$/i,
+      /^资金渠道$/i,
+      /账户/i,
+      /资产/i,
+      /account/i,
+    ]),
+    noteCol: findMatch([
+      /^合并备注$/i,
+      /^备注$/i,
+      /^商品$/i,
+      /^商品说明$/i,
+      /说明/i,
+      /描述/i,
+      /商户/i,
+      /note/i,
+      /desc/i,
+    ]),
     reimburseCol: findMatch([/^报销$/i, /报销/i, /reimburse/i]),
+    statusCol: findMatch([/^当前状态$/i, /^交易状态$/i, /状态/i]),
+    orderIdCol: findMatch([/^交易单号$/i, /^交易订单号$/i]),
   };
 }
 
@@ -103,9 +150,6 @@ export function normalizeDate(raw: string): string {
   return normalizeDateTime(raw).date;
 }
 
-/**
- * 标准化金额（支持小数、带¥/$/￥符号、千分位、正负号），返回整数分与方向推断
- */
 export function normalizeAmount(raw: string): { cents: number; inferredType?: TransactionType } {
   let clean = raw.replace(/[¥￥$,\s]/g, '');
   let isNegative = false;
@@ -128,9 +172,6 @@ export function normalizeAmount(raw: string): { cents: number; inferredType?: Tr
   };
 }
 
-/**
- * 解析收支类型文本
- */
 export function normalizeTransactionType(
   raw?: string,
   fallback: TransactionType = 'expense'
@@ -145,32 +186,59 @@ export function normalizeTransactionType(
   return fallback;
 }
 
-/**
- * 统计并提取 CSV 中所有的原始分类名称与出现频次，并推断收支倾向及推荐映射
- */
+function findBestCategoryMatch(
+  existingCategories: Category[],
+  targetName: string,
+  dominantType: TransactionType,
+  activeOnly = false
+): Category | undefined {
+  const lowerTarget = targetName.trim().toLowerCase();
+  const candidates = existingCategories.filter(
+    (c) => c.name.trim().toLowerCase() === lowerTarget && (!activeOnly || !c.isArchived)
+  );
+  if (candidates.length === 0) return undefined;
+
+  return (
+    candidates.find((c) => !c.isArchived && c.type === dominantType) ??
+    candidates.find((c) => !c.isArchived) ??
+    candidates.find((c) => c.type === dominantType) ??
+    candidates[0]
+  );
+}
+
 export function extractCategoriesFromCsv(
   headers: string[],
   rows: string[][],
   categoryColName?: string,
   typeColName?: string,
   existingCategories: Category[] = [],
-  presetAliases: Record<string, string> = {}
+  presetAliases: Record<string, string | string[]> = {},
+  filterOptions?: { statusColName?: string; source?: BillSource; skipClosedAndFullRefunds?: boolean }
 ): ExtractedCategoryStat[] {
   if (!categoryColName) return [];
   const catIdx = headers.indexOf(categoryColName);
   if (catIdx < 0) return [];
   const typeIdx = typeColName ? headers.indexOf(typeColName) : -1;
+  const statusIdx = filterOptions?.statusColName
+    ? headers.indexOf(filterOptions.statusColName)
+    : -1;
 
   const statsMap = new Map<string, { count: number; expenseCount: number; incomeCount: number }>();
 
   for (const row of rows) {
+    const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : '';
+    if (filterOptions?.skipClosedAndFullRefunds && filterOptions.source && statusIdx >= 0) {
+      if (shouldSkipBillStatus(filterOptions.source, row[statusIdx], rawType)) {
+        continue;
+      }
+    }
+
     const rawCat = row[catIdx]?.trim();
     if (!rawCat) continue;
 
     const stat = statsMap.get(rawCat) || { count: 0, expenseCount: 0, incomeCount: 0 };
     stat.count++;
 
-    const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : '';
     const normType = normalizeTransactionType(rawType, 'expense');
     if (normType === 'income') {
       stat.incomeCount++;
@@ -180,31 +248,48 @@ export function extractCategoriesFromCsv(
     statsMap.set(rawCat, stat);
   }
 
-  const catMapByName = new Map<string, Category>();
-  for (const c of existingCategories) {
-    catMapByName.set(c.name.trim().toLowerCase(), c);
-  }
-
   const result: ExtractedCategoryStat[] = [];
   for (const [rawName, stat] of statsMap.entries()) {
     const dominantType: TransactionType = stat.incomeCount > stat.expenseCount ? 'income' : 'expense';
 
     let suggestedCatId: string | undefined;
-    const aliasTarget = presetAliases[rawName];
-    if (aliasTarget) {
-      const match = catMapByName.get(aliasTarget.toLowerCase()) || existingCategories.find((c) => c.name === aliasTarget);
-      if (match) suggestedCatId = match.id;
+    const aliasValue = presetAliases[rawName];
+    if (aliasValue) {
+      const aliasTargets = Array.isArray(aliasValue) ? aliasValue : [aliasValue];
+      for (const target of aliasTargets) {
+        const activeMatch = findBestCategoryMatch(existingCategories, target, dominantType, true);
+        if (activeMatch) {
+          suggestedCatId = activeMatch.id;
+          break;
+        }
+      }
+      if (!suggestedCatId) {
+        for (const target of aliasTargets) {
+          const fallbackMatch = findBestCategoryMatch(existingCategories, target, dominantType);
+          if (fallbackMatch) {
+            suggestedCatId = fallbackMatch.id;
+            break;
+          }
+        }
+      }
     }
 
     if (!suggestedCatId) {
-      const exact = catMapByName.get(rawName.toLowerCase());
+      const exact = findBestCategoryMatch(existingCategories, rawName, dominantType);
       if (exact) suggestedCatId = exact.id;
     }
 
     if (!suggestedCatId) {
-      const fuzzy = existingCategories.find((c) =>
-        c.type === dominantType && (c.name.includes(rawName) || rawName.includes(c.name))
-      );
+      const fuzzy =
+        existingCategories.find(
+          (c) =>
+            !c.isArchived &&
+            c.type === dominantType &&
+            (c.name.includes(rawName) || rawName.includes(c.name))
+        ) ??
+        existingCategories.find(
+          (c) => c.type === dominantType && (c.name.includes(rawName) || rawName.includes(c.name))
+        );
       if (fuzzy) suggestedCatId = fuzzy.id;
     }
 
@@ -219,9 +304,6 @@ export function extractCategoriesFromCsv(
   return result.sort((a, b) => b.count - a.count);
 }
 
-/**
- * 统计并提取 CSV 中所有的原始收支类型
- */
 export function extractTransactionTypesFromCsv(
   headers: string[],
   rows: string[][],
@@ -242,12 +324,17 @@ export function extractTransactionTypesFromCsv(
   for (const [rawName, count] of counts.entries()) {
     let suggested: TransactionType | 'skip' = 'expense';
     const lower = rawName.toLowerCase();
-    if (lower.includes('支') || lower === 'expense' || lower === 'out') {
+    if (
+      lower.includes('不计') ||
+      lower.includes('其他') ||
+      lower === 'skip' ||
+      lower === '/'
+    ) {
+      suggested = 'skip';
+    } else if (lower.includes('支') || lower === 'expense' || lower === 'out') {
       suggested = 'expense';
     } else if (lower.includes('收') || lower === 'income' || lower === 'in') {
       suggested = 'income';
-    } else if (lower.includes('不计') || lower.includes('其他') || lower === 'skip') {
-      suggested = 'skip';
     } else if (lower.includes('转') || lower === 'transfer') {
       suggested = 'transfer';
     } else if (lower.includes('借') || lower.includes('贷')) {
@@ -264,15 +351,11 @@ export function extractTransactionTypesFromCsv(
   return result.sort((a, b) => b.count - a.count);
 }
 
-/**
- * 【高级可配置导入映射引擎】
- * 结合列映射、账单分类显式映射表、收支类型映射表进行批量精准导入
- */
 export function mapConfiguredCsvRows(
   headers: string[],
   rows: string[][],
   options: AdvancedImportOptions
-): { records: PreparedImportRecord[]; skippedCount: number } {
+): ConfiguredMappingResult {
   const getColIndex = (colName?: string): number => {
     if (!colName) return -1;
     return headers.indexOf(colName);
@@ -285,18 +368,38 @@ export function mapConfiguredCsvRows(
   const acctIdx = getColIndex(options.mapping.accountCol);
   const noteIdx = getColIndex(options.mapping.noteCol);
   const reimbIdx = getColIndex(options.mapping.reimburseCol);
+  const statusIdx = getColIndex(options.mapping.statusCol);
+  const orderIdx = getColIndex(options.mapping.orderIdCol);
 
   const catMapById = new Map<string, Category>(options.existingCategories.map((c) => [c.id, c]));
-  const catMapByName = new Map<string, Category>(options.existingCategories.map((c) => [c.name.trim().toLowerCase(), c]));
-  const acctMapByName = new Map<string, Account>(options.existingAccounts.map((a) => [a.name.trim().toLowerCase(), a]));
+  const catMapByName = new Map<string, Category>(
+    options.existingCategories.map((c) => [c.name.trim().toLowerCase(), c])
+  );
+  const acctMapByName = new Map<string, Account>(
+    options.existingAccounts.map((a) => [a.name.trim().toLowerCase(), a])
+  );
+  const seenBatchKeys = new Set<string>();
 
   const records: PreparedImportRecord[] = [];
   let skippedCount = 0;
+  let duplicateCount = 0;
+  let filteredStatusCount = 0;
 
   for (const row of rows) {
     if (row.length === 0 || row.every((c) => !c.trim())) {
       skippedCount++;
       continue;
+    }
+
+    const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : undefined;
+    const rawStatus = statusIdx >= 0 ? row[statusIdx]?.trim() : undefined;
+
+    if (options.skipClosedAndFullRefunds && options.source) {
+      if (shouldSkipBillStatus(options.source, rawStatus, rawType)) {
+        filteredStatusCount++;
+        skippedCount++;
+        continue;
+      }
     }
 
     const rawAmount = amountIdx >= 0 ? row[amountIdx] : '';
@@ -306,7 +409,6 @@ export function mapConfiguredCsvRows(
       continue;
     }
 
-    const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : undefined;
     let type: TransactionType = inferredType || 'expense';
 
     if (rawType && options.typeMapping && options.typeMapping[rawType]) {
@@ -317,14 +419,43 @@ export function mapConfiguredCsvRows(
       }
       type = mapped;
     } else if (rawType) {
+      if (rawType === '/' || rawType.includes('不计')) {
+        skippedCount++;
+        continue;
+      }
       type = normalizeTransactionType(rawType, inferredType || 'expense');
+    }
+
+    const rawOrderId = orderIdx >= 0 ? row[orderIdx]?.trim() : undefined;
+    const cleanOrderId = rawOrderId && rawOrderId !== '/' ? rawOrderId : undefined;
+    let ext: Record<string, unknown> | undefined;
+
+    if (options.source && cleanOrderId) {
+      const importKey = buildExternalImportKey(options.source, cleanOrderId);
+      if (options.skipDuplicates) {
+        if (options.existingImportKeys?.has(importKey) || seenBatchKeys.has(importKey)) {
+          duplicateCount++;
+          skippedCount++;
+          continue;
+        }
+      }
+      seenBatchKeys.add(importKey);
+      if (options.source === 'wechat' || options.source === 'alipay') {
+        ext = {
+          importMeta: {
+            source: options.source,
+            orderId: cleanOrderId,
+          },
+        };
+      }
     }
 
     const rawDate = dateIdx >= 0 ? row[dateIdx] : '';
     const { date, createdAt } = normalizeDateTime(rawDate);
 
     const rawCat = catIdx >= 0 ? row[catIdx]?.trim() : undefined;
-    let categoryId = type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
+    let categoryId =
+      type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
 
     if (rawCat && options.categoryMapping[rawCat]) {
       categoryId = options.categoryMapping[rawCat];
@@ -336,20 +467,24 @@ export function mapConfiguredCsvRows(
     }
 
     if (!catMapById.has(categoryId)) {
-      categoryId = type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
+      categoryId =
+        type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
     }
 
     let accountId = options.defaultAccountId;
     let rawAccountName: string | undefined;
     if (acctIdx >= 0 && row[acctIdx]) {
-      rawAccountName = row[acctIdx].trim();
-      const acctKey = rawAccountName.toLowerCase();
-      if (acctMapByName.has(acctKey)) {
-        accountId = acctMapByName.get(acctKey)!.id;
+      const candidateAcct = row[acctIdx].trim();
+      if (candidateAcct && candidateAcct !== '/') {
+        rawAccountName = candidateAcct;
+        const acctKey = rawAccountName.toLowerCase();
+        if (acctMapByName.has(acctKey)) {
+          accountId = acctMapByName.get(acctKey)!.id;
+        }
       }
     }
 
-    const note = noteIdx >= 0 ? row[noteIdx]?.trim() : undefined;
+    const note = noteIdx >= 0 ? row[noteIdx]?.trim() || undefined : undefined;
     let isReimbursable = false;
     if (reimbIdx >= 0 && row[reimbIdx]) {
       const val = row[reimbIdx].trim();
@@ -367,35 +502,30 @@ export function mapConfiguredCsvRows(
       rawCategoryName: rawCat,
       note,
       isReimbursable,
+      ext,
       rawRow: row,
     });
   }
 
-  return { records, skippedCount };
+  return { records, skippedCount, duplicateCount, filteredStatusCount };
 }
 
-/**
- * 兼容旧模式：标准 CSV 映射包装
- */
 export function mapStandardCsvRows(
   headers: string[],
   rows: string[][],
   options: StandardImportOptions
-): { records: PreparedImportRecord[]; skippedCount: number } {
+): ConfiguredMappingResult {
   return mapConfiguredCsvRows(headers, rows, {
     ...options,
     categoryMapping: {},
   });
 }
 
-/**
- * 兼容旧模式：小象记账预设映射包装
- */
 export function mapElephantCsvRows(
   headers: string[],
   rows: string[][],
   options: ElephantImportOptions
-): { records: PreparedImportRecord[]; skippedCount: number } {
+): ConfiguredMappingResult {
   const elephantMapping: CsvColumnMapping = {
     dateCol: '日期',
     categoryCol: '分类名称',
@@ -407,10 +537,10 @@ export function mapElephantCsvRows(
   };
 
   const aliases: Record<string, string> = {
-    '吃饭': 'cat_food',
-    '超市': 'cat_shop',
-    '交通费': 'cat_transit',
-    '生活': 'cat_home',
+    吃饭: 'cat_food',
+    超市: 'cat_shop',
+    交通费: 'cat_transit',
+    生活: 'cat_home',
   };
 
   return mapConfiguredCsvRows(headers, rows, {
@@ -424,20 +554,14 @@ export function mapElephantCsvRows(
   });
 }
 
-/**
- * 保持向后兼容的通用映射包装函数
- */
 export function mapCsvRowsToTransactions(
   headers: string[],
   rows: string[][],
   options: StandardImportOptions
-): { records: PreparedImportRecord[]; skippedCount: number } {
+): ConfiguredMappingResult {
   return mapStandardCsvRows(headers, rows, options);
 }
 
-/**
- * 导出全部账单数据为标准 CSV 字符串
- */
 export function exportTransactionsToCsv(
   transactions: Transaction[],
   categories: Category[],
@@ -450,12 +574,18 @@ export function exportTransactionsToCsv(
 
   const getTypeLabel = (t: TransactionType): string => {
     switch (t) {
-      case 'expense': return '支出';
-      case 'income': return '收入';
-      case 'transfer': return '转账';
-      case 'loan': return '借贷';
-      case 'reconcile': return '平账';
-      default: return '支出';
+      case 'expense':
+        return '支出';
+      case 'income':
+        return '收入';
+      case 'transfer':
+        return '转账';
+      case 'loan':
+        return '借贷';
+      case 'reconcile':
+        return '平账';
+      default:
+        return '支出';
     }
   };
 

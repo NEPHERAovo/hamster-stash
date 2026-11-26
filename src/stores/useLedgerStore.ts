@@ -41,6 +41,7 @@ interface LedgerState {
       accountId: string;
       note?: string;
       isReimbursable?: boolean;
+      ext?: Record<string, unknown>;
     }[],
     syncAccountBalance?: boolean
   ) => Promise<{ importedCount: number }>;

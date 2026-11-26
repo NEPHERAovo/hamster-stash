@@ -592,6 +592,7 @@ export class TransactionService {
       accountId: string;
       note?: string;
       isReimbursable?: boolean;
+      ext?: Record<string, unknown>;
     }[],
     syncAccountBalance: boolean = true
   ): Promise<{ importedCount: number }> {
@@ -618,6 +619,7 @@ export class TransactionService {
             note: r.note,
             isReimbursable: Boolean(r.isReimbursable),
             reimburseStatus: r.isReimbursable ? 'pending' : undefined,
+            ext: r.ext,
           });
           count++;
         }
