@@ -428,7 +428,7 @@ export function App() {
           key={currentTab === 'ledger' ? `${currentTab}-${currentMonth}` : currentTab}
           className={
             currentTab === 'stats'
-              ? 'tab-page-enter flex min-h-0 w-full flex-1 flex-col'
+              ? 'flex min-h-0 w-full flex-1 flex-col'
               : 'tab-page-enter w-full'
           }
         >

@@ -497,6 +497,7 @@ describe('Modular Stats & UI Components', () => {
 
     const dateBar = screen.getByTitle('点击选择日期').parentElement;
     expect(dateBar?.className).toContain('shrink-0');
+    expect(dateBar?.className).toContain('tab-header-enter');
     expect(dateBar?.className).not.toContain('sticky');
 
     const scrollBody = rootEl?.querySelector('.main-scroll-content');
@@ -504,7 +505,16 @@ describe('Modular Stats & UI Components', () => {
     expect(scrollBody?.className).toContain('flex-col');
     expect(scrollBody?.className).toContain('gap-3.5');
     expect(scrollBody?.className).toContain('overflow-y-auto');
-    expect(scrollBody?.querySelector('.tab-stagger-1')).toBeInTheDocument();
-    expect(scrollBody?.querySelector('.tab-stagger-2')).toBeInTheDocument();
+
+    const initialTransitionEl = scrollBody?.querySelector('.tab-page-enter');
+    expect(initialTransitionEl).toBeInTheDocument();
+    expect(initialTransitionEl?.querySelector('.tab-stagger-1')).toBeInTheDocument();
+    expect(initialTransitionEl?.querySelector('.tab-stagger-2')).toBeInTheDocument();
+    expect(initialTransitionEl?.querySelector('.tab-stagger-3')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('上一期'));
+    const nextTransitionEl = scrollBody?.querySelector('.tab-page-enter');
+    expect(nextTransitionEl).toBeInTheDocument();
+    expect(nextTransitionEl).not.toBe(initialTransitionEl);
   });
 });

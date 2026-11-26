@@ -406,7 +406,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
   return (
     <div className="flex size-full min-h-0 flex-col">
       {!controlledMode && (
-        <div className="flex shrink-0 justify-center px-4 pt-2 pb-1.5">
+        <div className="tab-header-enter flex shrink-0 justify-center px-4 pt-2 pb-1.5">
           <SegToggle
             options={[
               { value: 'week', label: '周' },
@@ -422,7 +422,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
       )}
 
-      <div className="flex shrink-0 items-center justify-between border-b border-(--rule-hairline)/60 bg-(--paper-base) px-4 py-1.5 select-none">
+      <div className="tab-header-enter flex shrink-0 items-center justify-between border-b border-(--rule-hairline)/60 bg-(--paper-base) px-4 py-1.5 select-none">
         <PaperIconButton
           icon={ChevronLeft}
           onClick={handlePrevPeriod}
@@ -457,6 +457,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
       </div>
 
       <div className="main-scroll-content flex min-h-0 flex-1 flex-col gap-3.5 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pt-3.5">
+        <div key={`${mode}-${periodInfo.key}`} className="tab-page-enter flex flex-col gap-3.5">
         <div className="tab-stagger-1 flex flex-col gap-2">
         <PaperCard
           rounded="md"
@@ -641,6 +642,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           contained
           showFullDate={mode !== 'month'}
         />
+      </div>
       </div>
       </div>
 
