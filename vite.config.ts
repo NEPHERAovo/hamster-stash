@@ -120,13 +120,14 @@ export default defineConfig({
     pwaAssets: {
       disabled: false,
       config: true,
+      injectThemeColor: false,
     },
 
     manifest: {
       name: '仓鼠囤囤',
       short_name: '仓鼠囤囤',
       description: '集日常收支、物品收纳与资产管理于一体的轻量化个人账本',
-      theme_color: '#ffffff',
+      theme_color: '#F3F4F6',
       background_color: '#F3F4F6',
       display: 'standalone',
     },

@@ -223,6 +223,9 @@ html, body, #root {
     min-height: 100dvh;
   }
 }
+:root { color-scheme: light dark; }
+:root:has(> head > meta[name="color-scheme"][content="dark"]) { color-scheme: dark; }
+:root:has(> head > meta[name="color-scheme"][content="light"]) { color-scheme: light; }
 html { background-color: var(--paper-base, var(--bg-base)); }
 
 body {

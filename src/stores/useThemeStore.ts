@@ -40,8 +40,11 @@ const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
 const COLOR_MODE_STORAGE_KEY = 'hamsterstash_color_mode_v1';
 const LIGHT_THEME_STORAGE_KEY = 'hamsterstash_light_theme_v1';
 const DARK_THEME_STORAGE_KEY = 'hamsterstash_dark_theme_v1';
-const SPLASH_BG_STORAGE_KEY = 'hamsterstash_splash_bg_v1';
-const SPLASH_DARK_STORAGE_KEY = 'hamsterstash_splash_dark_v1';
+const SPLASH_LIGHT_BG_STORAGE_KEY = 'hamsterstash_splash_bg_light_v1';
+const SPLASH_DARK_BG_STORAGE_KEY = 'hamsterstash_splash_bg_dark_v1';
+const MODERN_BASE_COLORS = { light: '#F3F4F6', dark: '#090A0D' } as const;
+const LIGHT_MEDIA_QUERY = '(prefers-color-scheme: light)';
+const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
 const PAPER_THEME_BASE_COLORS: Record<string, string> = {
   'theme-sage': '#EEF4ED',
@@ -56,21 +59,49 @@ const PAPER_THEME_BASE_COLORS: Record<string, string> = {
   'theme-crimson': '#160E10',
 };
 
-const resolveChromeBackground = (themeId: string, uiStyle: UiStyle, isDark: boolean): string => {
-  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    const computed = window.getComputedStyle(document.documentElement).getPropertyValue('--paper-base').trim();
-    if (computed) return computed;
-  }
+const resolveBaseColor = (themeId: string, uiStyle: UiStyle, isDark: boolean): string => {
   if (uiStyle === 'modern') {
-    return isDark ? '#090A0D' : '#F3F4F6';
+    return isDark ? MODERN_BASE_COLORS.dark : MODERN_BASE_COLORS.light;
   }
   return PAPER_THEME_BASE_COLORS[themeId] || (isDark ? '#0C140E' : '#EEF4ED');
 };
 
-const applyChromeMetaAndRoot = (bg: string, isDark: boolean) => {
+const upsertColorSchemeMeta = (colorMode: ColorMode) => {
+  if (!document.head) return;
+  const content = colorMode === 'auto' ? 'light dark' : colorMode;
+  const existing = document.querySelector('meta[name="color-scheme"]');
+  if (existing) {
+    if (existing.getAttribute('content') !== content) {
+      existing.setAttribute('content', content);
+    }
+    return;
+  }
+  const meta = document.createElement('meta');
+  meta.setAttribute('name', 'color-scheme');
+  meta.setAttribute('content', content);
+  document.head.appendChild(meta);
+};
+
+const createThemeColorMeta = (media: string, content: string): HTMLMetaElement => {
+  const meta = document.createElement('meta');
+  meta.setAttribute('name', 'theme-color');
+  meta.setAttribute('media', media);
+  meta.setAttribute('content', content);
+  return meta;
+};
+
+const applyChromeMetaAndRoot = (params: {
+  bg: string;
+  lightBg: string;
+  darkBg: string;
+  isDark: boolean;
+  colorMode: ColorMode;
+}) => {
   if (typeof document === 'undefined') return;
-  safeSetStorage(SPLASH_BG_STORAGE_KEY, bg);
-  safeSetStorage(SPLASH_DARK_STORAGE_KEY, isDark ? '1' : '0');
+  const { bg, lightBg, darkBg, isDark, colorMode } = params;
+
+  safeSetStorage(SPLASH_LIGHT_BG_STORAGE_KEY, lightBg);
+  safeSetStorage(SPLASH_DARK_BG_STORAGE_KEY, darkBg);
 
   document.documentElement.style.backgroundColor = bg;
   document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
@@ -78,28 +109,49 @@ const applyChromeMetaAndRoot = (bg: string, isDark: boolean) => {
     document.body.style.backgroundColor = bg;
   }
 
-  const metas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
-  const isAlreadySingleMatch =
-    metas.length === 1 &&
-    !metas[0].hasAttribute('media') &&
-    metas[0].getAttribute('content') === bg;
+  upsertColorSchemeMeta(colorMode);
 
-  if (!isAlreadySingleMatch) {
+  const lightMetaBg = colorMode === 'auto' ? lightBg : bg;
+  const darkMetaBg = colorMode === 'auto' ? darkBg : bg;
+  const metas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
+  const isAlreadyMatched =
+    metas.length === 2 &&
+    metas[0].getAttribute('media') === LIGHT_MEDIA_QUERY &&
+    metas[0].getAttribute('content') === lightMetaBg &&
+    metas[1].getAttribute('media') === DARK_MEDIA_QUERY &&
+    metas[1].getAttribute('content') === darkMetaBg;
+
+  if (!isAlreadyMatched) {
     for (const meta of metas) {
       meta.remove();
     }
     if (document.head) {
-      const nextMeta = document.createElement('meta');
-      nextMeta.setAttribute('name', 'theme-color');
-      nextMeta.setAttribute('content', bg);
-      document.head.appendChild(nextMeta);
+      const fragment = document.createDocumentFragment();
+      fragment.appendChild(createThemeColorMeta(LIGHT_MEDIA_QUERY, lightMetaBg));
+      fragment.appendChild(createThemeColorMeta(DARK_MEDIA_QUERY, darkMetaBg));
+      document.head.appendChild(fragment);
     }
   }
 };
 
-const syncSplashChrome = (themeId: string, uiStyle: UiStyle, isDark: boolean) => {
-  if (typeof document === 'undefined' || typeof window === 'undefined') return;
-  applyChromeMetaAndRoot(resolveChromeBackground(themeId, uiStyle, isDark), isDark);
+const syncSplashChrome = (params: {
+  colorMode: ColorMode;
+  uiStyle: UiStyle;
+  lightThemeId: string;
+  darkThemeId: string;
+  isDark: boolean;
+}) => {
+  if (typeof document === 'undefined') return;
+  const { colorMode, uiStyle, lightThemeId, darkThemeId, isDark } = params;
+  const lightBg = resolveBaseColor(lightThemeId, uiStyle, false);
+  const darkBg = resolveBaseColor(darkThemeId, uiStyle, true);
+  applyChromeMetaAndRoot({
+    bg: isDark ? darkBg : lightBg,
+    lightBg,
+    darkBg,
+    isDark,
+    colorMode,
+  });
 };
 
 const isLightTheme = (id: string) => THEME_OPTIONS.some((t) => t.id === id && !t.isDark);
@@ -232,7 +284,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
   if (typeof document !== 'undefined') {
     applyThemeToDOM(effective.themeId);
     applyUiStyleToDOM(initialUiStyle);
-    syncSplashChrome(effective.themeId, initialUiStyle, effective.isDark);
+    syncSplashChrome({
+      colorMode,
+      uiStyle: initialUiStyle,
+      lightThemeId,
+      darkThemeId,
+      isDark: effective.isDark,
+    });
   }
 
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
@@ -243,7 +301,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       const next = resolveEffective('auto', state.lightThemeId, state.darkThemeId);
       if (next.themeId === state.currentThemeId && next.isDark === state.isDark) return;
       applyThemeToDOM(next.themeId);
-      syncSplashChrome(next.themeId, state.uiStyle, next.isDark);
+      syncSplashChrome({
+        colorMode: 'auto',
+        uiStyle: state.uiStyle,
+        lightThemeId: state.lightThemeId,
+        darkThemeId: state.darkThemeId,
+        isDark: next.isDark,
+      });
       set({
         currentThemeId: next.themeId,
         isDark: next.isDark,
@@ -253,6 +317,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       mediaQuery.addEventListener('change', handleSystemChange);
     } else if (typeof (mediaQuery as unknown as { addListener?: (cb: () => void) => void }).addListener === 'function') {
       (mediaQuery as unknown as { addListener: (cb: () => void) => void }).addListener(handleSystemChange);
+    }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          handleSystemChange();
+        }
+      });
     }
   }
 
@@ -265,7 +336,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     const resolved = resolveEffective(next.colorMode, next.lightThemeId, next.darkThemeId);
     applyThemeToDOM(resolved.themeId);
     applyUiStyleToDOM(next.uiStyle);
-    syncSplashChrome(resolved.themeId, next.uiStyle, resolved.isDark);
+    syncSplashChrome({
+      colorMode: next.colorMode,
+      uiStyle: next.uiStyle,
+      lightThemeId: next.lightThemeId,
+      darkThemeId: next.darkThemeId,
+      isDark: resolved.isDark,
+    });
 
     safeSetStorage(UI_STYLE_STORAGE_KEY, next.uiStyle);
     safeSetStorage(COLOR_MODE_STORAGE_KEY, next.colorMode);
@@ -343,7 +420,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         }
         applyThemeToDOM(resolved.themeId);
         applyUiStyleToDOM(nextUiStyle);
-        syncSplashChrome(resolved.themeId, nextUiStyle, resolved.isDark);
+        syncSplashChrome({
+          colorMode: nextMode,
+          uiStyle: nextUiStyle,
+          lightThemeId: nextLight,
+          darkThemeId: nextDark,
+          isDark: resolved.isDark,
+        });
 
         safeSetStorage(UI_STYLE_STORAGE_KEY, nextUiStyle);
         safeSetStorage(COLOR_MODE_STORAGE_KEY, nextMode);
