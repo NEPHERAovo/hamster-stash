@@ -5,11 +5,18 @@ export class MemoryAdapter implements DataAdapter {
   private collections = new Map<string, Map<string, StoredEntity>>();
   private txQueue: Promise<void> = Promise.resolve();
   private inTransaction = false;
+  private activeTxStores = new Set<string>();
 
   async initialize(): Promise<void> {}
 
   async destroy(): Promise<void> {
     this.collections.clear();
+  }
+
+  private assertStoreInTransaction(store: string): void {
+    if (this.inTransaction && !this.activeTxStores.has(store)) {
+      throw new Error(`Store ${store} is not included in active transaction.`);
+    }
   }
 
   private getCollection(name: string): Map<string, StoredEntity> {
@@ -22,26 +29,31 @@ export class MemoryAdapter implements DataAdapter {
   }
 
   async get<T extends StoredEntity>(store: string, id: string): Promise<T | null> {
+    this.assertStoreInTransaction(store);
     const item = this.getCollection(store).get(id);
     if (!item) return null;
     return structuredClone(item) as T;
   }
 
   async getAll<T extends StoredEntity>(store: string): Promise<T[]> {
+    this.assertStoreInTransaction(store);
     return Array.from(this.getCollection(store).values()).map(
       (item) => structuredClone(item) as T
     );
   }
 
   async put<T extends StoredEntity>(store: string, entity: T): Promise<void> {
+    this.assertStoreInTransaction(store);
     this.getCollection(store).set(entity.id, structuredClone(entity));
   }
 
   async remove(store: string, id: string): Promise<void> {
+    this.assertStoreInTransaction(store);
     this.getCollection(store).delete(id);
   }
 
   async clearStore(store: string): Promise<void> {
+    this.assertStoreInTransaction(store);
     this.collections.get(store)?.clear();
   }
 
@@ -70,6 +82,7 @@ export class MemoryAdapter implements DataAdapter {
 
     const execute = async (): Promise<T> => {
       this.inTransaction = true;
+      this.activeTxStores = new Set(stores);
       const backups = new Map<string, Map<string, StoredEntity>>();
       for (const store of stores) {
         const existing = this.collections.get(store);
@@ -96,6 +109,7 @@ export class MemoryAdapter implements DataAdapter {
         throw err;
       } finally {
         this.inTransaction = false;
+        this.activeTxStores.clear();
       }
     };
 

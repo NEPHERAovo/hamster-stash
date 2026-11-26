@@ -266,7 +266,7 @@ export class TransactionService {
 
   private async internalRecordTransaction(input: CreateTransactionInput): Promise<Transaction> {
     return this.txRepo.runInTransaction(
-      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      [STORES.ACCOUNTS, STORES.CATEGORIES, STORES.TRANSACTIONS],
       () => this.executeRecordTransaction(input)
     );
   }
@@ -327,12 +327,15 @@ export class TransactionService {
       'transaction:record',
       { input: incomeInput },
       async ({ input: finalInput }) =>
-        this.txRepo.runInTransaction([STORES.ACCOUNTS, STORES.TRANSACTIONS], async () => {
-          await this.txRepo.update(orig.id, {
-            reimburseStatus: 'settled',
-          });
-          return this.executeRecordTransaction(finalInput);
-        })
+        this.txRepo.runInTransaction(
+          [STORES.ACCOUNTS, STORES.CATEGORIES, STORES.TRANSACTIONS],
+          async () => {
+            await this.txRepo.update(orig.id, {
+              reimburseStatus: 'settled',
+            });
+            return this.executeRecordTransaction(finalInput);
+          }
+        )
     );
   }
 
@@ -459,7 +462,7 @@ export class TransactionService {
 
   private async internalUpdateTransaction(id: string, patch: Partial<CreateTransactionInput>): Promise<Transaction> {
     return this.txRepo.runInTransaction(
-      [STORES.ACCOUNTS, STORES.TRANSACTIONS],
+      [STORES.ACCOUNTS, STORES.CATEGORIES, STORES.TRANSACTIONS],
       async () => {
         const oldTx = await this.txRepo.findById(id);
         if (!oldTx) {
