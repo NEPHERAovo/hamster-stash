@@ -23,12 +23,22 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
       onClear,
       variant = 'sunken',
       size = 'md',
+      enterKeyHint = 'done',
+      onKeyDown,
       value,
       disabled,
       ...props
     },
     ref
   ) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
+      if (e.nativeEvent.isComposing || e.key === 'Process' || e.keyCode === 229) return;
+      if (e.key === 'Enter') {
+        e.currentTarget.blur();
+      }
+    };
     const variantStyles = {
       sunken: 'bg-(--paper-sunken) border-(--rule-hairline) focus-within:border-(--border-strong)',
       surface: 'paper-glass-blur bg-(--paper-sheet) border-(--rule-hairline) focus-within:border-(--border-strong) shadow-(--shadow-xs)',
@@ -62,6 +72,8 @@ export const PaperInput = React.forwardRef<HTMLInputElement, PaperInputProps>(
           ref={ref}
           value={value}
           disabled={disabled}
+          enterKeyHint={enterKeyHint}
+          onKeyDown={handleKeyDown}
           className={cn(
             'w-full flex-1 border-none bg-transparent text-(--ink-primary) outline-none placeholder:text-(--ink-faint)',
             size === 'sm' ? 'text-xs' : 'text-sm',

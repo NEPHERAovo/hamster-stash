@@ -81,10 +81,17 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         id={id}
         type="text"
         inputMode="decimal"
+        enterKeyHint="done"
         autoFocus={autoFocus}
         disabled={disabled}
         value={value}
         onChange={handleChange}
+        onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing || e.key === 'Process' || e.keyCode === 229) return;
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          }
+        }}
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={cn(

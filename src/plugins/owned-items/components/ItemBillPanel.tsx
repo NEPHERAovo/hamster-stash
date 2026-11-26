@@ -108,6 +108,7 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
         <div className="space-y-2">
           <PaperInput
             size="sm"
+            enterKeyHint="search"
             value={searchBillQuery}
             onChange={(e) => onChangeSearchBillQuery(e.target.value)}
             placeholder="搜索备注、分类、账户、金额..."

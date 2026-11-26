@@ -237,6 +237,7 @@ export const TransactionGroup: React.FC<TransactionGroupProps> = ({
           <div className="min-w-0 flex-1">
             <PaperInput
               size="sm"
+              enterKeyHint="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索备注、分类、账户..."

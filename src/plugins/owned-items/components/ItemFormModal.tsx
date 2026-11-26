@@ -429,6 +429,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({ onClose, params })
               <div className="space-y-2">
                 <PaperInput
                   size="sm"
+                  enterKeyHint="search"
                   value={billSearchQuery}
                   onChange={(e) => setBillSearchQuery(e.target.value)}
                   placeholder="搜索备注、分类、账户、金额..."

@@ -161,6 +161,7 @@ export const PaperIconPickerModal: React.FC<PaperIconPickerModalProps> = ({
         <div className="sticky top-0 z-10 -mx-4 -mt-4 bg-(--paper-sheet) px-4 pt-3 pb-2">
           <PaperInput
             value={query}
+            enterKeyHint="search"
             onChange={(e) => setQuery(e.target.value)}
             placeholder="搜索图标名称或类型..."
             leftIcon={<Search className="size-3.5 text-(--ink-tertiary)" />}
