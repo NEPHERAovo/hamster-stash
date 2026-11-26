@@ -552,8 +552,7 @@ export function App() {
         onClose={() => setIsSettingsOpen(false)}
         header={
           <PageHeader
-            title="Settings"
-            modernTitle="设置"
+            title="设置"
             centerTitle={true}
             leftAction={<SubPageBackButton label="资产" />}
           />

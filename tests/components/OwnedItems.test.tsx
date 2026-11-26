@@ -42,19 +42,23 @@ describe('OwnedItems Plugin Components', () => {
     usePluginItemStore.setState({ items: [dummyItem], loading: false, sortOption: 'date-desc' });
     useLedgerStore.setState({ transactions: [dummyTx] });
     usePluginUIStore.setState({
-      registeredSubPages: { 'item-list': () => React.createElement('div', null, 'ItemList') },
+      registeredSubPages: {},
       registeredModals: { 'item-form': () => React.createElement('div', null, 'ItemForm') },
       activeSubPage: null,
       activeModal: null,
     });
   });
 
-  it('renders generic "物品详情" for physical items and "订阅详情" for subscriptions', () => {
+  it('renders generic "物品详情" for physical items and "订阅详情" for subscriptions with centered subpage heading', () => {
     const { rerender } = render(
       <ItemDetailSubPage onClose={() => {}} params={{ itemId: 'item_switch' }} />
     );
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('物品详情');
+    const physicalHeading = screen.getByRole('heading', { level: 1 });
+    expect(physicalHeading).toHaveTextContent('物品详情');
+    expect(physicalHeading.className).toContain('text-lg');
+    expect(physicalHeading.className).not.toContain('text-2xl');
+    expect(physicalHeading.className).not.toContain('font-serif');
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Nintendo Switch');
 
     const subItem: Item = {
@@ -74,7 +78,11 @@ describe('OwnedItems Plugin Components', () => {
       );
     });
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('订阅详情');
+    const subHeading = screen.getByRole('heading', { level: 1 });
+    expect(subHeading).toHaveTextContent('订阅详情');
+    expect(subHeading.className).toContain('text-lg');
+    expect(subHeading.className).not.toContain('text-2xl');
+    expect(subHeading.className).not.toContain('font-serif');
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Netflix');
   });
 

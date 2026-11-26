@@ -526,6 +526,7 @@ export const ItemDetailSubPage: React.FC<ItemDetailSubPageProps> = ({ onClose, p
     <div className="w-full pb-20 select-none">
       <PageHeader
         title={isSub ? '订阅详情' : '物品详情'}
+        centerTitle={true}
         onDoubleClick={() => subPage?.scrollToTop?.()}
         leftAction={
           <PaperIconButton

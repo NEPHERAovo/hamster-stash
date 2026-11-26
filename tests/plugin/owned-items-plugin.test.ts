@@ -79,7 +79,7 @@ describe('OwnedItemsPlugin (标准参考插件：持有物品管理)', () => {
     expect(uiState.slots['tx.modal.metaTray']?.length).toBe(1);
     expect(uiState.slots['tx.row.badges']?.length).toBe(1);
 
-    expect(uiState.registeredSubPages['item-list']).toBeDefined();
+    expect(uiState.registeredSubPages['item-list']).toBeUndefined();
     expect(uiState.registeredSubPages['item-detail']).toBeDefined();
     expect(uiState.registeredModals['item-form']).toBeDefined();
   });

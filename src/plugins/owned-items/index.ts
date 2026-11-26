@@ -128,7 +128,6 @@ export class OwnedItemsPlugin extends BasePlugin {
 
     ctx.ui.registerSlot('tx.row.badges', (context) => React.createElement(ItemRowBadge, { context: context as unknown as ItemRowBadgeProps['context'] }), 100);
 
-    ctx.ui.registerSubPage('item-list', ItemListSubPage as unknown as React.ComponentType<Record<string, unknown>>);
     ctx.ui.registerSubPage('item-detail', ItemDetailSubPage as unknown as React.ComponentType<Record<string, unknown>>);
     ctx.ui.registerModal('item-form', ItemFormModal as unknown as React.ComponentType<Record<string, unknown>>);
 

@@ -47,7 +47,7 @@ To ensure professional engineering collaboration and seamless user localization:
    - `AGENTS.md` and `LESSONS.md` must contain zero literal CJK characters (`/[\u4e00-\u9fa5]/`).
 2. **Product & UI Layer (Chinese-Dominant)**:
    - User-facing UI labels, form placeholders, button copy, category names, account types, and toast messages must be concise, natural native Chinese.
-   - **Exception**: Top-level serif journal headers (`November 2026`, `Statistics`, `Owned Items`, `Assets`, `Settings`) remain in English to preserve classical literary typography on mobile devices.
+   - **Exception**: Top-level serif journal headers (`November 2026`, `Statistics`, `Owned Items`, `Assets`) remain in English to preserve classical literary typography on mobile devices.
    - **Concise Copywriting**: Never use engineering jargon, debugging codes, or explanatory parentheses in user-facing copy.
 3. **UI De-Noising & Notification Guardrails**:
    - **Silent CRUD & Interaction De-Noising**: Routine lightweight local operations (recording or updating transactions, deleting a ledger record, attaching vouchers, toggling settings switches, selecting categories or accounts, switching themes) provide immediate visual DOM feedback and MUST NEVER trigger toast alerts.

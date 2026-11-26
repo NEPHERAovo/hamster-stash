@@ -1,16 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, PackageIcon as Package } from '@phosphor-icons/react';
+import { PackageIcon as Package } from '@phosphor-icons/react';
 import {
   useHostTransactions,
   usePluginNavigation,
-  useSubPage,
   centsToYuan,
   getCategoryIcon,
   cn,
-  PageHeader,
   PaperCard,
   PaperSummaryCard,
-  PaperIconButton,
   PaperSelect,
   type PaperSelectOption,
   SegToggle,
@@ -25,11 +22,6 @@ import {
   sortItems,
 } from '../domain/itemCalculator';
 
-export interface ItemListSubPageProps {
-  onClose?: () => void;
-  params?: Record<string, unknown>;
-}
-
 type FilterTab = 'using' | 'sold' | 'all';
 type KindTab = 'all' | 'physical' | 'subscription';
 
@@ -42,13 +34,12 @@ const SORT_OPTIONS: PaperSelectOption[] = [
   { value: 'daily-asc', label: '按日均 · 从低到高', shortLabel: '日均 ↑' },
 ];
 
-export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => {
+export const ItemListSubPage: React.FC = () => {
   const items = usePluginItemStore((s) => s.items);
   const sortOption = usePluginItemStore((s) => s.sortOption);
   const setSortOption = usePluginItemStore((s) => s.setSortOption);
   const transactions = useHostTransactions();
-  const { openSubPage, openModal } = usePluginNavigation();
-  const subPage = useSubPage();
+  const { openSubPage } = usePluginNavigation();
 
   const [activeTab, setActiveTab] = useState<FilterTab>('using');
   const [kindFilter, setKindFilter] = useState<KindTab>('all');
@@ -128,24 +119,7 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
 
   return (
     <div className="w-full pb-20 select-none">
-      {onClose && (
-        <PageHeader
-          title="Items"
-          modernTitle="物品"
-          onDoubleClick={() => subPage?.scrollToTop?.()}
-          leftAction={
-            <PaperIconButton
-              icon={ChevronLeft}
-              size="md"
-              variant="surface"
-              onClick={() => (subPage ? subPage.requestClose() : onClose())}
-              aria-label="返回"
-            />
-          }
-        />
-      )}
-
-      <div className={cn('space-y-3.5 px-4', onClose ? 'pt-3' : 'pt-2')}>
+      <div className="space-y-3.5 px-4 pt-2">
         <PaperSummaryCard className="tab-stagger-1 pb-4">
           <div className="space-y-3 p-4 pt-4.5">
             <div className="flex items-center justify-between">
@@ -306,19 +280,6 @@ export const ItemListSubPage: React.FC<ItemListSubPageProps> = ({ onClose }) => 
           )}
         </div>
       </div>
-
-      {onClose && (
-        <div className="fixed right-6 bottom-6 z-50">
-          <PaperIconButton
-            icon={Plus}
-            size="lg"
-            variant="primary"
-            onClick={() => openModal('item-form')}
-            title="新建物品"
-            aria-label="新建物品"
-          />
-        </div>
-      )}
     </div>
   );
 };

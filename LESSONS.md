@@ -30,7 +30,7 @@
 - **Seen**: 2
 
 ### 3. English Editorial Journal Headers
-- **Rule**: Top-level page headers must use English serif titles (`November 2026`, `Statistics`, `Owned Items`, `Assets`, `Settings`) formatted in `Instrument Serif`.
+- **Rule**: Top-level page headers must use English serif titles (`November 2026`, `Statistics`, `Owned Items`, `Assets`) formatted in `Instrument Serif`.
 - **Why**: Mobile operating systems lack default classical serif fonts for CJK glyphs, falling back to generic system sans-serif and disrupting the vintage literary editorial style.
 - **Evidence**: Verified in PageHeader contract tests (`tests/components/PageHeader.test.tsx`).
 - **Seen**: 3 (Promoted to `AGENTS.md`)
