@@ -33,6 +33,7 @@ import { IMPORT_PRESETS } from '../../src/domain/import-export/importPresets';
 import { ImportService } from '../../src/domain/import-export/importService';
 import type { Category } from '../../src/types/category';
 import type { Account } from '../../src/types/account';
+import { ALIPAY_HEADERS, makeAlipayRow } from '../helpers/billFixtures';
 
 function buildDefaultCategories(): Category[] {
   return DEFAULT_CATEGORIES.map((c) => ({
@@ -213,77 +214,49 @@ describe('WeChat & Alipay ImportService Integration', () => {
   it('imports preprocessed Alipay rows, creates typed accounts only for effective rows, and deduplicates re-imports', async () => {
     const alipayPreset = IMPORT_PRESETS.find((p) => p.id === 'alipay')!;
     const rawTable = {
-      headers: [
-        '交易时间',
-        '交易分类',
-        '交易对方',
-        '对方账号',
-        '商品说明',
-        '收/支',
-        '金额',
-        '收/付款方式',
-        '交易状态',
-        '交易订单号',
-        '商家订单号',
-        '备注',
-      ],
+      headers: ALIPAY_HEADERS,
       rows: [
-        [
-          '2026-11-11 15:19:35',
-          '餐饮美食',
-          '船长海鲜',
-          'a@qq.com',
-          '碳烤鱿鱼丝',
-          '支出',
-          '22.18',
-          '建设银行储蓄卡(8760)&红包&建设银行立减金',
-          '交易成功',
-          'ali_order_1',
-          'm1',
-          '',
-        ],
-        [
-          '2026-11-10 12:00:00',
-          '服饰装扮',
-          '旗舰店',
-          '/',
-          '外套',
-          '支出',
-          '199.00',
-          '花呗&碰一下立减',
-          '交易成功',
-          'ali_order_2',
-          'm2',
-          '',
-        ],
-        [
-          '2026-11-09 09:00:00',
-          '日用百货',
-          '超市',
-          '/',
-          '已取消商品',
-          '支出',
-          '50.00',
-          '不存在的关闭账户',
-          '交易关闭',
-          'ali_order_closed',
-          'm3',
-          '',
-        ],
-        [
-          '2026-11-08 06:00:00',
-          '投资理财',
-          '基金',
-          '/',
-          '余额宝收益',
-          '不计收支',
-          '2.99',
-          '余额宝',
-          '交易成功',
-          'ali_order_neutral',
-          'm4',
-          '',
-        ],
+        makeAlipayRow({
+          time: '2026-11-11 15:19:35',
+          category: '餐饮美食',
+          counterparty: '船长海鲜',
+          product: '碳烤鱿鱼丝',
+          direction: '支出',
+          amount: '22.18',
+          method: '建设银行储蓄卡(8760)&红包&建设银行立减金',
+          orderId: 'ali_order_1',
+        }),
+        makeAlipayRow({
+          time: '2026-11-10 12:00:00',
+          category: '服饰装扮',
+          counterparty: '旗舰店',
+          product: '外套',
+          direction: '支出',
+          amount: '199.00',
+          method: '花呗&碰一下立减',
+          orderId: 'ali_order_2',
+        }),
+        makeAlipayRow({
+          time: '2026-11-09 09:00:00',
+          category: '日用百货',
+          counterparty: '超市',
+          product: '已取消商品',
+          direction: '支出',
+          amount: '50.00',
+          method: '不存在的关闭账户',
+          status: '交易关闭',
+          orderId: 'ali_order_closed',
+        }),
+        makeAlipayRow({
+          time: '2026-11-08 06:00:00',
+          category: '投资理财',
+          counterparty: '基金',
+          product: '余额宝收益',
+          direction: '不计收支',
+          amount: '2.99',
+          method: '余额宝',
+          orderId: 'ali_order_neutral',
+        }),
       ],
     };
 
@@ -580,55 +553,11 @@ describe('WeChat & Alipay ImportService Integration', () => {
     ).toBe(true);
 
     const alipayPreset = IMPORT_PRESETS.find((p) => p.id === 'alipay')!;
-    const partialTable = preprocessBillTable(
-      {
-        headers: [
-          '交易时间',
-          '交易分类',
-          '交易对方',
-          '对方账号',
-          '商品说明',
-          '收/支',
-          '金额',
-          '收/付款方式',
-          '交易状态',
-          '交易订单号',
-          '商家订单号',
-          '备注',
-        ],
-        rows: [
-          [
-            '2026-11-01 06:00:00',
-            '投资理财',
-            '基金',
-            '/',
-            '余额宝-2026.10.31-收益发放',
-            '不计收支',
-            '2.50',
-            '余额宝',
-            '交易成功',
-            'yb_1',
-            '/',
-            '',
-          ],
-          [
-            '2026-11-02 06:00:00',
-            '投资理财',
-            '基金',
-            '/',
-            '余额宝-2026.11.01-收益发放',
-            '不计收支',
-            '3.00',
-            '余额宝',
-            '交易成功',
-            'yb_2',
-            '/',
-            '',
-          ],
-        ],
-      },
-      'alipay'
-    );
+    const baseRollupRows = [
+      makeAlipayRow({ time: '2026-11-01 06:00:00', product: '余额宝-2026.10.31-收益发放', direction: '不计收支', amount: '2.50', orderId: 'yb_1' }),
+      makeAlipayRow({ time: '2026-11-02 06:00:00', product: '余额宝-2026.11.01-收益发放', direction: '不计收支', amount: '3.00', orderId: 'yb_2' }),
+    ];
+    const partialTable = preprocessBillTable({ headers: ALIPAY_HEADERS, rows: baseRollupRows }, 'alipay');
 
     const importService = new ImportService();
     const res1 = await importService.executeCsvImport({
@@ -662,63 +591,10 @@ describe('WeChat & Alipay ImportService Integration', () => {
 
     const fullMonthTable = preprocessBillTable(
       {
-        headers: [
-          '交易时间',
-          '交易分类',
-          '交易对方',
-          '对方账号',
-          '商品说明',
-          '收/支',
-          '金额',
-          '收/付款方式',
-          '交易状态',
-          '交易订单号',
-          '商家订单号',
-          '备注',
-        ],
+        headers: ALIPAY_HEADERS,
         rows: [
-          [
-            '2026-11-01 06:00:00',
-            '投资理财',
-            '基金',
-            '/',
-            '余额宝-2026.10.31-收益发放',
-            '不计收支',
-            '2.50',
-            '余额宝',
-            '交易成功',
-            'yb_1',
-            '/',
-            '',
-          ],
-          [
-            '2026-11-02 06:00:00',
-            '投资理财',
-            '基金',
-            '/',
-            '余额宝-2026.11.01-收益发放',
-            '不计收支',
-            '3.00',
-            '余额宝',
-            '交易成功',
-            'yb_2',
-            '/',
-            '',
-          ],
-          [
-            '2026-11-03 06:00:00',
-            '投资理财',
-            '基金',
-            '/',
-            '余额宝-2026.11.02-收益发放',
-            '不计收支',
-            '4.50',
-            '余额宝',
-            '交易成功',
-            'yb_3',
-            '/',
-            '',
-          ],
+          ...baseRollupRows,
+          makeAlipayRow({ time: '2026-11-03 06:00:00', product: '余额宝-2026.11.02-收益发放', direction: '不计收支', amount: '4.50', orderId: 'yb_3' }),
         ],
       },
       'alipay'

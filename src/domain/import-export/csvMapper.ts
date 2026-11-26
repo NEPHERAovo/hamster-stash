@@ -54,6 +54,27 @@ export interface ExtractedTypeStat {
   suggestedType: TransactionType | 'skip';
 }
 
+export interface PreFilterSummary {
+  filteredStatusCount: number;
+  invalidAmountCount: number;
+  wealthDailyRowCount: number;
+}
+
+export interface TableAnalysisOptions {
+  mapping: CsvColumnMapping;
+  existingCategories?: Category[];
+  presetAliases?: Record<string, string | string[]>;
+  source?: BillSource;
+  skipClosedAndFullRefunds?: boolean;
+  aggregateWealthEarningsMonthly?: boolean;
+}
+
+export interface TableAnalysisResult {
+  categories: ExtractedCategoryStat[];
+  types: ExtractedTypeStat[];
+  preFilter: PreFilterSummary;
+}
+
 export interface AdvancedImportOptions {
   mapping: CsvColumnMapping;
   categoryMapping: Record<string, string>;
@@ -116,55 +137,45 @@ export interface ConfiguredMappingResult {
   wealthDailyRowCount: number;
 }
 
-export function inferColumnMapping(headers: string[]): CsvColumnMapping {
-  const findMatch = (patterns: RegExp[]): string | undefined => {
-    for (const pattern of patterns) {
-      const match = headers.find((h) => pattern.test(h.trim()));
-      if (match) return match;
-    }
-    return undefined;
-  };
+const COLUMN_MATCHERS: [keyof CsvColumnMapping, RegExp[]][] = [
+  ['dateCol', [/^日期$/i, /^交易时间$/i, /日期/i, /时间/i, /date/i, /time/i]],
+  ['amountCol', [/^金额$/i, /^金额\(元\)$/i, /金额/i, /amount/i, /数额/i, /money/i]],
+  ['typeCol', [/^收支$/i, /^收\/支$/i, /收支/i, /^类型$/i, /类型/i, /type/i, /收支类型/i]],
+  ['categoryCol', [/^智能分类$/i, /^分类名称$/i, /^交易分类$/i, /^交易类型$/i, /^分类$/i, /^类别$/i, /分类/i, /类目/i, /category/i]],
+  ['accountCol', [/^账户渠道$/i, /^账户$/i, /^支付方式$/i, /^收\/付款方式$/i, /^资金渠道$/i, /账户/i, /资产/i, /account/i]],
+  ['noteCol', [/^合并备注$/i, /^备注$/i, /^商品$/i, /^商品说明$/i, /说明/i, /描述/i, /商户/i, /note/i, /desc/i]],
+  ['reimburseCol', [/^报销$/i, /报销/i, /reimburse/i]],
+  ['statusCol', [/^当前状态$/i, /^交易状态$/i, /状态/i]],
+  ['orderIdCol', [/^交易单号$/i, /^交易订单号$/i]],
+];
 
-  return {
-    dateCol: findMatch([/^日期$/i, /^交易时间$/i, /日期/i, /时间/i, /date/i, /time/i]),
-    amountCol: findMatch([/^金额$/i, /^金额\(元\)$/i, /金额/i, /amount/i, /数额/i, /money/i]),
-    typeCol: findMatch([/^收支$/i, /^收\/支$/i, /收支/i, /^类型$/i, /类型/i, /type/i, /收支类型/i]),
-    categoryCol: findMatch([
-      /^智能分类$/i,
-      /^分类名称$/i,
-      /^交易分类$/i,
-      /^交易类型$/i,
-      /^分类$/i,
-      /^类别$/i,
-      /分类/i,
-      /类目/i,
-      /category/i,
-    ]),
-    accountCol: findMatch([
-      /^账户渠道$/i,
-      /^账户$/i,
-      /^支付方式$/i,
-      /^收\/付款方式$/i,
-      /^资金渠道$/i,
-      /账户/i,
-      /资产/i,
-      /account/i,
-    ]),
-    noteCol: findMatch([
-      /^合并备注$/i,
-      /^备注$/i,
-      /^商品$/i,
-      /^商品说明$/i,
-      /说明/i,
-      /描述/i,
-      /商户/i,
-      /note/i,
-      /desc/i,
-    ]),
-    reimburseCol: findMatch([/^报销$/i, /报销/i, /reimburse/i]),
-    statusCol: findMatch([/^当前状态$/i, /^交易状态$/i, /状态/i]),
-    orderIdCol: findMatch([/^交易单号$/i, /^交易订单号$/i]),
-  };
+const SKIPPED_REASON_LABELS: Record<SkippedReason, string> = {
+  neutral: '不计收支',
+  status: '已关闭/全额退款',
+  duplicate: '重复账单',
+  invalid: '金额无效',
+};
+
+const TYPE_EXPORT_LABELS: Record<TransactionType, string> = {
+  expense: '支出',
+  income: '收入',
+  transfer: '转账',
+  loan: '借贷',
+  reconcile: '平账',
+};
+
+export function inferColumnMapping(headers: string[]): CsvColumnMapping {
+  const result: CsvColumnMapping = {};
+  for (const [field, patterns] of COLUMN_MATCHERS) {
+    for (const pattern of patterns) {
+      const hit = headers.find((h) => pattern.test(h.trim()));
+      if (hit) {
+        result[field] = hit;
+        break;
+      }
+    }
+  }
+  return result;
 }
 
 export function normalizeDateTime(raw: string): { date: string; createdAt?: string } {
@@ -184,17 +195,9 @@ export function normalizeAmount(raw: string): { cents: number; inferredType?: Tr
   } else if (clean.startsWith('+')) {
     clean = clean.slice(1);
   }
-
   const num = parseFloat(clean);
-  if (isNaN(num) || num <= 0) {
-    return { cents: 0 };
-  }
-
-  const cents = Math.round(num * 100);
-  return {
-    cents,
-    inferredType: isNegative ? 'expense' : undefined,
-  };
+  if (isNaN(num) || num <= 0) return { cents: 0 };
+  return { cents: Math.round(num * 100), inferredType: isNegative ? 'expense' : undefined };
 }
 
 export function normalizeTransactionType(
@@ -212,17 +215,16 @@ export function normalizeTransactionType(
 }
 
 function findBestCategoryMatch(
-  existingCategories: Category[],
+  categories: Category[],
   targetName: string,
   dominantType: TransactionType,
   activeOnly = false
 ): Category | undefined {
-  const lowerTarget = targetName.trim().toLowerCase();
-  const candidates = existingCategories.filter(
-    (c) => c.name.trim().toLowerCase() === lowerTarget && (!activeOnly || !c.isArchived)
+  const lower = targetName.trim().toLowerCase();
+  const candidates = categories.filter(
+    (c) => c.name.trim().toLowerCase() === lower && (!activeOnly || !c.isArchived)
   );
   if (candidates.length === 0) return undefined;
-
   return (
     candidates.find((c) => !c.isArchived && c.type === dominantType) ??
     candidates.find((c) => !c.isArchived) ??
@@ -231,22 +233,43 @@ function findBestCategoryMatch(
   );
 }
 
-export interface CsvPreFilterOptions {
-  amountColName?: string;
-  statusColName?: string;
-  noteColName?: string;
-  source?: BillSource;
-  skipClosedAndFullRefunds?: boolean;
-  aggregateWealthEarningsMonthly?: boolean;
+function resolveSuggestedCategoryId(
+  rawName: string,
+  dominantType: TransactionType,
+  existingCategories: Category[],
+  presetAliases: Record<string, string | string[]>
+): string | undefined {
+  const aliasVal = presetAliases[rawName];
+  if (aliasVal) {
+    const targets = Array.isArray(aliasVal) ? aliasVal : [aliasVal];
+    for (const activeOnly of [true, false]) {
+      for (const target of targets) {
+        const hit = findBestCategoryMatch(existingCategories, target, dominantType, activeOnly);
+        if (hit) return hit.id;
+      }
+    }
+  }
+  const exact = findBestCategoryMatch(existingCategories, rawName, dominantType);
+  if (exact) return exact.id;
+  return (
+    existingCategories.find(
+      (c) => !c.isArchived && c.type === dominantType && (c.name.includes(rawName) || rawName.includes(c.name))
+    )?.id ??
+    existingCategories.find(
+      (c) => c.type === dominantType && (c.name.includes(rawName) || rawName.includes(c.name))
+    )?.id
+  );
 }
 
-export interface PreFilterSummary {
-  filteredStatusCount: number;
-  invalidAmountCount: number;
-  wealthDailyRowCount: number;
+function inferSuggestedType(rawName: string): TransactionType | 'skip' {
+  const lower = rawName.toLowerCase();
+  if (lower.includes('不计') || lower.includes('其他') || lower === 'skip' || lower === '/') return 'skip';
+  if (lower.includes('支') || lower === 'expense' || lower === 'out') return 'expense';
+  if (lower.includes('收') || lower === 'income' || lower === 'in') return 'income';
+  if (lower.includes('转') || lower === 'transfer') return 'transfer';
+  if (lower.includes('借') || lower.includes('贷')) return 'loan';
+  return 'expense';
 }
-
-type PreFilterDisposition = 'keep' | 'empty' | 'status' | 'invalid' | 'wealth';
 
 interface PreFilterContext {
   typeIdx: number;
@@ -263,29 +286,18 @@ interface PreFilterContext {
 
 function createPreFilterContext(
   headers: string[],
-  cols: {
-    typeColName?: string;
-    categoryColName?: string;
-    amountColName?: string;
-    statusColName?: string;
-    noteColName?: string;
-  },
-  options?: Pick<
-    CsvPreFilterOptions,
-    'source' | 'skipClosedAndFullRefunds' | 'aggregateWealthEarningsMonthly'
-  >
+  mapping: Pick<CsvColumnMapping, 'typeCol' | 'categoryCol' | 'amountCol' | 'statusCol' | 'noteCol'>,
+  options?: Pick<TableAnalysisOptions, 'source' | 'skipClosedAndFullRefunds' | 'aggregateWealthEarningsMonthly'>
 ): PreFilterContext {
-  const idx = (colName?: string): number => (colName ? headers.indexOf(colName) : -1);
-  const productIdx =
-    headers.indexOf('商品说明') >= 0 ? headers.indexOf('商品说明') : headers.indexOf('商品');
-
+  const idx = (col?: string) => (col ? headers.indexOf(col) : -1);
+  const prodIdx = headers.indexOf('商品说明') >= 0 ? headers.indexOf('商品说明') : headers.indexOf('商品');
   return {
-    typeIdx: idx(cols.typeColName),
-    catIdx: idx(cols.categoryColName),
-    amountIdx: idx(cols.amountColName),
-    statusIdx: idx(cols.statusColName),
-    noteIdx: idx(cols.noteColName),
-    productIdx,
+    typeIdx: idx(mapping.typeCol),
+    catIdx: idx(mapping.categoryCol),
+    amountIdx: idx(mapping.amountCol),
+    statusIdx: idx(mapping.statusCol),
+    noteIdx: idx(mapping.noteCol),
+    productIdx: prodIdx,
     counterpartyIdx: headers.indexOf('交易对方'),
     source: options?.source,
     skipClosedAndFullRefunds: Boolean(options?.skipClosedAndFullRefunds),
@@ -297,7 +309,7 @@ function classifyRowPreFilter(
   row: string[],
   ctx: PreFilterContext
 ): {
-  disposition: PreFilterDisposition;
+  disposition: 'keep' | 'empty' | 'status' | 'invalid' | 'wealth';
   cents: number;
   inferredType?: TransactionType;
   rawType?: string;
@@ -306,110 +318,98 @@ function classifyRowPreFilter(
   if (row.length === 0 || row.every((c) => !c.trim())) {
     return { disposition: 'empty', cents: 0 };
   }
-
   const rawType = ctx.typeIdx >= 0 ? row[ctx.typeIdx]?.trim() : undefined;
   const rawStatus = ctx.statusIdx >= 0 ? row[ctx.statusIdx]?.trim() : undefined;
-  const amountResult =
-    ctx.amountIdx >= 0
-      ? normalizeAmount(row[ctx.amountIdx] ?? '')
-      : { cents: 0, inferredType: undefined };
+  const { cents, inferredType } =
+    ctx.amountIdx >= 0 ? normalizeAmount(row[ctx.amountIdx] ?? '') : { cents: 0, inferredType: undefined };
 
-  if (ctx.skipClosedAndFullRefunds && ctx.source) {
-    if (shouldSkipBillStatus(ctx.source, rawStatus, rawType)) {
-      return {
-        disposition: 'status',
-        cents: amountResult.cents,
-        inferredType: amountResult.inferredType,
-        rawType,
-        rawStatus,
-      };
-    }
+  if (ctx.skipClosedAndFullRefunds && ctx.source && shouldSkipBillStatus(ctx.source, rawStatus, rawType)) {
+    return { disposition: 'status', cents, inferredType, rawType, rawStatus };
   }
-
-  if (ctx.amountIdx >= 0 && amountResult.cents <= 0) {
-    return {
-      disposition: 'invalid',
-      cents: 0,
-      inferredType: amountResult.inferredType,
-      rawType,
-      rawStatus,
-    };
+  if (ctx.amountIdx >= 0 && cents <= 0) {
+    return { disposition: 'invalid', cents: 0, inferredType, rawType, rawStatus };
   }
-
-  if (
-    ctx.aggregateWealthEarningsMonthly &&
-    (ctx.source === 'alipay' || ctx.source === 'wechat')
-  ) {
+  if (ctx.aggregateWealthEarningsMonthly && (ctx.source === 'alipay' || ctx.source === 'wechat')) {
     const rawCat = ctx.catIdx >= 0 ? row[ctx.catIdx]?.trim() : undefined;
     let rawProduct: string | undefined;
-    if (ctx.productIdx >= 0) {
-      rawProduct = row[ctx.productIdx]?.trim();
-    } else if (ctx.noteIdx >= 0) {
-      rawProduct = row[ctx.noteIdx]?.trim();
-    }
+    if (ctx.productIdx >= 0) rawProduct = row[ctx.productIdx]?.trim();
+    else if (ctx.noteIdx >= 0) rawProduct = row[ctx.noteIdx]?.trim();
     const rawCounterparty = ctx.counterpartyIdx >= 0 ? row[ctx.counterpartyIdx]?.trim() : undefined;
-
-    if (
-      isWealthDailyEarningRow(ctx.source, {
-        category: rawCat,
-        product: rawProduct,
-        counterparty: rawCounterparty,
-        direction: rawType,
-        status: rawStatus,
-      })
-    ) {
-      return {
-        disposition: 'wealth',
-        cents: amountResult.cents,
-        inferredType: amountResult.inferredType,
-        rawType,
-        rawStatus,
-      };
+    if (isWealthDailyEarningRow(ctx.source, { category: rawCat, product: rawProduct, counterparty: rawCounterparty, direction: rawType, status: rawStatus })) {
+      return { disposition: 'wealth', cents, inferredType, rawType, rawStatus };
     }
   }
-
-  return {
-    disposition: 'keep',
-    cents: amountResult.cents,
-    inferredType: amountResult.inferredType,
-    rawType,
-    rawStatus,
-  };
+  return { disposition: 'keep', cents, inferredType, rawType, rawStatus };
 }
 
-export function summarizePreFilterCounts(
+export function analyzeImportTable(
   headers: string[],
   rows: string[][],
-  mapping: CsvColumnMapping,
-  options: Pick<
-    CsvPreFilterOptions,
-    'source' | 'skipClosedAndFullRefunds' | 'aggregateWealthEarningsMonthly'
-  >
-): PreFilterSummary {
-  const ctx = createPreFilterContext(
-    headers,
-    {
-      typeColName: mapping.typeCol,
-      categoryColName: mapping.categoryCol,
-      amountColName: mapping.amountCol,
-      statusColName: mapping.statusCol,
-      noteColName: mapping.noteCol,
-    },
-    options
-  );
-
-  let filteredStatusCount = 0;
-  let invalidAmountCount = 0;
-  let wealthDailyRowCount = 0;
+  options: TableAnalysisOptions
+): TableAnalysisResult {
+  const ctx = createPreFilterContext(headers, options.mapping, options);
+  const preFilter: PreFilterSummary = {
+    filteredStatusCount: 0,
+    invalidAmountCount: 0,
+    wealthDailyRowCount: 0,
+  };
+  const catStats = new Map<string, { count: number; expenseCount: number; incomeCount: number }>();
+  const typeCounts = new Map<string, number>();
 
   for (const row of rows) {
-    const res = classifyRowPreFilter(row, ctx);
-    if (res.disposition === 'status') filteredStatusCount++;
-    else if (res.disposition === 'invalid') invalidAmountCount++;
-    else if (res.disposition === 'wealth') wealthDailyRowCount++;
+    const pre = classifyRowPreFilter(row, ctx);
+    if (pre.disposition === 'status') {
+      preFilter.filteredStatusCount++;
+      continue;
+    }
+    if (pre.disposition === 'invalid') {
+      preFilter.invalidAmountCount++;
+      continue;
+    }
+    if (pre.disposition === 'wealth') {
+      preFilter.wealthDailyRowCount++;
+      continue;
+    }
+    if (pre.disposition !== 'keep') continue;
+
+    if (ctx.catIdx >= 0) {
+      const rawCat = row[ctx.catIdx]?.trim();
+      if (rawCat) {
+        const stat = catStats.get(rawCat) || { count: 0, expenseCount: 0, incomeCount: 0 };
+        stat.count++;
+        if (normalizeTransactionType(pre.rawType || '', 'expense') === 'income') stat.incomeCount++;
+        else stat.expenseCount++;
+        catStats.set(rawCat, stat);
+      }
+    }
+    if (ctx.typeIdx >= 0 && pre.rawType) {
+      typeCounts.set(pre.rawType, (typeCounts.get(pre.rawType) || 0) + 1);
+    }
   }
 
-  return { filteredStatusCount, invalidAmountCount, wealthDailyRowCount };
+  const existingCategories = options.existingCategories ?? [];
+  const presetAliases = options.presetAliases ?? {};
+  const categories: ExtractedCategoryStat[] = Array.from(catStats.entries())
+    .map(([rawName, stat]) => {
+      const dominantType: TransactionType = stat.incomeCount > stat.expenseCount ? 'income' : 'expense';
+      return {
+        rawName,
+        count: stat.count,
+        dominantType,
+        suggestedCategoryId: resolveSuggestedCategoryId(rawName, dominantType, existingCategories, presetAliases),
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+
+  const types: ExtractedTypeStat[] = Array.from(typeCounts.entries())
+    .map(([rawName, count]) => ({
+      rawName,
+      count,
+      suggestedType: inferSuggestedType(rawName),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  return { categories, types, preFilter };
 }
 
 export function extractCategoriesFromCsv(
@@ -418,174 +418,41 @@ export function extractCategoriesFromCsv(
   categoryColName?: string,
   typeColName?: string,
   existingCategories: Category[] = [],
-  presetAliases: Record<string, string | string[]> = {},
-  filterOptions?: CsvPreFilterOptions
+  presetAliases: Record<string, string | string[]> = {}
 ): ExtractedCategoryStat[] {
-  if (!categoryColName) return [];
-  const catIdx = headers.indexOf(categoryColName);
-  if (catIdx < 0) return [];
-
-  const ctx = createPreFilterContext(
-    headers,
-    {
-      typeColName,
-      categoryColName,
-      amountColName: filterOptions?.amountColName,
-      statusColName: filterOptions?.statusColName,
-      noteColName: filterOptions?.noteColName,
-    },
-    filterOptions
-  );
-
-  const statsMap = new Map<string, { count: number; expenseCount: number; incomeCount: number }>();
-
-  for (const row of rows) {
-    const pre = classifyRowPreFilter(row, ctx);
-    if (pre.disposition !== 'keep') {
-      continue;
-    }
-
-    const rawCat = row[catIdx]?.trim();
-    if (!rawCat) continue;
-
-    const stat = statsMap.get(rawCat) || { count: 0, expenseCount: 0, incomeCount: 0 };
-    stat.count++;
-
-    const normType = normalizeTransactionType(pre.rawType || '', 'expense');
-    if (normType === 'income') {
-      stat.incomeCount++;
-    } else {
-      stat.expenseCount++;
-    }
-    statsMap.set(rawCat, stat);
-  }
-
-  const result: ExtractedCategoryStat[] = [];
-  for (const [rawName, stat] of statsMap.entries()) {
-    const dominantType: TransactionType = stat.incomeCount > stat.expenseCount ? 'income' : 'expense';
-
-    let suggestedCatId: string | undefined;
-    const aliasValue = presetAliases[rawName];
-    if (aliasValue) {
-      const aliasTargets = Array.isArray(aliasValue) ? aliasValue : [aliasValue];
-      for (const target of aliasTargets) {
-        const activeMatch = findBestCategoryMatch(existingCategories, target, dominantType, true);
-        if (activeMatch) {
-          suggestedCatId = activeMatch.id;
-          break;
-        }
-      }
-      if (!suggestedCatId) {
-        for (const target of aliasTargets) {
-          const fallbackMatch = findBestCategoryMatch(existingCategories, target, dominantType);
-          if (fallbackMatch) {
-            suggestedCatId = fallbackMatch.id;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!suggestedCatId) {
-      const exact = findBestCategoryMatch(existingCategories, rawName, dominantType);
-      if (exact) suggestedCatId = exact.id;
-    }
-
-    if (!suggestedCatId) {
-      const fuzzy =
-        existingCategories.find(
-          (c) =>
-            !c.isArchived &&
-            c.type === dominantType &&
-            (c.name.includes(rawName) || rawName.includes(c.name))
-        ) ??
-        existingCategories.find(
-          (c) => c.type === dominantType && (c.name.includes(rawName) || rawName.includes(c.name))
-        );
-      if (fuzzy) suggestedCatId = fuzzy.id;
-    }
-
-    result.push({
-      rawName,
-      count: stat.count,
-      dominantType,
-      suggestedCategoryId: suggestedCatId,
-    });
-  }
-
-  return result.sort((a, b) => b.count - a.count);
+  if (!categoryColName || headers.indexOf(categoryColName) < 0) return [];
+  return analyzeImportTable(headers, rows, {
+    mapping: { categoryCol: categoryColName, typeCol: typeColName },
+    existingCategories,
+    presetAliases,
+  }).categories;
 }
 
 export function extractTransactionTypesFromCsv(
   headers: string[],
   rows: string[][],
   typeColName?: string,
-  filterOptions?: CsvPreFilterOptions & { categoryColName?: string }
+  filterOptions?: Pick<TableAnalysisOptions, 'source' | 'skipClosedAndFullRefunds' | 'aggregateWealthEarningsMonthly'> & {
+    categoryColName?: string;
+    amountColName?: string;
+    statusColName?: string;
+    noteColName?: string;
+  }
 ): ExtractedTypeStat[] {
-  if (!typeColName) return [];
-  const typeIdx = headers.indexOf(typeColName);
-  if (typeIdx < 0) return [];
-
-  const ctx = createPreFilterContext(
-    headers,
-    {
-      typeColName,
-      categoryColName: filterOptions?.categoryColName,
-      amountColName: filterOptions?.amountColName,
-      statusColName: filterOptions?.statusColName,
-      noteColName: filterOptions?.noteColName,
+  if (!typeColName || headers.indexOf(typeColName) < 0) return [];
+  return analyzeImportTable(headers, rows, {
+    mapping: {
+      typeCol: typeColName,
+      categoryCol: filterOptions?.categoryColName,
+      amountCol: filterOptions?.amountColName,
+      statusCol: filterOptions?.statusColName,
+      noteCol: filterOptions?.noteColName,
     },
-    filterOptions
-  );
-
-  const counts = new Map<string, number>();
-  for (const row of rows) {
-    const pre = classifyRowPreFilter(row, ctx);
-    if (pre.disposition !== 'keep') {
-      continue;
-    }
-    const rawType = row[typeIdx]?.trim();
-    if (!rawType) continue;
-    counts.set(rawType, (counts.get(rawType) || 0) + 1);
-  }
-
-  const result: ExtractedTypeStat[] = [];
-  for (const [rawName, count] of counts.entries()) {
-    let suggested: TransactionType | 'skip' = 'expense';
-    const lower = rawName.toLowerCase();
-    if (
-      lower.includes('不计') ||
-      lower.includes('其他') ||
-      lower === 'skip' ||
-      lower === '/'
-    ) {
-      suggested = 'skip';
-    } else if (lower.includes('支') || lower === 'expense' || lower === 'out') {
-      suggested = 'expense';
-    } else if (lower.includes('收') || lower === 'income' || lower === 'in') {
-      suggested = 'income';
-    } else if (lower.includes('转') || lower === 'transfer') {
-      suggested = 'transfer';
-    } else if (lower.includes('借') || lower.includes('贷')) {
-      suggested = 'loan';
-    }
-
-    result.push({
-      rawName,
-      count,
-      suggestedType: suggested,
-    });
-  }
-
-  return result.sort((a, b) => b.count - a.count);
+    source: filterOptions?.source,
+    skipClosedAndFullRefunds: filterOptions?.skipClosedAndFullRefunds,
+    aggregateWealthEarningsMonthly: filterOptions?.aggregateWealthEarningsMonthly,
+  }).types;
 }
-
-const SKIPPED_REASON_LABELS: Record<SkippedReason, string> = {
-  neutral: '不计收支',
-  status: '已关闭/全额退款',
-  duplicate: '重复账单',
-  invalid: '金额无效',
-};
 
 interface WealthMonthlyBucket {
   yearMonth: string;
@@ -597,15 +464,13 @@ interface WealthMonthlyBucket {
   latestSortKey: string;
 }
 
-function resolveInvestCategoryId(
-  existingCategories: Category[],
-  fallbackIncomeCategoryId: string
-): string {
-  const match =
-    existingCategories.find((c) => !c.isArchived && c.type === 'income' && c.name === '理财') ??
-    existingCategories.find((c) => c.id === 'cat_invest') ??
-    existingCategories.find((c) => c.type === 'income' && c.name === '理财');
-  return match?.id || fallbackIncomeCategoryId;
+function resolveInvestCategoryId(categories: Category[], fallbackId: string): string {
+  return (
+    categories.find((c) => !c.isArchived && c.type === 'income' && c.name === '理财')?.id ??
+    categories.find((c) => c.id === 'cat_invest')?.id ??
+    categories.find((c) => c.type === 'income' && c.name === '理财')?.id ??
+    fallbackId
+  );
 }
 
 export function mapConfiguredCsvRows(
@@ -613,42 +478,18 @@ export function mapConfiguredCsvRows(
   rows: string[][],
   options: AdvancedImportOptions
 ): ConfiguredMappingResult {
-  const getColIndex = (colName?: string): number => {
-    if (!colName) return -1;
-    return headers.indexOf(colName);
-  };
-
-  const dateIdx = getColIndex(options.mapping.dateCol);
-  const acctIdx = getColIndex(options.mapping.accountCol);
-  const reimbIdx = getColIndex(options.mapping.reimburseCol);
-  const orderIdx = getColIndex(options.mapping.orderIdCol);
-  const preCtx = createPreFilterContext(
-    headers,
-    {
-      typeColName: options.mapping.typeCol,
-      categoryColName: options.mapping.categoryCol,
-      amountColName: options.mapping.amountCol,
-      statusColName: options.mapping.statusCol,
-      noteColName: options.mapping.noteCol,
-    },
-    {
-      source: options.source,
-      skipClosedAndFullRefunds: options.skipClosedAndFullRefunds,
-      aggregateWealthEarningsMonthly: options.aggregateWealthEarningsMonthly,
-    }
-  );
+  const colIdx = (col?: string) => (col ? headers.indexOf(col) : -1);
+  const dateIdx = colIdx(options.mapping.dateCol);
+  const acctIdx = colIdx(options.mapping.accountCol);
+  const reimbIdx = colIdx(options.mapping.reimburseCol);
+  const orderIdx = colIdx(options.mapping.orderIdCol);
+  const preCtx = createPreFilterContext(headers, options.mapping, options);
   const { catIdx, noteIdx } = preCtx;
 
-  const catMapById = new Map<string, Category>(options.existingCategories.map((c) => [c.id, c]));
-  const catMapByName = new Map<string, Category>(
-    options.existingCategories.map((c) => [c.name.trim().toLowerCase(), c])
-  );
-  const acctMapByName = new Map<string, Account>(
-    options.existingAccounts.map((a) => [a.name.trim().toLowerCase(), a])
-  );
-  const existingById = options.existingTransactions
-    ? extractExistingTransactionMap(options.existingTransactions)
-    : undefined;
+  const catMapById = new Map(options.existingCategories.map((c) => [c.id, c]));
+  const catMapByName = new Map(options.existingCategories.map((c) => [c.name.trim().toLowerCase(), c]));
+  const acctMapByName = new Map(options.existingAccounts.map((a) => [a.name.trim().toLowerCase(), a]));
+  const existingById = options.existingTransactions ? extractExistingTransactionMap(options.existingTransactions) : undefined;
   const seenBatchIds = new Set<string>();
   const fpOccurrenceMap = new Map<string, number>();
   const seenWealthOrderIds = new Set<string>();
@@ -662,23 +503,15 @@ export function mapConfiguredCsvRows(
   let neutralCount = 0;
   let wealthDailyRowCount = 0;
 
-  const pushSkipped = (
+  const recordSkip = (
     reason: SkippedReason,
-    info: {
-      date: string;
-      amount: number;
-      rawType?: string;
-      rawStatus?: string;
-      rawAccountName?: string;
-      rawCategoryName?: string;
-      note?: string;
-    }
+    info: Omit<SkippedImportItem, 'reason' | 'reasonLabel'>
   ) => {
-    skippedItems.push({
-      reason,
-      reasonLabel: SKIPPED_REASON_LABELS[reason],
-      ...info,
-    });
+    skippedCount++;
+    if (reason === 'status') filteredStatusCount++;
+    else if (reason === 'neutral') neutralCount++;
+    else if (reason === 'duplicate') duplicateCount++;
+    skippedItems.push({ reason, reasonLabel: SKIPPED_REASON_LABELS[reason], ...info });
   };
 
   for (const row of rows) {
@@ -688,86 +521,49 @@ export function mapConfiguredCsvRows(
       continue;
     }
 
-    const rawType = pre.rawType;
-    const rawStatus = pre.rawStatus;
-    const cents = pre.cents;
-    const inferredType = pre.inferredType;
-    const rawDate = dateIdx >= 0 ? row[dateIdx] : '';
-    const { date, createdAt } = normalizeDateTime(rawDate);
+    const { rawType, rawStatus, cents, inferredType } = pre;
+    const { date, createdAt } = normalizeDateTime(dateIdx >= 0 ? row[dateIdx] : '');
     const rawCat = catIdx >= 0 ? row[catIdx]?.trim() : undefined;
     const note = noteIdx >= 0 ? row[noteIdx]?.trim() || undefined : undefined;
     const candidateAcct = acctIdx >= 0 ? row[acctIdx]?.trim() : undefined;
     const rawAccountName = candidateAcct && candidateAcct !== '/' ? candidateAcct : undefined;
     const rawOrderId = orderIdx >= 0 ? row[orderIdx]?.trim() : undefined;
     const cleanOrderId = rawOrderId && rawOrderId !== '/' ? rawOrderId : undefined;
+    const rowMeta = { date, amount: cents, rawType, rawStatus, rawAccountName, rawCategoryName: rawCat, note };
 
     if (pre.disposition === 'status') {
-      filteredStatusCount++;
-      skippedCount++;
-      pushSkipped('status', {
-        date,
-        amount: cents,
-        rawType,
-        rawStatus,
-        rawAccountName,
-        rawCategoryName: rawCat,
-        note,
-      });
+      recordSkip('status', rowMeta);
       continue;
     }
-
     if (pre.disposition === 'invalid') {
-      skippedCount++;
-      pushSkipped('invalid', {
-        date,
-        amount: 0,
-        rawType,
-        rawStatus,
-        rawAccountName,
-        rawCategoryName: rawCat,
-        note,
-      });
+      recordSkip('invalid', { ...rowMeta, amount: 0 });
       continue;
     }
 
     if (pre.disposition === 'wealth') {
-      if (cleanOrderId) {
-        if (seenWealthOrderIds.has(cleanOrderId)) {
-          duplicateCount++;
-          skippedCount++;
-          pushSkipped('duplicate', {
-            date,
-            amount: cents,
-            rawType,
-            rawStatus,
-            rawAccountName,
-            rawCategoryName: rawCat,
-            note,
-          });
-          continue;
-        }
-        seenWealthOrderIds.add(cleanOrderId);
+      if (cleanOrderId && seenWealthOrderIds.has(cleanOrderId)) {
+        recordSkip('duplicate', rowMeta);
+        continue;
       }
+      if (cleanOrderId) seenWealthOrderIds.add(cleanOrderId);
 
       const yearMonth = date.slice(0, 7);
-      const bucketAccountName =
-        rawAccountName || (options.source === 'alipay' ? '余额宝' : '微信零钱通');
-      const bucketKey = `${yearMonth}::${bucketAccountName}`;
+      const accountName = rawAccountName || (options.source === 'alipay' ? '余额宝' : '微信零钱通');
+      const key = `${yearMonth}::${accountName}`;
       const sortKey = createdAt || date;
-      const existingBucket = wealthBuckets.get(bucketKey);
-
-      if (existingBucket) {
-        existingBucket.totalCents += cents;
-        existingBucket.count += 1;
-        if (sortKey > existingBucket.latestSortKey) {
-          existingBucket.latestDate = date;
-          existingBucket.latestCreatedAt = createdAt;
-          existingBucket.latestSortKey = sortKey;
+      const bucket = wealthBuckets.get(key);
+      if (bucket) {
+        bucket.totalCents += cents;
+        bucket.count += 1;
+        if (sortKey > bucket.latestSortKey) {
+          bucket.latestDate = date;
+          bucket.latestCreatedAt = createdAt;
+          bucket.latestSortKey = sortKey;
         }
       } else {
-        wealthBuckets.set(bucketKey, {
+        wealthBuckets.set(key, {
           yearMonth,
-          accountName: bucketAccountName,
+          accountName,
           totalCents: cents,
           count: 1,
           latestDate: date,
@@ -775,66 +571,27 @@ export function mapConfiguredCsvRows(
           latestSortKey: sortKey,
         });
       }
-
       wealthDailyRowCount++;
       continue;
     }
 
     let type: TransactionType = inferredType || 'expense';
-
-    if (rawType && options.typeMapping && options.typeMapping[rawType]) {
-      const mapped = options.typeMapping[rawType];
-      if (mapped === 'skip') {
-        neutralCount++;
-        skippedCount++;
-        pushSkipped('neutral', {
-          date,
-          amount: cents,
-          rawType,
-          rawStatus,
-          rawAccountName,
-          rawCategoryName: rawCat,
-          note,
-        });
-        continue;
-      }
-      type = mapped;
-    } else if (rawType) {
-      if (rawType === '/' || rawType.includes('不计')) {
-        neutralCount++;
-        skippedCount++;
-        pushSkipped('neutral', {
-          date,
-          amount: cents,
-          rawType,
-          rawStatus,
-          rawAccountName,
-          rawCategoryName: rawCat,
-          note,
-        });
-        continue;
-      }
-      type = normalizeTransactionType(rawType, inferredType || 'expense');
+    const mappedRawType = rawType && options.typeMapping ? options.typeMapping[rawType] : undefined;
+    if (mappedRawType === 'skip' || (!mappedRawType && rawType && (rawType === '/' || rawType.includes('不计')))) {
+      recordSkip('neutral', rowMeta);
+      continue;
     }
+    if (mappedRawType) type = mappedRawType;
+    else if (rawType) type = normalizeTransactionType(rawType, inferredType || 'expense');
 
     const effectiveSource: BillSource = options.source ?? 'standard';
     let deterministicId: string;
-
     if (cleanOrderId && (effectiveSource === 'wechat' || effectiveSource === 'alipay')) {
       deterministicId = buildDeterministicImportId(effectiveSource, cleanOrderId);
     } else {
-      const baseFpKey = [
-        effectiveSource,
-        date,
-        createdAt || '',
-        type,
-        String(cents),
-        rawCat || '',
-        rawAccountName || '',
-        note || '',
-      ].join('|');
-      const occurrence = fpOccurrenceMap.get(baseFpKey) ?? 0;
-      fpOccurrenceMap.set(baseFpKey, occurrence + 1);
+      const fpKey = [effectiveSource, date, createdAt || '', type, cents, rawCat || '', rawAccountName || '', note || ''].join('|');
+      const occurrence = fpOccurrenceMap.get(fpKey) ?? 0;
+      fpOccurrenceMap.set(fpKey, occurrence + 1);
       deterministicId = buildFingerprintImportId(effectiveSource, {
         date,
         createdAt,
@@ -847,57 +604,21 @@ export function mapConfiguredCsvRows(
       });
     }
 
-    if (options.skipDuplicates) {
-      const isExisting =
-        Boolean(existingById?.has(deterministicId)) ||
-        seenBatchIds.has(deterministicId);
-      if (isExisting) {
-        duplicateCount++;
-        skippedCount++;
-        pushSkipped('duplicate', {
-          date,
-          amount: cents,
-          rawType,
-          rawStatus,
-          rawAccountName,
-          rawCategoryName: rawCat,
-          note,
-        });
-        continue;
-      }
+    if (options.skipDuplicates && (existingById?.has(deterministicId) || seenBatchIds.has(deterministicId))) {
+      recordSkip('duplicate', rowMeta);
+      continue;
     }
     seenBatchIds.add(deterministicId);
 
-    let categoryId =
-      type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
+    const fallbackCat = type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
+    let categoryId = fallbackCat;
+    if (rawCat && options.categoryMapping[rawCat]) categoryId = options.categoryMapping[rawCat];
+    else if (rawCat) categoryId = catMapByName.get(rawCat.toLowerCase())?.id ?? fallbackCat;
+    if (!catMapById.has(categoryId)) categoryId = fallbackCat;
 
-    if (rawCat && options.categoryMapping[rawCat]) {
-      categoryId = options.categoryMapping[rawCat];
-    } else if (rawCat) {
-      const matchByName = catMapByName.get(rawCat.toLowerCase());
-      if (matchByName) {
-        categoryId = matchByName.id;
-      }
-    }
-
-    if (!catMapById.has(categoryId)) {
-      categoryId =
-        type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
-    }
-
-    let accountId = options.defaultAccountId;
-    if (rawAccountName) {
-      const acctKey = rawAccountName.toLowerCase();
-      if (acctMapByName.has(acctKey)) {
-        accountId = acctMapByName.get(acctKey)!.id;
-      }
-    }
-
-    let isReimbursable = false;
-    if (reimbIdx >= 0 && row[reimbIdx]) {
-      const val = row[reimbIdx].trim();
-      isReimbursable = val === '是' || val === '报销' || val === 'true' || val === '1';
-    }
+    const accountId = (rawAccountName && acctMapByName.get(rawAccountName.toLowerCase())?.id) || options.defaultAccountId;
+    const reimbVal = reimbIdx >= 0 ? row[reimbIdx]?.trim() : '';
+    const isReimbursable = reimbVal === '是' || reimbVal === '报销' || reimbVal === 'true' || reimbVal === '1';
 
     records.push({
       id: deterministicId,
@@ -916,56 +637,37 @@ export function mapConfiguredCsvRows(
   }
 
   let wealthRollupCount = 0;
-  if (
-    wealthBuckets.size > 0 &&
-    (options.source === 'alipay' || options.source === 'wechat')
-  ) {
-    const investCategoryId = resolveInvestCategoryId(
-      options.existingCategories,
-      options.defaultIncomeCategoryId
-    );
-    const sortedBuckets = Array.from(wealthBuckets.values()).sort((a, b) =>
-      b.yearMonth.localeCompare(a.yearMonth)
-    );
-
-    for (const bucket of sortedBuckets) {
-      const id = buildWealthMonthlyTxId(options.source, bucket.yearMonth, bucket.accountName);
-      const rollupNote = `${bucket.accountName} ${bucket.yearMonth} 理财收益汇总（共 ${bucket.count} 笔）`;
-
+  if (wealthBuckets.size > 0 && (options.source === 'alipay' || options.source === 'wechat')) {
+    const investCatId = resolveInvestCategoryId(options.existingCategories, options.defaultIncomeCategoryId);
+    const sorted = Array.from(wealthBuckets.values()).sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
+    for (const b of sorted) {
+      const id = buildWealthMonthlyTxId(options.source, b.yearMonth, b.accountName);
+      const rollupNote = `${b.accountName} ${b.yearMonth} 理财收益汇总（共 ${b.count} 笔）`;
       const existingTx = existingById?.get(id);
-      const isAlreadySameRollup =
-        Boolean(options.skipDuplicates) &&
-        Boolean(existingTx) &&
-        existingTx!.amount === bucket.totalCents;
-
-      if (isAlreadySameRollup) {
-        duplicateCount++;
-        skippedCount++;
-        pushSkipped('duplicate', {
-          date: bucket.latestDate,
-          amount: bucket.totalCents,
+      if (options.skipDuplicates && existingTx && existingTx.amount === b.totalCents) {
+        recordSkip('duplicate', {
+          date: b.latestDate,
+          amount: b.totalCents,
           rawType: '收入',
-          rawAccountName: bucket.accountName,
+          rawAccountName: b.accountName,
           rawCategoryName: '理财',
           note: rollupNote,
         });
         continue;
       }
-
-      const matchedAccount = acctMapByName.get(bucket.accountName.toLowerCase());
       records.push({
         id,
         type: 'income',
-        amount: bucket.totalCents,
-        date: bucket.latestDate,
-        createdAt: bucket.latestCreatedAt,
-        categoryId: investCategoryId,
-        accountId: matchedAccount?.id || options.defaultAccountId,
-        rawAccountName: bucket.accountName,
+        amount: b.totalCents,
+        date: b.latestDate,
+        createdAt: b.latestCreatedAt,
+        categoryId: investCatId,
+        accountId: acctMapByName.get(b.accountName.toLowerCase())?.id || options.defaultAccountId,
+        rawAccountName: b.accountName,
         rawCategoryName: '理财',
         note: rollupNote,
         isWealthMonthlyRollup: true,
-        rollupItemCount: bucket.count,
+        rollupItemCount: b.count,
         rawRow: [],
       });
       wealthRollupCount++;
@@ -989,10 +691,7 @@ export function mapStandardCsvRows(
   rows: string[][],
   options: StandardImportOptions
 ): ConfiguredMappingResult {
-  return mapConfiguredCsvRows(headers, rows, {
-    ...options,
-    categoryMapping: {},
-  });
+  return mapConfiguredCsvRows(headers, rows, { ...options, categoryMapping: {} });
 }
 
 export function mapElephantCsvRows(
@@ -1000,40 +699,19 @@ export function mapElephantCsvRows(
   rows: string[][],
   options: ElephantImportOptions
 ): ConfiguredMappingResult {
-  const elephantMapping: CsvColumnMapping = {
-    dateCol: '日期',
-    categoryCol: '分类名称',
-    typeCol: '收支',
-    amountCol: '金额',
-    accountCol: '账户',
-    noteCol: '备注',
-    reimburseCol: '报销',
-  };
-
-  const aliases: Record<string, string> = {
-    吃饭: 'cat_food',
-    超市: 'cat_shop',
-    交通费: 'cat_transit',
-    生活: 'cat_home',
-  };
-
   return mapConfiguredCsvRows(headers, rows, {
-    mapping: elephantMapping,
-    categoryMapping: aliases,
-    defaultAccountId: options.defaultAccountId,
-    defaultExpenseCategoryId: options.defaultExpenseCategoryId,
-    defaultIncomeCategoryId: options.defaultIncomeCategoryId,
-    existingCategories: options.existingCategories,
-    existingAccounts: options.existingAccounts,
+    mapping: {
+      dateCol: '日期',
+      categoryCol: '分类名称',
+      typeCol: '收支',
+      amountCol: '金额',
+      accountCol: '账户',
+      noteCol: '备注',
+      reimburseCol: '报销',
+    },
+    categoryMapping: { 吃饭: 'cat_food', 超市: 'cat_shop', 交通费: 'cat_transit', 生活: 'cat_home' },
+    ...options,
   });
-}
-
-export function mapCsvRowsToTransactions(
-  headers: string[],
-  rows: string[][],
-  options: StandardImportOptions
-): ConfiguredMappingResult {
-  return mapStandardCsvRows(headers, rows, options);
 }
 
 export function exportTransactionsToCsv(
@@ -1042,37 +720,17 @@ export function exportTransactionsToCsv(
   accounts: Account[]
 ): string {
   const headers = ['日期', '分类名称', '收支', '金额', '账户', '备注', '是否报销', '凭证名称'];
-
   const catMap = new Map(categories.map((c) => [c.id, c.name]));
   const acctMap = new Map(accounts.map((a) => [a.id, a.name]));
-
-  const getTypeLabel = (t: TransactionType): string => {
-    switch (t) {
-      case 'expense':
-        return '支出';
-      case 'income':
-        return '收入';
-      case 'transfer':
-        return '转账';
-      case 'loan':
-        return '借贷';
-      case 'reconcile':
-        return '平账';
-      default:
-        return '支出';
-    }
-  };
-
   const rows = transactions.map((tx) => [
     tx.date,
     catMap.get(tx.categoryId) || '其它',
-    getTypeLabel(tx.type),
+    TYPE_EXPORT_LABELS[tx.type] || '支出',
     centsToYuan(tx.amount),
     acctMap.get(tx.accountId) || '默认账户',
     tx.note || '',
     tx.isReimbursable ? '是' : '否',
     tx.voucher?.name || '',
   ]);
-
   return generateCsv(headers, rows);
 }

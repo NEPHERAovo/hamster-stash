@@ -1,69 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
-import zlib from 'node:zlib';
 import {
   decodeTextBuffer,
   extractTableFromRows,
   parseTabularFile,
 } from '../../src/domain/import-export/csvParser';
 import { formatExcelSerialDateTime, parseXlsx } from '../../src/domain/import-export/xlsxParser';
-
-function createMinimalZip(entries: { name: string; data: Uint8Array; compress?: boolean }[]): ArrayBuffer {
-  const encoder = new TextEncoder();
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
-  let offset = 0;
-
-  for (const entry of entries) {
-    const nameBytes = encoder.encode(entry.name);
-    const payload = entry.compress ? new Uint8Array(zlib.deflateRawSync(entry.data)) : entry.data;
-    const method = entry.compress ? 8 : 0;
-
-    const local = new Uint8Array(30 + nameBytes.length);
-    const lv = new DataView(local.buffer);
-    lv.setUint32(0, 0x04034b50, true);
-    lv.setUint16(4, 20, true);
-    lv.setUint16(8, method, true);
-    lv.setUint32(18, payload.length, true);
-    lv.setUint32(22, entry.data.length, true);
-    lv.setUint16(26, nameBytes.length, true);
-    local.set(nameBytes, 30);
-
-    const central = new Uint8Array(46 + nameBytes.length);
-    const cv = new DataView(central.buffer);
-    cv.setUint32(0, 0x02014b50, true);
-    cv.setUint16(4, 20, true);
-    cv.setUint16(6, 20, true);
-    cv.setUint16(10, method, true);
-    cv.setUint32(20, payload.length, true);
-    cv.setUint32(24, entry.data.length, true);
-    cv.setUint16(28, nameBytes.length, true);
-    cv.setUint32(42, offset, true);
-    central.set(nameBytes, 46);
-
-    localParts.push(local, payload);
-    centralParts.push(central);
-    offset += local.length + payload.length;
-  }
-
-  const centralSize = centralParts.reduce((s, c) => s + c.length, 0);
-  const eocd = new Uint8Array(22);
-  const ev = new DataView(eocd.buffer);
-  ev.setUint32(0, 0x06054b50, true);
-  ev.setUint16(8, entries.length, true);
-  ev.setUint16(10, entries.length, true);
-  ev.setUint32(12, centralSize, true);
-  ev.setUint32(16, offset, true);
-
-  const totalSize = offset + centralSize + eocd.length;
-  const out = new Uint8Array(totalSize);
-  let pos = 0;
-  for (const part of [...localParts, ...centralParts, eocd]) {
-    out.set(part, pos);
-    pos += part.length;
-  }
-  return out.buffer;
-}
+import { createMinimalZip } from '../helpers/billFixtures';
 
 function buildTestWeChatXlsxBuffer(): ArrayBuffer {
   const enc = new TextEncoder();

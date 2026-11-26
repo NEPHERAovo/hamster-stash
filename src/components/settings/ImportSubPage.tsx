@@ -2,16 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { CheckIcon as Check, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react';
 import { parseTabularFile, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {
+  analyzeImportTable,
   inferColumnMapping,
   mapConfiguredCsvRows,
-  extractCategoriesFromCsv,
-  extractTransactionTypesFromCsv,
-  summarizePreFilterCounts,
   type CsvColumnMapping,
-  type ExtractedCategoryStat,
-  type ExtractedTypeStat,
   type ConfiguredMappingResult,
-  type PreFilterSummary,
 } from '../../domain/import-export/csvMapper';
 import {
   detectBillSource,
@@ -40,25 +35,29 @@ export interface ImportSubPageProps {
 
 type WizardStep = 1 | 2 | 3 | 4;
 
+const MAPPING_KEYS = [
+  'dateCol',
+  'amountCol',
+  'typeCol',
+  'categoryCol',
+  'accountCol',
+  'noteCol',
+  'reimburseCol',
+  'statusCol',
+  'orderIdCol',
+] as const;
+
 function buildMergedMapping(
   headers: string[],
   presetDefaultMapping: CsvColumnMapping
 ): CsvColumnMapping {
   const inferred = inferColumnMapping(headers);
-  const pick = (presetCol?: string, inferredCol?: string) =>
-    presetCol && headers.includes(presetCol) ? presetCol : inferredCol;
-
-  return {
-    dateCol: pick(presetDefaultMapping.dateCol, inferred.dateCol),
-    amountCol: pick(presetDefaultMapping.amountCol, inferred.amountCol),
-    typeCol: pick(presetDefaultMapping.typeCol, inferred.typeCol),
-    categoryCol: pick(presetDefaultMapping.categoryCol, inferred.categoryCol),
-    accountCol: pick(presetDefaultMapping.accountCol, inferred.accountCol),
-    noteCol: pick(presetDefaultMapping.noteCol, inferred.noteCol),
-    reimburseCol: pick(presetDefaultMapping.reimburseCol, inferred.reimburseCol),
-    statusCol: pick(presetDefaultMapping.statusCol, inferred.statusCol),
-    orderIdCol: pick(presetDefaultMapping.orderIdCol, inferred.orderIdCol),
-  };
+  const merged: CsvColumnMapping = {};
+  for (const key of MAPPING_KEYS) {
+    const presetCol = presetDefaultMapping[key];
+    merged[key] = presetCol && headers.includes(presetCol) ? presetCol : inferred[key];
+  }
+  return merged;
 }
 
 function alignRowsToHeaders(
@@ -193,66 +192,22 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     }
   };
 
-  const extractedCategoryStats = useMemo<ExtractedCategoryStat[]>(() => {
-    if (parsed.headers.length === 0 || parsed.rows.length === 0) return [];
-    return extractCategoriesFromCsv(
-      parsed.headers,
-      parsed.rows,
-      mapping.categoryCol,
-      mapping.typeCol,
-      categories,
-      activePreset.categoryAliases || {},
-      {
-        amountColName: mapping.amountCol,
-        statusColName: mapping.statusCol,
-        noteColName: mapping.noteCol,
-        source: activeSource,
-        skipClosedAndFullRefunds,
-        aggregateWealthEarningsMonthly,
-      }
-    );
-  }, [
-    parsed,
-    mapping.categoryCol,
-    mapping.typeCol,
-    mapping.amountCol,
-    mapping.statusCol,
-    mapping.noteCol,
-    categories,
-    activePreset,
-    activeSource,
-    skipClosedAndFullRefunds,
-    aggregateWealthEarningsMonthly,
-  ]);
-
-  const extractedTypeStats = useMemo<ExtractedTypeStat[]>(() => {
-    if (parsed.headers.length === 0 || parsed.rows.length === 0 || !mapping.typeCol) return [];
-    return extractTransactionTypesFromCsv(parsed.headers, parsed.rows, mapping.typeCol, {
-      categoryColName: mapping.categoryCol,
-      amountColName: mapping.amountCol,
-      statusColName: mapping.statusCol,
-      noteColName: mapping.noteCol,
-      source: activeSource,
-      skipClosedAndFullRefunds,
-      aggregateWealthEarningsMonthly,
-    });
-  }, [
-    parsed,
-    mapping.typeCol,
-    mapping.categoryCol,
-    mapping.amountCol,
-    mapping.statusCol,
-    mapping.noteCol,
-    activeSource,
-    skipClosedAndFullRefunds,
-    aggregateWealthEarningsMonthly,
-  ]);
-
-  const step3PreFilterSummary = useMemo<PreFilterSummary>(() => {
+  const {
+    categories: extractedCategoryStats,
+    types: extractedTypeStats,
+    preFilter: step3PreFilterSummary,
+  } = useMemo(() => {
     if (parsed.headers.length === 0 || parsed.rows.length === 0) {
-      return { filteredStatusCount: 0, invalidAmountCount: 0, wealthDailyRowCount: 0 };
+      return {
+        categories: [],
+        types: [],
+        preFilter: { filteredStatusCount: 0, invalidAmountCount: 0, wealthDailyRowCount: 0 },
+      };
     }
-    return summarizePreFilterCounts(parsed.headers, parsed.rows, mapping, {
+    return analyzeImportTable(parsed.headers, parsed.rows, {
+      mapping,
+      existingCategories: categories,
+      presetAliases: activePreset.categoryAliases || {},
       source: activeSource,
       skipClosedAndFullRefunds,
       aggregateWealthEarningsMonthly,
@@ -260,6 +215,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   }, [
     parsed,
     mapping,
+    categories,
+    activePreset,
     activeSource,
     skipClosedAndFullRefunds,
     aggregateWealthEarningsMonthly,

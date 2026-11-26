@@ -19,34 +19,6 @@ export function isCanonicalTransactionId(id?: string): boolean {
   return Boolean(id && CANONICAL_TX_PREFIX_RE.test(id) && !id.startsWith('tx_imp_'));
 }
 
-function deriveIdFromImportMeta(meta: Record<string, unknown>): string | null {
-  const source = typeof meta.source === 'string' ? meta.source.trim() : '';
-  const orderId = typeof meta.orderId === 'string' ? meta.orderId.trim() : '';
-  const kind = typeof meta.kind === 'string' ? meta.kind.trim() : '';
-  if (!source) return null;
-
-  if (kind === 'wealth_monthly' && orderId.startsWith('wealth:')) {
-    const parts = orderId.split(':');
-    const yearMonth = parts[1] || '';
-    const accountName = parts.slice(2).join(':') || '理财账户';
-    const shortSrc = source === 'wechat' ? 'wx' : 'ali';
-    return `wealth_${shortSrc}_${yearMonth}_${hashString8(accountName.trim())}`;
-  }
-
-  if (orderId.startsWith('fp:')) {
-    return `csv_${source}_${orderId.slice(3)}`;
-  }
-
-  if (!orderId) return null;
-
-  let prefix = `csv_${source}`;
-  if (source === 'wechat') prefix = 'wx';
-  else if (source === 'alipay') prefix = 'ali';
-
-  const suffix = SAFE_ORDER_ID_RE.test(orderId) ? orderId : hashString16(orderId);
-  return `${prefix}_${suffix}`;
-}
-
 function allocateDeterministicId(
   prefix: string,
   basePayload: string,
@@ -63,208 +35,141 @@ function allocateDeterministicId(
   return nextId;
 }
 
-function buildCanonicalImportCandidate(
-  candidate: string,
-  usedIds: Set<string>,
-  tx: Transaction,
-  occurrenceMap: Map<string, number>
-): string {
-  if (!usedIds.has(candidate)) {
-    usedIds.add(candidate);
-    return candidate;
+function normalizeSimpleCollection<T extends { id?: string }>(
+  items: T[],
+  isValid: (id?: string) => boolean,
+  prefix: string,
+  buildPayload: (item: T) => string
+): { items: T[]; idMap: Map<string, string>; changed: boolean } {
+  const usedIds = new Set<string>();
+  const occurrenceMap = new Map<string, number>();
+  const idMap = new Map<string, string>();
+  let changed = false;
+
+  for (const item of items) {
+    if (isValid(item.id)) usedIds.add(item.id!);
   }
-  const basePayload = [
-    candidate,
-    tx.date,
-    String(tx.amount),
-    tx.createdAt || '',
-  ].join('|');
-  return allocateDeterministicId('tx', basePayload, occurrenceMap, usedIds);
+
+  const nextItems = items.map((item) => {
+    if (isValid(item.id)) return item;
+    changed = true;
+    const newId = allocateDeterministicId(prefix, buildPayload(item), occurrenceMap, usedIds);
+    if (item.id) idMap.set(item.id, newId);
+    return { ...item, id: newId };
+  });
+
+  return { items: nextItems, idMap, changed };
 }
 
-function stripImportMeta(ext: Record<string, unknown> | undefined): {
-  nextExt: Record<string, unknown> | undefined;
-  hadImportMeta: boolean;
-  importMeta?: Record<string, unknown>;
-} {
-  if (!ext || typeof ext !== 'object' || !('importMeta' in ext)) {
-    return { nextExt: ext, hadImportMeta: false };
+function deriveIdFromImportMeta(meta: Record<string, unknown>): string | null {
+  const source = typeof meta.source === 'string' ? meta.source.trim() : '';
+  const orderId = typeof meta.orderId === 'string' ? meta.orderId.trim() : '';
+  const kind = typeof meta.kind === 'string' ? meta.kind.trim() : '';
+  if (!source) return null;
+
+  if (kind === 'wealth_monthly' && orderId.startsWith('wealth:')) {
+    const [, yearMonth = '', ...rest] = orderId.split(':');
+    const shortSrc = source === 'wechat' ? 'wx' : 'ali';
+    return `wealth_${shortSrc}_${yearMonth}_${hashString8(rest.join(':').trim() || '理财账户')}`;
   }
-  const rawMeta = ext.importMeta;
-  const rest = { ...ext };
-  delete rest.importMeta;
-  const nextExt = Object.keys(rest).length > 0 ? rest : undefined;
-  const importMeta =
-    rawMeta && typeof rawMeta === 'object' ? (rawMeta as Record<string, unknown>) : undefined;
-  return { nextExt, hadImportMeta: true, importMeta };
+  if (orderId.startsWith('fp:')) return `csv_${source}_${orderId.slice(3)}`;
+  if (!orderId) return null;
+
+  let prefix = `csv_${source}`;
+  if (source === 'wechat') prefix = 'wx';
+  else if (source === 'alipay') prefix = 'ali';
+  return `${prefix}_${SAFE_ORDER_ID_RE.test(orderId) ? orderId : hashString16(orderId)}`;
 }
 
 export function normalizeDataIds(data: ExportData): { data: ExportData; changed: boolean } {
-  let changed = false;
-
-  const acctIdMap = new Map<string, string>();
-  const usedAcctIds = new Set<string>();
-  const acctOccurrence = new Map<string, number>();
-
-  for (const acct of data.accounts || []) {
-    if (isCanonicalAccountId(acct.id)) {
-      usedAcctIds.add(acct.id);
-    }
-  }
-
-  const normalizedAccounts: Account[] = (data.accounts || []).map((acct) => {
-    if (isCanonicalAccountId(acct.id)) return acct;
-    changed = true;
-    const basePayload = [acct.name, acct.type, acct.currency || 'CNY'].join('|');
-    const newId = allocateDeterministicId('acct', basePayload, acctOccurrence, usedAcctIds);
-    if (acct.id) acctIdMap.set(acct.id, newId);
-    return { ...acct, id: newId };
-  });
-
-  const catIdMap = new Map<string, string>();
-  const usedCatIds = new Set<string>();
-  const catOccurrence = new Map<string, number>();
-
-  for (const cat of data.categories || []) {
-    if (isCanonicalCategoryId(cat.id)) {
-      usedCatIds.add(cat.id);
-    }
-  }
-
-  const normalizedCategories: Category[] = (data.categories || []).map((cat) => {
-    if (isCanonicalCategoryId(cat.id)) return cat;
-    changed = true;
-    const basePayload = [cat.name, cat.type].join('|');
-    const newId = allocateDeterministicId('cat', basePayload, catOccurrence, usedCatIds);
-    if (cat.id) catIdMap.set(cat.id, newId);
-    return { ...cat, id: newId };
-  });
+  const acctRes = normalizeSimpleCollection<Account>(
+    data.accounts || [],
+    isCanonicalAccountId,
+    'acct',
+    (a) => [a.name, a.type, a.currency || 'CNY'].join('|')
+  );
+  const catRes = normalizeSimpleCollection<Category>(
+    data.categories || [],
+    isCanonicalCategoryId,
+    'cat',
+    (c) => [c.name, c.type].join('|')
+  );
+  const pluginRes = normalizeSimpleCollection<StoredEntity>(
+    (data.plugins?.data || []) as StoredEntity[],
+    (id) => Boolean(id && String(id).trim()),
+    'pd',
+    (entry) => JSON.stringify(entry)
+  );
 
   const txIdMap = new Map<string, string>();
   const usedTxIds = new Set<string>();
   const txOccurrence = new Map<string, number>();
-
   for (const tx of data.transactions || []) {
-    if (isCanonicalTransactionId(tx.id)) {
-      usedTxIds.add(tx.id);
-    }
+    if (isCanonicalTransactionId(tx.id)) usedTxIds.add(tx.id);
   }
 
-  const normalizedTransactions: Transaction[] = (data.transactions || []).map((tx) => {
-    const { nextExt, hadImportMeta, importMeta } = stripImportMeta(
-      tx.ext as Record<string, unknown> | undefined
-    );
-    const idIsCanonical = isCanonicalTransactionId(tx.id);
+  let txChanged = false;
+  const normalizedTxs = (data.transactions || []).map((tx) => {
+    const rawExt = tx.ext as Record<string, unknown> | undefined;
+    const hasMeta = Boolean(rawExt && typeof rawExt === 'object' && 'importMeta' in rawExt);
+    const idValid = isCanonicalTransactionId(tx.id);
+    if (idValid && !hasMeta) return tx;
 
-    if (idIsCanonical && !hadImportMeta) {
-      return tx;
-    }
-
-    changed = true;
+    txChanged = true;
     let newId = tx.id;
+    const metaObj =
+      hasMeta && typeof rawExt?.importMeta === 'object' && rawExt.importMeta !== null
+        ? (rawExt.importMeta as Record<string, unknown>)
+        : undefined;
 
-    if (!idIsCanonical) {
-      const candidateFromMeta = importMeta ? deriveIdFromImportMeta(importMeta) : null;
-      if (candidateFromMeta) {
-        newId = buildCanonicalImportCandidate(candidateFromMeta, usedTxIds, tx, txOccurrence);
+    if (!idValid) {
+      const candidate = metaObj ? deriveIdFromImportMeta(metaObj) : null;
+      if (candidate && !usedTxIds.has(candidate)) {
+        usedTxIds.add(candidate);
+        newId = candidate;
       } else {
-        const basePayload = [
-          tx.type,
-          String(tx.amount),
-          tx.date,
-          tx.createdAt || '',
-          tx.accountId,
-          tx.categoryId,
-          tx.note || '',
-        ].join('|');
-        newId = allocateDeterministicId('tx', basePayload, txOccurrence, usedTxIds);
+        const base = candidate
+          ? `${candidate}|${tx.date}|${tx.amount}|${tx.createdAt || ''}`
+          : [tx.type, tx.amount, tx.date, tx.createdAt || '', tx.accountId, tx.categoryId, tx.note || ''].join('|');
+        newId = allocateDeterministicId('tx', base, txOccurrence, usedTxIds);
       }
-      if (tx.id) {
-        txIdMap.set(tx.id, newId);
-      }
+      if (tx.id) txIdMap.set(tx.id, newId);
     }
 
-    const updatedTx: Transaction = { ...tx, id: newId };
-    if (hadImportMeta) {
-      if (nextExt) {
-        updatedTx.ext = nextExt;
-      } else {
-        delete updatedTx.ext;
-      }
+    const updated: Transaction = { ...tx, id: newId };
+    if (hasMeta && rawExt) {
+      const rest = { ...rawExt };
+      delete rest.importMeta;
+      if (Object.keys(rest).length > 0) updated.ext = rest;
+      else delete updated.ext;
     }
-    return updatedTx;
+    return updated;
   });
 
-  const rawPluginData = (data.plugins?.data || []) as StoredEntity[];
-  const usedPluginIds = new Set<string>();
-  const pdOccurrence = new Map<string, number>();
-  for (const entry of rawPluginData) {
-    if (entry.id && String(entry.id).trim()) {
-      usedPluginIds.add(entry.id);
-    }
-  }
-
-  const normalizedPluginData: StoredEntity[] = rawPluginData.map((entry) => {
-    if (entry.id && String(entry.id).trim()) return entry;
-    changed = true;
-    const basePayload = JSON.stringify(entry);
-    const newId = allocateDeterministicId('pd', basePayload, pdOccurrence, usedPluginIds);
-    return { ...entry, id: newId };
-  });
-
-  if (!changed) {
+  if (!acctRes.changed && !catRes.changed && !pluginRes.changed && !txChanged) {
     return { data, changed: false };
   }
 
-  const mappedAccounts =
-    acctIdMap.size > 0
-      ? normalizedAccounts.map((acct) => {
-          const mappedRepay = acct.repaymentAccountId
-            ? acctIdMap.get(acct.repaymentAccountId)
-            : undefined;
-          return mappedRepay ? { ...acct, repaymentAccountId: mappedRepay } : acct;
-        })
-      : normalizedAccounts;
-
-  const mappedCategories =
-    catIdMap.size > 0
-      ? normalizedCategories.map((cat) => {
-          const mappedParent = cat.parentId ? catIdMap.get(cat.parentId) : undefined;
-          return mappedParent ? { ...cat, parentId: mappedParent } : cat;
-        })
-      : normalizedCategories;
-
-  const needsTxFkRewrite = acctIdMap.size > 0 || catIdMap.size > 0 || txIdMap.size > 0;
-  const mappedTransactions = needsTxFkRewrite
-    ? normalizedTransactions.map((tx) => {
-        const nextAccountId = acctIdMap.get(tx.accountId);
-        const nextToAccountId = tx.toAccountId ? acctIdMap.get(tx.toAccountId) : undefined;
-        const nextCategoryId = catIdMap.get(tx.categoryId);
-        const nextOffsetId = tx.offsetTransactionId
-          ? txIdMap.get(tx.offsetTransactionId)
-          : undefined;
-        const nextLoanId = tx.relatedLoanId ? txIdMap.get(tx.relatedLoanId) : undefined;
-
-        if (
-          !nextAccountId &&
-          !nextToAccountId &&
-          !nextCategoryId &&
-          !nextOffsetId &&
-          !nextLoanId
-        ) {
-          return tx;
-        }
-
-        return {
+  const mapId = (map: Map<string, string>, id?: string) => (id ? map.get(id) ?? id : id);
+  const mappedAccounts = acctRes.idMap.size
+    ? acctRes.items.map((a) =>
+        a.repaymentAccountId ? { ...a, repaymentAccountId: mapId(acctRes.idMap, a.repaymentAccountId) } : a
+      )
+    : acctRes.items;
+  const mappedCategories = catRes.idMap.size
+    ? catRes.items.map((c) => (c.parentId ? { ...c, parentId: mapId(catRes.idMap, c.parentId) } : c))
+    : catRes.items;
+  const mappedTxs =
+    acctRes.idMap.size || catRes.idMap.size || txIdMap.size
+      ? normalizedTxs.map((tx) => ({
           ...tx,
-          ...(nextAccountId ? { accountId: nextAccountId } : {}),
-          ...(nextToAccountId ? { toAccountId: nextToAccountId } : {}),
-          ...(nextCategoryId ? { categoryId: nextCategoryId } : {}),
-          ...(nextOffsetId ? { offsetTransactionId: nextOffsetId } : {}),
-          ...(nextLoanId ? { relatedLoanId: nextLoanId } : {}),
-        };
-      })
-    : normalizedTransactions;
+          accountId: mapId(acctRes.idMap, tx.accountId)!,
+          categoryId: mapId(catRes.idMap, tx.categoryId)!,
+          ...(tx.toAccountId ? { toAccountId: mapId(acctRes.idMap, tx.toAccountId) } : {}),
+          ...(tx.offsetTransactionId ? { offsetTransactionId: mapId(txIdMap, tx.offsetTransactionId) } : {}),
+          ...(tx.relatedLoanId ? { relatedLoanId: mapId(txIdMap, tx.relatedLoanId) } : {}),
+        }))
+      : normalizedTxs;
 
   return {
     changed: true,
@@ -272,13 +177,8 @@ export function normalizeDataIds(data: ExportData): { data: ExportData; changed:
       ...data,
       accounts: mappedAccounts,
       categories: mappedCategories,
-      transactions: mappedTransactions,
-      plugins: data.plugins
-        ? {
-            ...data.plugins,
-            data: normalizedPluginData,
-          }
-        : undefined,
+      transactions: mappedTxs,
+      plugins: data.plugins ? { ...data.plugins, data: pluginRes.items } : undefined,
     },
   };
 }
