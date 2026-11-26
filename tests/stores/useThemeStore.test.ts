@@ -63,30 +63,46 @@ describe('useThemeStore iOS status bar & root chrome sync', () => {
     expect(localStorage.getItem('hamsterstash_splash_dark_v1')).toBe('1');
   });
 
-  it('pairs every light and dark theme 1-to-1 in matching order and syncs counterpart on selection', () => {
+  it('aligns light and dark themes by color family while keeping light/dark selection independent', () => {
     const lightThemes = THEME_OPTIONS.filter((t) => !t.isDark);
     const darkThemes = THEME_OPTIONS.filter((t) => t.isDark);
 
-    expect(lightThemes).toHaveLength(5);
-    expect(darkThemes).toHaveLength(5);
-
-    lightThemes.forEach((light, idx) => {
-      const dark = darkThemes[idx];
-      expect(light.pairedId).toBe(dark.id);
-      expect(dark.pairedId).toBe(light.id);
-    });
+    expect(lightThemes.map((t) => t.id)).toEqual([
+      'theme-sage',
+      'theme-cotton',
+      'theme-kraft',
+      'theme-mist',
+      'theme-cherry',
+    ]);
+    expect(darkThemes.map((t) => t.id)).toEqual([
+      'theme-pine',
+      'theme-carbon',
+      'theme-espresso',
+      'theme-indigo',
+      'theme-crimson',
+    ]);
 
     useThemeStore.getState().setUiStyle('paper');
+    useThemeStore.getState().setTheme('theme-pine');
     useThemeStore.getState().setTheme('theme-cherry');
     expect(useThemeStore.getState().lightThemeId).toBe('theme-cherry');
-    expect(useThemeStore.getState().darkThemeId).toBe('theme-crimson');
+    expect(useThemeStore.getState().darkThemeId).toBe('theme-pine');
 
     useThemeStore.getState().setColorMode('dark');
-    expect(useThemeStore.getState().currentThemeId).toBe('theme-crimson');
-    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#160E10');
+    expect(useThemeStore.getState().currentThemeId).toBe('theme-pine');
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#0C140E');
 
     useThemeStore.getState().setTheme('theme-indigo');
     expect(useThemeStore.getState().darkThemeId).toBe('theme-indigo');
-    expect(useThemeStore.getState().lightThemeId).toBe('theme-mist');
+    expect(useThemeStore.getState().lightThemeId).toBe('theme-cherry');
+
+    useThemeStore.getState().setColorMode('light');
+    expect(useThemeStore.getState().currentThemeId).toBe('theme-cherry');
+
+    useThemeStore.getState().setColorMode('auto');
+    const result = useThemeStore.getState().setTheme('theme-espresso');
+    expect(result).toBe('saved_only');
+    expect(useThemeStore.getState().darkThemeId).toBe('theme-espresso');
+    expect(useThemeStore.getState().lightThemeId).toBe('theme-cherry');
   });
 });

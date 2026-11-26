@@ -20,21 +20,20 @@ export interface ThemeOption {
   subName: string;
   isDark: boolean;
   colorDot: string;
-  pairedId: string;
 }
 
 export const THEME_OPTIONS: ThemeOption[] = [
-  { id: 'theme-sage', name: '竹青素笺', subName: 'Sage Green', isDark: false, colorDot: '#3F8256', pairedId: 'theme-pine' },
-  { id: 'theme-cotton', name: '特种米白', subName: 'Cotton White', isDark: false, colorDot: '#78634B', pairedId: 'theme-carbon' },
-  { id: 'theme-kraft', name: '复古牛皮', subName: 'Kraft Paper', isDark: false, colorDot: '#BA6E38', pairedId: 'theme-espresso' },
-  { id: 'theme-mist', name: '雾霭蓝卡', subName: 'Mist Blue', isDark: false, colorDot: '#3D7299', pairedId: 'theme-indigo' },
-  { id: 'theme-cherry', name: '樱落绯灰', subName: 'Cherry Ash', isDark: false, colorDot: '#AC495E', pairedId: 'theme-crimson' },
+  { id: 'theme-sage', name: '竹青素笺', subName: 'Sage Green', isDark: false, colorDot: '#3F8256' },
+  { id: 'theme-cotton', name: '特种米白', subName: 'Cotton White', isDark: false, colorDot: '#78634B' },
+  { id: 'theme-kraft', name: '复古牛皮', subName: 'Kraft Paper', isDark: false, colorDot: '#BA6E38' },
+  { id: 'theme-mist', name: '雾霭蓝卡', subName: 'Mist Blue', isDark: false, colorDot: '#3D7299' },
+  { id: 'theme-cherry', name: '樱落绯灰', subName: 'Cherry Ash', isDark: false, colorDot: '#AC495E' },
 
-  { id: 'theme-pine', name: '幽林松柏', subName: 'Forest Pine', isDark: true, colorDot: '#529E6C', pairedId: 'theme-sage' },
-  { id: 'theme-carbon', name: '复写碳纸', subName: 'Carbon Paper', isDark: true, colorDot: '#B5935A', pairedId: 'theme-cotton' },
-  { id: 'theme-espresso', name: '深焙浓缩', subName: 'Espresso Dark', isDark: true, colorDot: '#CC814B', pairedId: 'theme-kraft' },
-  { id: 'theme-indigo', name: '古法靛蓝', subName: 'Indigo Night', isDark: true, colorDot: '#5289B3', pairedId: 'theme-mist' },
-  { id: 'theme-crimson', name: '绯夜绛笺', subName: 'Crimson Night', isDark: true, colorDot: '#D16B80', pairedId: 'theme-cherry' },
+  { id: 'theme-pine', name: '幽林松柏', subName: 'Forest Pine', isDark: true, colorDot: '#529E6C' },
+  { id: 'theme-carbon', name: '复写碳纸', subName: 'Carbon Paper', isDark: true, colorDot: '#B5935A' },
+  { id: 'theme-espresso', name: '深焙浓缩', subName: 'Espresso Dark', isDark: true, colorDot: '#CC814B' },
+  { id: 'theme-indigo', name: '古法靛蓝', subName: 'Indigo Night', isDark: true, colorDot: '#5289B3' },
+  { id: 'theme-crimson', name: '绯夜绛笺', subName: 'Crimson Night', isDark: true, colorDot: '#D16B80' },
 ];
 
 const UI_STYLE_STORAGE_KEY = 'hamsterstash_ui_style_v1';
@@ -379,8 +378,8 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       if (!theme) return 'applied';
 
       const state = get();
-      const nextLight = theme.isDark ? theme.pairedId : theme.id;
-      const nextDark = theme.isDark ? theme.id : theme.pairedId;
+      const nextLight = theme.isDark ? state.lightThemeId : theme.id;
+      const nextDark = theme.isDark ? theme.id : state.darkThemeId;
 
       if (state.colorMode === 'auto') {
         syncStateAndPersist({

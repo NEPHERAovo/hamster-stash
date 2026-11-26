@@ -72,7 +72,7 @@ To ensure professional engineering collaboration and seamless user localization:
    - Calendar grid plus 2-column mechanical drum-wheel time picker (`PaperDatePickerModal`).
 4. **Theme Semantic Variables**:
    - **Zero Hardcoded Colors**: Cards, sheets, and cut edges must use semantic tokens (`bg-(--paper-sheet)`, `bg-(--paper-sunken)`, `var(--rule-hairline)`).
-   - Built-in 10 themes paired 1-to-1 across Light and Dark: 5 Light (`Sage`, `Cotton`, `Kraft`, `Mist`, `Cherry`) paired with 5 Dark (`Pine`, `Carbon`, `Espresso`, `Indigo`, `Crimson`).
+   - Built-in 10 themes aligned by color family across Light and Dark with independent selection: 5 Light (`Sage`, `Cotton`, `Kraft`, `Mist`, `Cherry`) aligned above 5 Dark (`Pine`, `Carbon`, `Espresso`, `Indigo`, `Crimson`).
 5. **Dual Typography Axis**:
    - Financial figures & tabular metrics: Strict `Geist Mono` (`tabular-nums`).
    - Mastheads & journal receipts: Literary `Instrument Serif`.

@@ -157,7 +157,7 @@ body.theme-cherry, :root[data-theme="theme-cherry"], .theme-cherry {
   --color-accent: #AC495E; --color-accent-bg: rgba(172, 73, 94, 0.10); --theme-indicator: #AC495E;
 }
 
-/* Dark Themes (1-to-1 Paired with Light Themes) */
+/* Dark Themes (Color-Family Aligned with Light Themes) */
 .dark, body.theme-pine, :root[data-theme="theme-pine"], .theme-pine {
   --bg-base: #0C140E; --bg-surface: #19271E; --bg-sunken: #111C15; --bg-hover: #223529;
   --paper-base: #0C140E; --paper-sheet: #19271E; --paper-sunken: #111C15; --paper-hover: #223529;
