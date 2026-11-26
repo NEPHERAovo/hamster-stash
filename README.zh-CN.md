@@ -70,4 +70,4 @@ pnpm check
 
 ## 开源协议
 
-MIT
+[CC BY-NC 4.0](LICENSE)（知识共享 署名-非商业性使用 4.0 国际许可协议）— Copyright (c) 2026 [NEPHERAovo](https://github.com/NEPHERAovo/hamster-stash)。在非商业用途且保留原作者署名及原项目链接的前提下，可自由使用、修改与分发；商业使用需事先获得作者书面授权。

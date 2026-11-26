@@ -70,4 +70,4 @@ pnpm check
 
 ## License
 
-MIT
+[CC BY-NC 4.0](LICENSE) — Copyright (c) 2026 [NEPHERAovo](https://github.com/NEPHERAovo/hamster-stash). Free to use, modify, and share for non-commercial purposes with attribution.
