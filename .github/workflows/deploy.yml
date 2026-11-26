@@ -65,7 +65,7 @@ jobs:
   release:
     name: 3. Bump Version, Build & Sync Production
     needs: [lint, test]
-    if: github.event_name == 'workflow_dispatch' || (!startsWith(github.event.head_commit.message, 'chore(release):') && !contains(github.event.head_commit.message, '[skip ci]'))
+    if: success() && (github.event_name == 'workflow_dispatch' || (!startsWith(github.event.head_commit.message, 'chore(release):') && !contains(github.event.head_commit.message, '[skip ci]')))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
