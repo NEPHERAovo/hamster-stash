@@ -3,18 +3,39 @@ import type { SettingsService } from '../settings/settingsService';
 import type { DataLifecycleService } from '../data/dataLifecycleService';
 import { webdavClient, type WebDavConfig } from './webdavClient';
 import {
+  areValuesCanonicallyEqual,
   buildThreeWaySyncPlan,
   resolveSyncPlan,
   type DiffStats,
   type SyncDiffPlan,
   type SyncResolutionChoice,
 } from './diffMerger';
+import {
+  assembleExportDataFromShards,
+  extractCachedShardsFromExport,
+  isValidSyncManifest,
+  serializeExportDataToShards,
+  SYNC_MANIFEST_FILE,
+  SYNC_MANIFEST_VERSION,
+  SYNC_META_FILE,
+  SYNC_SETTINGS_FILE,
+  type MetaShard,
+  type SerializedSyncShards,
+  type SettingsShard,
+  type SyncManifest,
+} from './syncShards';
 import type { ExportData, StoredEntity } from '../../types/adapter';
 import type { Transaction } from '../../types/transaction';
 import { getLogicalSyncDay, type ConfigType } from '../../utils/date';
 
+export {
+  SYNC_MANIFEST_FILE,
+  SYNC_MANIFEST_VERSION,
+  SYNC_META_FILE,
+  SYNC_SETTINGS_FILE,
+} from './syncShards';
+
 export const SYNC_DAY_CUTOFF_HOUR = 6;
-export const SYNC_VAULT_FILE = 'hamster_sync_vault.json';
 export const SYNC_BASE_SETTING_ID = 'webdav_sync_base';
 
 const LOCAL_ONLY_SETTING_KEYS = new Set<string>(['webdav_config', SYNC_BASE_SETTING_ID]);
@@ -30,6 +51,8 @@ export interface WebDavSettingRecord extends StoredEntity {
 
 export interface SyncBaseRecord extends StoredEntity {
   id: typeof SYNC_BASE_SETTING_ID;
+  version: typeof SYNC_MANIFEST_VERSION;
+  shardHashes: Record<string, string>;
   snapshot: ExportData;
 }
 
@@ -108,6 +131,7 @@ export class SyncService {
     plan: SyncDiffPlan;
     config: WebDavConfig;
     syncAttachments: boolean;
+    remoteShardHashes?: Record<string, string>;
   } | null = null;
   private autoSyncReviewSuppressedForSession = false;
 
@@ -148,7 +172,12 @@ export class SyncService {
     config: WebDavConfig;
     syncAttachments: boolean;
   } | null {
-    return this.pendingReviewPlan;
+    if (!this.pendingReviewPlan) return null;
+    return {
+      plan: this.pendingReviewPlan.plan,
+      config: this.pendingReviewPlan.config,
+      syncAttachments: this.pendingReviewPlan.syncAttachments,
+    };
   }
 
   clearPendingReview(): void {
@@ -282,11 +311,6 @@ export class SyncService {
         const prep = await this.prepareWebDavSync(config!);
         if (prep.status === 'needs_review' && prep.plan) {
           this.autoSyncReviewSuppressedForSession = true;
-          this.pendingReviewPlan = {
-            plan: prep.plan,
-            config: prep.config!,
-            syncAttachments: Boolean(prep.syncAttachments),
-          };
           return {
             ran: true,
             success: true,
@@ -330,11 +354,14 @@ export class SyncService {
     }
   }
 
-  private async getBaseSnapshot(): Promise<ExportData | null> {
+  private async getBaseRecord(): Promise<SyncBaseRecord | null> {
     try {
       const record = await this.settingsService.getSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID);
-      if (record?.snapshot) {
-        return sanitizeSyncPayload(record.snapshot);
+      if (record?.version === SYNC_MANIFEST_VERSION && record.snapshot && record.shardHashes) {
+        return {
+          ...record,
+          snapshot: sanitizeSyncPayload(record.snapshot),
+        };
       }
     } catch {
       void 0;
@@ -342,11 +369,81 @@ export class SyncService {
     return null;
   }
 
-  private async saveBaseSnapshot(snapshot: ExportData): Promise<void> {
+  private async saveBaseSnapshot(
+    snapshot: ExportData,
+    shardHashes: Record<string, string>
+  ): Promise<void> {
     const cleanSnapshot = sanitizeSyncPayload(snapshot);
     await this.settingsService.saveSetting<SyncBaseRecord>(SYNC_BASE_SETTING_ID, {
+      version: SYNC_MANIFEST_VERSION,
+      shardHashes,
       snapshot: cleanSnapshot,
     });
+  }
+
+  private async uploadChangedShards(
+    config: WebDavConfig,
+    serialized: SerializedSyncShards,
+    nowIso: string,
+    remoteShardHashes?: Record<string, string>
+  ): Promise<void> {
+    for (const [path, content] of serialized.shards.entries()) {
+      if (remoteShardHashes && remoteShardHashes[path] === serialized.hashes[path]) {
+        continue;
+      }
+      await webdavClient.putFile(config, path, content);
+    }
+
+    const manifest: SyncManifest = {
+      version: SYNC_MANIFEST_VERSION,
+      updatedAt: nowIso,
+      files: serialized.hashes,
+    };
+    await webdavClient.putFile(config, SYNC_MANIFEST_FILE, JSON.stringify(manifest));
+  }
+
+  private async fetchRemoteExportData(
+    config: WebDavConfig,
+    remoteManifest: SyncManifest,
+    baseRecord: SyncBaseRecord | null
+  ): Promise<ExportData> {
+    const cachedShards = baseRecord
+      ? extractCachedShardsFromExport(baseRecord.snapshot)
+      : new Map<string, unknown>();
+
+    let settingsShard: Partial<SettingsShard> | undefined;
+    let metaShard: Partial<MetaShard> | undefined;
+    const txShards: Transaction[][] = [];
+
+    for (const [path, remoteHash] of Object.entries(remoteManifest.files)) {
+      let parsed: unknown;
+      if (baseRecord && baseRecord.shardHashes[path] === remoteHash && cachedShards.has(path)) {
+        parsed = cachedShards.get(path);
+      } else {
+        const raw = await webdavClient.fetchFile(config, path);
+        if (!raw) {
+          throw new Error('云端分片文件缺失，请检查云端目录完整性');
+        }
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          throw new Error('解析云端分片数据失败，请确认远端文件完整性');
+        }
+      }
+
+      if (path === SYNC_SETTINGS_FILE) {
+        settingsShard = parsed as Partial<SettingsShard>;
+      } else if (path === SYNC_META_FILE) {
+        metaShard = parsed as Partial<MetaShard>;
+      } else if (path.startsWith('transactions/')) {
+        if (!Array.isArray(parsed)) {
+          throw new Error('解析云端账单分片格式无效');
+        }
+        txShards.push(parsed as Transaction[]);
+      }
+    }
+
+    return sanitizeSyncPayload(assembleExportDataFromShards(settingsShard, metaShard, txShards));
   }
 
   private async backupMissingAttachments(
@@ -445,11 +542,12 @@ export class SyncService {
 
     const rawLocalData = await this.dataLifecycleService.exportData({ includeTombstones: true });
     const localData = sanitizeSyncPayload(rawLocalData);
-    const remoteContent = await webdavClient.fetchFile(config, SYNC_VAULT_FILE);
+    const localSerialized = serializeExportDataToShards(localData);
+    const remoteManifestContent = await webdavClient.fetchFile(config, SYNC_MANIFEST_FILE);
     const now = new Date().toISOString();
 
-    if (!remoteContent) {
-      await webdavClient.putFile(config, SYNC_VAULT_FILE, JSON.stringify(localData, null, 2));
+    if (!remoteManifestContent) {
+      await this.uploadChangedShards(config, localSerialized, now);
       let uploadedAttachments = 0;
       let nextUploadedIds = stored.uploadedAttachmentIds;
       if (shouldBackupAttachments) {
@@ -461,7 +559,7 @@ export class SyncService {
         uploadedAttachments = res.uploadedCount;
         nextUploadedIds = res.nextUploadedIds;
       }
-      await this.saveBaseSnapshot(localData);
+      await this.saveBaseSnapshot(localData, localSerialized.hashes);
       await this.recordSyncMetadata({
         lastSyncAt: now,
         uploadedAttachmentIds: nextUploadedIds,
@@ -478,16 +576,50 @@ export class SyncService {
       };
     }
 
-    let remoteRaw: ExportData;
+    let parsedManifest: unknown;
     try {
-      remoteRaw = JSON.parse(remoteContent) as ExportData;
+      parsedManifest = JSON.parse(remoteManifestContent);
     } catch {
-      throw new Error('解析云端数据失败，请确认远端文件完整性');
+      throw new Error('云端同步索引文件损坏，请清空云端旧文件后重新同步');
+    }
+    if (!isValidSyncManifest(parsedManifest)) {
+      throw new Error('云端同步数据格式不兼容或已损坏，请清空云端旧文件后重新同步');
     }
 
-    const remoteData = sanitizeSyncPayload(remoteRaw);
-    const baseData = await this.getBaseSnapshot();
-    const plan = buildThreeWaySyncPlan(localData, remoteData, baseData);
+    const baseRecord = await this.getBaseRecord();
+    if (
+      baseRecord &&
+      areValuesCanonicallyEqual(parsedManifest.files, baseRecord.shardHashes) &&
+      areValuesCanonicallyEqual(localSerialized.hashes, baseRecord.shardHashes)
+    ) {
+      let uploadedAttachments = 0;
+      let nextUploadedIds = stored.uploadedAttachmentIds;
+      if (shouldBackupAttachments) {
+        const res = await this.backupMissingAttachments(
+          config,
+          localData.transactions,
+          stored.uploadedAttachmentIds
+        );
+        uploadedAttachments = res.uploadedCount;
+        nextUploadedIds = res.nextUploadedIds;
+      }
+      await this.recordSyncMetadata({
+        lastSyncAt: now,
+        uploadedAttachmentIds: nextUploadedIds,
+      });
+      this.pendingReviewPlan = null;
+      this.autoSyncReviewSuppressedForSession = false;
+      const attSuffix =
+        uploadedAttachments > 0 ? `，另备份 ${uploadedAttachments} 个凭证附件` : '';
+      return {
+        status: 'up_to_date',
+        uploadedAttachments,
+        message: `同步完成：数据已是最新${attSuffix}`,
+      };
+    }
+
+    const remoteData = await this.fetchRemoteExportData(config, parsedManifest, baseRecord);
+    const plan = buildThreeWaySyncPlan(localData, remoteData, baseRecord?.snapshot ?? null);
 
     if (plan.isStrictlyEqual) {
       let uploadedAttachments = 0;
@@ -501,7 +633,7 @@ export class SyncService {
         uploadedAttachments = res.uploadedCount;
         nextUploadedIds = res.nextUploadedIds;
       }
-      await this.saveBaseSnapshot(localData);
+      await this.saveBaseSnapshot(localData, localSerialized.hashes);
       await this.recordSyncMetadata({
         lastSyncAt: now,
         uploadedAttachmentIds: nextUploadedIds,
@@ -520,6 +652,7 @@ export class SyncService {
     if (!plan.requiresReview) {
       const committed = await this.commitWebDavSync(plan, {}, config, {
         syncAttachments: shouldBackupAttachments,
+        remoteShardHashes: parsedManifest.files,
       });
       return {
         status: 'synced',
@@ -534,6 +667,7 @@ export class SyncService {
       plan,
       config,
       syncAttachments: shouldBackupAttachments,
+      remoteShardHashes: parsedManifest.files,
     };
 
     return {
@@ -549,12 +683,14 @@ export class SyncService {
     plan: SyncDiffPlan,
     resolutions: Record<string, SyncResolutionChoice> = {},
     customConfig?: WebDavConfig,
-    options?: { syncAttachments?: boolean }
+    options?: { syncAttachments?: boolean; remoteShardHashes?: Record<string, string> }
   ): Promise<WebDavSyncCommitResult> {
     await this.ensureReady();
     const stored = await this.getWebDavConfig();
     const config = this.resolveValidatedConfig(customConfig || stored.config || undefined);
     const shouldBackupAttachments = options?.syncAttachments ?? stored.syncAttachments;
+    const effectiveRemoteShardHashes =
+      options?.remoteShardHashes ?? this.pendingReviewPlan?.remoteShardHashes;
     const now = new Date().toISOString();
 
     const mergeResult = resolveSyncPlan(plan, resolutions, {
@@ -562,26 +698,22 @@ export class SyncService {
       nowIso: now,
     });
     const cleanMerged = sanitizeSyncPayload(mergeResult.merged);
+    const mergedSerialized = serializeExportDataToShards(cleanMerged);
 
     if (mergeResult.changedLocal) {
-      const preservedLocalSettings: Record<string, unknown> = {
-        ...(cleanMerged.settings || {}),
-      };
-      for (const key of LOCAL_ONLY_SETTING_KEYS) {
-        const localRec = await this.settingsService.getSetting<StoredEntity>(key);
-        if (localRec) {
-          preservedLocalSettings[key] = localRec;
-        }
-      }
-      await this.dataLifecycleService.restoreData({
-        ...cleanMerged,
-        settings: preservedLocalSettings,
+      await this.dataLifecycleService.applySyncChanges(cleanMerged, {
+        preserveSettingKeys: LOCAL_ONLY_SETTING_KEYS,
       });
       this.deps.onDataImported?.();
     }
 
     if (mergeResult.changedRemote) {
-      await webdavClient.putFile(config, SYNC_VAULT_FILE, JSON.stringify(cleanMerged, null, 2));
+      await this.uploadChangedShards(
+        config,
+        mergedSerialized,
+        now,
+        effectiveRemoteShardHashes
+      );
     }
 
     let uploadedAttachments = 0;
@@ -596,7 +728,7 @@ export class SyncService {
       nextUploadedIds = res.nextUploadedIds;
     }
 
-    await this.saveBaseSnapshot(cleanMerged);
+    await this.saveBaseSnapshot(cleanMerged, mergedSerialized.hashes);
     await this.recordSyncMetadata({
       lastSyncAt: now,
       uploadedAttachmentIds: nextUploadedIds,

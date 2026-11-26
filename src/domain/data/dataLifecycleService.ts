@@ -234,6 +234,64 @@ export class DataLifecycleService {
     return true;
   }
 
+  async applySyncChanges(
+    data: ExportData,
+    options?: { preserveSettingKeys?: Set<string> }
+  ): Promise<{ writtenCount: number; removedCount: number }> {
+    if (this.deps.ensureReady) {
+      await this.deps.ensureReady();
+    }
+    const now = new Date().toISOString();
+    const preserveSettingKeys = options?.preserveSettingKeys;
+    const syncStores = [
+      STORES.TRANSACTIONS,
+      STORES.ACCOUNTS,
+      STORES.CATEGORIES,
+      STORES.SETTINGS,
+      STORES.PLUGIN_DATA,
+      STORES.PLUGIN_SETTINGS,
+    ];
+
+    let writtenCount = 0;
+    let removedCount = 0;
+
+    await this.adapter.runInTransaction(syncStores, async () => {
+      const results = [
+        await this.reconcileEntityStore(
+          STORES.TRANSACTIONS,
+          (data.transactions || []) as StoredEntity[]
+        ),
+        await this.reconcileEntityStore(
+          STORES.ACCOUNTS,
+          (data.accounts || []) as StoredEntity[]
+        ),
+        await this.reconcileEntityStore(
+          STORES.CATEGORIES,
+          (data.categories || []) as StoredEntity[]
+        ),
+        await this.reconcileEntityStore(
+          STORES.SETTINGS,
+          toSettingsEntities(data.settings, now),
+          preserveSettingKeys
+        ),
+        await this.reconcileEntityStore(
+          STORES.PLUGIN_DATA,
+          (data.plugins?.data as StoredEntity[]) || []
+        ),
+        await this.reconcileEntityStore(
+          STORES.PLUGIN_SETTINGS,
+          toSettingsEntities(data.plugins?.settings, now)
+        ),
+      ];
+      for (const r of results) {
+        writtenCount += r.writtenCount;
+        removedCount += r.removedCount;
+      }
+    });
+
+    return { writtenCount, removedCount };
+  }
+
   async restoreBackup(data: ExportData): Promise<void> {
     if (!Array.isArray(data.transactions) || !Array.isArray(data.accounts)) {
       throw new Error('无效的备份文件结构');
