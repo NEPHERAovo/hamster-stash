@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { CheckIcon as Check, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react';
-import { parseCsv, type ParsedCsvResult } from '../../domain/import-export/csvParser';
+import { parseTabularFile, type ParsedCsvResult } from '../../domain/import-export/csvParser';
 import {
   inferColumnMapping,
   mapConfiguredCsvRows,
@@ -9,8 +9,14 @@ import {
   type CsvColumnMapping,
   type ExtractedCategoryStat,
   type ExtractedTypeStat,
-  type PreparedImportRecord,
+  type ConfiguredMappingResult,
 } from '../../domain/import-export/csvMapper';
+import {
+  detectBillSource,
+  extractExistingImportKeys,
+  preprocessBillTable,
+  type BillSource,
+} from '../../domain/import-export/billNormalizer';
 import { IMPORT_PRESETS, type ImportPreset } from '../../domain/import-export/importPresets';
 import { ImportService } from '../../domain/import-export/importService';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -33,6 +39,43 @@ export interface ImportSubPageProps {
 
 type WizardStep = 1 | 2 | 3 | 4;
 
+function buildMergedMapping(
+  headers: string[],
+  presetDefaultMapping: CsvColumnMapping
+): CsvColumnMapping {
+  const inferred = inferColumnMapping(headers);
+  const pick = (presetCol?: string, inferredCol?: string) =>
+    presetCol && headers.includes(presetCol) ? presetCol : inferredCol;
+
+  return {
+    dateCol: pick(presetDefaultMapping.dateCol, inferred.dateCol),
+    amountCol: pick(presetDefaultMapping.amountCol, inferred.amountCol),
+    typeCol: pick(presetDefaultMapping.typeCol, inferred.typeCol),
+    categoryCol: pick(presetDefaultMapping.categoryCol, inferred.categoryCol),
+    accountCol: pick(presetDefaultMapping.accountCol, inferred.accountCol),
+    noteCol: pick(presetDefaultMapping.noteCol, inferred.noteCol),
+    reimburseCol: pick(presetDefaultMapping.reimburseCol, inferred.reimburseCol),
+    statusCol: pick(presetDefaultMapping.statusCol, inferred.statusCol),
+    orderIdCol: pick(presetDefaultMapping.orderIdCol, inferred.orderIdCol),
+  };
+}
+
+function alignRowsToHeaders(
+  targetHeaders: string[],
+  sourceHeaders: string[],
+  sourceRows: string[][]
+): string[][] {
+  const sameOrder =
+    targetHeaders.length === sourceHeaders.length &&
+    targetHeaders.every((h, idx) => h === sourceHeaders[idx]);
+  if (sameOrder) return sourceRows;
+
+  const colIndexMap = targetHeaders.map((h) => sourceHeaders.indexOf(h));
+  return sourceRows.map((row) =>
+    colIndexMap.map((srcIdx) => (srcIdx >= 0 ? row[srcIdx] ?? '' : ''))
+  );
+}
+
 export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   onClose,
   onImportSuccess,
@@ -50,18 +93,22 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
 
   const { accounts, createAccount, loadAccounts } = useAccountStore();
   const { categories, createCategory, loadCategories } = useCategoryStore();
-  const { importTransactions } = useLedgerStore();
+  const { transactions, importTransactions } = useLedgerStore();
   const isReimbursementEnabled = usePreferenceStore((s) => s.isReimbursementEnabled);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('elephant');
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('wechat');
+  const [detectedSource, setDetectedSource] = useState<BillSource | null>(null);
   const [fileName, setFileName] = useState<string>('');
+  const [fileCount, setFileCount] = useState<number>(0);
   const [fileSizeStr, setFileSizeStr] = useState<string>('');
   const [parsed, setParsed] = useState<ParsedCsvResult>({ headers: [], rows: [] });
 
   const [mapping, setMapping] = useState<CsvColumnMapping>({});
   const [categoryMapping, setCategoryMapping] = useState<Record<string, string>>({});
   const [typeMapping, setTypeMapping] = useState<Record<string, TransactionType | 'skip'>>({});
+  const [skipClosedAndFullRefunds, setSkipClosedAndFullRefunds] = useState<boolean>(true);
+  const [skipDuplicates, setSkipDuplicates] = useState<boolean>(true);
   const [isCreatingCategory, setIsCreatingCategory] = useState<boolean>(false);
 
   const [defaultAccountId, setDefaultAccountId] = useState<string>('');
@@ -72,6 +119,13 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   const activePreset = useMemo<ImportPreset>(() => {
     return IMPORT_PRESETS.find((p) => p.id === selectedPresetId) || IMPORT_PRESETS[0];
   }, [selectedPresetId]);
+
+  const activeSource = selectedPresetId as BillSource;
+
+  const existingImportKeys = useMemo(
+    () => extractExistingImportKeys(transactions ?? []),
+    [transactions]
+  );
 
   const defaultExpenseCat = useMemo(
     () => categories.find((c) => c.type === 'expense')?.id || 'cat_food',
@@ -89,36 +143,51 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   }, [accounts, defaultAccountId]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
 
     try {
       setErrorMsg('');
-      const text = await file.text();
-      const res = parseCsv(text);
+      const parsedResults = await Promise.all(files.map((file) => parseTabularFile(file)));
 
-      if (res.headers.length === 0 || res.rows.length === 0) {
-        throw new Error('CSV 文件内容为空或未能识别到表格数据');
+      let batchSource: BillSource | null = null;
+      let mergedHeaders: string[] = [];
+      const mergedRows: string[][] = [];
+
+      for (const res of parsedResults) {
+        if (res.headers.length === 0 || res.rows.length === 0) {
+          throw new Error('账单文件内容为空或未能识别到表格数据');
+        }
+        const fileSource = detectBillSource(res.headers, res.metadataLines);
+        if (batchSource === null) {
+          batchSource = fileSource;
+        } else if (batchSource !== fileSource) {
+          throw new Error('请分批导入不同平台的账单文件');
+        }
+
+        const preprocessed = preprocessBillTable(res, fileSource);
+        if (mergedHeaders.length === 0) {
+          mergedHeaders = preprocessed.headers;
+        }
+        mergedRows.push(
+          ...alignRowsToHeaders(mergedHeaders, preprocessed.headers, preprocessed.rows)
+        );
       }
 
-      setFileName(file.name);
-      setFileSizeStr((file.size / 1024).toFixed(1) + ' KB');
-      setParsed(res);
+      const resolvedSource = batchSource ?? 'standard';
+      const targetPreset =
+        IMPORT_PRESETS.find((p) => p.id === resolvedSource) || IMPORT_PRESETS[0];
+      const totalSize = files.reduce((sum, f) => sum + f.size, 0);
 
-      const inferred = inferColumnMapping(res.headers);
-      const presetMap = activePreset.defaultMapping || {};
-
-      const mergedMapping: CsvColumnMapping = {
-        dateCol: (presetMap.dateCol && res.headers.includes(presetMap.dateCol)) ? presetMap.dateCol : inferred.dateCol,
-        amountCol: (presetMap.amountCol && res.headers.includes(presetMap.amountCol)) ? presetMap.amountCol : inferred.amountCol,
-        typeCol: (presetMap.typeCol && res.headers.includes(presetMap.typeCol)) ? presetMap.typeCol : inferred.typeCol,
-        categoryCol: (presetMap.categoryCol && res.headers.includes(presetMap.categoryCol)) ? presetMap.categoryCol : inferred.categoryCol,
-        accountCol: (presetMap.accountCol && res.headers.includes(presetMap.accountCol)) ? presetMap.accountCol : inferred.accountCol,
-        noteCol: (presetMap.noteCol && res.headers.includes(presetMap.noteCol)) ? presetMap.noteCol : inferred.noteCol,
-        reimburseCol: (presetMap.reimburseCol && res.headers.includes(presetMap.reimburseCol)) ? presetMap.reimburseCol : inferred.reimburseCol,
-      };
-
-      setMapping(mergedMapping);
+      setSelectedPresetId(resolvedSource);
+      setDetectedSource(resolvedSource);
+      setFileCount(files.length);
+      setFileName(files.length === 1 ? files[0].name : `已选 ${files.length} 个文件`);
+      setFileSizeStr((totalSize / 1024).toFixed(1) + ' KB');
+      setParsed({ headers: mergedHeaders, rows: mergedRows });
+      setMapping(buildMergedMapping(mergedHeaders, targetPreset.defaultMapping || {}));
+      setCategoryMapping({});
+      setTypeMapping({});
     } catch (err) {
       setErrorMsg('读取文件失败：' + (err instanceof Error ? err.message : '未知格式'));
     } finally {
@@ -134,9 +203,23 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       mapping.categoryCol,
       mapping.typeCol,
       categories,
-      activePreset.categoryAliases || {}
+      activePreset.categoryAliases || {},
+      {
+        statusColName: mapping.statusCol,
+        source: activeSource,
+        skipClosedAndFullRefunds,
+      }
     );
-  }, [parsed, mapping.categoryCol, mapping.typeCol, categories, activePreset]);
+  }, [
+    parsed,
+    mapping.categoryCol,
+    mapping.typeCol,
+    mapping.statusCol,
+    categories,
+    activePreset,
+    activeSource,
+    skipClosedAndFullRefunds,
+  ]);
 
   const extractedTypeStats = useMemo<ExtractedTypeStat[]>(() => {
     if (parsed.headers.length === 0 || parsed.rows.length === 0 || !mapping.typeCol) return [];
@@ -149,7 +232,9 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
         const next = { ...prev };
         for (const stat of extractedCategoryStats) {
           if (!next[stat.rawName]) {
-            next[stat.rawName] = stat.suggestedCategoryId || (stat.dominantType === 'income' ? defaultIncomeCat : defaultExpenseCat);
+            next[stat.rawName] =
+              stat.suggestedCategoryId ||
+              (stat.dominantType === 'income' ? defaultIncomeCat : defaultExpenseCat);
           }
         }
         return next;
@@ -165,7 +250,13 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
         return next;
       });
     }
-  }, [currentStep, extractedCategoryStats, extractedTypeStats, defaultExpenseCat, defaultIncomeCat]);
+  }, [
+    currentStep,
+    extractedCategoryStats,
+    extractedTypeStats,
+    defaultExpenseCat,
+    defaultIncomeCat,
+  ]);
 
   const handleCreateCategoryForRaw = async (rawName: string, dominantType: TransactionType) => {
     try {
@@ -226,12 +317,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     }
   };
 
-  const previewData = useMemo<PreparedImportRecord[]>(() => {
-    if (parsed.headers.length === 0 || parsed.rows.length === 0 || !defaultAccountId) {
-      return [];
+  const importSummary = useMemo<ConfiguredMappingResult>(() => {
+    if (
+      currentStep !== 4 ||
+      parsed.headers.length === 0 ||
+      parsed.rows.length === 0 ||
+      !defaultAccountId
+    ) {
+      return { records: [], skippedCount: 0, duplicateCount: 0, filteredStatusCount: 0 };
     }
-    const sampleRows = parsed.rows.slice(0, 4);
-    const { records } = mapConfiguredCsvRows(parsed.headers, sampleRows, {
+    return mapConfiguredCsvRows(parsed.headers, parsed.rows, {
       mapping,
       categoryMapping,
       typeMapping,
@@ -240,9 +335,13 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       defaultIncomeCategoryId: defaultIncomeCat,
       existingCategories: categories,
       existingAccounts: accounts,
+      source: activeSource,
+      skipClosedAndFullRefunds,
+      skipDuplicates,
+      existingImportKeys,
     });
-    return records;
   }, [
+    currentStep,
     parsed,
     mapping,
     categoryMapping,
@@ -252,7 +351,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     defaultIncomeCat,
     categories,
     accounts,
+    activeSource,
+    skipClosedAndFullRefunds,
+    skipDuplicates,
+    existingImportKeys,
   ]);
+
+  const previewData = useMemo(
+    () => importSummary.records.slice(0, 5),
+    [importSummary.records]
+  );
 
   const handleStartImport = async () => {
     if (parsed.rows.length === 0) {
@@ -282,6 +390,10 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
         existingCategories: categories,
         existingAccounts: accounts,
         autoCreateAccounts,
+        source: activeSource,
+        skipClosedAndFullRefunds,
+        skipDuplicates,
+        existingTransactions: transactions,
         createAccount,
         importTransactions,
       });
@@ -290,10 +402,15 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
         await loadAccounts();
       }
 
-      toast.success(
-        `成功导入 ${res.importedCount} 笔流水` +
-          (res.skippedCount > 0 ? `（跳过 ${res.skippedCount} 笔）` : '')
-      );
+      const detailParts: string[] = [];
+      if (res.skippedCount > 0) {
+        detailParts.push(`跳过 ${res.skippedCount} 笔`);
+      }
+      if (res.duplicateCount > 0) {
+        detailParts.push(`含重复 ${res.duplicateCount} 笔`);
+      }
+      const suffix = detailParts.length > 0 ? `（${detailParts.join('，')}）` : '';
+      toast.success(`成功导入 ${res.importedCount} 笔流水${suffix}`);
 
       if (res.reimbursableCount > 0 && !isReimbursementEnabled) {
         toast.info(
@@ -324,7 +441,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           ].map((s) => {
             const isDone = currentStep > s.num;
             const isCur = currentStep === s.num;
-            let stepBadgeClass = 'bg-(--paper-sunken) text-(--ink-tertiary) border border-(--rule-hairline)';
+            let stepBadgeClass =
+              'bg-(--paper-sunken) text-(--ink-tertiary) border border-(--rule-hairline)';
             if (isDone) {
               stepBadgeClass = 'bg-(--color-income) text-white';
             } else if (isCur) {
@@ -364,11 +482,17 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       {currentStep === 1 && (
         <ImportStep1Upload
           selectedPresetId={selectedPresetId}
-          onSelectPreset={setSelectedPresetId}
-          headers={parsed.headers}
+          detectedSource={detectedSource}
+          onSelectPreset={(presetId) => {
+            setSelectedPresetId(presetId);
+            if (parsed.headers.length > 0) {
+              const targetPreset = IMPORT_PRESETS.find((p) => p.id === presetId);
+              setMapping(buildMergedMapping(parsed.headers, targetPreset?.defaultMapping || {}));
+            }
+          }}
           rowCount={parsed.rows.length}
-          onUpdateMapping={setMapping}
           fileName={fileName}
+          fileCount={fileCount}
           fileSizeStr={fileSizeStr}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
@@ -383,6 +507,11 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           mapping={mapping}
           onChangeMapping={setMapping}
           isReimbursementEnabled={isReimbursementEnabled}
+          detectedSource={activeSource}
+          skipClosedAndFullRefunds={skipClosedAndFullRefunds}
+          onChangeSkipClosedAndFullRefunds={setSkipClosedAndFullRefunds}
+          skipDuplicates={skipDuplicates}
+          onChangeSkipDuplicates={setSkipDuplicates}
           onPrev={() => setCurrentStep(1)}
           onNext={() => {
             if (!mapping.dateCol || !mapping.amountCol) {
@@ -425,6 +554,10 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           isReimbursementEnabled={isReimbursementEnabled}
           previewData={previewData}
           totalRowsCount={parsed.rows.length}
+          effectiveCount={importSummary.records.length}
+          skippedCount={importSummary.skippedCount}
+          duplicateCount={importSummary.duplicateCount}
+          filteredStatusCount={importSummary.filteredStatusCount}
           isImporting={isImporting}
           onPrev={() => setCurrentStep(3)}
           onConfirmImport={handleStartImport}

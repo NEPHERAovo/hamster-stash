@@ -5,19 +5,36 @@ import {
   ArrowRightIcon as ArrowRight,
   SparkleIcon as Sparkles,
   SlidersIcon as Sliders,
+  ChatCircleDotsIcon as ChatCircleDots,
+  WalletIcon as Wallet,
 } from '@phosphor-icons/react';
 import { PaperButton } from '../../ui/PaperButton';
-import { inferColumnMapping, type CsvColumnMapping } from '../../../domain/import-export/csvMapper';
+import { PaperChip } from '../../ui/PaperChip';
 import { IMPORT_PRESETS } from '../../../domain/import-export/importPresets';
+import type { BillSource } from '../../../domain/import-export/billNormalizer';
 import { cn } from '../../../utils/cn';
+
+const PRESET_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  wechat: ChatCircleDots,
+  alipay: Wallet,
+  elephant: Sparkles,
+  standard: Sliders,
+};
+
+const SOURCE_LABEL_MAP: Record<BillSource, string> = {
+  wechat: '微信账单',
+  alipay: '支付宝账单',
+  elephant: '小象记账',
+  standard: '通用表格',
+};
 
 export interface ImportStep1UploadProps {
   selectedPresetId: string;
+  detectedSource?: BillSource | null;
   onSelectPreset: (presetId: string) => void;
-  headers: string[];
   rowCount: number;
-  onUpdateMapping: (mapping: CsvColumnMapping) => void;
   fileName: string;
+  fileCount?: number;
   fileSizeStr: string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -27,42 +44,29 @@ export interface ImportStep1UploadProps {
 
 export const ImportStep1Upload: React.FC<ImportStep1UploadProps> = ({
   selectedPresetId,
+  detectedSource,
   onSelectPreset,
-  headers,
   rowCount,
-  onUpdateMapping,
   fileName,
+  fileCount = 0,
   fileSizeStr,
   fileInputRef,
   onFileChange,
   onCancel,
   onNext,
 }) => {
+  const displayFileLabel = fileCount > 1 ? `已选 ${fileCount} 个文件` : fileName;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {IMPORT_PRESETS.map((preset) => {
           const isSelected = selectedPresetId === preset.id;
-          const IconComp = preset.id === 'elephant' ? Sparkles : Sliders;
+          const IconComp = PRESET_ICON_MAP[preset.id] || Sliders;
           return (
             <div
               key={preset.id}
-              onClick={() => {
-                onSelectPreset(preset.id);
-                if (headers.length > 0) {
-                  const inferred = inferColumnMapping(headers);
-                  const pMap = preset.defaultMapping || {};
-                  onUpdateMapping({
-                    dateCol: pMap.dateCol && headers.includes(pMap.dateCol) ? pMap.dateCol : inferred.dateCol,
-                    amountCol: pMap.amountCol && headers.includes(pMap.amountCol) ? pMap.amountCol : inferred.amountCol,
-                    typeCol: pMap.typeCol && headers.includes(pMap.typeCol) ? pMap.typeCol : inferred.typeCol,
-                    categoryCol: pMap.categoryCol && headers.includes(pMap.categoryCol) ? pMap.categoryCol : inferred.categoryCol,
-                    accountCol: pMap.accountCol && headers.includes(pMap.accountCol) ? pMap.accountCol : inferred.accountCol,
-                    noteCol: pMap.noteCol && headers.includes(pMap.noteCol) ? pMap.noteCol : inferred.noteCol,
-                    reimburseCol: pMap.reimburseCol && headers.includes(pMap.reimburseCol) ? pMap.reimburseCol : inferred.reimburseCol,
-                  });
-                }
-              }}
+              onClick={() => onSelectPreset(preset.id)}
               className={cn(
                 'flex cursor-pointer items-center gap-3 rounded-(--radius-md) border p-3.5 transition-all',
                 isSelected
@@ -73,14 +77,18 @@ export const ImportStep1Upload: React.FC<ImportStep1UploadProps> = ({
               <div
                 className={cn(
                   'flex size-8 shrink-0 items-center justify-center rounded-(--badge-radius)',
-                  isSelected ? 'bg-(--color-income-bg) text-(--color-income)' : 'bg-(--paper-sunken) text-(--ink-secondary)'
+                  isSelected
+                    ? 'bg-(--color-income-bg) text-(--color-income)'
+                    : 'bg-(--paper-sunken) text-(--ink-secondary)'
                 )}
               >
                 <IconComp className="stroke-1.8 size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-[13px] font-bold text-(--ink-primary)">{preset.name}</div>
-                <div className="mt-0.5 truncate text-[11px] text-(--ink-tertiary)">{preset.shortDesc}</div>
+                <div className="mt-0.5 truncate text-[11px] text-(--ink-tertiary)">
+                  {preset.shortDesc}
+                </div>
               </div>
             </div>
           );
@@ -99,7 +107,8 @@ export const ImportStep1Upload: React.FC<ImportStep1UploadProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,text/csv"
+          multiple
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={onFileChange}
           className="hidden"
         />
@@ -108,7 +117,14 @@ export const ImportStep1Upload: React.FC<ImportStep1UploadProps> = ({
             <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-(--color-income-bg) text-(--color-income)">
               <Check className="stroke-2.2 size-5" />
             </div>
-            <div className="text-xs font-bold text-(--ink-primary)">{fileName}</div>
+            <div className="text-xs font-bold text-(--ink-primary)">{displayFileLabel}</div>
+            {detectedSource && (
+              <div className="flex justify-center">
+                <PaperChip size="sm" variant="income">
+                  已识别：{SOURCE_LABEL_MAP[detectedSource]}
+                </PaperChip>
+              </div>
+            )}
             <div className="font-mono text-[11px] text-(--ink-tertiary)">
               {fileSizeStr} · 共 {rowCount} 行
             </div>
@@ -128,7 +144,9 @@ export const ImportStep1Upload: React.FC<ImportStep1UploadProps> = ({
             <div className="mx-auto flex size-9 items-center justify-center rounded-full bg-(--paper-sunken) text-(--ink-secondary)">
               <FileUp className="stroke-1.8 size-5" />
             </div>
-            <div className="text-xs font-semibold text-(--ink-primary)">点击选择 CSV 文件</div>
+            <div className="text-xs font-semibold text-(--ink-primary)">
+              点击选择 CSV / XLSX 账单文件
+            </div>
           </div>
         )}
       </div>

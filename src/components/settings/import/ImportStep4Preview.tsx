@@ -26,6 +26,10 @@ export interface ImportStep4PreviewProps {
   isReimbursementEnabled: boolean;
   previewData: PreparedImportRecord[];
   totalRowsCount: number;
+  effectiveCount?: number;
+  skippedCount?: number;
+  duplicateCount?: number;
+  filteredStatusCount?: number;
   isImporting: boolean;
   onPrev: () => void;
   onConfirmImport: () => void;
@@ -41,10 +45,15 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
   isReimbursementEnabled,
   previewData,
   totalRowsCount,
+  effectiveCount,
+  skippedCount = 0,
+  duplicateCount = 0,
   isImporting,
   onPrev,
   onConfirmImport,
 }) => {
+  const finalImportCount = effectiveCount ?? totalRowsCount;
+
   return (
     <div className="space-y-4">
       <div className="space-y-3 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-3.5 text-xs shadow-xs">
@@ -60,7 +69,9 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
             className="bg-(--paper-sunken)"
           >
             {accounts.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
             ))}
           </PaperSelect>
         </div>
@@ -76,6 +87,14 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
           />
         </div>
       </div>
+
+      {(skippedCount > 0 || duplicateCount > 0) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-2.5 font-mono text-[11px] text-(--ink-secondary) tabular-nums shadow-xs">
+          <span>待导入 {finalImportCount} 笔</span>
+          {skippedCount > 0 && <span>过滤/跳过 {skippedCount} 笔</span>}
+          {duplicateCount > 0 && <span>重复 {duplicateCount} 笔</span>}
+        </div>
+      )}
 
       {previewData.some((r) => r.isReimbursable) && !isReimbursementEnabled && (
         <div className="flex items-center gap-2 rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken) p-2.5 text-[11px] text-(--ink-secondary)">
@@ -104,7 +123,8 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
                 <div>
                   <div className="font-semibold text-(--ink-primary)">{cat?.name || '默认'}</div>
                   <div className="font-mono text-[10px] text-(--ink-tertiary)">
-                    {rec.date}{timePart} · {rec.rawAccountName || acct?.name || '默认'}
+                    {rec.date}
+                    {timePart} · {rec.rawAccountName || acct?.name || '默认'}
                     {rec.note && ` · ${rec.note}`}
                   </div>
                 </div>
@@ -137,7 +157,7 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
         <PaperButton
           variant="ink"
           size="sm"
-          disabled={isImporting || totalRowsCount === 0}
+          disabled={isImporting || finalImportCount === 0}
           onClick={onConfirmImport}
         >
           {isImporting ? (
@@ -148,7 +168,7 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
           ) : (
             <>
               <FolderSync className="mr-1 size-3.5" />
-              <span>确认导入 ({totalRowsCount} 笔)</span>
+              <span>确认导入 ({finalImportCount} 笔)</span>
             </>
           )}
         </PaperButton>
