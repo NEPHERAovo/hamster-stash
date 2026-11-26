@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SlidersHorizontalIcon as SlidersHorizontal, ReceiptIcon as ReceiptText, CalendarCheckIcon as CalendarClock, TagIcon as Tags, DatabaseIcon as Database, SquaresFourIcon as Blocks, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCw, DownloadSimpleIcon as Download, FlaskIcon as Flask } from '@phosphor-icons/react';
+import { SlidersHorizontalIcon as SlidersHorizontal, ReceiptIcon as ReceiptText, CalendarCheckIcon as CalendarClock, TagIcon as Tags, DatabaseIcon as Database, SquaresFourIcon as Blocks, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCw, DownloadSimpleIcon as Download, FlaskIcon as Flask, ArrowUpRightIcon as ArrowUpRight } from '@phosphor-icons/react';
 import { dataLifecycleService } from '../../domain/data/dataLifecycleService';
 import { isSandboxModeActive, setSandboxMode, resetSandboxData } from '../../core/db/schema';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -278,9 +278,20 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
             onClick={() => setIsAboutExpanded((prev) => !prev)}
           />
           {isAboutExpanded && (
-            <p className="pb-2.5 pl-8.5 font-mono text-[11px] leading-relaxed text-(--ink-tertiary)">
-              集日常收支、物品收纳与资产管理于一体的本地优先个人账本。
-            </p>
+            <div className="space-y-2 pb-2.5 pl-8.5">
+              <p className="font-mono text-[11px] leading-relaxed text-(--ink-tertiary)">
+                集日常收支、物品收纳与资产管理于一体的本地优先个人账本。
+              </p>
+              <a
+                href="https://github.com/NEPHERAovo/hamster-stash"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-1 font-mono text-[11px] text-(--ink-secondary) transition-colors hover:text-(--ink-primary)"
+              >
+                <span>github.com/NEPHERAovo/hamster-stash</span>
+                <ArrowUpRight className="size-3 shrink-0 text-(--ink-tertiary)" />
+              </a>
+            </div>
           )}
         </div>
       </SettingSection>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { SettingsCard } from '../../src/components/settings/SettingsCard';
 import { usePwaStore } from '../../src/stores/usePwaStore';
@@ -28,5 +28,15 @@ describe('SettingsCard PWA install row visibility', () => {
 
     render(<SettingsCard />);
     expect(screen.queryByText('添加到桌面')).not.toBeInTheDocument();
+  });
+
+  it('reveals GitHub repository link inside expanded About section', () => {
+    render(<SettingsCard />);
+    fireEvent.click(screen.getByText('关于'));
+
+    const link = screen.getByRole('link', { name: /github\.com\/NEPHERAovo\/hamster-stash/i });
+    expect(link).toHaveAttribute('href', 'https://github.com/NEPHERAovo/hamster-stash');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 });
