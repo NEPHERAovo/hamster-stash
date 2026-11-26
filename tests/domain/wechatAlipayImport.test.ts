@@ -15,7 +15,7 @@ import {
   classifyWechatCategory,
   composeBillNote,
   detectBillSource,
-  extractExistingImportKeys,
+  extractExistingTransactionMap,
   inferAccountType,
   isWealthDailyEarningRow,
   normalizeBankName,
@@ -330,8 +330,8 @@ describe('WeChat & Alipay ImportService Integration', () => {
 
     const storedTxs = await txRepo.findAll();
     expect(storedTxs.length).toBe(2);
-    expect(extractExistingImportKeys(storedTxs)).toEqual(
-      new Set(['alipay:ali_order_1', 'alipay:ali_order_2'])
+    expect(new Set(extractExistingTransactionMap(storedTxs).keys())).toEqual(
+      new Set(['ali_ali_order_1', 'ali_ali_order_2'])
     );
 
     const secondRes = await importService.executeCsvImport({
@@ -503,10 +503,10 @@ describe('WeChat & Alipay ImportService Integration', () => {
     });
 
     expect(mapped.records).toHaveLength(3);
-    expect(mapped.records[0].id).toMatch(/^tx_imp_standard_[0-9a-f]{16}$/);
-    expect(mapped.records[1].id).toMatch(/^tx_imp_standard_[0-9a-f]{16}$/);
+    expect(mapped.records[0].id).toMatch(/^csv_standard_[0-9a-f]{16}$/);
+    expect(mapped.records[1].id).toMatch(/^csv_standard_[0-9a-f]{16}$/);
     expect(mapped.records[0].id).not.toBe(mapped.records[1].id);
-    expect(mapped.records[0].ext?.importMeta).toBeDefined();
+    expect(mapped.records[0].ext).toBeUndefined();
 
     const elephantPreset = IMPORT_PRESETS.find((p) => p.id === 'elephant')!;
     const importService = new ImportService();
@@ -531,7 +531,7 @@ describe('WeChat & Alipay ImportService Integration', () => {
     expect(res1.importedCount).toBe(3);
 
     const stored = await txRepo.findAll();
-    expect(stored.every((tx) => tx.id.startsWith('tx_imp_elephant_'))).toBe(true);
+    expect(stored.every((tx) => tx.id.startsWith('csv_elephant_'))).toBe(true);
 
     // Simulate local edits to category, note, and owned-items link on one record
     await txService.updateTransaction(stored[0].id, {
@@ -567,8 +567,8 @@ describe('WeChat & Alipay ImportService Integration', () => {
   });
 
   it('generates deterministic IDs and updates partial-month wealth rollup in place without balance drift', async () => {
-    expect(buildDeterministicImportId('wechat', '4500000559')).toBe('tx_imp_wechat_4500000559');
-    expect(buildDeterministicImportId('alipay', '20261111_abc')).toBe('tx_imp_alipay_20261111_abc');
+    expect(buildDeterministicImportId('wechat', '4500000559')).toBe('wx_4500000559');
+    expect(buildDeterministicImportId('alipay', '20261111_abc')).toBe('ali_20261111_abc');
     expect(
       isWealthDailyEarningRow('alipay', {
         category: '投资理财',

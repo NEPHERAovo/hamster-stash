@@ -9,6 +9,7 @@ export class TransactionRepository extends BaseRepository<Transaction> {
       useTombstone: true,
       defaultOrderBy: 'date',
       defaultOrderDirection: 'desc',
+      idPrefix: 'tx',
     });
   }
 

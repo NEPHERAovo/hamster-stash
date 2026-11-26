@@ -9,6 +9,7 @@ export class CategoryRepository extends BaseRepository<Category> {
       useTombstone: true,
       defaultOrderBy: 'sortOrder',
       defaultOrderDirection: 'asc',
+      idPrefix: 'cat',
     });
   }
 

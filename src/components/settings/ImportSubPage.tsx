@@ -15,7 +15,6 @@ import {
 } from '../../domain/import-export/csvMapper';
 import {
   detectBillSource,
-  extractExistingImportKeys,
   preprocessBillTable,
   type BillSource,
 } from '../../domain/import-export/billNormalizer';
@@ -125,11 +124,6 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   }, [selectedPresetId]);
 
   const activeSource = selectedPresetId as BillSource;
-
-  const existingImportKeys = useMemo(
-    () => extractExistingImportKeys(transactions ?? []),
-    [transactions]
-  );
 
   const defaultExpenseCat = useMemo(
     () => categories.find((c) => c.type === 'expense')?.id || 'cat_food',
@@ -393,7 +387,6 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       skipClosedAndFullRefunds,
       skipDuplicates,
       aggregateWealthEarningsMonthly,
-      existingImportKeys,
       existingTransactions: transactions,
     });
   }, [
@@ -411,7 +404,6 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     skipClosedAndFullRefunds,
     skipDuplicates,
     aggregateWealthEarningsMonthly,
-    existingImportKeys,
     transactions,
   ]);
 

@@ -4,6 +4,8 @@ import type { AccountRepository } from '../../core/repositories/AccountRepositor
 import type { CategoryRepository } from '../../core/repositories/CategoryRepository';
 import type { SeedService } from '../bootstrap/seedService';
 import { exportTransactionsToCsv } from '../import-export/csvMapper';
+import { areValuesCanonicallyEqual } from '../sync/diffMerger';
+import { normalizeDataIds } from './idNormalizer';
 import type {
   AdapterResolver,
   DataAdapter,
@@ -22,6 +24,25 @@ function filterActive<T extends StoredEntity>(
   includeTombstones?: boolean
 ): T[] {
   return includeTombstones ? items : items.filter((item) => !item.deletedAt);
+}
+
+function toSettingsEntities(
+  map: Record<string, unknown> | undefined,
+  now: string
+): StoredEntity[] {
+  if (!map) return [];
+  return Object.entries(map).map(([k, v]) => {
+    const obj =
+      typeof v === 'object' && v !== null
+        ? (v as Record<string, unknown>)
+        : {};
+    return {
+      createdAt: now,
+      updatedAt: now,
+      ...obj,
+      id: k,
+    } as StoredEntity;
+  });
 }
 
 export interface DataLifecycleDeps {
@@ -117,39 +138,108 @@ export class DataLifecycleService {
     }
     const now = new Date().toISOString();
 
-    const toSettingsEntities = (
-      map: Record<string, unknown> | undefined
-    ): StoredEntity[] => {
-      if (!map) return [];
-      return Object.entries(map).map(([k, v]) => {
-        const obj =
-          typeof v === 'object' && v !== null
-            ? (v as Record<string, unknown>)
-            : {};
-        return {
-          createdAt: now,
-          updatedAt: now,
-          ...obj,
-          id: k,
-        } as StoredEntity;
-      });
-    };
-
     await this.adapter.replaceAll({
       [STORES.TRANSACTIONS]: (data.transactions || []) as StoredEntity[],
       [STORES.ACCOUNTS]: (data.accounts || []) as StoredEntity[],
       [STORES.CATEGORIES]: (data.categories || []) as StoredEntity[],
-      [STORES.SETTINGS]: toSettingsEntities(data.settings),
+      [STORES.SETTINGS]: toSettingsEntities(data.settings, now),
       [STORES.PLUGIN_DATA]: (data.plugins?.data as StoredEntity[]) || [],
-      [STORES.PLUGIN_SETTINGS]: toSettingsEntities(data.plugins?.settings),
+      [STORES.PLUGIN_SETTINGS]: toSettingsEntities(data.plugins?.settings, now),
     });
+  }
+
+  private async reconcileEntityStore(
+    storeName: string,
+    targetList: StoredEntity[],
+    ignoredIds?: Set<string>
+  ): Promise<{ writtenCount: number; removedCount: number }> {
+    const currentList = await this.adapter.getAll<StoredEntity>(storeName);
+    const currentMap = new Map(currentList.map((item) => [item.id, item]));
+    const targetIds = new Set<string>();
+    let writtenCount = 0;
+    let removedCount = 0;
+
+    for (const target of targetList) {
+      if (ignoredIds?.has(target.id)) continue;
+      targetIds.add(target.id);
+      const existing = currentMap.get(target.id);
+      if (!existing || !areValuesCanonicallyEqual(existing, target)) {
+        await this.adapter.put(storeName, target);
+        writtenCount++;
+      }
+    }
+
+    for (const existingId of currentMap.keys()) {
+      if (ignoredIds?.has(existingId)) continue;
+      if (!targetIds.has(existingId)) {
+        await this.adapter.remove(storeName, existingId);
+        removedCount++;
+      }
+    }
+
+    return { writtenCount, removedCount };
+  }
+
+  async normalizeStoredIdsIfNeeded(): Promise<boolean> {
+    const [transactions, accounts, categories, pluginData] = await Promise.all([
+      this.adapter.getAll<Transaction>(STORES.TRANSACTIONS),
+      this.adapter.getAll<Account>(STORES.ACCOUNTS),
+      this.adapter.getAll<Category>(STORES.CATEGORIES),
+      this.adapter.getAll<StoredEntity>(STORES.PLUGIN_DATA),
+    ]);
+
+    const { data: normalized, changed } = normalizeDataIds({
+      version: SNAPSHOT_VERSION,
+      exportedAt: '',
+      transactions,
+      accounts,
+      categories,
+      settings: {},
+      plugins: {
+        data: pluginData,
+        settings: {},
+      },
+    });
+
+    if (!changed) return false;
+
+    const targetStores = [
+      STORES.TRANSACTIONS,
+      STORES.ACCOUNTS,
+      STORES.CATEGORIES,
+      STORES.PLUGIN_DATA,
+      STORES.SETTINGS,
+    ];
+
+    await this.adapter.runInTransaction(targetStores, async () => {
+      await this.reconcileEntityStore(
+        STORES.TRANSACTIONS,
+        normalized.transactions as StoredEntity[]
+      );
+      await this.reconcileEntityStore(
+        STORES.ACCOUNTS,
+        normalized.accounts as StoredEntity[]
+      );
+      await this.reconcileEntityStore(
+        STORES.CATEGORIES,
+        normalized.categories as StoredEntity[]
+      );
+      await this.reconcileEntityStore(
+        STORES.PLUGIN_DATA,
+        (normalized.plugins?.data as StoredEntity[]) || []
+      );
+      await this.adapter.remove(STORES.SETTINGS, 'webdav_sync_base');
+    });
+
+    return true;
   }
 
   async restoreBackup(data: ExportData): Promise<void> {
     if (!Array.isArray(data.transactions) || !Array.isArray(data.accounts)) {
       throw new Error('无效的备份文件结构');
     }
-    await this.restoreData(data);
+    const { data: normalized } = normalizeDataIds(data);
+    await this.restoreData(normalized);
     this.deps.onDataImported?.();
   }
 

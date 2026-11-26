@@ -331,7 +331,7 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
       expect(importSpy).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            id: expect.stringMatching(/^tx_imp_elephant_[0-9a-f]{16}$/),
+            id: expect.stringMatching(/^csv_elephant_[0-9a-f]{16}$/),
             categoryId: 'cat_shop',
             amount: 3500,
             type: 'expense',
@@ -432,7 +432,7 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
       expect(importSpy).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            id: 'tx_imp_alipay_ali_1',
+            id: 'ali_ali_1',
             type: 'expense',
             amount: 1050,
           }),
@@ -505,16 +505,11 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
       expect(importSpy).toHaveBeenCalledWith(
         [
           expect.objectContaining({
+            id: 'ali_ali_1',
             type: 'expense',
             amount: 1050,
             categoryId: 'cat_food',
             accountId: 'acct_huabei',
-            ext: {
-              importMeta: {
-                source: 'alipay',
-                orderId: 'ali_1',
-              },
-            },
           }),
         ],
         true
@@ -527,18 +522,12 @@ describe('ImportSubPage - Category Mapping & Bill Formats', () => {
     useLedgerStore.setState({
       transactions: [
         {
-          id: 'tx_existing',
+          id: 'wx_wx_order_1',
           type: 'expense',
           amount: 2850,
           categoryId: 'cat_food',
           accountId: 'acct_1',
           date: '2026-11-09',
-          ext: {
-            importMeta: {
-              source: 'wechat',
-              orderId: 'wx_order_1',
-            },
-          },
           createdAt: '',
           updatedAt: '',
         },

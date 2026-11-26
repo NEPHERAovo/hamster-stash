@@ -4,11 +4,9 @@ import type { Account } from '../../types/account';
 import { generateCsv } from './csvParser';
 import {
   buildDeterministicImportId,
-  buildExternalImportKey,
   buildFingerprintImportId,
-  buildWealthMonthlyOrderId,
   buildWealthMonthlyTxId,
-  extractExistingImportIndex,
+  extractExistingTransactionMap,
   isWealthDailyEarningRow,
   shouldSkipBillStatus,
   type BillSource,
@@ -69,7 +67,6 @@ export interface AdvancedImportOptions {
   skipClosedAndFullRefunds?: boolean;
   skipDuplicates?: boolean;
   aggregateWealthEarningsMonthly?: boolean;
-  existingImportKeys?: Set<string>;
   existingTransactions?: Transaction[];
 }
 
@@ -649,10 +646,10 @@ export function mapConfiguredCsvRows(
   const acctMapByName = new Map<string, Account>(
     options.existingAccounts.map((a) => [a.name.trim().toLowerCase(), a])
   );
-  const existingIndex = options.existingTransactions
-    ? extractExistingImportIndex(options.existingTransactions)
+  const existingById = options.existingTransactions
+    ? extractExistingTransactionMap(options.existingTransactions)
     : undefined;
-  const seenBatchKeys = new Set<string>();
+  const seenBatchIds = new Set<string>();
   const fpOccurrenceMap = new Map<string, number>();
   const seenWealthOrderIds = new Set<string>();
   const wealthBuckets = new Map<string, WealthMonthlyBucket>();
@@ -822,11 +819,9 @@ export function mapConfiguredCsvRows(
 
     const effectiveSource: BillSource = options.source ?? 'standard';
     let deterministicId: string;
-    let resolvedOrderId: string;
 
     if (cleanOrderId && (effectiveSource === 'wechat' || effectiveSource === 'alipay')) {
       deterministicId = buildDeterministicImportId(effectiveSource, cleanOrderId);
-      resolvedOrderId = cleanOrderId;
     } else {
       const baseFpKey = [
         effectiveSource,
@@ -840,7 +835,7 @@ export function mapConfiguredCsvRows(
       ].join('|');
       const occurrence = fpOccurrenceMap.get(baseFpKey) ?? 0;
       fpOccurrenceMap.set(baseFpKey, occurrence + 1);
-      const fp = buildFingerprintImportId(effectiveSource, {
+      deterministicId = buildFingerprintImportId(effectiveSource, {
         date,
         createdAt,
         type,
@@ -850,17 +845,12 @@ export function mapConfiguredCsvRows(
         note,
         occurrence,
       });
-      deterministicId = fp.id;
-      resolvedOrderId = fp.orderId;
     }
 
-    const importKey = buildExternalImportKey(effectiveSource, resolvedOrderId);
     if (options.skipDuplicates) {
       const isExisting =
-        Boolean(options.existingImportKeys?.has(importKey)) ||
-        Boolean(existingIndex?.byKey.has(importKey)) ||
-        Boolean(existingIndex?.byId.has(deterministicId)) ||
-        seenBatchKeys.has(importKey);
+        Boolean(existingById?.has(deterministicId)) ||
+        seenBatchIds.has(deterministicId);
       if (isExisting) {
         duplicateCount++;
         skippedCount++;
@@ -876,14 +866,7 @@ export function mapConfiguredCsvRows(
         continue;
       }
     }
-    seenBatchKeys.add(importKey);
-
-    const ext: Record<string, unknown> = {
-      importMeta: {
-        source: effectiveSource,
-        orderId: resolvedOrderId,
-      },
-    };
+    seenBatchIds.add(deterministicId);
 
     let categoryId =
       type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
@@ -928,7 +911,6 @@ export function mapConfiguredCsvRows(
       rawCategoryName: rawCat,
       note,
       isReimbursable,
-      ext,
       rawRow: row,
     });
   }
@@ -947,17 +929,14 @@ export function mapConfiguredCsvRows(
     );
 
     for (const bucket of sortedBuckets) {
-      const orderId = buildWealthMonthlyOrderId(bucket.yearMonth, bucket.accountName);
       const id = buildWealthMonthlyTxId(options.source, bucket.yearMonth, bucket.accountName);
-      const importKey = buildExternalImportKey(options.source, orderId);
       const rollupNote = `${bucket.accountName} ${bucket.yearMonth} 理财收益汇总（共 ${bucket.count} 笔）`;
 
-      const existingEntry = existingIndex?.byId.get(id) ?? existingIndex?.byKey.get(importKey);
+      const existingTx = existingById?.get(id);
       const isAlreadySameRollup =
         Boolean(options.skipDuplicates) &&
-        Boolean(existingEntry) &&
-        existingEntry!.amount === bucket.totalCents &&
-        (existingEntry!.itemCount === undefined || existingEntry!.itemCount >= bucket.count);
+        Boolean(existingTx) &&
+        existingTx!.amount === bucket.totalCents;
 
       if (isAlreadySameRollup) {
         duplicateCount++;
@@ -987,15 +966,6 @@ export function mapConfiguredCsvRows(
         note: rollupNote,
         isWealthMonthlyRollup: true,
         rollupItemCount: bucket.count,
-        ext: {
-          importMeta: {
-            source: options.source,
-            orderId,
-            kind: 'wealth_monthly',
-            month: bucket.yearMonth,
-            itemCount: bucket.count,
-          },
-        },
         rawRow: [],
       });
       wealthRollupCount++;

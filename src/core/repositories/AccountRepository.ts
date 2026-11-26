@@ -9,6 +9,7 @@ export class AccountRepository extends BaseRepository<Account> {
       useTombstone: true,
       defaultOrderBy: 'sortOrder',
       defaultOrderDirection: 'asc',
+      idPrefix: 'acct',
     });
   }
 

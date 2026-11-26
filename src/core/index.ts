@@ -132,6 +132,7 @@ export class CoreContext {
         try {
           await this.adapter.initialize();
           await this.seedService.ensureSeeded();
+          await this.dataLifecycleService.normalizeStoredIdsIfNeeded();
           this.initialized = true;
         } finally {
           this.initPromise = null;

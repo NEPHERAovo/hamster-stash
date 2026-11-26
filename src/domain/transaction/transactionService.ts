@@ -370,8 +370,10 @@ export class TransactionService {
     });
   }
 
-  async getPendingSettlementSummary(): Promise<PendingSettlementSummary> {
-    const all = await this.txRepo.findAll();
+  async getPendingSettlementSummary(
+    preloadedTransactions?: Transaction[]
+  ): Promise<PendingSettlementSummary> {
+    const all = preloadedTransactions ?? (await this.txRepo.findAll());
 
     let lendPendingAmount = 0;
     let reimbPendingAmount = 0;

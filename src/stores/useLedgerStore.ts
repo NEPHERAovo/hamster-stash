@@ -95,7 +95,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
       currentMonth,
       isAmortizationEnabled,
     });
-    const settlementSummary = await core.txService.getPendingSettlementSummary();
+    const settlementSummary = await core.txService.getPendingSettlementSummary(all);
 
     set({
       transactions: all,
@@ -123,7 +123,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
       currentMonth: month,
       isAmortizationEnabled,
     });
-    const settlementSummary = await core.txService.getPendingSettlementSummary();
+    const settlementSummary = await core.txService.getPendingSettlementSummary(all);
 
     set({
       currentMonth: month,

@@ -1,5 +1,6 @@
 import type { Transaction } from '../../types/transaction';
 import type { ParsedCsvResult } from './csvParser';
+import { hashString8, hashString16 } from '../../utils/hash';
 
 export type BillSource = 'wechat' | 'alipay' | 'elephant' | 'standard';
 
@@ -318,31 +319,7 @@ export function preprocessBillTable(
   return { headers, rows };
 }
 
-export function buildExternalImportKey(source: BillSource, orderId: string): string {
-  return `${source}:${orderId.trim()}`;
-}
-
-export function hashStringShort(input: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
-
-export function hashString16(input: string): string {
-  let h1 = 0x811c9dc5;
-  let h2 = 0x9e3779b9;
-  for (let i = 0; i < input.length; i++) {
-    const code = input.charCodeAt(i);
-    h1 ^= code;
-    h1 = Math.imul(h1, 0x01000193);
-    h2 ^= code + i;
-    h2 = Math.imul(h2, 0x85ebca6b);
-  }
-  return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
-}
+const SAFE_ORDER_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 
 export function buildFingerprintImportId(
   source: BillSource,
@@ -356,7 +333,7 @@ export function buildFingerprintImportId(
     note?: string;
     occurrence: number;
   }
-): { id: string; orderId: string } {
+): string {
   const payload = [
     fields.date,
     fields.createdAt || '',
@@ -367,23 +344,17 @@ export function buildFingerprintImportId(
     fields.note || '',
     String(fields.occurrence),
   ].join('|');
-  const digest = hashString16(payload);
-  return {
-    id: `tx_imp_${source}_${digest}`,
-    orderId: `fp:${digest}`,
-  };
+  return `csv_${source}_${hashString16(payload)}`;
 }
 
 export function buildDeterministicImportId(source: BillSource, orderId: string): string {
   const clean = orderId.trim();
-  if (/^[a-zA-Z0-9_-]{1,64}$/.test(clean)) {
-    return `tx_imp_${source}_${clean}`;
-  }
-  return `tx_imp_${source}_${hashStringShort(clean)}`;
-}
+  let prefix = `csv_${source}`;
+  if (source === 'wechat') prefix = 'wx';
+  else if (source === 'alipay') prefix = 'ali';
 
-export function buildWealthMonthlyOrderId(yearMonth: string, accountName: string): string {
-  return `wealth:${yearMonth}:${accountName.trim() || '理财账户'}`;
+  const suffix = SAFE_ORDER_ID_RE.test(clean) ? clean : hashString16(clean);
+  return `${prefix}_${suffix}`;
 }
 
 export function buildWealthMonthlyTxId(
@@ -391,7 +362,8 @@ export function buildWealthMonthlyTxId(
   yearMonth: string,
   accountName: string
 ): string {
-  return `tx_imp_${source}_wealth_${yearMonth}_${hashStringShort(accountName.trim() || '理财账户')}`;
+  const shortSrc = source === 'wechat' ? 'wx' : 'ali';
+  return `wealth_${shortSrc}_${yearMonth}_${hashString8(accountName.trim() || '理财账户')}`;
 }
 
 export function isWealthDailyEarningRow(
@@ -428,54 +400,13 @@ export function isWealthDailyEarningRow(
   return false;
 }
 
-export interface ExistingImportEntry {
-  id: string;
-  amount: number;
-  itemCount?: number;
-  kind?: string;
-}
-
-export function extractExistingImportIndex(transactions: Transaction[]): {
-  byKey: Map<string, ExistingImportEntry>;
-  byId: Map<string, ExistingImportEntry>;
-} {
-  const byKey = new Map<string, ExistingImportEntry>();
-  const byId = new Map<string, ExistingImportEntry>();
-
+export function extractExistingTransactionMap(
+  transactions: Transaction[]
+): Map<string, Transaction> {
+  const map = new Map<string, Transaction>();
   for (const tx of transactions) {
     if ((tx as { deletedAt?: string }).deletedAt) continue;
-
-    let itemCount: number | undefined;
-    let kind: string | undefined;
-    let source = '';
-    let orderId = '';
-
-    if (tx.ext && typeof tx.ext === 'object') {
-      const importMeta = (tx.ext as Record<string, unknown>).importMeta;
-      if (importMeta && typeof importMeta === 'object') {
-        const metaObj = importMeta as Record<string, unknown>;
-        source = typeof metaObj.source === 'string' ? metaObj.source.trim() : '';
-        orderId = typeof metaObj.orderId === 'string' ? metaObj.orderId.trim() : '';
-        itemCount = typeof metaObj.itemCount === 'number' ? metaObj.itemCount : undefined;
-        kind = typeof metaObj.kind === 'string' ? metaObj.kind : undefined;
-      }
-    }
-
-    const entry: ExistingImportEntry = {
-      id: tx.id,
-      amount: tx.amount,
-      itemCount,
-      kind,
-    };
-    byId.set(tx.id, entry);
-    if (source && orderId) {
-      byKey.set(buildExternalImportKey(source as BillSource, orderId), entry);
-    }
+    map.set(tx.id, tx);
   }
-
-  return { byKey, byId };
-}
-
-export function extractExistingImportKeys(transactions: Transaction[]): Set<string> {
-  return new Set(extractExistingImportIndex(transactions).byKey.keys());
+  return map;
 }

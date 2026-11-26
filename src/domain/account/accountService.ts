@@ -82,25 +82,15 @@ export class AccountService {
 
         if (this.txRepo && input.initialBalance && input.initialBalance !== 0) {
           const today = todayDate();
-          if (input.initialBalance > 0) {
-            await this.txRepo.create({
-              type: 'income',
-              amount: input.initialBalance,
-              accountId: created.id,
-              categoryId: 'cat_other_in',
-              date: today,
-              note: '初始余额',
-            });
-          } else {
-            await this.txRepo.create({
-              type: 'expense',
-              amount: Math.abs(input.initialBalance),
-              accountId: created.id,
-              categoryId: 'cat_other',
-              date: today,
-              note: '初始欠款',
-            });
-          }
+          await this.txRepo.create({
+            type: 'reconcile',
+            amount: Math.abs(input.initialBalance),
+            reconcileDiff: input.initialBalance,
+            accountId: created.id,
+            categoryId: 'cat_reconcile',
+            date: today,
+            note: input.initialBalance > 0 ? '初始余额' : '初始欠款',
+          });
         }
 
         return created;

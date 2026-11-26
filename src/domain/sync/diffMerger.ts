@@ -151,37 +151,11 @@ function isSameCorePurchase(a: SyncTx, b: SyncTx): boolean {
   );
 }
 
-function getImportMetaKey(tx: SyncTx | undefined): string | undefined {
-  if (!tx?.ext || typeof tx.ext !== 'object') return undefined;
-  const importMeta = (tx.ext as Record<string, unknown>).importMeta;
-  if (!importMeta || typeof importMeta !== 'object') return undefined;
-  const meta = importMeta as Record<string, unknown>;
-  const source = typeof meta.source === 'string' ? meta.source.trim() : '';
-  const orderId = typeof meta.orderId === 'string' ? meta.orderId.trim() : '';
-  if (!source || !orderId) return undefined;
-  return `${source}:${orderId}`;
-}
-
 function findCrossIdDuplicateTwin(
   remoteTx: SyncTx,
   localTransactions: SyncTx[]
 ): SyncTx | undefined {
-  if (remoteTx.deletedAt) {
-    return undefined;
-  }
-  const remoteImportKey = getImportMetaKey(remoteTx);
-  if (remoteImportKey) {
-    const importMatch = localTransactions.find(
-      (localTx) =>
-        !localTx.deletedAt &&
-        localTx.id !== remoteTx.id &&
-        getImportMetaKey(localTx) === remoteImportKey
-    );
-    if (importMatch) {
-      return importMatch;
-    }
-  }
-  if (remoteTx.offsetTransactionId || remoteTx.relatedLoanId) {
+  if (remoteTx.deletedAt || remoteTx.offsetTransactionId || remoteTx.relatedLoanId) {
     return undefined;
   }
   return localTransactions.find((localTx) => {

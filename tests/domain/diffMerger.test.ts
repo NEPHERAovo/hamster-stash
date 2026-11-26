@@ -437,16 +437,15 @@ describe('diffMerger', () => {
     expect(activeLocal[0].id).toBe('tx_local_item_b');
   });
 
-  it('merges same deterministic imported transaction cleanly when local links owned-items or edits attributes', () => {
+  it('merges same canonical imported transaction cleanly when local links owned-items or edits attributes', () => {
     const baseTx: Transaction = {
-      id: 'tx_imp_alipay_order_99',
+      id: 'ali_order_99',
       type: 'expense',
       amount: 129900,
       accountId: 'acct_huabei',
       categoryId: 'cat_shop',
       date: '2026-11-20',
       note: 'Mechanical Keyboard',
-      ext: { importMeta: { source: 'alipay', orderId: 'order_99' } },
       createdAt: '2026-11-20T10:00:00.000Z',
       updatedAt: '2026-11-20T10:00:00.000Z',
     };
@@ -455,7 +454,6 @@ describe('diffMerger', () => {
       categoryId: 'cat_digital',
       note: 'Work Keyboard',
       ext: {
-        importMeta: { source: 'alipay', orderId: 'order_99' },
         'owned-items': { itemId: 'item_kb', itemRole: 'buy', kind: 'physical' },
       },
       updatedAt: '2026-11-21T09:00:00.000Z',
@@ -475,38 +473,33 @@ describe('diffMerger', () => {
 
     const resolved = resolveSyncPlan(plan, {});
     expect(resolved.merged.transactions).toHaveLength(1);
-    expect(resolved.merged.transactions[0].id).toBe('tx_imp_alipay_order_99');
+    expect(resolved.merged.transactions[0].id).toBe('ali_order_99');
     expect(resolved.merged.transactions[0].categoryId).toBe('cat_digital');
   });
 
-  it('detects legacy cross-id imported twins sharing ext.importMeta even after category, note, or offset edits', () => {
+  it('prefers the owned-items linked copy when cross-id normalized records match by core fields and createdAt', () => {
     const localEdited: Transaction = {
-      id: 'tx_legacy_local',
+      id: 'tx_1001',
       type: 'expense',
       amount: 6800,
       accountId: 'acct_wx',
       categoryId: 'cat_food',
       date: '2026-11-20',
-      note: 'Edited dinner note',
-      isReimbursable: true,
+      note: 'Lunch box',
       ext: {
-        importMeta: { source: 'wechat', orderId: 'wx_999' },
         'owned-items': { itemId: 'item_x', itemRole: 'buy', kind: 'physical' },
       },
       createdAt: '2026-11-20T19:00:00.000Z',
       updatedAt: '2026-11-21T10:00:00.000Z',
     };
-    const remoteImported: Transaction = {
-      id: 'tx_imp_wechat_wx_999',
+    const remoteTwin: Transaction = {
+      id: 'wx_999',
       type: 'expense',
       amount: 6800,
-      accountId: 'acct_default',
-      categoryId: 'cat_other',
+      accountId: 'acct_wx',
+      categoryId: 'cat_food',
       date: '2026-11-20',
-      note: 'Original merchant note',
-      ext: {
-        importMeta: { source: 'wechat', orderId: 'wx_999' },
-      },
+      note: 'Lunch box',
       createdAt: '2026-11-20T19:00:00.000Z',
       updatedAt: '2026-11-20T19:05:00.000Z',
     };
@@ -514,7 +507,7 @@ describe('diffMerger', () => {
     const local = createBaseExport();
     local.transactions.push(localEdited);
     const remote = createBaseExport();
-    remote.transactions.push(remoteImported);
+    remote.transactions.push(remoteTwin);
 
     const plan = buildThreeWaySyncPlan(local, remote, null);
     expect(plan.requiresReview).toBe(true);
@@ -526,6 +519,6 @@ describe('diffMerger', () => {
     const resolved = resolveSyncPlan(plan, {}, { retainTombstones: true });
     const active = resolved.merged.transactions.filter((t) => !(t as StoredEntity).deletedAt);
     expect(active).toHaveLength(1);
-    expect(active[0].id).toBe('tx_legacy_local');
+    expect(active[0].id).toBe('tx_1001');
   });
 });

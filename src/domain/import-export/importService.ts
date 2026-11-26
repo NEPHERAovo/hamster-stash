@@ -4,7 +4,6 @@ import type { Transaction, TransactionType } from '../../types/transaction';
 import type { CreateAccountInput } from '../account/accountService';
 import { mapConfiguredCsvRows, type CsvColumnMapping } from './csvMapper';
 import {
-  extractExistingImportKeys,
   inferAccountType,
   type BillSource,
 } from './billNormalizer';
@@ -67,10 +66,6 @@ export class ImportService {
       throw new Error('请至少指定「日期」和「金额」列');
     }
 
-    const existingImportKeys = input.existingTransactions
-      ? extractExistingImportKeys(input.existingTransactions)
-      : undefined;
-
     const {
       records,
       skippedCount,
@@ -92,7 +87,6 @@ export class ImportService {
       skipClosedAndFullRefunds: input.skipClosedAndFullRefunds,
       skipDuplicates: input.skipDuplicates,
       aggregateWealthEarningsMonthly: input.aggregateWealthEarningsMonthly,
-      existingImportKeys,
       existingTransactions: input.existingTransactions,
     });
 
