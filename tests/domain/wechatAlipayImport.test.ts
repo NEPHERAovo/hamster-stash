@@ -10,11 +10,14 @@ import { AccountService } from '../../src/domain/account/accountService';
 import { DEFAULT_CATEGORIES } from '../../src/core/db/defaultData';
 import { parseTabularFile } from '../../src/domain/import-export/csvParser';
 import {
+  buildDeterministicImportId,
+  buildWealthMonthlyTxId,
   classifyWechatCategory,
   composeBillNote,
   detectBillSource,
   extractExistingImportKeys,
   inferAccountType,
+  isWealthDailyEarningRow,
   normalizeBankName,
   normalizePaymentAccount,
   preprocessBillTable,
@@ -443,6 +446,239 @@ describe('WeChat & Alipay ImportService Integration', () => {
         expect(acctName).not.toContain('立减');
         expect(acctName).not.toContain('红包');
       }
+
+      const aliRollupMapped = mapConfiguredCsvRows(aliHeaders, aliRows, {
+        mapping: alipayPreset.defaultMapping,
+        categoryMapping: {},
+        typeMapping: { 支出: 'expense', 收入: 'income', 不计收支: 'skip' },
+        defaultAccountId: defaultAccount.id,
+        defaultExpenseCategoryId: 'cat_other',
+        defaultIncomeCategoryId: 'cat_other_in',
+        existingCategories: categories,
+        existingAccounts: [defaultAccount],
+        source: 'alipay',
+        skipClosedAndFullRefunds: true,
+        skipDuplicates: true,
+        aggregateWealthEarningsMonthly: true,
+      });
+      expect(aliRollupMapped.wealthDailyRowCount).toBe(1226);
+      expect(aliRollupMapped.wealthRollupCount).toBeGreaterThanOrEqual(36);
+      const rollups = aliRollupMapped.records.filter((r) => r.isWealthMonthlyRollup);
+      expect(rollups.length).toBe(aliRollupMapped.wealthRollupCount);
+      expect(rollups.every((r) => r.categoryId === 'cat_invest' && r.type === 'income')).toBe(true);
     }
   );
+
+  it('generates deterministic IDs and updates partial-month wealth rollup in place without balance drift', async () => {
+    expect(buildDeterministicImportId('wechat', '4500000559')).toBe('tx_imp_wechat_4500000559');
+    expect(buildDeterministicImportId('alipay', '20261111_abc')).toBe('tx_imp_alipay_20261111_abc');
+    expect(
+      isWealthDailyEarningRow('alipay', {
+        category: '投资理财',
+        product: '余额宝-2026.11.10-收益发放',
+        counterparty: '建信基金管理有限公司',
+        direction: '不计收支',
+        status: '交易成功',
+      })
+    ).toBe(true);
+
+    const alipayPreset = IMPORT_PRESETS.find((p) => p.id === 'alipay')!;
+    const partialTable = preprocessBillTable(
+      {
+        headers: [
+          '交易时间',
+          '交易分类',
+          '交易对方',
+          '对方账号',
+          '商品说明',
+          '收/支',
+          '金额',
+          '收/付款方式',
+          '交易状态',
+          '交易订单号',
+          '商家订单号',
+          '备注',
+        ],
+        rows: [
+          [
+            '2026-11-01 06:00:00',
+            '投资理财',
+            '基金',
+            '/',
+            '余额宝-2026.10.31-收益发放',
+            '不计收支',
+            '2.50',
+            '余额宝',
+            '交易成功',
+            'yb_1',
+            '/',
+            '',
+          ],
+          [
+            '2026-11-02 06:00:00',
+            '投资理财',
+            '基金',
+            '/',
+            '余额宝-2026.11.01-收益发放',
+            '不计收支',
+            '3.00',
+            '余额宝',
+            '交易成功',
+            'yb_2',
+            '/',
+            '',
+          ],
+        ],
+      },
+      'alipay'
+    );
+
+    const importService = new ImportService();
+    const res1 = await importService.executeCsvImport({
+      headers: partialTable.headers,
+      rows: partialTable.rows,
+      mapping: alipayPreset.defaultMapping,
+      categoryMapping: {},
+      typeMapping: { 不计收支: 'skip' },
+      defaultAccountId: defaultAccount.id,
+      defaultExpenseCategoryId: 'cat_other',
+      defaultIncomeCategoryId: 'cat_other_in',
+      existingCategories: categories,
+      existingAccounts: [defaultAccount],
+      autoCreateAccounts: true,
+      source: 'alipay',
+      skipClosedAndFullRefunds: true,
+      skipDuplicates: true,
+      aggregateWealthEarningsMonthly: true,
+      existingTransactions: [],
+      createAccount: (input) => acctService.createAccount(input),
+      importTransactions: (recs, sync) => txService.importTransactions(recs, sync),
+    });
+
+    expect(res1.importedCount).toBe(1);
+    expect(res1.wealthRollupCount).toBe(1);
+    expect(res1.wealthDailyRowCount).toBe(2);
+
+    const accountsAfter1 = await acctRepo.findAll();
+    const yuebaoAcct1 = accountsAfter1.find((a) => a.name === '余额宝');
+    expect(yuebaoAcct1?.balance).toBe(550);
+
+    const fullMonthTable = preprocessBillTable(
+      {
+        headers: [
+          '交易时间',
+          '交易分类',
+          '交易对方',
+          '对方账号',
+          '商品说明',
+          '收/支',
+          '金额',
+          '收/付款方式',
+          '交易状态',
+          '交易订单号',
+          '商家订单号',
+          '备注',
+        ],
+        rows: [
+          [
+            '2026-11-01 06:00:00',
+            '投资理财',
+            '基金',
+            '/',
+            '余额宝-2026.10.31-收益发放',
+            '不计收支',
+            '2.50',
+            '余额宝',
+            '交易成功',
+            'yb_1',
+            '/',
+            '',
+          ],
+          [
+            '2026-11-02 06:00:00',
+            '投资理财',
+            '基金',
+            '/',
+            '余额宝-2026.11.01-收益发放',
+            '不计收支',
+            '3.00',
+            '余额宝',
+            '交易成功',
+            'yb_2',
+            '/',
+            '',
+          ],
+          [
+            '2026-11-03 06:00:00',
+            '投资理财',
+            '基金',
+            '/',
+            '余额宝-2026.11.02-收益发放',
+            '不计收支',
+            '4.50',
+            '余额宝',
+            '交易成功',
+            'yb_3',
+            '/',
+            '',
+          ],
+        ],
+      },
+      'alipay'
+    );
+
+    const existingTxs1 = await txRepo.findAll();
+    const res2 = await importService.executeCsvImport({
+      headers: fullMonthTable.headers,
+      rows: fullMonthTable.rows,
+      mapping: alipayPreset.defaultMapping,
+      categoryMapping: {},
+      typeMapping: { 不计收支: 'skip' },
+      defaultAccountId: defaultAccount.id,
+      defaultExpenseCategoryId: 'cat_other',
+      defaultIncomeCategoryId: 'cat_other_in',
+      existingCategories: categories,
+      existingAccounts: accountsAfter1,
+      autoCreateAccounts: true,
+      source: 'alipay',
+      skipClosedAndFullRefunds: true,
+      skipDuplicates: true,
+      aggregateWealthEarningsMonthly: true,
+      existingTransactions: existingTxs1,
+      createAccount: (input) => acctService.createAccount(input),
+      importTransactions: (recs, sync) => txService.importTransactions(recs, sync),
+    });
+
+    expect(res2.importedCount).toBe(1);
+    const existingTxs2 = await txRepo.findAll();
+    expect(existingTxs2.length).toBe(1);
+    expect(existingTxs2[0].id).toBe(buildWealthMonthlyTxId('alipay', '2026-11', '余额宝'));
+    expect(existingTxs2[0].amount).toBe(1000);
+
+    const yuebaoAcct2 = (await acctRepo.findAll()).find((a) => a.name === '余额宝');
+    expect(yuebaoAcct2?.balance).toBe(1000);
+
+    const res3 = await importService.executeCsvImport({
+      headers: fullMonthTable.headers,
+      rows: fullMonthTable.rows,
+      mapping: alipayPreset.defaultMapping,
+      categoryMapping: {},
+      typeMapping: { 不计收支: 'skip' },
+      defaultAccountId: defaultAccount.id,
+      defaultExpenseCategoryId: 'cat_other',
+      defaultIncomeCategoryId: 'cat_other_in',
+      existingCategories: categories,
+      existingAccounts: await acctRepo.findAll(),
+      autoCreateAccounts: true,
+      source: 'alipay',
+      skipClosedAndFullRefunds: true,
+      skipDuplicates: true,
+      aggregateWealthEarningsMonthly: true,
+      existingTransactions: existingTxs2,
+      createAccount: (input) => acctService.createAccount(input),
+      importTransactions: (recs, sync) => txService.importTransactions(recs, sync),
+    });
+    expect(res3.importedCount).toBe(0);
+    expect(res3.duplicateCount).toBe(1);
+  });
 });

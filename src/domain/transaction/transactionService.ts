@@ -584,6 +584,7 @@ export class TransactionService {
 
   async importTransactions(
     records: {
+      id?: string;
       type: TransactionType;
       amount: number;
       date: string;
@@ -601,6 +602,38 @@ export class TransactionService {
       async () => {
         let count = 0;
         for (const r of records) {
+          const existing = r.id ? await this.txRepo.findById(r.id) : null;
+
+          if (existing) {
+            if (syncAccountBalance) {
+              if (existing.type === 'expense') {
+                await this.acctRepo.adjustBalance(existing.accountId, existing.amount);
+              } else if (existing.type === 'income') {
+                await this.acctRepo.adjustBalance(existing.accountId, -existing.amount);
+              }
+              if (r.type === 'expense') {
+                await this.acctRepo.adjustBalance(r.accountId, -r.amount);
+              } else if (r.type === 'income') {
+                await this.acctRepo.adjustBalance(r.accountId, r.amount);
+              }
+            }
+
+            await this.txRepo.update(existing.id, {
+              type: r.type,
+              amount: r.amount,
+              accountId: r.accountId,
+              categoryId: r.categoryId,
+              date: r.date,
+              createdAt: r.createdAt ?? existing.createdAt,
+              note: r.note,
+              isReimbursable: Boolean(r.isReimbursable),
+              reimburseStatus: r.isReimbursable ? existing.reimburseStatus || 'pending' : undefined,
+              ext: r.ext ? { ...(existing.ext || {}), ...r.ext } : existing.ext,
+            });
+            count++;
+            continue;
+          }
+
           if (syncAccountBalance) {
             if (r.type === 'expense') {
               await this.acctRepo.adjustBalance(r.accountId, -r.amount);
@@ -610,6 +643,7 @@ export class TransactionService {
           }
 
           await this.txRepo.create({
+            id: r.id,
             type: r.type,
             amount: r.amount,
             accountId: r.accountId,

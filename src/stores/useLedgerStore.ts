@@ -33,6 +33,7 @@ interface LedgerState {
   settleLoanOrigin: (originLoanId: string, settleAccountId: string) => Promise<void>;
   importTransactions: (
     records: {
+      id?: string;
       type: Transaction['type'];
       amount: number;
       date: string;

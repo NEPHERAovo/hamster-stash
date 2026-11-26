@@ -3,7 +3,12 @@ import type { Category } from '../../types/category';
 import type { Account } from '../../types/account';
 import { generateCsv } from './csvParser';
 import {
+  buildDeterministicImportId,
   buildExternalImportKey,
+  buildWealthMonthlyOrderId,
+  buildWealthMonthlyTxId,
+  extractExistingImportIndex,
+  isWealthDailyEarningRow,
   shouldSkipBillStatus,
   type BillSource,
 } from './billNormalizer';
@@ -11,6 +16,19 @@ import { centsToYuan } from '../finance/balanceCalculator';
 import { parseCsvDateTime } from '../../utils/date';
 
 export type ImportMode = 'wechat' | 'alipay' | 'elephant' | 'standard' | 'preset';
+export type SkippedReason = 'neutral' | 'status' | 'duplicate' | 'invalid';
+
+export interface SkippedImportItem {
+  reason: SkippedReason;
+  reasonLabel: string;
+  date: string;
+  amount: number;
+  rawType?: string;
+  rawStatus?: string;
+  rawAccountName?: string;
+  rawCategoryName?: string;
+  note?: string;
+}
 
 export interface CsvColumnMapping {
   dateCol?: string;
@@ -49,7 +67,9 @@ export interface AdvancedImportOptions {
   source?: BillSource;
   skipClosedAndFullRefunds?: boolean;
   skipDuplicates?: boolean;
+  aggregateWealthEarningsMonthly?: boolean;
   existingImportKeys?: Set<string>;
+  existingTransactions?: Transaction[];
 }
 
 export interface StandardImportOptions {
@@ -70,6 +90,7 @@ export interface ElephantImportOptions {
 }
 
 export interface PreparedImportRecord {
+  id?: string;
   type: TransactionType;
   amount: number;
   date: string;
@@ -80,15 +101,21 @@ export interface PreparedImportRecord {
   rawCategoryName?: string;
   note?: string;
   isReimbursable?: boolean;
+  isWealthMonthlyRollup?: boolean;
+  rollupItemCount?: number;
   ext?: Record<string, unknown>;
   rawRow: string[];
 }
 
 export interface ConfiguredMappingResult {
   records: PreparedImportRecord[];
+  skippedItems: SkippedImportItem[];
   skippedCount: number;
   duplicateCount: number;
   filteredStatusCount: number;
+  neutralCount: number;
+  wealthRollupCount: number;
+  wealthDailyRowCount: number;
 }
 
 export function inferColumnMapping(headers: string[]): CsvColumnMapping {
@@ -351,6 +378,34 @@ export function extractTransactionTypesFromCsv(
   return result.sort((a, b) => b.count - a.count);
 }
 
+const SKIPPED_REASON_LABELS: Record<SkippedReason, string> = {
+  neutral: '不计收支',
+  status: '已关闭/全额退款',
+  duplicate: '重复账单',
+  invalid: '金额无效',
+};
+
+interface WealthMonthlyBucket {
+  yearMonth: string;
+  accountName: string;
+  totalCents: number;
+  count: number;
+  latestDate: string;
+  latestCreatedAt?: string;
+  latestSortKey: string;
+}
+
+function resolveInvestCategoryId(
+  existingCategories: Category[],
+  fallbackIncomeCategoryId: string
+): string {
+  const match =
+    existingCategories.find((c) => !c.isArchived && c.type === 'income' && c.name === '理财') ??
+    existingCategories.find((c) => c.id === 'cat_invest') ??
+    existingCategories.find((c) => c.type === 'income' && c.name === '理财');
+  return match?.id || fallbackIncomeCategoryId;
+}
+
 export function mapConfiguredCsvRows(
   headers: string[],
   rows: string[][],
@@ -371,6 +426,10 @@ export function mapConfiguredCsvRows(
   const statusIdx = getColIndex(options.mapping.statusCol);
   const orderIdx = getColIndex(options.mapping.orderIdCol);
 
+  const productIdx =
+    headers.indexOf('商品说明') >= 0 ? headers.indexOf('商品说明') : headers.indexOf('商品');
+  const counterpartyIdx = headers.indexOf('交易对方');
+
   const catMapById = new Map<string, Category>(options.existingCategories.map((c) => [c.id, c]));
   const catMapByName = new Map<string, Category>(
     options.existingCategories.map((c) => [c.name.trim().toLowerCase(), c])
@@ -378,12 +437,39 @@ export function mapConfiguredCsvRows(
   const acctMapByName = new Map<string, Account>(
     options.existingAccounts.map((a) => [a.name.trim().toLowerCase(), a])
   );
+  const existingIndex = options.existingTransactions
+    ? extractExistingImportIndex(options.existingTransactions)
+    : undefined;
   const seenBatchKeys = new Set<string>();
+  const seenWealthOrderIds = new Set<string>();
+  const wealthBuckets = new Map<string, WealthMonthlyBucket>();
 
   const records: PreparedImportRecord[] = [];
+  const skippedItems: SkippedImportItem[] = [];
   let skippedCount = 0;
   let duplicateCount = 0;
   let filteredStatusCount = 0;
+  let neutralCount = 0;
+  let wealthDailyRowCount = 0;
+
+  const pushSkipped = (
+    reason: SkippedReason,
+    info: {
+      date: string;
+      amount: number;
+      rawType?: string;
+      rawStatus?: string;
+      rawAccountName?: string;
+      rawCategoryName?: string;
+      note?: string;
+    }
+  ) => {
+    skippedItems.push({
+      reason,
+      reasonLabel: SKIPPED_REASON_LABELS[reason],
+      ...info,
+    });
+  };
 
   for (const row of rows) {
     if (row.length === 0 || row.every((c) => !c.trim())) {
@@ -393,19 +479,113 @@ export function mapConfiguredCsvRows(
 
     const rawType = typeIdx >= 0 ? row[typeIdx]?.trim() : undefined;
     const rawStatus = statusIdx >= 0 ? row[statusIdx]?.trim() : undefined;
+    const rawDate = dateIdx >= 0 ? row[dateIdx] : '';
+    const { date, createdAt } = normalizeDateTime(rawDate);
+    const rawAmount = amountIdx >= 0 ? row[amountIdx] : '';
+    const { cents, inferredType } = normalizeAmount(rawAmount);
+    const rawCat = catIdx >= 0 ? row[catIdx]?.trim() : undefined;
+    const note = noteIdx >= 0 ? row[noteIdx]?.trim() || undefined : undefined;
+    const candidateAcct = acctIdx >= 0 ? row[acctIdx]?.trim() : undefined;
+    const rawAccountName = candidateAcct && candidateAcct !== '/' ? candidateAcct : undefined;
+    const rawOrderId = orderIdx >= 0 ? row[orderIdx]?.trim() : undefined;
+    const cleanOrderId = rawOrderId && rawOrderId !== '/' ? rawOrderId : undefined;
 
     if (options.skipClosedAndFullRefunds && options.source) {
       if (shouldSkipBillStatus(options.source, rawStatus, rawType)) {
         filteredStatusCount++;
         skippedCount++;
+        pushSkipped('status', {
+          date,
+          amount: cents,
+          rawType,
+          rawStatus,
+          rawAccountName,
+          rawCategoryName: rawCat,
+          note,
+        });
         continue;
       }
     }
 
-    const rawAmount = amountIdx >= 0 ? row[amountIdx] : '';
-    const { cents, inferredType } = normalizeAmount(rawAmount);
     if (cents <= 0) {
       skippedCount++;
+      pushSkipped('invalid', {
+        date,
+        amount: 0,
+        rawType,
+        rawStatus,
+        rawAccountName,
+        rawCategoryName: rawCat,
+        note,
+      });
+      continue;
+    }
+
+    let rawProduct: string | undefined;
+    if (productIdx >= 0) {
+      rawProduct = row[productIdx]?.trim();
+    } else if (noteIdx >= 0) {
+      rawProduct = row[noteIdx]?.trim();
+    }
+    const rawCounterparty = counterpartyIdx >= 0 ? row[counterpartyIdx]?.trim() : undefined;
+
+    if (
+      options.aggregateWealthEarningsMonthly &&
+      (options.source === 'alipay' || options.source === 'wechat') &&
+      isWealthDailyEarningRow(options.source, {
+        category: rawCat,
+        product: rawProduct,
+        counterparty: rawCounterparty,
+        direction: rawType,
+        status: rawStatus,
+      })
+    ) {
+      if (cleanOrderId) {
+        if (seenWealthOrderIds.has(cleanOrderId)) {
+          duplicateCount++;
+          skippedCount++;
+          pushSkipped('duplicate', {
+            date,
+            amount: cents,
+            rawType,
+            rawStatus,
+            rawAccountName,
+            rawCategoryName: rawCat,
+            note,
+          });
+          continue;
+        }
+        seenWealthOrderIds.add(cleanOrderId);
+      }
+
+      const yearMonth = date.slice(0, 7);
+      const bucketAccountName =
+        rawAccountName || (options.source === 'alipay' ? '余额宝' : '微信零钱通');
+      const bucketKey = `${yearMonth}::${bucketAccountName}`;
+      const sortKey = createdAt || date;
+      const existingBucket = wealthBuckets.get(bucketKey);
+
+      if (existingBucket) {
+        existingBucket.totalCents += cents;
+        existingBucket.count += 1;
+        if (sortKey > existingBucket.latestSortKey) {
+          existingBucket.latestDate = date;
+          existingBucket.latestCreatedAt = createdAt;
+          existingBucket.latestSortKey = sortKey;
+        }
+      } else {
+        wealthBuckets.set(bucketKey, {
+          yearMonth,
+          accountName: bucketAccountName,
+          totalCents: cents,
+          count: 1,
+          latestDate: date,
+          latestCreatedAt: createdAt,
+          latestSortKey: sortKey,
+        });
+      }
+
+      wealthDailyRowCount++;
       continue;
     }
 
@@ -414,28 +594,66 @@ export function mapConfiguredCsvRows(
     if (rawType && options.typeMapping && options.typeMapping[rawType]) {
       const mapped = options.typeMapping[rawType];
       if (mapped === 'skip') {
+        neutralCount++;
         skippedCount++;
+        pushSkipped('neutral', {
+          date,
+          amount: cents,
+          rawType,
+          rawStatus,
+          rawAccountName,
+          rawCategoryName: rawCat,
+          note,
+        });
         continue;
       }
       type = mapped;
     } else if (rawType) {
       if (rawType === '/' || rawType.includes('不计')) {
+        neutralCount++;
         skippedCount++;
+        pushSkipped('neutral', {
+          date,
+          amount: cents,
+          rawType,
+          rawStatus,
+          rawAccountName,
+          rawCategoryName: rawCat,
+          note,
+        });
         continue;
       }
       type = normalizeTransactionType(rawType, inferredType || 'expense');
     }
 
-    const rawOrderId = orderIdx >= 0 ? row[orderIdx]?.trim() : undefined;
-    const cleanOrderId = rawOrderId && rawOrderId !== '/' ? rawOrderId : undefined;
+    let deterministicId: string | undefined;
     let ext: Record<string, unknown> | undefined;
 
     if (options.source && cleanOrderId) {
       const importKey = buildExternalImportKey(options.source, cleanOrderId);
+      deterministicId =
+        options.source === 'wechat' || options.source === 'alipay'
+          ? buildDeterministicImportId(options.source, cleanOrderId)
+          : undefined;
+
       if (options.skipDuplicates) {
-        if (options.existingImportKeys?.has(importKey) || seenBatchKeys.has(importKey)) {
+        const isExisting =
+          Boolean(options.existingImportKeys?.has(importKey)) ||
+          Boolean(existingIndex?.byKey.has(importKey)) ||
+          Boolean(deterministicId && existingIndex?.byId.has(deterministicId)) ||
+          seenBatchKeys.has(importKey);
+        if (isExisting) {
           duplicateCount++;
           skippedCount++;
+          pushSkipped('duplicate', {
+            date,
+            amount: cents,
+            rawType,
+            rawStatus,
+            rawAccountName,
+            rawCategoryName: rawCat,
+            note,
+          });
           continue;
         }
       }
@@ -450,10 +668,6 @@ export function mapConfiguredCsvRows(
       }
     }
 
-    const rawDate = dateIdx >= 0 ? row[dateIdx] : '';
-    const { date, createdAt } = normalizeDateTime(rawDate);
-
-    const rawCat = catIdx >= 0 ? row[catIdx]?.trim() : undefined;
     let categoryId =
       type === 'income' ? options.defaultIncomeCategoryId : options.defaultExpenseCategoryId;
 
@@ -472,19 +686,13 @@ export function mapConfiguredCsvRows(
     }
 
     let accountId = options.defaultAccountId;
-    let rawAccountName: string | undefined;
-    if (acctIdx >= 0 && row[acctIdx]) {
-      const candidateAcct = row[acctIdx].trim();
-      if (candidateAcct && candidateAcct !== '/') {
-        rawAccountName = candidateAcct;
-        const acctKey = rawAccountName.toLowerCase();
-        if (acctMapByName.has(acctKey)) {
-          accountId = acctMapByName.get(acctKey)!.id;
-        }
+    if (rawAccountName) {
+      const acctKey = rawAccountName.toLowerCase();
+      if (acctMapByName.has(acctKey)) {
+        accountId = acctMapByName.get(acctKey)!.id;
       }
     }
 
-    const note = noteIdx >= 0 ? row[noteIdx]?.trim() || undefined : undefined;
     let isReimbursable = false;
     if (reimbIdx >= 0 && row[reimbIdx]) {
       const val = row[reimbIdx].trim();
@@ -492,6 +700,7 @@ export function mapConfiguredCsvRows(
     }
 
     records.push({
+      id: deterministicId,
       type,
       amount: cents,
       date,
@@ -507,7 +716,85 @@ export function mapConfiguredCsvRows(
     });
   }
 
-  return { records, skippedCount, duplicateCount, filteredStatusCount };
+  let wealthRollupCount = 0;
+  if (
+    wealthBuckets.size > 0 &&
+    (options.source === 'alipay' || options.source === 'wechat')
+  ) {
+    const investCategoryId = resolveInvestCategoryId(
+      options.existingCategories,
+      options.defaultIncomeCategoryId
+    );
+    const sortedBuckets = Array.from(wealthBuckets.values()).sort((a, b) =>
+      b.yearMonth.localeCompare(a.yearMonth)
+    );
+
+    for (const bucket of sortedBuckets) {
+      const orderId = buildWealthMonthlyOrderId(bucket.yearMonth, bucket.accountName);
+      const id = buildWealthMonthlyTxId(options.source, bucket.yearMonth, bucket.accountName);
+      const importKey = buildExternalImportKey(options.source, orderId);
+      const rollupNote = `${bucket.accountName} ${bucket.yearMonth} 理财收益汇总（共 ${bucket.count} 笔）`;
+
+      const existingEntry = existingIndex?.byId.get(id) ?? existingIndex?.byKey.get(importKey);
+      const isAlreadySameRollup =
+        Boolean(options.skipDuplicates) &&
+        Boolean(existingEntry) &&
+        existingEntry!.amount === bucket.totalCents &&
+        (existingEntry!.itemCount === undefined || existingEntry!.itemCount >= bucket.count);
+
+      if (isAlreadySameRollup) {
+        duplicateCount++;
+        skippedCount++;
+        pushSkipped('duplicate', {
+          date: bucket.latestDate,
+          amount: bucket.totalCents,
+          rawType: '收入',
+          rawAccountName: bucket.accountName,
+          rawCategoryName: '理财',
+          note: rollupNote,
+        });
+        continue;
+      }
+
+      const matchedAccount = acctMapByName.get(bucket.accountName.toLowerCase());
+      records.push({
+        id,
+        type: 'income',
+        amount: bucket.totalCents,
+        date: bucket.latestDate,
+        createdAt: bucket.latestCreatedAt,
+        categoryId: investCategoryId,
+        accountId: matchedAccount?.id || options.defaultAccountId,
+        rawAccountName: bucket.accountName,
+        rawCategoryName: '理财',
+        note: rollupNote,
+        isWealthMonthlyRollup: true,
+        rollupItemCount: bucket.count,
+        ext: {
+          importMeta: {
+            source: options.source,
+            orderId,
+            kind: 'wealth_monthly',
+            month: bucket.yearMonth,
+            itemCount: bucket.count,
+          },
+        },
+        rawRow: [],
+      });
+      wealthRollupCount++;
+    }
+  }
+
+  return {
+    records,
+    skippedItems,
+    skippedCount,
+    duplicateCount,
+    filteredStatusCount,
+    neutralCount,
+    wealthRollupCount,
+    wealthDailyRowCount,
+  };
 }
 
 export function mapStandardCsvRows(

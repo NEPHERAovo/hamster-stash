@@ -324,7 +324,16 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       parsed.rows.length === 0 ||
       !defaultAccountId
     ) {
-      return { records: [], skippedCount: 0, duplicateCount: 0, filteredStatusCount: 0 };
+      return {
+        records: [],
+        skippedItems: [],
+        skippedCount: 0,
+        duplicateCount: 0,
+        filteredStatusCount: 0,
+        neutralCount: 0,
+        wealthRollupCount: 0,
+        wealthDailyRowCount: 0,
+      };
     }
     return mapConfiguredCsvRows(parsed.headers, parsed.rows, {
       mapping,

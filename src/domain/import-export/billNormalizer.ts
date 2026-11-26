@@ -322,18 +322,117 @@ export function buildExternalImportKey(source: BillSource, orderId: string): str
   return `${source}:${orderId.trim()}`;
 }
 
-export function extractExistingImportKeys(transactions: Transaction[]): Set<string> {
-  const keys = new Set<string>();
+export function hashStringShort(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+export function buildDeterministicImportId(source: BillSource, orderId: string): string {
+  const clean = orderId.trim();
+  if (/^[a-zA-Z0-9_-]{1,64}$/.test(clean)) {
+    return `tx_imp_${source}_${clean}`;
+  }
+  return `tx_imp_${source}_${hashStringShort(clean)}`;
+}
+
+export function buildWealthMonthlyOrderId(yearMonth: string, accountName: string): string {
+  return `wealth:${yearMonth}:${accountName.trim() || '理财账户'}`;
+}
+
+export function buildWealthMonthlyTxId(
+  source: BillSource,
+  yearMonth: string,
+  accountName: string
+): string {
+  return `tx_imp_${source}_wealth_${yearMonth}_${hashStringShort(accountName.trim() || '理财账户')}`;
+}
+
+export function isWealthDailyEarningRow(
+  source: BillSource,
+  params: {
+    category?: string;
+    product?: string;
+    counterparty?: string;
+    direction?: string;
+    status?: string;
+  }
+): boolean {
+  const dir = params.direction?.trim() ?? '';
+  const status = params.status?.trim() ?? '';
+  const category = params.category?.trim() ?? '';
+  const product = params.product?.trim() ?? '';
+  const counterparty = params.counterparty?.trim() ?? '';
+
+  if (source === 'alipay') {
+    if (dir !== '不计收支' || status !== '交易成功') return false;
+    if (!/收益发放|每日收益|日收益/.test(product)) return false;
+    return (
+      category === '投资理财' ||
+      /余额宝|余利宝|基金|理财/.test(`${product} ${counterparty}`)
+    );
+  }
+
+  if (source === 'wechat') {
+    if (dir !== '/') return false;
+    if (!/收益发放|每日收益|日收益/.test(`${product} ${category}`)) return false;
+    return /零钱通|理财通|理财/.test(`${product} ${category} ${counterparty}`);
+  }
+
+  return false;
+}
+
+export interface ExistingImportEntry {
+  id: string;
+  amount: number;
+  itemCount?: number;
+  kind?: string;
+}
+
+export function extractExistingImportIndex(transactions: Transaction[]): {
+  byKey: Map<string, ExistingImportEntry>;
+  byId: Map<string, ExistingImportEntry>;
+} {
+  const byKey = new Map<string, ExistingImportEntry>();
+  const byId = new Map<string, ExistingImportEntry>();
+
   for (const tx of transactions) {
-    if (!tx.ext || typeof tx.ext !== 'object') continue;
-    const importMeta = (tx.ext as Record<string, unknown>).importMeta;
-    if (!importMeta || typeof importMeta !== 'object') continue;
-    const metaObj = importMeta as Record<string, unknown>;
-    const source = typeof metaObj.source === 'string' ? metaObj.source.trim() : '';
-    const orderId = typeof metaObj.orderId === 'string' ? metaObj.orderId.trim() : '';
+    if ((tx as { deletedAt?: string }).deletedAt) continue;
+
+    let itemCount: number | undefined;
+    let kind: string | undefined;
+    let source = '';
+    let orderId = '';
+
+    if (tx.ext && typeof tx.ext === 'object') {
+      const importMeta = (tx.ext as Record<string, unknown>).importMeta;
+      if (importMeta && typeof importMeta === 'object') {
+        const metaObj = importMeta as Record<string, unknown>;
+        source = typeof metaObj.source === 'string' ? metaObj.source.trim() : '';
+        orderId = typeof metaObj.orderId === 'string' ? metaObj.orderId.trim() : '';
+        itemCount = typeof metaObj.itemCount === 'number' ? metaObj.itemCount : undefined;
+        kind = typeof metaObj.kind === 'string' ? metaObj.kind : undefined;
+      }
+    }
+
+    const entry: ExistingImportEntry = {
+      id: tx.id,
+      amount: tx.amount,
+      itemCount,
+      kind,
+    };
+    byId.set(tx.id, entry);
     if (source && orderId) {
-      keys.add(buildExternalImportKey(source as BillSource, orderId));
+      byKey.set(buildExternalImportKey(source as BillSource, orderId), entry);
     }
   }
-  return keys;
+
+  return { byKey, byId };
+}
+
+export function extractExistingImportKeys(transactions: Transaction[]): Set<string> {
+  return new Set(extractExistingImportIndex(transactions).byKey.keys());
 }

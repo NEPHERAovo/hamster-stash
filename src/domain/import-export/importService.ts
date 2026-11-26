@@ -24,10 +24,12 @@ export interface ExecuteCsvImportInput {
   source?: BillSource;
   skipClosedAndFullRefunds?: boolean;
   skipDuplicates?: boolean;
+  aggregateWealthEarningsMonthly?: boolean;
   existingTransactions?: Transaction[];
   createAccount: (input: CreateAccountInput) => Promise<Account>;
   importTransactions: (
     records: {
+      id?: string;
       type: Transaction['type'];
       amount: number;
       date: string;
@@ -47,6 +49,9 @@ export interface ExecuteCsvImportResult {
   skippedCount: number;
   duplicateCount: number;
   filteredStatusCount: number;
+  neutralCount: number;
+  wealthRollupCount: number;
+  wealthDailyRowCount: number;
   reimbursableCount: number;
   createdAccountCount: number;
 }
@@ -66,32 +71,41 @@ export class ImportService {
       ? extractExistingImportKeys(input.existingTransactions)
       : undefined;
 
-    const { records, skippedCount, duplicateCount, filteredStatusCount } = mapConfiguredCsvRows(
-      input.headers,
-      input.rows,
-      {
-        mapping: input.mapping,
-        categoryMapping: input.categoryMapping,
-        typeMapping: input.typeMapping,
-        defaultAccountId: input.defaultAccountId,
-        defaultExpenseCategoryId: input.defaultExpenseCategoryId,
-        defaultIncomeCategoryId: input.defaultIncomeCategoryId,
-        existingCategories: input.existingCategories,
-        existingAccounts: input.existingAccounts,
-        source: input.source,
-        skipClosedAndFullRefunds: input.skipClosedAndFullRefunds,
-        skipDuplicates: input.skipDuplicates,
-        existingImportKeys,
-      }
-    );
+    const {
+      records,
+      skippedCount,
+      duplicateCount,
+      filteredStatusCount,
+      neutralCount,
+      wealthRollupCount,
+      wealthDailyRowCount,
+    } = mapConfiguredCsvRows(input.headers, input.rows, {
+      mapping: input.mapping,
+      categoryMapping: input.categoryMapping,
+      typeMapping: input.typeMapping,
+      defaultAccountId: input.defaultAccountId,
+      defaultExpenseCategoryId: input.defaultExpenseCategoryId,
+      defaultIncomeCategoryId: input.defaultIncomeCategoryId,
+      existingCategories: input.existingCategories,
+      existingAccounts: input.existingAccounts,
+      source: input.source,
+      skipClosedAndFullRefunds: input.skipClosedAndFullRefunds,
+      skipDuplicates: input.skipDuplicates,
+      aggregateWealthEarningsMonthly: input.aggregateWealthEarningsMonthly,
+      existingImportKeys,
+      existingTransactions: input.existingTransactions,
+    });
 
     if (records.length === 0) {
-      if (duplicateCount > 0 || filteredStatusCount > 0) {
+      if (duplicateCount > 0 || filteredStatusCount > 0 || neutralCount > 0) {
         return {
           importedCount: 0,
           skippedCount,
           duplicateCount,
           filteredStatusCount,
+          neutralCount,
+          wealthRollupCount: 0,
+          wealthDailyRowCount,
           reimbursableCount: 0,
           createdAccountCount: 0,
         };
@@ -132,6 +146,9 @@ export class ImportService {
       skippedCount,
       duplicateCount,
       filteredStatusCount,
+      neutralCount,
+      wealthRollupCount,
+      wealthDailyRowCount,
       reimbursableCount,
       createdAccountCount,
     };
