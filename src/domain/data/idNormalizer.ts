@@ -2,10 +2,9 @@ import type { Account } from '../../types/account';
 import type { Category } from '../../types/category';
 import type { ExportData, StoredEntity } from '../../types/adapter';
 import type { Transaction } from '../../types/transaction';
-import { hashString8, hashString16 } from '../../utils/hash';
+import { hashString16 } from '../../utils/hash';
 
 const CANONICAL_TX_PREFIX_RE = /^(?:tx|wx|ali|wealth|csv)_.+/;
-const SAFE_ORDER_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 
 export function isCanonicalAccountId(id?: string): boolean {
   return Boolean(id && id.startsWith('acct_') && id.length > 5);
@@ -16,7 +15,7 @@ export function isCanonicalCategoryId(id?: string): boolean {
 }
 
 export function isCanonicalTransactionId(id?: string): boolean {
-  return Boolean(id && CANONICAL_TX_PREFIX_RE.test(id) && !id.startsWith('tx_imp_'));
+  return Boolean(id && CANONICAL_TX_PREFIX_RE.test(id));
 }
 
 function allocateDeterministicId(
@@ -61,26 +60,6 @@ function normalizeSimpleCollection<T extends { id?: string }>(
   return { items: nextItems, idMap, changed };
 }
 
-function deriveIdFromImportMeta(meta: Record<string, unknown>): string | null {
-  const source = typeof meta.source === 'string' ? meta.source.trim() : '';
-  const orderId = typeof meta.orderId === 'string' ? meta.orderId.trim() : '';
-  const kind = typeof meta.kind === 'string' ? meta.kind.trim() : '';
-  if (!source) return null;
-
-  if (kind === 'wealth_monthly' && orderId.startsWith('wealth:')) {
-    const [, yearMonth = '', ...rest] = orderId.split(':');
-    const shortSrc = source === 'wechat' ? 'wx' : 'ali';
-    return `wealth_${shortSrc}_${yearMonth}_${hashString8(rest.join(':').trim() || '理财账户')}`;
-  }
-  if (orderId.startsWith('fp:')) return `csv_${source}_${orderId.slice(3)}`;
-  if (!orderId) return null;
-
-  let prefix = `csv_${source}`;
-  if (source === 'wechat') prefix = 'wx';
-  else if (source === 'alipay') prefix = 'ali';
-  return `${prefix}_${SAFE_ORDER_ID_RE.test(orderId) ? orderId : hashString16(orderId)}`;
-}
-
 export function normalizeDataIds(data: ExportData): { data: ExportData; changed: boolean } {
   const acctRes = normalizeSimpleCollection<Account>(
     data.accounts || [],
@@ -94,6 +73,12 @@ export function normalizeDataIds(data: ExportData): { data: ExportData; changed:
     'cat',
     (c) => [c.name, c.type].join('|')
   );
+  const txRes = normalizeSimpleCollection<Transaction>(
+    data.transactions || [],
+    isCanonicalTransactionId,
+    'tx',
+    (tx) => [tx.type, tx.amount, tx.date, tx.createdAt || '', tx.accountId, tx.categoryId, tx.note || ''].join('|')
+  );
   const pluginRes = normalizeSimpleCollection<StoredEntity>(
     (data.plugins?.data || []) as StoredEntity[],
     (id) => Boolean(id && String(id).trim()),
@@ -101,52 +86,7 @@ export function normalizeDataIds(data: ExportData): { data: ExportData; changed:
     (entry) => JSON.stringify(entry)
   );
 
-  const txIdMap = new Map<string, string>();
-  const usedTxIds = new Set<string>();
-  const txOccurrence = new Map<string, number>();
-  for (const tx of data.transactions || []) {
-    if (isCanonicalTransactionId(tx.id)) usedTxIds.add(tx.id);
-  }
-
-  let txChanged = false;
-  const normalizedTxs = (data.transactions || []).map((tx) => {
-    const rawExt = tx.ext as Record<string, unknown> | undefined;
-    const hasMeta = Boolean(rawExt && typeof rawExt === 'object' && 'importMeta' in rawExt);
-    const idValid = isCanonicalTransactionId(tx.id);
-    if (idValid && !hasMeta) return tx;
-
-    txChanged = true;
-    let newId = tx.id;
-    const metaObj =
-      hasMeta && typeof rawExt?.importMeta === 'object' && rawExt.importMeta !== null
-        ? (rawExt.importMeta as Record<string, unknown>)
-        : undefined;
-
-    if (!idValid) {
-      const candidate = metaObj ? deriveIdFromImportMeta(metaObj) : null;
-      if (candidate && !usedTxIds.has(candidate)) {
-        usedTxIds.add(candidate);
-        newId = candidate;
-      } else {
-        const base = candidate
-          ? `${candidate}|${tx.date}|${tx.amount}|${tx.createdAt || ''}`
-          : [tx.type, tx.amount, tx.date, tx.createdAt || '', tx.accountId, tx.categoryId, tx.note || ''].join('|');
-        newId = allocateDeterministicId('tx', base, txOccurrence, usedTxIds);
-      }
-      if (tx.id) txIdMap.set(tx.id, newId);
-    }
-
-    const updated: Transaction = { ...tx, id: newId };
-    if (hasMeta && rawExt) {
-      const rest = { ...rawExt };
-      delete rest.importMeta;
-      if (Object.keys(rest).length > 0) updated.ext = rest;
-      else delete updated.ext;
-    }
-    return updated;
-  });
-
-  if (!acctRes.changed && !catRes.changed && !pluginRes.changed && !txChanged) {
+  if (!acctRes.changed && !catRes.changed && !txRes.changed && !pluginRes.changed) {
     return { data, changed: false };
   }
 
@@ -160,16 +100,16 @@ export function normalizeDataIds(data: ExportData): { data: ExportData; changed:
     ? catRes.items.map((c) => (c.parentId ? { ...c, parentId: mapId(catRes.idMap, c.parentId) } : c))
     : catRes.items;
   const mappedTxs =
-    acctRes.idMap.size || catRes.idMap.size || txIdMap.size
-      ? normalizedTxs.map((tx) => ({
+    acctRes.idMap.size || catRes.idMap.size || txRes.idMap.size
+      ? txRes.items.map((tx) => ({
           ...tx,
           accountId: mapId(acctRes.idMap, tx.accountId)!,
           categoryId: mapId(catRes.idMap, tx.categoryId)!,
           ...(tx.toAccountId ? { toAccountId: mapId(acctRes.idMap, tx.toAccountId) } : {}),
-          ...(tx.offsetTransactionId ? { offsetTransactionId: mapId(txIdMap, tx.offsetTransactionId) } : {}),
-          ...(tx.relatedLoanId ? { relatedLoanId: mapId(txIdMap, tx.relatedLoanId) } : {}),
+          ...(tx.offsetTransactionId ? { offsetTransactionId: mapId(txRes.idMap, tx.offsetTransactionId) } : {}),
+          ...(tx.relatedLoanId ? { relatedLoanId: mapId(txRes.idMap, tx.relatedLoanId) } : {}),
         }))
-      : normalizedTxs;
+      : txRes.items;
 
   return {
     changed: true,

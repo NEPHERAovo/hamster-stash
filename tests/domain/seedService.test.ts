@@ -33,21 +33,21 @@ describe('SeedService & CoreContext bootstrap', () => {
     expect(categories[0].updatedAt).toBe('1970-01-01T00:00:00.000Z');
   });
 
-  it('heals corrupted system category names and never resurrects deleted system categories', async () => {
+  it('preserves user-renamed system categories and never resurrects deleted system categories', async () => {
     const adapter = new MemoryAdapter();
     await adapter.initialize();
     const seedService = new SeedService(adapter);
     const catRepo = new CategoryRepository(adapter);
 
     await seedService.ensureSeeded();
-    await catRepo.update('cat_food', { name: 'corrupted_food' });
+    await catRepo.update('cat_food', { name: '日常餐饮' });
     await catRepo.delete('cat_market');
 
     await seedService.ensureSeeded();
 
     const food = await catRepo.findById('cat_food');
     const market = await catRepo.findById('cat_market');
-    expect(food?.name).toBe('餐饮');
+    expect(food?.name).toBe('日常餐饮');
     expect(market).toBeNull();
   });
 

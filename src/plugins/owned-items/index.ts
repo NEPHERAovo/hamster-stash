@@ -75,6 +75,22 @@ async function revertSoldIfNoSellLeft(itemId: string, excludeTxId: string): Prom
   }
 }
 
+function sanitizeOwnedItemExt(
+  ext: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined {
+  if (!ext || !ext['owned-items'] || typeof ext['owned-items'] !== 'object') return ext;
+  const owned = { ...(ext['owned-items'] as Record<string, unknown>) };
+  delete owned.isTrayOpen;
+  delete owned.createNewItem;
+  const nextExt = { ...ext };
+  if (owned.itemId || Object.keys(owned).length > 0) {
+    nextExt['owned-items'] = owned;
+  } else {
+    delete nextExt['owned-items'];
+  }
+  return Object.keys(nextExt).length > 0 ? nextExt : undefined;
+}
+
 export class OwnedItemsPlugin extends BasePlugin {
   private unsubscribeDataImported: (() => void) | null = null;
 
@@ -130,6 +146,9 @@ export class OwnedItemsPlugin extends BasePlugin {
           itemExt,
         });
       }
+      if (input && 'ext' in input) {
+        input.ext = sanitizeOwnedItemExt(input.ext);
+      }
 
       const result = await next();
 
@@ -161,6 +180,9 @@ export class OwnedItemsPlugin extends BasePlugin {
           date: patch.date || previousTx?.date,
           itemExt: nextItemExt,
         });
+      }
+      if ('ext' in patch) {
+        patch.ext = sanitizeOwnedItemExt(patch.ext);
       }
 
       const result = await next();

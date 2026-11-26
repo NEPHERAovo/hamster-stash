@@ -2,7 +2,7 @@
   "name": "hamster-stash",
   "description": "A minimal, local-first personal expense, item & asset stash progressive web app (PWA)",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.26112601",
   "type": "module",
   "packageManager": "pnpm@11.11.0",
   "scripts": {

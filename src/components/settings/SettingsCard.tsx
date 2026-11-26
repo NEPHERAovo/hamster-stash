@@ -273,7 +273,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
               </div>
             }
             title="关于"
-            value={<span>v0.2.2</span>}
+            value={<span>v{__APP_VERSION__}</span>}
             chevron
             onClick={() => setIsAboutExpanded((prev) => !prev)}
           />

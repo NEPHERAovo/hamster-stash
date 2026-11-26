@@ -31,7 +31,7 @@ export class SeedService {
       isSandboxModeActive() ? this.txRepo.findAllRaw() : Promise.resolve([]),
     ]);
 
-    await this.seedCategories(existingCats, now);
+    await this.seedCategories(existingCats);
     await this.seedAccounts(existingAccts.length);
 
     if (isSandboxModeActive() && existingTxs.length === 0) {
@@ -43,8 +43,7 @@ export class SeedService {
   }
 
   private async seedCategories(
-    existingCategories: Array<Category & Partial<StoredEntity>>,
-    now: string
+    existingCategories: Array<Category & Partial<StoredEntity>>
   ): Promise<void> {
     if (existingCategories.length === 0) {
       for (const cat of DEFAULT_CATEGORIES) {
@@ -57,32 +56,15 @@ export class SeedService {
       return;
     }
 
-    const byId = new Map<string, Category & Partial<StoredEntity>>();
-    for (const item of existingCategories) {
-      byId.set(item.id, item);
-    }
-
+    const existingIds = new Set(existingCategories.map((item) => item.id));
     for (const cat of DEFAULT_CATEGORIES) {
-      const existing = byId.get(cat.id);
-      if (!existing) {
+      if (!existingIds.has(cat.id)) {
         await this.catRepo.create({
           ...cat,
           isArchived: cat.isArchived ?? true,
           createdAt: DEFAULT_SEED_TIMESTAMP,
           updatedAt: DEFAULT_SEED_TIMESTAMP,
         });
-      } else if (existing.isSystem && !existing.deletedAt) {
-        const shouldUpdateName =
-          Boolean(existing.name) &&
-          typeof existing.name === 'string' &&
-          existing.name !== cat.name &&
-          existing.name.length > 2;
-        if (shouldUpdateName) {
-          await this.catRepo.update(existing.id, {
-            name: cat.name,
-            updatedAt: now,
-          });
-        }
       }
     }
   }

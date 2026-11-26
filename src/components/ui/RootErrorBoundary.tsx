@@ -101,17 +101,52 @@ export class RootErrorBoundary extends Component<Props, State> {
     try {
       this.setState({ isExporting: true });
       const { openDB } = await import('idb');
-      const dump: Record<string, unknown> = {
+      type RawRecord = { id?: string; deletedAt?: string };
+      const readActive = async (db: Awaited<ReturnType<typeof openDB>>, store: string) =>
+        db.objectStoreNames.contains(store)
+          ? ((await db.getAll(store)) as RawRecord[]).filter((item) => !item?.deletedAt)
+          : [];
+      const toRecordMap = (list: RawRecord[]) => {
+        const map: Record<string, unknown> = {};
+        for (const item of list) {
+          if (item?.id) map[item.id] = item;
+        }
+        return map;
+      };
+
+      let dump: Record<string, unknown> = {
+        version: '4.0.0',
         exportedAt: new Date().toISOString(),
-        localStorage: { ...localStorage },
+        transactions: [],
+        accounts: [],
+        categories: [],
+        settings: {},
+        plugins: { data: [], settings: {} },
       };
 
       try {
         const db = await openDB('hamsterStash_db');
-        const stores = Array.from(db.objectStoreNames);
-        for (const store of stores) {
-          dump[store] = await db.getAll(store);
-        }
+        const [transactions, accounts, categories, settingsList, pluginData, pluginSettingsList] =
+          await Promise.all([
+            readActive(db, 'transactions'),
+            readActive(db, 'accounts'),
+            readActive(db, 'categories'),
+            readActive(db, 'settings'),
+            readActive(db, 'plugin_data'),
+            readActive(db, 'plugin_settings'),
+          ]);
+        dump = {
+          version: '4.0.0',
+          exportedAt: new Date().toISOString(),
+          transactions,
+          accounts,
+          categories,
+          settings: toRecordMap(settingsList),
+          plugins: {
+            data: pluginData,
+            settings: toRecordMap(pluginSettingsList),
+          },
+        };
       } catch {
         void 0;
       }

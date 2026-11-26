@@ -62,26 +62,7 @@ export class IndexedDBAdapter implements DataAdapter {
               },
             });
 
-          try {
-            this.db = await createDb(this.dbName);
-          } catch (err) {
-            const isVersionError = Boolean(
-              err &&
-                ((err as { name?: string }).name === 'VersionError' ||
-                  String(err).includes('VersionError'))
-            );
-            if (isVersionError) {
-              const { deleteDB } = await import('idb');
-              try {
-                await deleteDB(this.dbName);
-              } catch {
-                void 0;
-              }
-              this.db = await createDb(this.dbName);
-            } else {
-              throw err;
-            }
-          }
+          this.db = await createDb(this.dbName);
         } finally {
           this.initPromise = null;
         }

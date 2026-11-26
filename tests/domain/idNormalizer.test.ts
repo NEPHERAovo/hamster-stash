@@ -11,7 +11,7 @@ import { STORES } from '../../src/core/db/schema';
 import type { ExportData } from '../../src/types/adapter';
 
 describe('Canonical ID Normalizer', () => {
-  it('validates canonical prefixes and rejects legacy/import prefixes', () => {
+  it('validates canonical prefixes and rejects non-canonical IDs', () => {
     expect(isCanonicalAccountId('acct_default')).toBe(true);
     expect(isCanonicalAccountId('id_123')).toBe(false);
     expect(isCanonicalCategoryId('cat_food')).toBe(true);
@@ -23,12 +23,11 @@ describe('Canonical ID Normalizer', () => {
     expect(isCanonicalTransactionId('wealth_ali_2026-11_a1b2c3d4')).toBe(true);
     expect(isCanonicalTransactionId('csv_elephant_0123456789abcdef')).toBe(true);
 
-    expect(isCanonicalTransactionId('tx_imp_wechat_123')).toBe(false);
     expect(isCanonicalTransactionId('id_1732000000')).toBe(false);
     expect(isCanonicalTransactionId('')).toBe(false);
   });
 
-  it('converts missing/non-canonical IDs and tx_imp_* + importMeta directly to canonical IDs and cascades FKs', () => {
+  it('converts missing or non-canonical IDs directly to canonical prefixes and cascades all FKs deterministically', () => {
     const raw: ExportData = {
       version: '4.0.0',
       exportedAt: '2026-11-26T00:00:00.000Z',
@@ -97,44 +96,12 @@ describe('Canonical ID Normalizer', () => {
           type: 'income',
           amount: 5000,
           accountId: 'old_bank',
+          toAccountId: 'old_credit',
           categoryId: 'cat_other_in',
           offsetTransactionId: 'id_1732_aa_host',
           date: '2026-11-21',
           createdAt: '2026-11-21T09:00:00.000Z',
           updatedAt: '2026-11-21T09:00:00.000Z',
-        },
-        {
-          id: 'tx_imp_alipay_ali_001',
-          type: 'expense',
-          amount: 2500,
-          accountId: 'old_credit',
-          categoryId: 'custom_child',
-          date: '2026-11-22',
-          ext: {
-            importMeta: { source: 'alipay', orderId: 'ali_001' },
-            'owned-items': { itemId: 'item_1', itemRole: 'buy', kind: 'physical' },
-          },
-          createdAt: '2026-11-22T10:00:00.000Z',
-          updatedAt: '2026-11-22T10:00:00.000Z',
-        },
-        {
-          id: 'tx_imp_alipay_wealth_2026-11_aabbccdd',
-          type: 'income',
-          amount: 199,
-          accountId: 'old_bank',
-          categoryId: 'cat_invest',
-          date: '2026-11-25',
-          ext: {
-            importMeta: {
-              source: 'alipay',
-              orderId: 'wealth:2026-11:余额宝',
-              kind: 'wealth_monthly',
-              month: '2026-11',
-              itemCount: 3,
-            },
-          },
-          createdAt: '2026-11-25T06:00:00.000Z',
-          updatedAt: '2026-11-25T06:00:00.000Z',
         },
       ],
       settings: {},
@@ -147,39 +114,28 @@ describe('Canonical ID Normalizer', () => {
     const firstPass = normalizeDataIds(raw);
     expect(firstPass.changed).toBe(true);
 
-    const bank = firstPass.data.accounts[0];
-    const credit = firstPass.data.accounts[1];
+    const [bank, credit] = firstPass.data.accounts;
     expect(bank.id).toMatch(/^acct_[0-9a-f]{16}$/);
     expect(credit.id).toMatch(/^acct_[0-9a-f]{16}$/);
     expect(credit.repaymentAccountId).toBe(bank.id);
 
-    const parentCat = firstPass.data.categories[0];
-    const childCat = firstPass.data.categories[1];
+    const [parentCat, childCat] = firstPass.data.categories;
     expect(parentCat.id).toMatch(/^cat_[0-9a-f]{16}$/);
     expect(childCat.id).toMatch(/^cat_[0-9a-f]{16}$/);
     expect(childCat.parentId).toBe(parentCat.id);
 
-    const [aaHost, aaOffset, aliTx, wealthTx] = firstPass.data.transactions;
+    const [aaHost, aaOffset] = firstPass.data.transactions;
     expect(aaHost.id).toMatch(/^tx_[0-9a-f]{16}$/);
-    expect(aaHost.id).not.toContain('legacy_');
     expect(aaHost.accountId).toBe(credit.id);
     expect(aaHost.categoryId).toBe(childCat.id);
 
     expect(aaOffset.id).toMatch(/^tx_[0-9a-f]{16}$/);
     expect(aaOffset.accountId).toBe(bank.id);
+    expect(aaOffset.toAccountId).toBe(credit.id);
     expect(aaOffset.offsetTransactionId).toBe(aaHost.id);
-
-    expect(aliTx.id).toBe('ali_ali_001');
-    expect(aliTx.ext).toEqual({
-      'owned-items': { itemId: 'item_1', itemRole: 'buy', kind: 'physical' },
-    });
-
-    expect(wealthTx.id).toMatch(/^wealth_ali_2026-11_[0-9a-f]{8}$/);
-    expect(wealthTx.ext).toBeUndefined();
 
     expect(firstPass.data.plugins?.data[0].id).toMatch(/^pd_[0-9a-f]{16}$/);
 
-    // Deterministic across independent runs and idempotent on second pass
     const repeatPass = normalizeDataIds(raw);
     expect(repeatPass.data).toEqual(firstPass.data);
 
