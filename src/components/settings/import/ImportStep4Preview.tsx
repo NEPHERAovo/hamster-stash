@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   WarningCircleIcon as AlertCircle,
   ArrowLeftIcon as ArrowLeft,
@@ -6,13 +6,19 @@ import {
   FolderSimpleIcon as FolderSync,
 } from '@phosphor-icons/react';
 import { PaperButton } from '../../ui/PaperButton';
+import { PaperChip } from '../../ui/PaperChip';
 import { PaperSelect } from '../../ui/PaperSelect';
 import { PaperSwitch } from '../../ui/PaperSwitch';
+import { SegToggle } from '../../ui/SegToggle';
 import { centsToYuan } from '../../../domain/finance/balanceCalculator';
 import { getCategoryIcon } from '../../../utils/categoryIcons';
 import { formatTime } from '../../../utils/date';
 import { cn } from '../../../utils/cn';
-import type { PreparedImportRecord } from '../../../domain/import-export/csvMapper';
+import type {
+  PreparedImportRecord,
+  SkippedImportItem,
+  SkippedReason,
+} from '../../../domain/import-export/csvMapper';
 import type { Account } from '../../../types/account';
 import type { Category } from '../../../types/category';
 
@@ -30,6 +36,10 @@ export interface ImportStep4PreviewProps {
   skippedCount?: number;
   duplicateCount?: number;
   filteredStatusCount?: number;
+  neutralCount?: number;
+  wealthRollupCount?: number;
+  wealthDailyRowCount?: number;
+  skippedItems?: SkippedImportItem[];
   isImporting: boolean;
   onPrev: () => void;
   onConfirmImport: () => void;
@@ -48,11 +58,44 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
   effectiveCount,
   skippedCount = 0,
   duplicateCount = 0,
+  filteredStatusCount = 0,
+  neutralCount = 0,
+  wealthRollupCount = 0,
+  skippedItems = [],
   isImporting,
   onPrev,
   onConfirmImport,
 }) => {
   const finalImportCount = effectiveCount ?? totalRowsCount;
+  const [activeTab, setActiveTab] = useState<'preview' | 'skipped'>('preview');
+  const [skippedFilter, setSkippedFilter] = useState<'all' | SkippedReason>('all');
+  const [showAllSkipped, setShowAllSkipped] = useState(false);
+
+  const filteredSkipped = useMemo(() => {
+    if (skippedFilter === 'all') return skippedItems;
+    return skippedItems.filter((item) => item.reason === skippedFilter);
+  }, [skippedItems, skippedFilter]);
+
+  const filterChips = useMemo(() => {
+    const counts = {
+      neutral: 0,
+      status: 0,
+      duplicate: 0,
+      invalid: 0,
+    };
+    for (const item of skippedItems) {
+      counts[item.reason] += 1;
+    }
+    const items: { key: 'all' | SkippedReason; label: string; count: number }[] = [
+      { key: 'all', label: '全部', count: skippedItems.length },
+      { key: 'neutral', label: '不计收支', count: counts.neutral },
+      { key: 'status', label: '关闭/退款', count: counts.status },
+      { key: 'duplicate', label: '重复', count: counts.duplicate },
+    ];
+    return items.filter((item) => item.key === 'all' || item.count > 0);
+  }, [skippedItems]);
+
+  const visibleSkipped = showAllSkipped ? filteredSkipped : filteredSkipped.slice(0, 30);
 
   return (
     <div className="space-y-4">
@@ -88,12 +131,29 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
         </div>
       </div>
 
-      {(skippedCount > 0 || duplicateCount > 0) && (
+      {(skippedCount > 0 || duplicateCount > 0 || wealthRollupCount > 0) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) px-3.5 py-2.5 font-mono text-[11px] text-(--ink-secondary) tabular-nums shadow-xs">
           <span>待导入 {finalImportCount} 笔</span>
-          {skippedCount > 0 && <span>过滤/跳过 {skippedCount} 笔</span>}
+          {wealthRollupCount > 0 && <span>含理财月结 {wealthRollupCount} 笔</span>}
+          {neutralCount > 0 && <span>不计收支 {neutralCount} 笔</span>}
+          {filteredStatusCount > 0 && <span>关闭/退款 {filteredStatusCount} 笔</span>}
           {duplicateCount > 0 && <span>重复 {duplicateCount} 笔</span>}
+          {neutralCount === 0 && filteredStatusCount === 0 && skippedCount > 0 && (
+            <span>过滤/跳过 {skippedCount} 笔</span>
+          )}
         </div>
+      )}
+
+      {skippedItems.length > 0 && (
+        <SegToggle
+          size="sm"
+          value={activeTab}
+          onChange={setActiveTab}
+          options={[
+            { value: 'preview', label: `待导入 (${finalImportCount})` },
+            { value: 'skipped', label: `不计收支/跳过 (${skippedItems.length})` },
+          ]}
+        />
       )}
 
       {previewData.some((r) => r.isReimbursable) && !isReimbursementEnabled && (
@@ -103,46 +163,111 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
         </div>
       )}
 
-      <div className="divide-y divide-(--rule-hairline) overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
-        <div className="bg-(--paper-sunken) px-3.5 py-2 text-[11px] font-semibold text-(--ink-tertiary)">
-          数据预览 (前 {previewData.length} 笔)
-        </div>
-        {previewData.map((rec, i) => {
-          const cat = categories.find((c) => c.id === rec.categoryId);
-          const acct = accounts.find((a) => a.id === rec.accountId);
-          const Icon = getCategoryIcon(cat?.icon || 'shopping-cart');
-          const formattedTime = formatTime(rec.createdAt);
-          const timePart = formattedTime ? ` ${formattedTime}` : '';
+      {activeTab === 'preview' ? (
+        <div className="divide-y divide-(--rule-hairline) overflow-hidden rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
+          <div className="bg-(--paper-sunken) px-3.5 py-2 text-[11px] font-semibold text-(--ink-tertiary)">
+            数据预览 (前 {previewData.length} 笔)
+          </div>
+          {previewData.map((rec, i) => {
+            const cat = categories.find((c) => c.id === rec.categoryId);
+            const acct = accounts.find((a) => a.id === rec.accountId);
+            const Icon = getCategoryIcon(cat?.icon || 'shopping-cart');
+            const formattedTime = formatTime(rec.createdAt);
+            const timePart = formattedTime ? ` ${formattedTime}` : '';
 
-          return (
-            <div key={i} className="flex items-center justify-between p-2.5 text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                  <Icon className="stroke-1.8 size-4" />
-                </div>
-                <div>
-                  <div className="font-semibold text-(--ink-primary)">{cat?.name || '默认'}</div>
-                  <div className="font-mono text-[10px] text-(--ink-tertiary)">
-                    {rec.date}
-                    {timePart} · {rec.rawAccountName || acct?.name || '默认'}
-                    {rec.note && ` · ${rec.note}`}
+            return (
+              <div key={i} className="flex items-start justify-between gap-2.5 p-2.5 text-xs">
+                <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
+                    <Icon className="stroke-1.8 size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-semibold text-(--ink-primary)">
+                        {cat?.name || rec.rawCategoryName || '默认'}
+                      </span>
+                      {rec.isWealthMonthlyRollup && (
+                        <span className="rounded-(--badge-radius) bg-(--color-income-bg) px-1.5 py-0.5 text-[10px] font-medium text-(--color-income)">
+                          月度汇总
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 font-mono text-[10px] leading-snug break-words text-(--ink-tertiary)">
+                      {rec.date}
+                      {timePart} · {rec.rawAccountName || acct?.name || '默认'}
+                      {rec.note && ` · ${rec.note}`}
+                    </div>
                   </div>
                 </div>
+                <div className="shrink-0 text-right">
+                  <span
+                    className={cn(
+                      'font-mono text-sm font-bold tabular-nums',
+                      rec.type === 'income' ? 'text-(--color-income)' : 'text-(--color-expense)'
+                    )}
+                  >
+                    {rec.type === 'income' ? '+' : '-'} ¥{centsToYuan(rec.amount)}
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <span
-                  className={cn(
-                    'font-mono text-sm font-bold tabular-nums',
-                    rec.type === 'income' ? 'text-(--color-income)' : 'text-(--color-expense)'
-                  )}
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap gap-1.5">
+            {filterChips.map((chip) => (
+              <PaperChip
+                key={chip.key}
+                size="xs"
+                selected={skippedFilter === chip.key}
+                onClick={() => {
+                  setSkippedFilter(chip.key);
+                  setShowAllSkipped(false);
+                }}
+              >
+                {chip.label} ({chip.count})
+              </PaperChip>
+            ))}
+          </div>
+
+          <div className="max-h-80 divide-y divide-(--rule-hairline) overflow-y-auto rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) shadow-xs">
+            {visibleSkipped.map((item, idx) => (
+              <div key={idx} className="flex items-start justify-between gap-2.5 p-2.5 text-xs">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-(--badge-radius) bg-(--paper-sunken) px-1.5 py-0.5 text-[10px] font-medium text-(--ink-secondary)">
+                      {item.reasonLabel}
+                    </span>
+                    <span className="font-semibold break-words text-(--ink-primary)">
+                      {item.note || item.rawCategoryName || item.rawType || '未命名记录'}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 font-mono text-[10px] leading-snug break-words text-(--ink-tertiary)">
+                    {item.date}
+                    {item.rawAccountName && ` · ${item.rawAccountName}`}
+                    {item.rawStatus && ` · ${item.rawStatus}`}
+                  </div>
+                </div>
+                <div className="shrink-0 font-mono text-xs font-semibold text-(--ink-secondary) tabular-nums">
+                  ¥{centsToYuan(item.amount)}
+                </div>
+              </div>
+            ))}
+            {filteredSkipped.length > 30 && !showAllSkipped && (
+              <div className="p-2 text-center">
+                <PaperButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setShowAllSkipped(true)}
                 >
-                  {rec.type === 'income' ? '+' : '-'} ¥{centsToYuan(rec.amount)}
-                </span>
+                  展开全部 ({filteredSkipped.length} 笔)
+                </PaperButton>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-2">
         <PaperButton

@@ -74,7 +74,7 @@ export const ImportStep3CategoryMatch: React.FC<ImportStep3CategoryMatchProps> =
             return (
               <div key={stat.rawName} className="flex items-center justify-between gap-2 p-2.5 text-xs">
                 <div className="flex min-w-20 shrink-0 items-center gap-1.5">
-                  <span className="max-w-25 truncate font-semibold text-(--ink-primary)">
+                  <span className="max-w-32 leading-snug font-semibold break-words text-(--ink-primary)">
                     {stat.rawName}
                   </span>
                   <span className="text-[10px] text-(--ink-tertiary) tabular-nums">

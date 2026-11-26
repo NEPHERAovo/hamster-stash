@@ -16,6 +16,8 @@ export interface ImportStep2ColumnsProps {
   onChangeSkipClosedAndFullRefunds?: (checked: boolean) => void;
   skipDuplicates?: boolean;
   onChangeSkipDuplicates?: (checked: boolean) => void;
+  aggregateWealthEarningsMonthly?: boolean;
+  onChangeAggregateWealthEarningsMonthly?: (checked: boolean) => void;
   onPrev: () => void;
   onNext: () => void;
 }
@@ -30,6 +32,8 @@ export const ImportStep2Columns: React.FC<ImportStep2ColumnsProps> = ({
   onChangeSkipClosedAndFullRefunds,
   skipDuplicates = true,
   onChangeSkipDuplicates,
+  aggregateWealthEarningsMonthly = true,
+  onChangeAggregateWealthEarningsMonthly,
   onPrev,
   onNext,
 }) => {
@@ -106,6 +110,16 @@ export const ImportStep2Columns: React.FC<ImportStep2ColumnsProps> = ({
               aria-label="跳过已导入的重复账单"
             />
           </div>
+          {onChangeAggregateWealthEarningsMonthly && (
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-semibold text-(--ink-primary)">理财日收益按月汇总入账</span>
+              <PaperSwitch
+                checked={aggregateWealthEarningsMonthly}
+                onChange={onChangeAggregateWealthEarningsMonthly}
+                aria-label="理财日收益按月汇总入账"
+              />
+            </div>
+          )}
         </div>
       )}
 

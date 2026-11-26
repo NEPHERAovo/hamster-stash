@@ -109,6 +109,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
   const [typeMapping, setTypeMapping] = useState<Record<string, TransactionType | 'skip'>>({});
   const [skipClosedAndFullRefunds, setSkipClosedAndFullRefunds] = useState<boolean>(true);
   const [skipDuplicates, setSkipDuplicates] = useState<boolean>(true);
+  const [aggregateWealthEarningsMonthly, setAggregateWealthEarningsMonthly] =
+    useState<boolean>(true);
   const [isCreatingCategory, setIsCreatingCategory] = useState<boolean>(false);
 
   const [defaultAccountId, setDefaultAccountId] = useState<string>('');
@@ -347,7 +349,9 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       source: activeSource,
       skipClosedAndFullRefunds,
       skipDuplicates,
+      aggregateWealthEarningsMonthly,
       existingImportKeys,
+      existingTransactions: transactions,
     });
   }, [
     currentStep,
@@ -363,13 +367,19 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
     activeSource,
     skipClosedAndFullRefunds,
     skipDuplicates,
+    aggregateWealthEarningsMonthly,
     existingImportKeys,
+    transactions,
   ]);
 
-  const previewData = useMemo(
-    () => importSummary.records.slice(0, 5),
-    [importSummary.records]
-  );
+  const previewData = useMemo(() => {
+    const records = importSummary.records;
+    if (records.length <= 6) return records;
+    const rollups = records.filter((r) => r.isWealthMonthlyRollup);
+    if (rollups.length === 0) return records.slice(0, 6);
+    const regulars = records.filter((r) => !r.isWealthMonthlyRollup);
+    return [...regulars.slice(0, 5), rollups[0]];
+  }, [importSummary.records]);
 
   const handleStartImport = async () => {
     if (parsed.rows.length === 0) {
@@ -402,6 +412,7 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
         source: activeSource,
         skipClosedAndFullRefunds,
         skipDuplicates,
+        aggregateWealthEarningsMonthly,
         existingTransactions: transactions,
         createAccount,
         importTransactions,
@@ -412,6 +423,9 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
       }
 
       const detailParts: string[] = [];
+      if (res.wealthRollupCount > 0) {
+        detailParts.push(`含理财月结 ${res.wealthRollupCount} 笔`);
+      }
       if (res.skippedCount > 0) {
         detailParts.push(`跳过 ${res.skippedCount} 笔`);
       }
@@ -521,6 +535,8 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           onChangeSkipClosedAndFullRefunds={setSkipClosedAndFullRefunds}
           skipDuplicates={skipDuplicates}
           onChangeSkipDuplicates={setSkipDuplicates}
+          aggregateWealthEarningsMonthly={aggregateWealthEarningsMonthly}
+          onChangeAggregateWealthEarningsMonthly={setAggregateWealthEarningsMonthly}
           onPrev={() => setCurrentStep(1)}
           onNext={() => {
             if (!mapping.dateCol || !mapping.amountCol) {
@@ -567,6 +583,10 @@ export const ImportSubPage: React.FC<ImportSubPageProps> = ({
           skippedCount={importSummary.skippedCount}
           duplicateCount={importSummary.duplicateCount}
           filteredStatusCount={importSummary.filteredStatusCount}
+          neutralCount={importSummary.neutralCount}
+          wealthRollupCount={importSummary.wealthRollupCount}
+          wealthDailyRowCount={importSummary.wealthDailyRowCount}
+          skippedItems={importSummary.skippedItems}
           isImporting={isImporting}
           onPrev={() => setCurrentStep(3)}
           onConfirmImport={handleStartImport}

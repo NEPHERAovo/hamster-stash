@@ -17,7 +17,7 @@ export const IMPORT_PRESETS: ImportPreset[] = [
     id: 'wechat',
     name: '微信账单',
     badge: 'XLSX / CSV',
-    shortDesc: '自动识别并过滤退款与零钱通',
+    shortDesc: '支持 .xlsx / .csv，自动归类并过滤全额退款',
     description: '支持微信支付导出的 .xlsx 与 .csv 账单文件，自动解析时间戳、过滤已全额退款与中性交易并智能归类商户。',
     iconName: 'wechat',
     defaultMapping: {
@@ -50,7 +50,7 @@ export const IMPORT_PRESETS: ImportPreset[] = [
     id: 'alipay',
     name: '支付宝账单',
     badge: 'GBK CSV',
-    shortDesc: '自动解码与过滤不计收支',
+    shortDesc: '自动解码 GBK，清洗立减与不计收支',
     description: '支持支付宝导出的 GBK/UTF-8 编码 CSV 交易明细，自动清洗立减优惠渠道并过滤关闭及不计收支流水。',
     iconName: 'alipay',
     defaultMapping: {
@@ -95,7 +95,7 @@ export const IMPORT_PRESETS: ImportPreset[] = [
     id: 'elephant',
     name: '小象记账',
     badge: '标准格式',
-    shortDesc: '自动匹配分类与报销标记',
+    shortDesc: '自动匹配分类、账户与报销标记',
     description: '支持小象记账导出的账单 CSV，自动识别日期、分类、收支、金额、账户及报销。',
     iconName: 'sparkles',
     defaultMapping: {
@@ -135,7 +135,7 @@ export const IMPORT_PRESETS: ImportPreset[] = [
     id: 'standard',
     name: '通用表格',
     badge: '自定义映射',
-    shortDesc: '自主映射表格列与分类',
+    shortDesc: '自由配置表格字段与分类对照',
     description: '自由配置列名与分类对照关系，支持任意表格文件。',
     iconName: 'sliders',
     defaultMapping: {},

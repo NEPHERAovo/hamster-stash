@@ -68,27 +68,29 @@ export const ImportStep1Upload: React.FC<ImportStep1UploadProps> = ({
               key={preset.id}
               onClick={() => onSelectPreset(preset.id)}
               className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-(--radius-md) border p-3.5 transition-all',
+                'flex cursor-pointer flex-col gap-2 rounded-(--radius-md) border p-3.5 transition-all',
                 isSelected
                   ? 'border-(--ink-primary) bg-(--paper-sheet) shadow-xs ring-1 ring-(--ink-primary)'
                   : 'border-(--rule-hairline) bg-(--paper-sheet) hover:border-(--ink-tertiary)'
               )}
             >
-              <div
-                className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-(--badge-radius)',
-                  isSelected
-                    ? 'bg-(--color-income-bg) text-(--color-income)'
-                    : 'bg-(--paper-sunken) text-(--ink-secondary)'
-                )}
-              >
-                <IconComp className="stroke-1.8 size-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-bold text-(--ink-primary)">{preset.name}</div>
-                <div className="mt-0.5 truncate text-[11px] text-(--ink-tertiary)">
-                  {preset.shortDesc}
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={cn(
+                    'flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius)',
+                    isSelected
+                      ? 'bg-(--color-income-bg) text-(--color-income)'
+                      : 'bg-(--paper-sunken) text-(--ink-secondary)'
+                  )}
+                >
+                  <IconComp className="stroke-1.8 size-4" />
                 </div>
+                <div className="min-w-0 flex-1 text-[13px] font-bold text-(--ink-primary)">
+                  {preset.name}
+                </div>
+              </div>
+              <div className="text-[11px] leading-relaxed break-words text-(--ink-tertiary)">
+                {preset.shortDesc}
               </div>
             </div>
           );
