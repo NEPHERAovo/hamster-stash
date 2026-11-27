@@ -43,10 +43,10 @@ export const CategoryStampGrid: React.FC<CategoryStampGridProps> = ({
                   isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs ring-1 ring-(--rule-hairline) ring-inset'
                 )}
               >
-                <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center">
+                <div className="mb-0.5 flex size-7 shrink-0 items-center justify-center">
                   <IconComp
                     className={cn(
-                      'stroke-1.8 size-4',
+                      'stroke-1.8 size-4.5',
                       flow.isInflow ? 'text-(--color-income)' : 'text-(--color-expense)'
                     )}
                   />
@@ -94,8 +94,8 @@ export const CategoryStampGrid: React.FC<CategoryStampGridProps> = ({
                     isSelected && 'z-10 font-semibold text-(--ink-solid) shadow-2xs ring-1 ring-(--rule-hairline) ring-inset'
                   )}
                 >
-                  <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center">
-                    <IconComp className={cn('stroke-1.8 size-4', iconColor)} />
+                  <div className="mb-0.5 flex size-7 shrink-0 items-center justify-center">
+                    <IconComp className={cn('stroke-1.8 size-4.5', iconColor)} />
                   </div>
                   <span className="w-full truncate text-center text-[10px] leading-tight">
                     {cat.name}

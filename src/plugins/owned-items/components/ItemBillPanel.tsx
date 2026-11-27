@@ -2,8 +2,8 @@ import React from 'react';
 import { MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import {
   centsToYuan,
-  getCategoryIcon,
   cn,
+  IconBadge,
   PaperCard,
   PaperButton,
   PaperInput,
@@ -126,7 +126,6 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
               activeCandidates.map((tx) => {
                 const cat = hostCategories.find((c) => c.id === tx.categoryId);
                 const acct = accounts.find((a) => a.id === tx.accountId);
-                const CatIcon = getCategoryIcon(cat?.icon || 'squares-four');
                 const isInc = tx.type === 'income';
                 return (
                   <div
@@ -135,9 +134,12 @@ export const ItemBillPanel: React.FC<ItemBillPanelProps> = ({
                     className="flex cursor-pointer items-center justify-between rounded-(--radius-sm) border border-(--rule-hairline) bg-(--paper-sunken)/40 p-2.5 transition-colors hover:border-(--border-strong) hover:bg-(--paper-hover)"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-(--radius-xs) bg-(--paper-sheet) text-(--ink-primary)">
-                        <CatIcon className="size-3.5" />
-                      </div>
+                      <IconBadge
+                        icon={cat?.icon || 'squares-four'}
+                        size="md"
+                        tone="solid"
+                        surface="sheet"
+                      />
                       <div className="min-w-0">
                         <div className="truncate text-xs font-semibold text-(--ink-solid)">
                           {tx.note || cat?.name || (isInc ? '收入' : '支出')}

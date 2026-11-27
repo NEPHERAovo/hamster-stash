@@ -85,10 +85,10 @@ export const SettingRow: React.FC<SettingRowProps> = ({
         {icon && (
           <div
             className={cn(
-              'flex size-6 shrink-0 items-center justify-center rounded-(--badge-radius)',
+              'flex size-7.5 shrink-0 items-center justify-center rounded-(--badge-radius) border [&>svg]:size-4.25',
               danger
-                ? 'bg-(--color-expense-bg) text-(--color-expense)'
-                : 'bg-(--paper-sunken) text-(--ink-secondary)'
+                ? 'border-(--color-expense)/25 bg-(--color-expense-bg) text-(--color-expense)'
+                : 'border-(--rule-hairline) bg-(--paper-sunken) text-(--ink-secondary)'
             )}
           >
             {icon}

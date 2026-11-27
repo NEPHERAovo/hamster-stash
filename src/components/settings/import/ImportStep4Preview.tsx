@@ -10,8 +10,8 @@ import { PaperChip } from '../../ui/PaperChip';
 import { PaperSelect } from '../../ui/PaperSelect';
 import { PaperSwitch } from '../../ui/PaperSwitch';
 import { SegToggle } from '../../ui/SegToggle';
+import { IconBadge } from '../../ui/IconBadge';
 import { centsToYuan } from '../../../domain/finance/balanceCalculator';
-import { getCategoryIcon } from '../../../utils/categoryIcons';
 import { formatTime } from '../../../utils/date';
 import { cn } from '../../../utils/cn';
 import type {
@@ -191,16 +191,13 @@ export const ImportStep4Preview: React.FC<ImportStep4PreviewProps> = ({
           {previewData.map((rec, i) => {
             const cat = categories.find((c) => c.id === rec.categoryId);
             const acct = accounts.find((a) => a.id === rec.accountId);
-            const Icon = getCategoryIcon(cat?.icon || 'shopping-cart');
             const formattedTime = formatTime(rec.createdAt);
             const timePart = formattedTime ? ` ${formattedTime}` : '';
 
             return (
               <div key={i} className="flex items-start justify-between gap-2.5 p-2.5 text-xs">
                 <div className="flex min-w-0 flex-1 items-start gap-2.5">
-                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-                    <Icon className="stroke-1.8 size-4" />
-                  </div>
+                  <IconBadge icon={cat?.icon || 'shopping-cart'} size="md" className="mt-0.5" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-semibold text-(--ink-primary)">

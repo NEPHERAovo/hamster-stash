@@ -5,8 +5,8 @@ import { isCreditAccount } from '../../types/account';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
-import { getCategoryIcon } from '../../utils/categoryIcons';
 import { TransactionItem } from '../ledger/TransactionItem';
+import { IconBadge } from '../ui/IconBadge';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { cn } from '../../utils/cn';
@@ -42,7 +42,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
   onSelectTransaction,
 }) => {
   const isCredit = isCreditAccount(account);
-  const Icon = getCategoryIcon(account.icon || (isCredit ? 'credit-card' : 'wallet'));
+  const iconName = account.icon || (isCredit ? 'credit-card' : 'wallet');
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
@@ -228,9 +228,7 @@ export const AccountDetailSubPage: React.FC<AccountDetailSubPageProps> = ({
     <div className="w-full px-4 pt-1 pb-6">
       <div className="mb-4 rounded-(--radius-md) border border-(--rule-hairline) bg-(--paper-sheet) p-4 shadow-xs">
         <div className="mb-3 flex items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--color-income)">
-            <Icon className="stroke-1.85 size-5" />
-          </div>
+          <IconBadge icon={iconName} tone="income" size="lg" />
           <div>
             <div className="text-sm font-bold text-(--ink-primary)">{account.name}</div>
             <div className="font-mono text-[11px] text-(--ink-tertiary)">

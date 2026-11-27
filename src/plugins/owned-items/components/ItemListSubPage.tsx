@@ -4,8 +4,8 @@ import {
   useHostTransactions,
   usePluginNavigation,
   centsToYuan,
-  getCategoryIcon,
   cn,
+  IconBadge,
   PaperCard,
   PaperSummaryCard,
   PaperSelect,
@@ -197,7 +197,6 @@ export const ItemListSubPage: React.FC = () => {
             <div className="space-y-2.5">
               {filteredItems.map((item) => {
                 const metrics = metricsMap.get(item.id) ?? computeItemMetrics(item, transactions);
-                const IconComp = getCategoryIcon(item.icon);
                 const isSub = item.kind === 'subscription';
 
                 return (
@@ -218,9 +217,7 @@ export const ItemListSubPage: React.FC = () => {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <div className="flex size-6.5 shrink-0 items-center justify-center rounded-(--radius-sm) bg-(--paper-sunken) text-(--ink-secondary)">
-                          <IconComp className="stroke-1.8 size-4" />
-                        </div>
+                        <IconBadge icon={item.icon} size="md" />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 truncate">
                             <span className="truncate text-sm leading-snug font-semibold text-(--ink-solid)">

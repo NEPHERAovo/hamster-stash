@@ -47,6 +47,7 @@ export { PaperSelect, type PaperSelectProps, type PaperSelectOption } from '../c
 export { PaperChip, type PaperChipProps } from '../components/ui/PaperChip';
 export { PaperModal, type PaperModalProps } from '../components/ui/PaperModal';
 export { PaperBadge, type PaperBadgeProps } from '../components/ui/PaperBadge';
+export { IconBadge, type IconBadgeProps, type IconBadgeSize, type IconBadgeSurface, type IconBadgeTone } from '../components/ui/IconBadge';
 export { CategoryBadge, type CategoryBadgeProps } from '../components/ui/CategoryBadge';
 export { SegToggle, type SegToggleProps, type SegToggleOption } from '../components/ui/SegToggle';
 export { PaperSwitch, type PaperSwitchProps } from '../components/ui/PaperSwitch';

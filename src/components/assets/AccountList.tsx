@@ -3,11 +3,11 @@ import { TrashIcon as Trash2 } from '@phosphor-icons/react';
 import type { Account } from '../../types/account';
 import { isCreditAccount } from '../../types/account';
 import { centsToYuan } from '../../domain/finance/balanceCalculator';
-import { getCategoryIcon } from '../../utils/categoryIcons';
 import { toast } from '../../stores/useToastStore';
 import { confirmAction } from '../../stores/useConfirmStore';
 import { SwipeableRow } from '../ui/SwipeableRow';
 import { PaperCard } from '../ui/PaperCard';
+import { IconBadge } from '../ui/IconBadge';
 import { cn } from '../../utils/cn';
 
 export interface AccountListProps {
@@ -35,7 +35,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
   onDelete,
 }) => {
   const isCredit = isCreditAccount(account);
-  const Icon = getCategoryIcon(account.icon || (isCredit ? 'credit-card' : 'wallet'));
+  const iconName = account.icon || (isCredit ? 'credit-card' : 'wallet');
   const isNegative = account.balance < 0;
   const availableCreditCents =
     isCredit && account.creditLimit !== undefined
@@ -109,9 +109,7 @@ const SwipeableAccountRow: React.FC<SwipeableAccountRowProps> = ({
       className="flex cursor-pointer items-center justify-between px-3.5 py-2.5 hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
     >
       <div className="pointer-events-none mr-2 flex min-w-0 flex-1 items-center gap-2.5">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-secondary)">
-          <Icon className="stroke-1.8 size-3.5" />
-        </div>
+        <IconBadge icon={iconName} size="md" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] font-semibold text-(--ink-primary)">
             {account.name}

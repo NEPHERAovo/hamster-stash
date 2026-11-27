@@ -30,9 +30,9 @@ export const PaperIconButton = React.forwardRef<HTMLButtonElement, PaperIconButt
     };
 
     const iconSizes = {
-      sm: 'size-3 stroke-2',
-      md: 'size-3.5 stroke-2',
-      lg: 'size-4 stroke-2',
+      sm: 'size-3.5 stroke-2',
+      md: 'size-4.25 stroke-2',
+      lg: 'size-4.5 stroke-2',
     };
 
     const variantStyles = {

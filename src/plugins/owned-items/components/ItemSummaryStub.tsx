@@ -1,5 +1,5 @@
 import React from 'react';
-import { centsToYuan, getCategoryIcon, cn, PaperSummaryCard } from '../../../plugin-sdk';
+import { centsToYuan, cn, IconBadge, PaperSummaryCard } from '../../../plugin-sdk';
 import { isItemDisposed } from '../domain/itemCalculator';
 import type { Item, ItemMetrics, ItemStatus } from '../types';
 
@@ -58,7 +58,6 @@ export const ItemSummaryStub: React.FC<ItemSummaryStubProps> = ({
   metrics,
   transactionCount,
 }) => {
-  const ItemIcon = getCategoryIcon(item.icon);
   const disposed = isItemDisposed(item.status);
   const statusLabel = resolveStatusLabel(isSub, disposed, item.status);
   const stampColorClass = resolveStampColorClass(disposed, item.status);
@@ -69,9 +68,7 @@ export const ItemSummaryStub: React.FC<ItemSummaryStubProps> = ({
       <div className="space-y-3.5 p-4 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-(--radius-sm) bg-(--paper-sunken) text-(--ink-solid) shadow-2xs">
-              <ItemIcon className="stroke-1.8 size-4.5" />
-            </div>
+            <IconBadge icon={item.icon} size="lg" tone="solid" elevated />
             <div>
               <h2 className="text-base leading-snug font-bold text-(--ink-solid)">
                 {item.name}

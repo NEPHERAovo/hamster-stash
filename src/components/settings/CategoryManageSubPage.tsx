@@ -4,6 +4,7 @@ import { PlusIcon as Plus, TrashIcon as Trash2, DotsSixVerticalIcon as GripVerti
 import { useCategoryStore } from '../../stores/useCategoryStore';
 import type { Category } from '../../types/category';
 import { getCategoryIcon } from '../../utils/categoryIcons';
+import { IconBadge } from '../ui/IconBadge';
 import { SegToggle } from '../ui/SegToggle';
 import { PaperModal } from '../ui/PaperModal';
 import { toast } from '../../stores/useToastStore';
@@ -121,7 +122,6 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
   onTouchRowEnd,
   onTouchHandleStart,
 }) => {
-  const IconComp = getCategoryIcon(cat.icon);
   const isEnabled = !cat.isArchived;
 
   return (
@@ -149,16 +149,11 @@ const SwipeableCategoryRow: React.FC<SwipeableCategoryRowProps> = ({
         onTouchEnd={onTouchRowEnd}
         onTouchCancel={onTouchRowEnd}
       >
-        <div
-          className={cn(
-            'flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius)',
-            isEnabled
-              ? 'bg-(--paper-sunken) text-(--ink-secondary)'
-              : 'bg-(--paper-sunken) text-(--ink-tertiary)'
-          )}
-        >
-          <IconComp className="stroke-1.8 size-3.5" />
-        </div>
+        <IconBadge
+          icon={cat.icon}
+          size="md"
+          tone={isEnabled ? 'neutral' : 'muted'}
+        />
         <span
           className={cn(
             'truncate text-[13px] font-medium',
@@ -547,7 +542,6 @@ export const CategoryManageSubPage: React.FC = () => {
   }
 
   const draggingCat = draggingIndex !== null ? displayActiveCategories[draggingIndex] : null;
-  const GhostIconComp = draggingCat ? getCategoryIcon(draggingCat.icon) : null;
   const totalCategoryCount = displayActiveCategories.length + archivedCategories.length;
 
   return (
@@ -615,7 +609,7 @@ export const CategoryManageSubPage: React.FC = () => {
         </PaperCard>
       </div>
 
-      {ghostPos && draggingCat && GhostIconComp && typeof document !== 'undefined' &&
+      {ghostPos && draggingCat && typeof document !== 'undefined' &&
         createPortal(
           <div
             style={{
@@ -630,9 +624,7 @@ export const CategoryManageSubPage: React.FC = () => {
             className="pointer-events-none flex items-center justify-between rounded-(--radius-lg) border border-(--rule-strong) bg-(--paper-sheet) px-3.5 py-2.5 opacity-95 shadow-2xl transition-transform duration-75 select-none"
           >
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-(--badge-radius) bg-(--paper-sunken) text-(--ink-solid)">
-                <GhostIconComp className="stroke-1.8 size-3.5" />
-              </div>
+              <IconBadge icon={draggingCat.icon} size="md" tone="solid" />
               <span className="truncate text-[13px] font-semibold text-(--ink-primary)">
                 {draggingCat.name}
               </span>

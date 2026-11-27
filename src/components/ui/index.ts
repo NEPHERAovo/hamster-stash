@@ -7,6 +7,7 @@ export * from './SwipeableRow';
 export * from './PaperModal';
 export * from './SegToggle';
 export * from './PaperBadge';
+export * from './IconBadge';
 export * from './CategoryBadge';
 export * from './PaperSwitch';
 export * from './ThemeSelector';
