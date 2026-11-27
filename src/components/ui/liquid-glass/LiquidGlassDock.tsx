@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useThemeStore } from '../../../stores/useThemeStore';
 import {
   VERTEX_SHADER_SOURCE,
@@ -11,8 +11,10 @@ import {
   type DockTabItem,
   isTabActive,
   resolveTabLabel,
+  resolveTabType,
 } from './drawDockTexture';
 import { useLiquidSpring } from './useLiquidSpring';
+import { getCategoryIcon } from '../../../utils/categoryIcons';
 import { cn } from '../../../utils/cn';
 
 export interface LiquidGlassDockProps {
@@ -24,6 +26,15 @@ export interface LiquidGlassDockProps {
 
 const SIDE_PAD = 6;
 
+const FALLBACK_ICON_MAP: Record<string, string> = {
+  ledger: 'book-open',
+  stats: 'trend-up',
+  items: 'package',
+  assets: 'wallet',
+  saving: 'drop',
+  generic: 'squares-four',
+};
+
 export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   tabs,
   activeTab,
@@ -33,6 +44,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const isDark = useThemeStore((s) => s.isDark);
   const dockShellRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isGlFallback, setIsGlFallback] = useState(false);
+  const [glEpoch, setGlEpoch] = useState(0);
 
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
@@ -46,10 +59,18 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   const isDarkRef = useRef(isDark);
   isDarkRef.current = isDark;
 
+  const isPointerDownRef = useRef(false);
+  const pointerDownXRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const pressTargetRef = useRef(0);
+  const texturesDirtyRef = useRef(true);
+  const scheduleRenderRef = useRef<(() => void) | null>(null);
+
   const visualActiveTabRef = useRef(activeTab);
   useEffect(() => {
     if (!isPointerDownRef.current) {
       visualActiveTabRef.current = activeTab;
+      scheduleRenderRef.current?.();
     }
   }, [activeTab]);
 
@@ -60,14 +81,9 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
   resetTargetRef.current = resetTarget;
   const lastTabCountRef = useRef(tabs.length);
 
-  const isPointerDownRef = useRef(false);
-  const pointerDownXRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const pressTargetRef = useRef(0);
-  const texturesDirtyRef = useRef(true);
-
   useEffect(() => {
     texturesDirtyRef.current = true;
+    scheduleRenderRef.current?.();
   }, [tabs, isDark]);
 
   useEffect(() => {
@@ -78,6 +94,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       for (const entry of entries) {
         if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
           texturesDirtyRef.current = true;
+          scheduleRenderRef.current?.();
         }
       }
     });
@@ -93,6 +110,27 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const dockShell = dockShellRef.current;
     if (!canvas || !dockShell) return;
 
+    let isDestroyed = false;
+    let animationFrameId: number | null = null;
+
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      isDestroyed = true;
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      setIsGlFallback(true);
+    };
+
+    const handleContextRestored = () => {
+      setIsGlFallback(false);
+      setGlEpoch((prev) => prev + 1);
+    };
+
+    canvas.addEventListener('webglcontextlost', handleContextLost);
+    canvas.addEventListener('webglcontextrestored', handleContextRestored);
+
     let gl: WebGLRenderingContext | null = null;
     try {
       gl = canvas.getContext('webgl', {
@@ -104,16 +142,27 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl = null;
     }
 
-    if (!gl) return;
+    if (!gl || gl.isContextLost()) {
+      setIsGlFallback(true);
+      return () => {
+        canvas.removeEventListener('webglcontextlost', handleContextLost);
+        canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      };
+    }
 
     let prog: WebGLProgram;
     try {
       prog = createLiquidProgram(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
     } catch (e) {
       console.error('Failed to create LiquidGlassDock program:', e);
-      return;
+      setIsGlFallback(true);
+      return () => {
+        canvas.removeEventListener('webglcontextlost', handleContextLost);
+        canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      };
     }
 
+    setIsGlFallback(false);
     gl.useProgram(prog);
 
     const buf = gl.createBuffer();
@@ -154,8 +203,6 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const offCanvas = document.createElement('canvas');
     const offCtx = offCanvas.getContext('2d');
 
-    let isDestroyed = false;
-    let animationFrameId: number;
     let lastTime = performance.now();
     let lastCanvasW = 0;
     let lastCanvasH = 0;
@@ -163,17 +210,25 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     const padX = 18;
     const padY = 20;
 
+    const scheduleRender = () => {
+      if (isDestroyed || animationFrameId !== null) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    scheduleRenderRef.current = scheduleRender;
+
     const render = (now: number) => {
-      if (isDestroyed || !gl || !canvas || !dockShell) return;
+      animationFrameId = null;
+      if (isDestroyed || !gl || !canvas || !dockShell || gl.isContextLost()) return;
 
       const dt = Math.min(0.033, Math.max(0, (now - lastTime) / 1000));
       lastTime = now;
 
       const rect = dockShell.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) {
-        if (!isDestroyed) {
-          animationFrameId = requestAnimationFrame(render);
-        }
+        scheduleRender();
         return;
       }
 
@@ -181,7 +236,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       const dockH = rect.height;
       const canvasW = dockW + padX * 2;
       const canvasH = dockH + padY * 2;
-      const dpr = Math.max(2, Math.min(window.devicePixelRatio || 1, 3.5));
+      const dpr = Math.max(1.5, Math.min(window.devicePixelRatio || 1, 3));
 
       const targetPixelW = Math.round(canvasW * dpr);
       const targetPixelH = Math.round(canvasH * dpr);
@@ -302,24 +357,51 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      if (!isDestroyed) {
+      const isAnimating =
+        isPointerDownRef.current ||
+        isDraggingRef.current ||
+        pressTargetRef.current > 0 ||
+        Math.abs(spring.dropletX - targetX) >= 0.05 ||
+        Math.abs(spring.dropletVelX) >= 0.5 ||
+        spring.pressAmount >= 0.002 ||
+        spring.smoothTrigger >= 0.002;
+
+      if (!isDestroyed && isAnimating) {
         animationFrameId = requestAnimationFrame(render);
       }
     };
 
-    animationFrameId = requestAnimationFrame(render);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        texturesDirtyRef.current = true;
+        scheduleRender();
+      } else if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    scheduleRender();
 
     return () => {
       isDestroyed = true;
-      cancelAnimationFrame(animationFrameId);
-      if (gl) {
+      scheduleRenderRef.current = null;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (gl && !gl.isContextLost()) {
         gl.deleteTexture(inactiveTex);
         gl.deleteTexture(activeTex);
         gl.deleteBuffer(buf);
         gl.deleteProgram(prog);
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
       }
     };
-  }, []);
+  }, [glEpoch]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const dockShell = dockShellRef.current;
@@ -349,6 +431,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         visualActiveTabRef.current = selectedTab.id || selectedTab.path || '';
       }
     }
+
+    scheduleRenderRef.current?.();
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -378,6 +462,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
           visualActiveTabRef.current = selectedTab.id || selectedTab.path || '';
         }
       }
+      scheduleRenderRef.current?.();
     }
   };
 
@@ -399,10 +484,16 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
     }
 
     const rect = dockShell?.getBoundingClientRect();
-    if (!rect || rect.width <= 0) return;
+    if (!rect || rect.width <= 0) {
+      scheduleRenderRef.current?.();
+      return;
+    }
 
     const currentTabs = tabsRef.current;
-    if (currentTabs.length === 0) return;
+    if (currentTabs.length === 0) {
+      scheduleRenderRef.current?.();
+      return;
+    }
 
     const colW = (rect.width - SIDE_PAD * 2) / currentTabs.length;
     const clampedX = Math.max(SIDE_PAD, Math.min(rect.width - SIDE_PAD - 0.001, e.clientX - rect.left));
@@ -416,6 +507,8 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         onTabChangeRef.current(chosenId);
       }
     }
+
+    scheduleRenderRef.current?.();
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -433,6 +526,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
         void 0;
       }
     }
+    scheduleRenderRef.current?.();
   };
 
   return (
@@ -447,6 +541,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       onPointerCancel={handlePointerCancel}
       className={cn(
         'relative h-[58px] cursor-pointer overflow-visible rounded-[27.5px] border-0 bg-transparent shadow-none backdrop-blur-md select-none',
+        isGlFallback && 'border border-(--rule-hairline) bg-(--paper-sheet)/92 px-1.5 shadow-md backdrop-blur-xl',
         className
       )}
       style={{ touchAction: 'none' }}
@@ -454,14 +549,48 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({
       <canvas
         ref={canvasRef}
         id="droplet-canvas"
-        className="pointer-events-none absolute -inset-x-[18px] -inset-y-5 z-10 h-[calc(100%+40px)] w-[calc(100%+36px)]"
+        className={cn(
+          'pointer-events-none absolute -inset-x-[18px] -inset-y-5 z-10 h-[calc(100%+40px)] w-[calc(100%+36px)]',
+          isGlFallback && 'hidden'
+        )}
       />
 
-      <div className="pointer-events-none absolute inset-0 z-20 flex items-stretch">
+      <div
+        className={cn(
+          'absolute inset-0 z-20 flex items-stretch',
+          isGlFallback ? 'px-1.5 py-1' : 'pointer-events-none'
+        )}
+      >
         {tabs.map((tab, idx) => {
           const tabId = tab.id || tab.path || '';
           const active = isTabActive(tab, activeTab);
           const label = resolveTabLabel(tab);
+          const tabType = resolveTabType(tab);
+          const FallbackIcon = getCategoryIcon(tab.icon || FALLBACK_ICON_MAP[tabType] || 'squares-four');
+
+          if (isGlFallback) {
+            return (
+              <button
+                key={tabId || idx}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                title={label}
+                aria-label={label}
+                onClick={() => onTabChange(tabId)}
+                className={cn(
+                  'flex flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-colors',
+                  active
+                    ? 'bg-(--color-accent-bg) font-semibold text-(--color-accent)'
+                    : 'text-(--ink-secondary)'
+                )}
+              >
+                <FallbackIcon className="size-4.5 shrink-0" weight={active ? 'fill' : 'regular'} />
+                <span className="leading-none">{label}</span>
+              </button>
+            );
+          }
+
           return (
             <button
               key={tabId || idx}
