@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { BackspaceIcon as Delete } from '@phosphor-icons/react';
 import { cn } from '../../utils/cn';
+
+const LONG_PRESS_CLEAR_MS = 450;
 
 export interface TransactionKeypadProps {
   onDigit: (digit: string) => void;
@@ -25,6 +27,36 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
   isSubmitting = false,
   className,
 }) => {
+  const longPressTimerRef = useRef<number | null>(null);
+  const didLongPressRef = useRef(false);
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => cancelLongPress, []);
+
+  const handleDeletePointerDown = () => {
+    cancelLongPress();
+    didLongPressRef.current = false;
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      didLongPressRef.current = true;
+      onClear();
+    }, LONG_PRESS_CLEAR_MS);
+  };
+
+  const handleDeleteClick = () => {
+    if (didLongPressRef.current) {
+      didLongPressRef.current = false;
+      return;
+    }
+    onBackspace();
+  };
+
   return (
     <div className={cn('keypad-container w-full bg-(--paper-sheet) select-none', className)}>
       <div className="keypad-tray grid touch-manipulation grid-cols-4 gap-[0.5px] bg-(--rule-hairline) pt-[0.5px]">
@@ -111,31 +143,6 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
         >
           9
         </button>
-        <button
-          type="button"
-          onClick={onBackspace}
-          className="keypad-op-btn flex h-13 cursor-pointer items-center justify-center bg-(--paper-sunken) text-(--ink-secondary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
-          title="退格"
-          aria-label="退格"
-        >
-          <Delete className="stroke-1.8 size-4.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onDigit('.')}
-          className="flex h-13 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-xl font-bold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
-        >
-          .
-        </button>
-        <button
-          type="button"
-          onClick={() => onDigit('0')}
-          className="flex h-13 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-lg font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
-        >
-          0
-        </button>
-
         {!isEditing ? (
           <button
             type="button"
@@ -156,6 +163,35 @@ export const TransactionKeypad: React.FC<TransactionKeypadProps> = ({
             C
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => onDigit('.')}
+          className="flex h-13 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-xl font-bold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+        >
+          .
+        </button>
+        <button
+          type="button"
+          onClick={() => onDigit('0')}
+          className="flex h-13 cursor-pointer items-center justify-center bg-(--paper-sheet) font-mono text-lg font-semibold text-(--ink-primary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+        >
+          0
+        </button>
+        <button
+          type="button"
+          onClick={handleDeleteClick}
+          onPointerDown={handleDeletePointerDown}
+          onPointerUp={cancelLongPress}
+          onPointerLeave={cancelLongPress}
+          onPointerCancel={cancelLongPress}
+          onContextMenu={(e) => e.preventDefault()}
+          className="keypad-op-btn flex h-13 cursor-pointer items-center justify-center bg-(--paper-sunken) text-(--ink-secondary) transition-colors hover:bg-(--paper-hover) active:bg-(--paper-sunken)"
+          title="退格"
+          aria-label="退格"
+        >
+          <Delete className="stroke-1.8 size-4.5" />
+        </button>
 
         <button
           type="button"

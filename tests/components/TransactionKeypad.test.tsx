@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { TransactionKeypad } from '../../src/components/ledger/TransactionKeypad';
 
 describe('TransactionKeypad', () => {
@@ -91,5 +91,37 @@ describe('TransactionKeypad', () => {
 
     fireEvent.click(screen.getByTitle('清空重置'));
     expect(handleClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('places 再记一笔 before 退格 in the grid and clears on long-press without triggering backspace', () => {
+    vi.useFakeTimers();
+    const handleBackspace = vi.fn();
+    const handleClear = vi.fn();
+
+    render(
+      <TransactionKeypad
+        onDigit={vi.fn()}
+        onOperator={vi.fn()}
+        onBackspace={handleBackspace}
+        onClear={handleClear}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    const buttons = screen.getAllByRole('button');
+    const continueBtn = screen.getByTitle('保存并继续记录下一笔');
+    const deleteBtn = screen.getByTitle('退格');
+    expect(buttons.indexOf(continueBtn)).toBeLessThan(buttons.indexOf(deleteBtn));
+
+    fireEvent.pointerDown(deleteBtn);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    fireEvent.pointerUp(deleteBtn);
+    fireEvent.click(deleteBtn);
+
+    expect(handleClear).toHaveBeenCalledTimes(1);
+    expect(handleBackspace).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });
