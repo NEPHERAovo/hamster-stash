@@ -111,15 +111,13 @@ const applyChromeMetaAndRoot = (params: {
 
   upsertColorSchemeMeta(colorMode);
 
-  const lightMetaBg = colorMode === 'auto' ? lightBg : bg;
-  const darkMetaBg = colorMode === 'auto' ? darkBg : bg;
   const metas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
   const isAlreadyMatched =
     metas.length === 2 &&
     metas[0].getAttribute('media') === LIGHT_MEDIA_QUERY &&
-    metas[0].getAttribute('content') === lightMetaBg &&
+    metas[0].getAttribute('content') === bg &&
     metas[1].getAttribute('media') === DARK_MEDIA_QUERY &&
-    metas[1].getAttribute('content') === darkMetaBg;
+    metas[1].getAttribute('content') === bg;
 
   if (!isAlreadyMatched) {
     for (const meta of metas) {
@@ -127,8 +125,8 @@ const applyChromeMetaAndRoot = (params: {
     }
     if (document.head) {
       const fragment = document.createDocumentFragment();
-      fragment.appendChild(createThemeColorMeta(LIGHT_MEDIA_QUERY, lightMetaBg));
-      fragment.appendChild(createThemeColorMeta(DARK_MEDIA_QUERY, darkMetaBg));
+      fragment.appendChild(createThemeColorMeta(LIGHT_MEDIA_QUERY, bg));
+      fragment.appendChild(createThemeColorMeta(DARK_MEDIA_QUERY, bg));
       document.head.appendChild(fragment);
     }
   }
@@ -293,8 +291,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     });
   }
 
-  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  if (typeof window !== 'undefined') {
     const handleSystemChange = () => {
       const state = get();
       if (state.colorMode !== 'auto') return;
@@ -313,11 +310,16 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         isDark: next.isDark,
       });
     };
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleSystemChange);
-    } else if (typeof (mediaQuery as unknown as { addListener?: (cb: () => void) => void }).addListener === 'function') {
-      (mediaQuery as unknown as { addListener: (cb: () => void) => void }).addListener(handleSystemChange);
+
+    if (typeof window.matchMedia === 'function') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handleSystemChange);
+      } else if (typeof (mediaQuery as unknown as { addListener?: (cb: () => void) => void }).addListener === 'function') {
+        (mediaQuery as unknown as { addListener: (cb: () => void) => void }).addListener(handleSystemChange);
+      }
     }
+
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
@@ -325,6 +327,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         }
       });
     }
+    window.addEventListener('pageshow', handleSystemChange);
   }
 
   const syncStateAndPersist = (next: {

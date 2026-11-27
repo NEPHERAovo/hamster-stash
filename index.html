@@ -47,8 +47,8 @@
           }
           var lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
           var darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-          if (lightMeta) lightMeta.setAttribute('content', effectiveMode === 'auto' ? lightBg : bg);
-          if (darkMeta) darkMeta.setAttribute('content', effectiveMode === 'auto' ? darkBg : bg);
+          if (lightMeta) lightMeta.setAttribute('content', bg);
+          if (darkMeta) darkMeta.setAttribute('content', bg);
         } catch (e) {}
       })();
 

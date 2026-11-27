@@ -75,7 +75,7 @@ describe('useThemeStore mobile PWA status bar & root chrome sync', () => {
     ]);
   });
 
-  it('tracks independent light and dark colors in auto mode and avoids unnecessary DOM replacements when unchanged', () => {
+  it('tracks independent light and dark colors in auto mode and updates theme-color to active bg without unnecessary replacements', () => {
     useThemeStore.getState().setUiStyle('paper');
     useThemeStore.getState().setTheme('theme-cherry');
     useThemeStore.getState().setTheme('theme-indigo');
@@ -84,7 +84,7 @@ describe('useThemeStore mobile PWA status bar & root chrome sync', () => {
     expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('light dark');
     expect(getThemeColorValues()).toEqual([
       { media: '(prefers-color-scheme: light)', content: '#F6ECEE' },
-      { media: '(prefers-color-scheme: dark)', content: '#0E131C' },
+      { media: '(prefers-color-scheme: dark)', content: '#F6ECEE' },
     ]);
     expect(localStorage.getItem('hamsterstash_splash_bg_light_v1')).toBe('#F6ECEE');
     expect(localStorage.getItem('hamsterstash_splash_bg_dark_v1')).toBe('#0E131C');
@@ -103,6 +103,66 @@ describe('useThemeStore mobile PWA status bar & root chrome sync', () => {
       { media: '(prefers-color-scheme: light)', content: '#0E131C' },
       { media: '(prefers-color-scheme: dark)', content: '#0E131C' },
     ]);
+  });
+
+  it('syncs theme-color and root chrome when system color scheme changes in auto mode', () => {
+    const originalMatchMedia = window.matchMedia;
+    let systemDark = false;
+    const listeners = new Set<() => void>();
+
+    window.matchMedia = ((query: string) => ({
+      matches: query === '(prefers-color-scheme: dark)' ? systemDark : !systemDark,
+      media: query,
+      onchange: null,
+      addEventListener: (_event: string, cb: () => void) => {
+        listeners.add(cb);
+      },
+      removeEventListener: (_event: string, cb: () => void) => {
+        listeners.delete(cb);
+      },
+      addListener: () => void 0,
+      removeListener: () => void 0,
+      dispatchEvent: () => true,
+    })) as unknown as typeof window.matchMedia;
+
+    try {
+      useThemeStore.getState().setUiStyle('paper');
+      useThemeStore.getState().setTheme('theme-cherry');
+      useThemeStore.getState().setTheme('theme-indigo');
+      useThemeStore.getState().setColorMode('auto');
+
+      expect(useThemeStore.getState().isDark).toBe(false);
+      expect(getThemeColorValues()).toEqual([
+        { media: '(prefers-color-scheme: light)', content: '#F6ECEE' },
+        { media: '(prefers-color-scheme: dark)', content: '#F6ECEE' },
+      ]);
+
+      systemDark = true;
+      window.dispatchEvent(new Event('pageshow'));
+
+      expect(useThemeStore.getState().isDark).toBe(true);
+      expect(useThemeStore.getState().currentThemeId).toBe('theme-indigo');
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+      expect(document.documentElement.style.backgroundColor).toBe('rgb(14, 19, 28)');
+      expect(getThemeColorValues()).toEqual([
+        { media: '(prefers-color-scheme: light)', content: '#0E131C' },
+        { media: '(prefers-color-scheme: dark)', content: '#0E131C' },
+      ]);
+
+      systemDark = false;
+      window.dispatchEvent(new Event('pageshow'));
+
+      expect(useThemeStore.getState().isDark).toBe(false);
+      expect(useThemeStore.getState().currentThemeId).toBe('theme-cherry');
+      expect(document.documentElement.classList.contains('dark')).toBe(false);
+      expect(document.documentElement.style.backgroundColor).toBe('rgb(246, 236, 238)');
+      expect(getThemeColorValues()).toEqual([
+        { media: '(prefers-color-scheme: light)', content: '#F6ECEE' },
+        { media: '(prefers-color-scheme: dark)', content: '#F6ECEE' },
+      ]);
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 
   it('aligns light and dark themes by color family while keeping light/dark selection independent', () => {
