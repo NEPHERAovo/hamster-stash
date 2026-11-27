@@ -288,7 +288,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-(--badge-radius) bg-(--paper-sunken) px-2 py-1 font-mono text-[11px] text-(--ink-secondary) transition-colors hover:text-(--ink-primary)"
               >
-                <GithubLogo className="size-4 shrink-0" aria-hidden="true" />
+                <GithubLogo className="size-3.5 shrink-0" aria-hidden="true" />
                 <span>github.com/NEPHERAovo/hamster-stash</span>
                 <ArrowUpRight className="size-3 shrink-0 text-(--ink-tertiary)" />
               </a>
