@@ -30,10 +30,11 @@ describe('SettingsCard PWA install row visibility', () => {
     expect(screen.queryByText('添加到桌面')).not.toBeInTheDocument();
   });
 
-  it('reveals GitHub repository link inside expanded About section', () => {
+  it('reveals GitHub repository link and description inside expanded About section', () => {
     render(<SettingsCard />);
     fireEvent.click(screen.getByText('关于'));
 
+    expect(screen.getByText('个人账本 - 日常收支、物品收纳、资产管理。')).toBeInTheDocument();
     const link = screen.getByRole('link', { name: /github\.com\/NEPHERAovo\/hamster-stash/i });
     expect(link).toHaveAttribute('href', 'https://github.com/NEPHERAovo/hamster-stash');
     expect(link).toHaveAttribute('target', '_blank');
