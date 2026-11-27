@@ -56,19 +56,17 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
               type="button"
               onClick={() => handleSelect(t)}
               className={cn(
-                'flex cursor-pointer flex-col items-center gap-1 rounded-[3px] border px-0.5 py-1.5 text-center transition-all',
+                'flex cursor-pointer flex-col items-center justify-center rounded-[3px] border px-0.5 py-2 text-center transition-all',
                 buttonStyle
               )}
               title={t.name}
+              aria-label={t.name}
             >
               <span
-                className="flex size-5 shrink-0 items-center justify-center rounded-full border border-(--rule-hairline) shadow-2xs"
+                className="flex size-6 shrink-0 items-center justify-center rounded-full border border-(--rule-hairline) shadow-2xs"
                 style={{ backgroundColor: t.colorDot }}
               >
-                {isSelected && <Check className="size-2.5 stroke-3 text-white" />}
-              </span>
-              <span className="w-full truncate text-[10px] leading-tight">
-                {t.name}
+                {isSelected && <Check className="size-3 stroke-3 text-white" />}
               </span>
             </button>
           );
@@ -80,14 +78,14 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ className }) => {
   return (
     <div className={cn('space-y-3 select-none', className)}>
       {renderGroup(
-        '浅色纸张',
+        '浅色',
         getGroupBadge(!isDark, 'light'),
         lightThemes,
         lightThemeId,
         !isDark
       )}
       {renderGroup(
-        '深色纸张',
+        '深色',
         getGroupBadge(isDark, 'dark'),
         darkThemes,
         darkThemeId,
