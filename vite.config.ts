@@ -126,7 +126,8 @@ export default defineConfig({
     manifest: {
       name: '仓鼠囤囤',
       short_name: '仓鼠囤囤',
-      description: '集日常收支、物品收纳与资产管理于一体的轻量化个人账本',
+      description: '个人账本 - 日常收支、物品收纳、资产管理。',
+      lang: 'zh-CN',
       theme_color: '#F3F4F6',
       background_color: '#F3F4F6',
       display: 'standalone',
@@ -134,6 +135,7 @@ export default defineConfig({
 
     injectManifest: {
       globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+      globIgnores: ['**/logo.png'],
     },
 
     devOptions: {
