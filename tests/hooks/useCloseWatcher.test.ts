@@ -161,5 +161,94 @@ describe('useCloseWatcher Hook (TDD)', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       expect(handleClose).not.toHaveBeenCalled();
     });
+
+    it('pushes history state and triggers onClose on popstate (legacy edge-swipe / back button)', () => {
+      const pushStateSpy = vi.spyOn(window.history, 'pushState');
+      const handleClose = vi.fn();
+      const { unmount } = renderHook(() =>
+        useCloseWatcher({ isOpen: true, onClose: handleClose })
+      );
+
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+
+      window.history.replaceState(null, '');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+
+      expect(handleClose).toHaveBeenCalledTimes(1);
+
+      const backSpy = vi.spyOn(window.history, 'back');
+      unmount();
+      expect(backSpy).not.toHaveBeenCalled();
+    });
+
+    it('cleans up pushed history entry when closed programmatically', () => {
+      const backSpy = vi.spyOn(window.history, 'back').mockImplementation(() => void 0);
+      const handleClose = vi.fn();
+      const { unmount } = renderHook(() =>
+        useCloseWatcher({ isOpen: true, onClose: handleClose })
+      );
+
+      unmount();
+
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      expect(handleClose).not.toHaveBeenCalled();
+    });
+
+    it('closes stacked overlays in LIFO order on popstate and Escape', () => {
+      const closeOuter = vi.fn();
+      const closeInner = vi.fn();
+
+      const outer = renderHook(() => useCloseWatcher({ isOpen: true, onClose: closeOuter }));
+      const inner = renderHook(() => useCloseWatcher({ isOpen: true, onClose: closeInner }));
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(closeInner).toHaveBeenCalledTimes(1);
+      expect(closeOuter).not.toHaveBeenCalled();
+
+      window.history.replaceState({ __hsOverlayId: 0 }, '');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      expect(closeInner).toHaveBeenCalledTimes(2);
+      expect(closeOuter).not.toHaveBeenCalled();
+
+      inner.unmount();
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      expect(closeOuter).toHaveBeenCalledTimes(1);
+
+      outer.unmount();
+    });
+
+    it('skips history pushState/popstate fallback on iOS devices while keeping Escape support', () => {
+      const originalUa = navigator.userAgent;
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+        configurable: true,
+      });
+
+      const pushStateSpy = vi.spyOn(window.history, 'pushState');
+      const backSpy = vi.spyOn(window.history, 'back');
+      const handleClose = vi.fn();
+
+      try {
+        const { unmount } = renderHook(() =>
+          useCloseWatcher({ isOpen: true, onClose: handleClose })
+        );
+
+        expect(pushStateSpy).not.toHaveBeenCalled();
+
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        expect(handleClose).not.toHaveBeenCalled();
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(handleClose).toHaveBeenCalledTimes(1);
+
+        unmount();
+        expect(backSpy).not.toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(navigator, 'userAgent', {
+          value: originalUa,
+          configurable: true,
+        });
+      }
+    });
   });
 });
